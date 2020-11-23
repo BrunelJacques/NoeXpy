@@ -1,0 +1,5 @@
+Version 1.1.1. (24/11/2020)
+- séparation OpenRef/NoeXpy
+
+Version 1.1.1.1 (23/11/2020)
+- outil de base suivant l'évolution xpy

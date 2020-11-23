@@ -1,0 +1,9 @@
+Version 1.2.7.02 (04/09/2020)
+- Validation Saisie règlements
+- Prototype export fichier longeurs fixes
+
+Version 1.2.7.01 (01/09/2020)
+- Mise au point
+- Transpose fichier
+
+Version 1.1.1.1
