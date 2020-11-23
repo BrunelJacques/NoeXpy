@@ -48,6 +48,7 @@ def DateDDEnDateEng(datedd):
 class DB():
     # accès à la base de donnees principale
     def __init__(self, IDconnexion = None, config=None, typeConfig='db_prim', nomFichier=None):
+        # config peut être soit un nom de config soit un dictionaire
         self.echec = 1
         self.IDconnexion = IDconnexion
         self.nomBase = 'personne!'
@@ -66,6 +67,9 @@ class DB():
             grpUSER= cfg.GetDict(groupe='USER',close=False)
             grpAPPLI = cfg.GetDict(groupe='APPLI',close=False)
             self.dictAppli = grpAPPLI
+            if 'TYPE_CONFIG' in grpAPPLI:
+                typeConfig= grpAPPLI['TYPE_CONFIG']
+
             nomAppli = grpAPPLI.pop('NOM_APPLICATION',None)
             # appel des params de connexion stockés dans Data
             cfg = xucfg.ParamFile()

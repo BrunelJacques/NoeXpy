@@ -17,6 +17,7 @@ from xpy.outils                import xformat
 
 OPTIONS_CTRL = ('name', 'label', 'ctrlAction', 'btnLabel', 'btnAction', 'value', 'labels', 'values', 'enable',
                 'genre', 'help','size','txtSize', 'btnHelp')
+# les Binds de ctrl se posent dans le pannel
 OPTIONS_PANEL = ('pos','style','name')
 
 def SetEnableID(matrice,enable=False):

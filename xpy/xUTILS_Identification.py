@@ -27,10 +27,12 @@ def GetUserLocal():
     return [{"IDutilisateur": "local", "nom": user, "prenom": "en Local", "sexe": "M", "mdp": "local",
                         "profil": "", "actif": True, "droits": {}},]
 
+def GetListeUsers(db=None):
 
-def GetListeUsers():
+    if not db :
+        DB = xdb.DB()
+    else: DB = db
     """ Récupère la liste des utilisateurs et de leurs droits """
-    DB = xdb.DB()
     if DB.echec:
         return False
     # Droits
@@ -106,9 +108,9 @@ class CTRL_mdp(wx.SearchCtrl):
         self.SetDescriptiveText("Votre mot de passe")
 
         # Options
-
         self.SetCancelBitmap(wx.Bitmap("xpy/Images/16x16/Interdit.png", wx.BITMAP_TYPE_PNG))
         self.SetSearchBitmap(wx.Bitmap("xpy/Images/16x16/Cadenas.png", wx.BITMAP_TYPE_PNG))
+
         # Binds
         self.Bind(wx.EVT_SEARCHCTRL_SEARCH_BTN, self.OnSearch)
         self.Bind(wx.EVT_SEARCHCTRL_CANCEL_BTN, self.OnCancel)
@@ -130,10 +132,10 @@ class CTRL_mdp(wx.SearchCtrl):
 
     def Recherche(self):
         txtSearch = self.GetValue()
-        # Recherche de l'utilisateur
+        # Recherche de l'utilisateur et envoi dans ParamUser de shelve
         for dictUtilisateur in self.listeUtilisateurs :
             if txtSearch == dictUtilisateur["mdp"] :
-                # Enregistrement du pseudo et mot de passe
+                # Enregistrement de l'utilisateur et de ses propriétés
                 cfg = xu_shelve.ParamUser()
                 self.choix = cfg.GetDict(groupe='USER',close = False)
                 dictUtilisateur['utilisateur'] =  dictUtilisateur['prenom'] + " " + dictUtilisateur['nom']
@@ -145,8 +147,8 @@ class CTRL_mdp(wx.SearchCtrl):
                 self.choix['profil'] = dictUtilisateur['profil']
                 cfg.SetDict(self.choix, groupe='USER')
 
-                if hasattr(self.parent,'ChargeUtilisateur'):
-                    self.parent.ChargeUtilisateur(dictUtilisateur)
+                if hasattr(self.parent,'On_trouve'):
+                    self.parent.On_trouve(dictUtilisateur)
                     self.SetValue("")
                     break
         self.Refresh()
@@ -155,15 +157,18 @@ class CTRL_mdp(wx.SearchCtrl):
 
 class Dialog(wx.Dialog):
     # Affiche la liste des utilisateur
-    def __init__(self, parent, id=-1, title="xUTILS_Identification"):
+    def __init__(self, parent, id=-1,title="xUTILS_Identification",confirm=True):
         wx.Dialog.__init__(self, parent, id, title, name="DLG_mdp",style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
         self.parent = parent
+        self.confirm = confirm
         self.echec = False
         self.dictUtilisateur = None
         self.listeUtilisateurs = []
+        # reprise de la dernière connection
         DB = xdb.DB()
         self.dictAppli = DB.dictAppli
         self.grpConfigs = DB.grpConfigs
+        # la dernière connection n'est pas valable, on la recrée en appelant un écran de connection
         if DB.echec:
             dlg = xGestionConfig.DLG_implantation(self)
             ret = dlg.ShowModal()
@@ -177,10 +182,10 @@ class Dialog(wx.Dialog):
         # l'identification n'a de sens qu'en réseau
         if not DB.isNetwork:
             self.echec = True
-        DB.Close()
         if not self.echec:
-            self.listeUtilisateurs = GetListeUsers()
+            self.listeUtilisateurs = GetListeUsers(db=DB)
         self.dictUtilisateur = None
+        DB.Close()
         lstIDconfigs,lstConfigs,lstConfigsKO = xGestionConfig.GetLstConfigs(self.grpConfigs)
 
         # composition de l'écran
@@ -192,7 +197,8 @@ class Dialog(wx.Dialog):
                                           **{'genre': 'combo', 'name': "configs",
                                                    'values': lstIDconfigs,
                                                    'help': "Choisissez la base de donnée qui servira à vous authentifier",
-                                                   'size': (250, 60)}
+                                                   'size': (250, 60),
+                                                    }
                                           )
         self.txtMdp = wx.StaticText(self, -1, "Utilisateur:")
         self.ctrlMdp = CTRL_mdp(self, listeUtilisateurs=self.listeUtilisateurs)
@@ -208,6 +214,7 @@ class Dialog(wx.Dialog):
         self.txtConfigs.SetForegroundColour((100,100,100))
         self.txtIntro.SetForegroundColour(wx.BLUE)
         self.bouton_annuler.SetToolTip("Cliquez ici pour abandonner")
+        self.comboConfigs.Bind(wx.EVT_COMBOBOX, self.On_comboConfig)
 
     def __do_layout(self):
         grid_sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
@@ -237,8 +244,20 @@ class Dialog(wx.Dialog):
         self.Layout()
         self.CentreOnScreen()
 
-    def ChargeUtilisateur(self, dictUtilisateur={}):
+    def On_comboConfig(self,event):
+        config = event.EventObject.GetValue()
+        DB = xdb.DB(config=config)
+        if not DB.echec:
+            self.listeUtilisateurs = GetListeUsers(db=DB)
+        DB.Close()
+
+    # Fermeture de la fenêtre sur utiliasateur trouvé
+    def On_trouve(self, dictUtilisateur={}):
+        # le contrôle a déja envoyé le dic utilisateur dans ParamUser via shelve
         self.dictUtilisateur = dictUtilisateur
+        if self.confirm:
+            wx.MessageBox("Bonjour %s\n\nVos droits: %s"%(dictUtilisateur["utilisateur"],
+                                                           dictUtilisateur["profil"]))
         # Fermeture de la fenêtre
         self.EndModal(wx.ID_OK)
 

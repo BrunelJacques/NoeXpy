@@ -128,8 +128,11 @@ class MENU():
         #CTRL_Identification.AfficheUsers()
 
     def On_identification(self,event):
-        dlg = xUTILS_Identification.Dialog(None)
-        dlg.ShowModal()
+        dlg = xUTILS_Identification.Dialog(self.parent)
+        ret = dlg.ShowModal()
+        if ret == wx.ID_OK:
+            self.parent.dictUser = dlg.GetDictUtilisateur()
+
     def On_gesBases(self,event):
         pass
     def On_gesTables(self,event):

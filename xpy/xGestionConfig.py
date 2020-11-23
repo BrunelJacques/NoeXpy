@@ -33,7 +33,7 @@ MATRICE_USER = {
                                 "\nce n'est pas celui de votre pseudo, qui vous sera demandé au lancement de l'appli",
                         'txtSize': 120},
     {'name': 'pseudo', 'genre': 'String', 'label': 'Votre pseudo appli',
-                        'help': 'Par défaut c\'est votre Identifiant reconnu dans l\'application',
+                        'help': "Sera présenté à l'application, en cas d'absence d'authentification",
                         'ctrlAction':'OnCtrlPseudo',
                         'txtSize': 120},
     ]

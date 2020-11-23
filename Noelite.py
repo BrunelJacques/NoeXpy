@@ -7,7 +7,6 @@ import os
 import wx
 import xpy.xAppli as xAppli
 import xpy.xUTILS_Identification as ncident
-#import srcNoelite.CTRL_Identification as ncident
 import xpy.outils.xaccueil as xaccueil
 import srcNoelite.menu as menu
 
@@ -51,7 +50,7 @@ class MyFrame(xAppli.MainFrame):
         test = os.getcwd()
         self.MakeMenuBar()
         self.Show()
-        dlg = ncident.Dialog(self)
+        dlg = ncident.Dialog(self,confirm=False)
         etat = False
         if not dlg.echec:
             self.dictUser = dlg.GetDictUtilisateur()
