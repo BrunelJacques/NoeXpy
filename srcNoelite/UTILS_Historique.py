@@ -10,7 +10,7 @@
 
 
 import datetime
-import xpy.xGestionDB               as xdb
+import xpy.xUTILS_DB               as xdb
 import srcNoelite.UTILS_Utilisateurs as nuu
 
 CATEGORIES = {

@@ -11,10 +11,9 @@
 import wx
 import datetime
 import srcNoelite.UTILS_Historique      as nuh
-#import srcNoelite.UTILS_Utilisateurs    as nuutil
 import xpy.xGestion_TableauRecherche    as xgtr
+import xpy.xUTILS_DB                    as xdb
 from xpy.outils             import xformat, xchoixListe
-from xpy                    import xGestionDB
 from srcNoelite.DB_schema   import DB_TABLES
 
 def GetClotures():
@@ -68,7 +67,7 @@ class ToComptaKm(object):
 class Noegest(object):
     def __init__(self,parent=None):
         self.parent = parent
-        self.db = xGestionDB.DB()
+        self.db = xdb.DB()
         self.cloture = None
         self.ltExercices = None
 
@@ -173,7 +172,7 @@ class Noegest(object):
     def GetImmosComposants(self,lstChamps):
         # appel des composants dans les tables immos
         self.db.Close()
-        self.db = xGestionDB.DB()
+        self.db = xdb.DB()
         dlg = self.parent
         req = """   
                 SELECT %s
@@ -390,14 +389,14 @@ class Noegest(object):
 
     def GetVehicules(self,lstChamps=None,**kwd):
         # matriceOlv et filtre résultent d'une saisie en barre de recherche
-        matriceOlv = kwd.pop('matriceOlv',{})
+        matriceOlv = kwd.pop('dicOlv',{})
         if (not lstChamps) and 'listeChamps' in matriceOlv:
             lstChamps = matriceOlv['listeChamps']
         filtre = kwd.pop('filtre','')
         kwd['filtre'] = filtre
         whereFiltre = kwd.pop('whereFiltre','')
         if len(whereFiltre) == 0 and len(filtre)>0:
-            whereFiltre = self.ComposeWhereFiltre(filtre,lstChamps)
+            whereFiltre = xformat.ComposeWhereFiltre(filtre,lstChamps,lien='AND')
         kwd['reqWhere'] = """
                 WHERE (cpta_analytiques.axe = 'VEHICULES')
                 AND (vehiculesCouts.cloture = '%s') %s"""%(xformat.DateFrToSql(self.cloture),whereFiltre)
@@ -418,7 +417,7 @@ class Noegest(object):
 
     def GetActivites(self,lstChamps=None,**kwd):
         # matriceOlv et filtre résultent d'une saisie en barre de recherche
-        matriceOlv = kwd.pop('matriceOlv',{})
+        matriceOlv = kwd.pop('dicOlv',{})
         if (not lstChamps) and 'listeChamps' in matriceOlv:
             lstChamps = matriceOlv['listeChamps']
         filtre = kwd.pop('filtre','')
@@ -538,20 +537,6 @@ class Noegest(object):
         return
 
     # ------------------ fonctions diverses
-
-    def ComposeWhereFiltre(self,filtre,lstChamps):
-        whereFiltre = ''
-        if filtre and len(filtre) > 0:
-            texte = ''
-            ordeb = """
-                    ("""
-            for ix in range(len(lstChamps)):
-                texte += "%s %s LIKE '%%%s%%' )"%(ordeb,lstChamps[ix],filtre)
-                ordeb = """
-                    OR ("""
-            whereFiltre = """
-                AND ( %s )"""%(texte)
-        return whereFiltre
 
     def GetExercices(self, where='WHERE  actif = 1'):
         if self.ltExercices: return self.ltExercices

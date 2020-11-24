@@ -132,6 +132,7 @@ class MENU():
         ret = dlg.ShowModal()
         if ret == wx.ID_OK:
             self.parent.dictUser = dlg.GetDictUtilisateur()
+            self.parent.MakeStatusText()
 
     def On_gesBases(self,event):
         pass

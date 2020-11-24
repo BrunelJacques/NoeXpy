@@ -232,14 +232,15 @@ class ParamUser(ParamFile):
 # --------------- TESTS ----------------------------------------------------------
 if __name__ == u"__main__":
     app = wx.App(0)
-    cfg = ParamUser()
-    DumpFile(cfg.dictFic)
 
+    cfgUser = ParamUser()
     cfgNoelite  = ParamFile('Config',path='../srcNoelite/Data',flag='r')
-    cfgOpen     = ParamFile('Config',path='../srcOpenRef/Data',flag='r')
-    print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Fichiers Noelite Data.Config')
+
     # del de clés
-    #cfgNoelite.DelDictConfig(cle='Noestock',groupe='CONFIGS')
+    #cfgUser.DelDictConfig(cle=None,groupe='USER')
+
+    DumpFile(cfgUser.dictFic)
+    print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Fichiers Noelite Data.Config')
     DumpFile(cfgNoelite.dictFic)
     #print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Fichiers Openref Data.Config')
     #DumpFile(cfgOpen.dictFic)

@@ -10,7 +10,7 @@
 import wx
 import os
 import xpy.xGestion_TableauEditor       as xgte
-import xpy.xGestionDB                   as xdb
+import xpy.xUTILS_DB                   as xdb
 import srcNoelite.UTILS_Utilisateurs    as nuu
 import srcNoelite.UTILS_Reglements      as nur
 import srcNoelite.DLG_Reglements_ventilation      as ndrv

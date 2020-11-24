@@ -48,7 +48,7 @@ def GetMatriceFamilles():
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 }
 
-def GetFamilles(db,matriceOlv={}, filtre = None, limit=100):
+def GetFamilles(db,dicOlv={}, filtre = None, limit=100):
     # ajoute les données à la matrice pour la recherche d'une famille
     where = ""
     if filtre:
@@ -57,8 +57,8 @@ def GetFamilles(db,matriceOlv={}, filtre = None, limit=100):
                         OR individus.nom LIKE '%%%s%%'
                         OR individus.prenom LIKE '%%%s%%' """%(filtre,filtre,filtre,filtre,)
 
-    lstChamps = matriceOlv['listeChamps']
-    lstCodesColonnes = matriceOlv['listeCodesColonnes']
+    lstChamps = dicOlv['listeChamps']
+    lstCodesColonnes = [x.valueGetter for x in dicOlv['listeColonnes']]
 
     req = """   SELECT %s 
                 FROM ((familles 
@@ -93,7 +93,7 @@ def GetFamilles(db,matriceOlv={}, filtre = None, limit=100):
         for code in lstCodesColonnes:
             ligne.append(dic[code])
         lstDonnees.append(ligne)
-    dicOlv =  matriceOlv
+    dicOlv =  dicOlv
     dicOlv['listeDonnees']=lstDonnees
     return lstDonnees
 
@@ -137,7 +137,7 @@ def GetMatriceDepots():
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 }
 
-def GetDepots(db=None,matriceOlv={}, filtre = None, limit=100):
+def GetDepots(db=None,dicOlv={}, filtre = None, limit=100):
     # ajoute les données à la matrice pour la recherche d'un depot
     where = ""
     if filtre:
@@ -147,8 +147,8 @@ def GetDepots(db=None,matriceOlv={}, filtre = None, limit=100):
                         OR comptes_bancaires.nom LIKE '%%%s%%'
                         OR observations LIKE '%%%s%%' """%(filtre,filtre,filtre,filtre,filtre)
 
-    lstChamps = matriceOlv['listeChamps']
-    lstCodesColonnes = matriceOlv['listeCodesColonnes']
+    lstChamps = dicOlv['listeChamps']
+    lstCodesColonnes = [x.valueGetter for x in dicOlv['listeColonnes']]
 
     req = """   SELECT %s
                 FROM depots
@@ -213,7 +213,7 @@ def GetDepots(db=None,matriceOlv={}, filtre = None, limit=100):
         for code in lstCodesColonnes:
             ligne.append(dic[code])
         lstDonnees.append(ligne)
-    dicOlv =  matriceOlv
+    dicOlv =  dicOlv
     dicOlv['listeDonnees']=lstDonnees
     return lstDonnees
 
@@ -608,7 +608,7 @@ class Article(object):
                     'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                     }
 
-    def GetArticles(self,matriceOlv,filtre = None):
+    def GetArticles(self,dicOlv,filtre = None):
         # le pointeur de cette fonction est dans le dic généré par GetMatriceArticles,
 
         nature = self.nature
@@ -630,8 +630,8 @@ class Article(object):
                             OR pctCodeComptable LIKE '%%%s%%'
                             OR pctCompte LIKE '%%%s%%')"""%(filtre,filtre,filtre)
 
-        lstChamps = matriceOlv['listeChamps']
-        lstCodesColonnes = matriceOlv['listeCodesColonnes']
+        lstChamps = dicOlv['listeChamps']
+        lstCodesColonnes = [x.valueGetter for x in dicOlv['listeColonnes']]
         req = """SELECT %s
                 FROM matPlanComptable
                 WHERE %s;
@@ -664,7 +664,7 @@ class Article(object):
             for code in lstCodesColonnes:
                 ligne.append(dic[code])
             lstDonnees.append(ligne)
-        dicOlv =  matriceOlv
+        dicOlv =  dicOlv
         dicOlv['listeDonnees']=lstDonnees
         return lstDonnees
 
@@ -695,7 +695,7 @@ def SetDepot(dlg,db):
     dlg.pnlParams.ctrlRef.SetValue(str(IDdepot))
     return IDdepot
 
-def GetDepot(db=None):
+def GetDepot(db=None,**kwd):
     # appel des dépots existants pour reprise d'un dépot
     dicDepot = {}
     dicOlv = GetMatriceDepots()

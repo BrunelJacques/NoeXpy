@@ -935,7 +935,6 @@ class DLG_listCtrl(wx.Dialog):
     def OnAjouter(self,event):
         SetEnableID(self.dldMatrice,enable=True)
         # l'ajout d'une ligne nécessite d'appeler un écran avec les champs en lignes
-        self.dlgGest.Sizer(self.dlgGest.pnl)
         ret = self.dlgGest.ShowModal()
         if ret == wx.OK:
             #récupération des valeurs saisies

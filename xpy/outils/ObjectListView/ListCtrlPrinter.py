@@ -101,9 +101,7 @@ and the second look a different way.
 import datetime
 import math
 
-from ..xwordwraprenderer import *
-
-#from WordWrapRenderer import WordWrapRenderer
+from .WordWrapRenderer import *
 
 # Ajout Perso :
 LISTINTRO = u""

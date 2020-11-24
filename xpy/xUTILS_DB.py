@@ -183,49 +183,27 @@ class DB():
             mess = "Désolé "
         wx.MessageBox(mess, style=style)
 
-    def OuvertureFichierReseau(self, nomFichier, suffixe):
+    def CreateBaseMySql(self, config):
         """ Version RESEAU avec MYSQL """
         try:
             # Récupération des paramètres de connexion
-            pos = nomFichier.index("[RESEAU]")
-            paramConnexions = nomFichier[:pos]
-            port, host, user, passwd = paramConnexions.split(";")
-            nomFichier = nomFichier[pos:].replace("[RESEAU]", "")
-            nomFichier = nomFichier.lower()
-
-            # Info sur connexion MySQL
-            # print "IDconnexion=", self.IDconnexion, "Interface MySQL =", INTERFACE_MYSQL
-
+            host = config['serveur']
+            port = config['port']
+            nomBase = config['nameDB']
+            user = config['userDB']
+            passwd = config['mpUserDB']
             # usage de  "mysql.connector":
             self.connexion = mysql.connector.connect(host=host, user=user, passwd=passwd, port=int(port),
-                                                     use_unicode=True, pool_name="mypool2%s" % suffixe,
-                                                     pool_size=3)
+                                                     use_unicode=True,)
 
             self.cursor = self.connexion.cursor()
-
-            # Ouverture ou création de la base MySQL
-            ##            listeDatabases = self.GetListeDatabasesMySQL()
-            ##            if nomFichier in listeDatabases :
-            ##                # Ouverture Database
-            ##                self.cursor.execute("USE %s;" % nomFichier)
-            ##            else:
-            ##                # Création Database
-            ##                if self.modeCreation == True :
-            ##                    self.cursor.execute("CREATE DATABASE IF NOT EXISTS %s CHARSET utf8 COLLATE utf8_unicode_ci;" % nomFichier)
-            ##                    self.cursor.execute("USE %s;" % nomFichier)
-            ##                else :
-            ##                    #print "La base de donnees '%s' n'existe pas." % nomFichier
-            ##                    self.echec = 1
-            ##                    return
-
             # Création
-            if self.modeCreation == True:
-                self.cursor.execute(
-                    "CREATE DATABASE IF NOT EXISTS %s CHARSET utf8 COLLATE utf8_unicode_ci;" % nomFichier)
+            self.cursor.execute(
+                "CREATE DATABASE IF NOT EXISTS %s CHARSET utf8 COLLATE utf8_unicode_ci;" % nomBase)
 
             # Utilisation
-            if nomFichier not in ("", None, "_data"):
-                self.cursor.execute("USE %s;" % nomFichier)
+            if nomBase not in ("", None):
+                self.cursor.execute("USE %s;" % nomBase)
 
         except Exception as err:
             print( "La connexion avec la base de donnees MYSQL a echouee. Erreur :")
@@ -246,10 +224,6 @@ class DB():
             userdb = config['userDB']
             passwd = config['mpUserDB']
             nomFichier = config['nameDB']
-            # le pseudo est devenu utilisateur et utilisateur devenu username dans topwindows.dictUser
-            #self.pseudo = config['utilisateur']
-            #self.utilisateur = os.environ['USERNAME']
-            #self.domaine =  os.environ['USERDOMAIN']
             etape = 'Ping %s'%(host)
             ret = self.Ping(host)
             etape = 'Création du connecteur %s - %s - %s - %s'%(host,userdb,passwd, port)
@@ -382,7 +356,7 @@ class DB():
             self.echec = 1
             if mess:
                 self.retourReq = mess +'\n\n'
-            else: self.retourReq = 'Erreur xGestionDB\n\n'
+            else: self.retourReq = 'Erreur xUTILS_DB\n\n'
             self.retourReq +=  ("ExecuterReq:\n%s\n\nErreur detectee:\n%s"% (req, str(err)))
             if affichError:
                 wx.MessageBox(self.retourReq)
@@ -484,7 +458,7 @@ class DB():
             self.echec = 1
             if mess:
                 self.retourReq = mess +'\n\n'
-            else: self.retourReq = 'Erreur xGestionDB\n\n'
+            else: self.retourReq = 'Erreur xUTILS_DB\n\n'
             self.retourReq +=  ("ReqInsert:\n%s\n\nErreur detectee:\n%s"% (req, str(err)))
             if affichError:
                 wx.MessageBox(self.retourReq)
@@ -560,7 +534,7 @@ class DB():
             if mess:
                 self.retourReq = mess + '\n\n'
             else:
-                self.retourReq = 'Erreur xGestionDB\n\n'
+                self.retourReq = 'Erreur xUTILS_DB\n\n'
             self.retourReq += ("ReqMAJ:\n%s\n\nErreur detectee:\n%s" % (req, str(err)))
             if affichError:
                 wx.MessageBox(self.retourReq)
@@ -583,7 +557,7 @@ class DB():
             if mess:
                 self.retourReq = mess + '\n\n'
             else:
-                self.retourReq = 'Erreur xGestionDB\n\n'
+                self.retourReq = 'Erreur xUTILS_DB\n\n'
             self.retourReq += ("ReqMAJ:\n%s\n\nErreur detectee:\n%s" % (req, str(err)))
             if affichError:
                 wx.MessageBox(self.retourReq)

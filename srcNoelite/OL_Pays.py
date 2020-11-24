@@ -10,7 +10,7 @@
 
 
 import wx
-import xpy.xGestionDB                   as xdb
+import xpy.xUTILS_DB                   as xdb
 import srcNoelite.UTILS_Utilisateurs    as nuu
 from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn, Filter, CTRL_Outils
 
@@ -171,12 +171,12 @@ class ListView(FastObjectListView):
 
 
     def Apercu(self, event):
-        import xpy.outils.xprinter as xprt
+        import xpy.outils.ObjectListView.Printer as xprt
         prt = xprt.ObjectListViewPrinter(self, titre="Liste des pays postaux", format="A", orientation=wx.PORTRAIT)
         prt.Preview()
 
     def Imprimer(self, event):
-        import xpy.outils.xprinter as xprt
+        import xpy.outils.ObjectListView.Printer as xprt
         prt = xprt.ObjectListViewPrinter(self, titre="Liste des pays postaux", format="A", orientation=wx.PORTRAIT)
         prt.Print()
 

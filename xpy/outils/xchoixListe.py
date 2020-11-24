@@ -9,7 +9,7 @@
 
 import wx, copy
 from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn, Filter, CTRL_Outils
-import xpy.xGestionDB           as xdb
+import xpy.xUTILS_DB           as xdb
 import xpy.outils.xbandeau      as xbd
 import xpy.xGestion_Tableau     as xgt
 from xpy.outils import xformat

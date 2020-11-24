@@ -255,6 +255,7 @@ class ObjectListView(wx.ListCtrl):
         # Currently, for ObjectListView, these collections will be identical, but for a
         # GroupListView they are different.
         """
+        self.ctrl_footer = None
         self.modelObjects = []
         self.innerList = []
         self.columns = []
@@ -288,7 +289,12 @@ class ObjectListView(wx.ListCtrl):
         self.newRowsBackColor = wx.Colour(255,250,205)      # Jaune
 
         self.lastGetObjectIndex = -1
-        wx.ListCtrl.__init__(self, *args, **kwargs)
+
+        kwds = {}
+        for key,value in kwargs.items():
+            if key in ('ID','pos','size','style','validator','name'):
+                kwds[key]=value
+        wx.ListCtrl.__init__(self, *args, **kwds)
 
         if self.sortable:
             self.EnableSorting()
@@ -4333,7 +4339,9 @@ class BarreRecherche(wx.SearchCtrl):
             self.listview.MAJ_footer()
 
 class CTRL_Outils(wx.Panel):
-    def __init__(self, parent, listview=None, texteDefaut="Rechercher...", afficherCocher=False,
+    def __init__(self, parent, listview=None,
+                 texteDefaut="Saisir une partie de mot à rechercher ...",
+                 afficherCocher=False,
                  style=wx.NO_BORDER | wx.TAB_TRAVERSAL):
         wx.Panel.__init__(self, parent, id=-1, style=style)
         self.listview = listview

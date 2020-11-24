@@ -78,7 +78,6 @@ FICHIER_EXCEL_CREE_TXT = "Le fichier Excel a été créé avec succès. Souhaite
 
 # -----------------------------------------------------------
 
-#  outils/xoptionsimpression.py
 
 PARAM_IMP_TXT = "Cliquez ici pour accéder à la gestion des paramètres"
 
@@ -158,7 +157,7 @@ ANNULER_BTN_HELP = "Cliquez ici pour annuler"
 
 # -----------------------------------------------------------
 
-#  outils/xprinter.py
+#  outils Printer.py
 
 AFFICHER_IMPRESSION_HELP = "Cliquez ici pour afficher l'impression"
 IMPRESSION_RAP_1_EX_HELP = "Cliquez ici pour lancer une impression rapide en 1 exemplaire"
@@ -176,7 +175,7 @@ DEFAULT_FONT_NAME = "Arial"
 
 # -----------------------------------------------------------
 
-#  outils/xconfig.py
+#  configuration.py
 FICHIER_CONFIG_NOM = "Data/xConfig.dat"
 
 # -----------------------------------------------------------

@@ -13,8 +13,8 @@ from builtins import object
 import datetime
 import wx
 
-from xpy.outils.ObjectListView import ReportFormat, ListCtrlPrinter
-from xpy.outils                import xdates, xoptionsimpression
+from xpy.outils.ObjectListView import ReportFormat, ListCtrlPrinter, OptionsImpression
+from xpy.outils                import xdates
 
 
 class PreviewControlBar(wx.PyPreviewControlBar):
@@ -213,7 +213,7 @@ class ObjectListViewPrinter(object):
             "conclusion": self.total,
             "orientation": self.orientation,
         }
-        dlg = xoptionsimpression.Dialog(None, dictOptions=dictOptions)
+        dlg = OptionsImpression.Dialog(None, dictOptions=dictOptions)
         if dlg.ShowModal() == wx.ID_OK:
             dictOptions = dlg.GetOptions()
             dlg.Destroy()

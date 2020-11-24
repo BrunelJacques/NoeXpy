@@ -7,9 +7,9 @@
 
 import wx
 import os
-import xpy.xGestionDB   as xdb
+import xpy.xUTILS_DB   as xdb
 from xpy.outils import xbandeau
-from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn, BarreRecherche, OLVEvent, Filter
+from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn, BarreRecherche, CTRL_Outils
 from xpy.outils.xconst import *
 
 # ------------------------------------------------------------------------------------------------------------------
@@ -68,9 +68,9 @@ class ListView(FastObjectListView):
 
     def __init__(self, *args, **kwds):
         self.filtre = ""
+        self.dicOlv = kwds.copy()
         style = kwds.pop("style", wx.LC_SINGLE_SEL)
         self.listeColonnes = kwds.pop("listeColonnes", [])
-        lstChamps = kwds.pop("listeChamps", [])
         self.msgIfEmpty = kwds.pop("msgIfEmpty", "Tableau vide")
         self.colonneTri = kwds.pop("colonneTri", None)
         self.sensTri = kwds.pop("sensTri", True)
@@ -79,9 +79,6 @@ class ListView(FastObjectListView):
         self.lstCodesColonnes = self.formerCodeColonnes()
         self.lstNomsColonnes = self.formerNomsColonnes()
         self.lstSetterValues = self.formerSetterValues()
-        self.matriceOlv = {'listeChamps':lstChamps,
-                                'listeNomsColonnes':self.lstNomsColonnes,
-                                'listeCodesColonnes':self.lstCodesColonnes}
 
         # Choix des options du 'tronc commun' du menu contextuel
         self.exportExcel = kwds.pop("exportExcel", True)
@@ -110,10 +107,11 @@ class ListView(FastObjectListView):
         #self.Refresh()
 
     def formerTracks(self,db=None):
+        self.db = db
         if db:
-            self.listeDonnees = self.getDonnees(db=db,matriceOlv=self.matriceOlv,filtre=self.filtre)
+            self.listeDonnees = self.getDonnees(db=self.db,dicOlv=self.dicOlv,filtre=self.filtre)
         else:
-            self.listeDonnees = self.getDonnees(matriceOlv=self.matriceOlv, filtre=self.filtre)
+            self.listeDonnees = self.getDonnees(dicOlv=self.dicOlv, filtre=self.filtre)
         tracks = list()
         if self.listeDonnees is None:
             return tracks
@@ -260,15 +258,15 @@ class ListView(FastObjectListView):
         return wx.LANDSCAPE
 
     def Apercu(self, event):
-        import xpy.outils.xprinter
+        import xpy.outils.ObjectListView.Printer as printer
         # Je viens de voir dans la fonction concernée, le format n'est pas utilisé et il vaut "A" par défaut donc rien ne change
-        prt = xpy.outils.xprinter.ObjectListViewPrinter(self, titre=self.titreImpression,
+        prt = printer.ObjectListViewPrinter(self, titre=self.titreImpression,
                                                         orientation=self.GetOrientationImpression())
         prt.Preview()
 
     def Imprimer(self, event):
-        import xpy.outils.xprinter
-        prt = xpy.outils.xprinter.ObjectListViewPrinter(self, titre=self.titreImpression,
+        import xpy.outils.ObjectListView.Printer as printer
+        prt = printer.ObjectListViewPrinter(self, titre=self.titreImpression,
                                                         orientation=self.GetOrientationImpression())
         prt.Print()
 
@@ -286,13 +284,12 @@ class PNL_tableau(wx.Panel):
     #panel olv avec habillage optionnel pour des infos (bas gauche) et boutons sorties
     def __init__(self, parent, dicOlv,*args, **kwds):
         self.parent = parent
-
         dicBandeau = dicOlv.pop('dicBandeau',None)
         autoSizer = dicOlv.pop('autoSizer',True)
         self.lstBtns = kwds.pop('lstBtns',None)
         self.lstActions = kwds.pop('lstActions',None)
         self.dicOnClick = kwds.pop('dicOnClick',None)
-        if (not self.lstBtns) :
+        if self.lstBtns == None :
             #force la présence d'un pied d'écran par défaut
             self.lstBtns =  [('BtnPrec', wx.ID_CANCEL, wx.ArtProvider.GetBitmap(wx.ART_DELETE, wx.ART_OTHER, (32, 32)),
                 "Abandon, Cliquez ici pour retourner à l'écran précédent"),
@@ -335,11 +332,11 @@ class PNL_tableau(wx.Panel):
                  dicOlvOut[key] = valeur
 
         self.ctrlOlv = ListView(self,**dicOlvOut)
-
         if self.avecRecherche:
-            self.barreRecherche = BarreRecherche(self, listview=self.ctrlOlv,texteDefaut=u"Saisir une partie de mot à rechercher ...",
-                                                 style=wx.TE_LEFT|wx.TE_PROCESS_ENTER)
-            self.barreRecherche.Bind(wx.EVT_CHAR,self.OnRechercheChar)
+            afficherCocher = False
+            if self.ctrlOlv.checkStateColumn: afficherCocher = True
+            self.ctrloutils = CTRL_Outils(self, listview=self.ctrlOlv, afficherCocher=afficherCocher)
+            self.ctrloutils.Bind(wx.EVT_CHAR,self.OnRechercheChar)
             self.pnlPied = (10,10)
         else:
             # Le pnlPied est un spécifique alimenté par les descendants
@@ -347,9 +344,9 @@ class PNL_tableau(wx.Panel):
         # Sizer différé pour les descendants avec spécificités modifiant le panel
         if autoSizer:
             self.ProprietesOlv()
-            self.__do_layout()
+            self.Sizer()
 
-    def __do_layout(self):
+    def Sizer(self):
         #composition de l'écran selon les composants
         sizerbase = wx.BoxSizer(wx.VERTICAL)
         if self.bandeau:
@@ -370,7 +367,7 @@ class PNL_tableau(wx.Panel):
 
         sizerpied = wx.FlexGridSizer(rows=1, cols=10, vgap=0, hgap=0)
         if self.avecRecherche:
-            sizerpied.Add(self.barreRecherche, 0, wx.EXPAND|wx.ALIGN_CENTRE_VERTICAL, 3)
+            sizerpied.Add(self.ctrloutils, 0, wx.EXPAND|wx.ALIGN_CENTRE_VERTICAL, 3)
 
         sizerpied.Add(self.pnlPied, 0, wx.EXPAND|wx.ALIGN_LEFT, 0)
 
@@ -381,7 +378,7 @@ class PNL_tableau(wx.Panel):
         sizerbase.Add(sizerpied,0,wx.EXPAND,5)
         self.SetSizerAndFit(sizerbase)
         if self.avecRecherche:
-            self.barreRecherche.SetFocus()
+            self.ctrloutils.SetFocus()
 
     def ProprietesOlv(self):
         self.ctrlOlv.Bind(wx.EVT_CONTEXT_MENU, self.ctrlOlv.OnContextMenu)
@@ -392,31 +389,34 @@ class PNL_tableau(wx.Panel):
         # décompactage des paramètres de type bouton
         lstBtn = []
         for btn in lstBtns:
-            try:
-                (code,ID,label,tooltip) = btn
-                if isinstance(label,wx.Bitmap):
-                    bouton = wx.BitmapButton(self,ID,label)
-                elif isinstance(label,str):
-                    bouton = wx.Button(self,ID,label)
-                else: bouton = wx.Button(self,ID,'Erreur!')
-                bouton.SetToolTip(tooltip)
-                bouton.name = code
-                #le bouton OK est par défaut, il ferme l'écran DLG
-                if code == 'BtnOK':
-                    bouton.Bind(wx.EVT_BUTTON, self.OnBoutonOK)
-                #implémente les fonctions bind transmises, soit par le pointeur soit par eval du texte
-                if self.dicOnClick and code in self.dicOnClick:
-                    if isinstance(self.dicOnClick[code],str):
-                        fonction = lambda evt,code=code: eval(self.dicOnClick[code])
-                    else: fonction = self.dicOnClick[code]
-                    bouton.Bind(wx.EVT_BUTTON, fonction)
-                lstBtn.append((bouton, 0, wx.ALL | wx.ALIGN_RIGHT, 5))
-            except:
-                bouton = wx.Button(self, wx.ID_ANY, 'Erreur!')
-                lstBtn.append((bouton, 0, wx.ALL, 5))
+            if isinstance(btn,wx.Button):
+                bouton = btn
+            else:
+                try:
+                    (code,ID,label,tooltip) = btn
+                    if isinstance(label,wx.Bitmap):
+                        bouton = wx.BitmapButton(self,ID,label)
+                    elif isinstance(label,str):
+                        bouton = wx.Button(self,ID,label)
+                    else: bouton = wx.Button(self,ID,'Erreur!')
+                    bouton.SetToolTip(tooltip)
+                    bouton.name = code
+                    #le bouton OK est par défaut, il ferme l'écran DLG
+                    if code == 'BtnOK':
+                        bouton.Bind(wx.EVT_BUTTON, self.OnBoutonOK)
+                    #implémente les fonctions bind transmises, soit par le pointeur soit par eval du texte
+                    if self.dicOnClick and code in self.dicOnClick:
+                        if isinstance(self.dicOnClick[code],str):
+                            fonction = lambda evt,code=code: eval(self.dicOnClick[code])
+                        else: fonction = self.dicOnClick[code]
+                        bouton.Bind(wx.EVT_BUTTON, fonction)
+                except:
+                    bouton = wx.Button(self, wx.ID_ANY, 'Erreur!')
+            lstBtn.append((bouton, 0, wx.ALL | wx.ALIGN_RIGHT, 5))
         return lstBtn
 
     def OnDblClick(self,event):
+        # a écraser par homonyme dans l'instance
         self.OnBoutonOK(None)
 
     def OnBoutonOK(self,event):
@@ -427,7 +427,7 @@ class PNL_tableau(wx.Panel):
 
     def OnRechercheChar(self,evt):
         if evt.GetKeyCode() in (wx.WXK_UP,wx.WXK_DOWN,wx.WXK_PAGEDOWN,wx.WXK_PAGEUP):
-            self.ctrlOlv.Filtrer(self.barreRecherche.GetValue())
+            self.ctrlOlv.Filtrer(self.ctrloutils.GetValue())
             self.ctrlOlv.SetFocus()
             return
         evt.Skip()
@@ -461,7 +461,8 @@ class DLG_tableau(wx.Dialog):
 
 # -- pour tests -----------------------------------------------------------------------------------------------------
 
-def GetDonnees(db=None,matriceOlv=None,filtre = ""):
+def GetDonnees(db=None,**kwds):
+    filtre = kwds.pop('filtre',"")
     donnees = [[18, "Bonjour", -1230.05939, -1230.05939, None, None],
                      [19, "Bonsoir", 57.5, 208.99, wx.DateTime.FromDMY(15, 11, 2018), '2019-03-29'],
                      [1, "Jonbour", 0, 209, wx.DateTime.FromDMY(6, 11, 2018), '2019-03-01'],
@@ -480,7 +481,8 @@ liste_Colonnes = [
     ColumnDefn("mot d'ici", 'left', 200, "mot",valueSetter=''),
     ColumnDefn("nbre", 'right', -1, "nombre",isSpaceFilling = True, valueSetter=0.0, stringConverter=xfmt.FmtDecimal),
     ColumnDefn("prix", 'left', 80, "prix",valueSetter=0.0,isSpaceFilling = True, stringConverter=xfmt.FmtMontant),
-    ColumnDefn("date", 'center', 80, "date",valueSetter=wx.DateTime.FromDMY(1,0,1900),isSpaceFilling = True,  stringConverter=xfmt.FmtDate),
+    ColumnDefn("date", 'center', 80, "date",valueSetter=wx.DateTime.FromDMY(1,0,1900),isSpaceFilling = True,
+               stringConverter=xfmt.FmtDate),
     ColumnDefn("date SQL", 'center', 80, "datesql", valueSetter='2000-01-01',isSpaceFilling = True,
                stringConverter=xfmt.FmtDate)
 ]

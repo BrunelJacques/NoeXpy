@@ -9,7 +9,7 @@
 #------------------------------------------------------------------------
 
 import wx
-import xpy.xGestionDB                   as xdb
+import xpy.xUTILS_DB                   as xdb
 import srcNoelite.UTILS_Adresses   as usa
 import srcNoelite.UTILS_Utilisateurs    as nuu
 import srcNoelite.DLG_Pays          as DLG_Pays

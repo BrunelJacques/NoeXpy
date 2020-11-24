@@ -23,7 +23,7 @@ dictAPPLI = {
 
 class MyFrame(xAppli.MainFrame):
     def __init__(self, *args, **kw):
-        kw['size'] = (800,600)
+        kw['size'] = (750,520)
         super().__init__( *args, **kw)
 
         #dictionnaire propre à l'appli

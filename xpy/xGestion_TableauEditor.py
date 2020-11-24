@@ -182,7 +182,6 @@ class ListView(ObjectListView):
     """
 
     def __init__(self, *args, **kwds):
-        self.ctrl_footer = None
         self.parent = args[0].parent
         self.pnlfooter = kwds.pop("pnlfooter", None)
         self.checkColonne = kwds.pop("checkColonne",True)
@@ -436,14 +435,14 @@ class ListView(ObjectListView):
         return wx.LANDSCAPE
 
     def Apercu(self, event):
-        import xpy.outils.xprinter
-        prt = xpy.outils.xprinter.ObjectListViewPrinter(self, titre=self.titreImpression,
+        import xpy.outils.ObjectListView.Printer as printer
+        prt = printer.ObjectListViewPrinter(self, titre=self.titreImpression,
                                                         orientation=self.GetOrientationImpression())
         prt.Preview()
 
     def Imprimer(self, event):
-        import xpy.outils.xprinter
-        prt = xpy.outils.xprinter.ObjectListViewPrinter(self, titre=self.titreImpression,
+        import xpy.outils.ObjectListView.Printer as printer
+        prt = printer.ObjectListViewPrinter(self, titre=self.titreImpression,
                                                         orientation=self.GetOrientationImpression())
         prt.Print()
 
@@ -746,7 +745,9 @@ class PNL_corps(wx.Panel):
         self.ctrlOlv = self.olv.ctrl_listview
         # choix  barre de recherche ou pas
         if self.barreRecherche:
-            self.ctrloutils = CTRL_Outils(self, listview=self.ctrlOlv, afficherCocher=False)
+            afficherCocher = False
+            if self.ctrlOlv.checkStateColumn: afficherCocher = True
+            self.ctrloutils = CTRL_Outils(self, listview=self.ctrlOlv, afficherCocher=afficherCocher)
             self.olv.ctrloutils = self.ctrloutils
         self.ctrlOlv.SetMinSize((largeur,hauteur))
         self.ctrlOlv.MAJ()

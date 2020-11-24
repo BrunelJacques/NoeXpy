@@ -7,7 +7,7 @@
 #-----------------------------------------------------------
 
 import wx
-import xpy.xGestionDB as xdb
+import xpy.xUTILS_DB as xdb
 import xpy.outils.xchoixListe as xcl
 import re
 import datetime

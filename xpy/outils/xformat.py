@@ -131,6 +131,24 @@ def CompareModels(original,actuel):
         elif not track.vierge: lstNews.append(track.donnees)
     return lstNews,lstCancels,lstModifs
 
+
+def ComposeWhereFiltre(filtre,lstChamps,lstColonnes=None, lien='WHERE'):
+        if lstColonnes:
+            champsStr =  [x.valueGetter for x in lstColonnes if isinstance(x.valueSetter,str)]
+            lstChamps = [x for x in lstChamps if x in champsStr]
+        whereFiltre = ''
+        if filtre and len(filtre) > 0 and len(lstChamps)>0:
+            texte = ''
+            ordeb = """
+                    ("""
+            for ix in range(len(lstChamps)):
+                texte += "%s %s LIKE '%%%s%%' )"%(ordeb,lstChamps[ix],filtre)
+                ordeb = """
+                    OR ("""
+            whereFiltre = """
+                %s ( %s )"""%(lien,texte)
+        return whereFiltre
+
 # Conversion wx.Datetime % datetime.date
 
 def DatetimeToWxdate(date):

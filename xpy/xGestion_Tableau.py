@@ -329,15 +329,15 @@ class ListView(FastObjectListView):
         return wx.LANDSCAPE
 
     def Apercu(self, event):
-        import xpy.outils.xprinter
+        import xpy.outils.ObjectListView.Printer as printer
         # Je viens de voir dans la fonction concernée, le format n'est pas utilisé et il vaut "A" par défaut donc rien ne change
-        prt = xpy.outils.xprinter.ObjectListViewPrinter(self, titre=self.titreImpression,
+        prt = printer.ObjectListViewPrinter(self, titre=self.titreImpression,
                                                         orientation=self.GetOrientationImpression())
         prt.Preview()
 
     def Imprimer(self, event):
-        import xpy.outils.xprinter
-        prt = xpy.outils.xprinter.ObjectListViewPrinter(self, titre=self.titreImpression,
+        import xpy.outils.ObjectListView.Printer as printer
+        prt = printer.ObjectListViewPrinter(self, titre=self.titreImpression,
                                                         orientation=self.GetOrientationImpression())
         prt.Print()
 

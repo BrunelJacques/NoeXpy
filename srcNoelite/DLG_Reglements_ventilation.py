@@ -12,7 +12,7 @@
 import wx
 import wx.grid as gridlib
 import xpy.xGestion_TableauEditor       as xgte
-import xpy.xGestionDB                   as xdb
+import xpy.xUTILS_DB                   as xdb
 import wx.lib.agw.hyperlink as Hyperlink
 import datetime
 import decimal
@@ -20,7 +20,7 @@ import sys
 
 SYMBOLE = "€"
 
-import xpy.xGestionDB as db
+import xpy.xUTILS_DB as db
 
 COULEUR_FOND_REGROUPEMENT = (200, 200, 200)
 COULEUR_TEXTE_REGROUPEMENT = (140, 140, 140)

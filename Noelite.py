@@ -63,11 +63,9 @@ class MyFrame(xAppli.MainFrame):
         for numMenu in range(1,2):
             self.menu.EnableTop(numMenu, etat)
         self.panelAccueil.EnableBoutons(etat)
-        if hasattr(self,'dictUser') and self.dictUser:
-            self.messageStatus += ",  Utilisateur: %s" % (self.dictUser['utilisateur'])
-        self.SetStatusText(self.messageStatus)
         if not etat:
-            self.SetStatusText("Noelite est lancé sans accès à Noethys!")
+            self.infoStatus("lancé sans accès à Noethys!")
+        self.MakeStatusText()
 
 class MyApp(wx.App):
     def OnInit(self):

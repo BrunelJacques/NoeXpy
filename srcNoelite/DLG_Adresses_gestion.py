@@ -17,23 +17,15 @@ COLONNETRI = 2
 
 import wx
 import xpy.outils.xbandeau      as xbd
-import xpy.xGestion_Tableau     as xgt
-import xpy.xUTILS_SaisieParams  as xusp
-import xpy.xGestionDB           as xdb
+import xpy.xGestion_TableauRecherche     as xgt
+import xpy.xUTILS_DB           as xdb
 import srcNoelite.UTILS_Utilisateurs  as nuu
 import srcNoelite.DLG_Adresses_saisie   as nsa
 import srcNoelite.UTILS_Adresses as nua
 from xpy.outils.ObjectListView import CTRL_Outils
 from xpy.outils         import xformat
 
-def ComposeLstDonnees(record,lstChamps):
-    # retourne les données pour colonnes, extraites d'un record défini par une liste de champs
-    lstdonnees=[]
-    for ix in range(len(lstChamps)):
-        lstdonnees.append(record[ix])
-    return lstdonnees
-
-def GetIndividus():
+def dicOlvIndividus():
     # appel des données à afficher
     lstChamps = ["0","IDindividu", "nom", "prenom","date_naiss", "adresse_auto",
                 "rue_resid", "cp_resid", "ville_resid","tel_domicile", "tel_mobile", "mail"]
@@ -41,33 +33,15 @@ def GetIndividus():
                         "rue", "cp", "ville","teldom", "telmob", "mail"]
     lstTypes = ["INTEGER","INTEGER","VARCHAR(100)","VARCHAR(100)","DATE","INTEGER",
                 "VARCHAR(100)","VARCHAR(8)","VARCHAR(100)","VARCHAR(11)","VARCHAR(11)","VARCHAR(40)"]
-    db = xdb.DB()
-    req = """SELECT %s
-            FROM individus
-            ; """ % (",".join(lstChamps))
-    retour = db.ExecuterReq(req, mess='%s.GetIndividus'%NOM_MODULE )
-    if retour == "ok":
-        recordset = db.ResultatReq()
-        if len(recordset) == 0:
-            retour = "aucun enregistrement disponible"
-    else:
-        wx.MessageBox("Erreur : %s" % retour)
-        return 'ko'
-    db.Close()
     lstCodesColonnes = [xformat.SupprimeAccents(x) for x in lstNomsColonnes]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
     lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes)
     # composition des données du tableau à partir du recordset
-    lstDonnees = []
-    for record in recordset:
-        ligne = ComposeLstDonnees( record, lstChamps)
-        lstDonnees.append(ligne)
-
     # matrice OLV
     lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
     dicOlv =    {
                 'listeColonnes': lstColonnes,
-                'listeDonnees': lstDonnees,
+                'listeChamps': lstChamps,
                 'checkColonne': False,
                 'colonneTri': COLONNETRI,
                 'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
@@ -76,7 +50,7 @@ def GetIndividus():
                 }
     return dicOlv
 
-def GetFamilles():
+def dicOlvFamilles():
     # appel des données à afficher
     lstChamps = ["0","familles.IDfamille","individus.IDindividu","familles.adresse_intitule","individus.nom",
                  "individus.prenom","individus.adresse_auto","individus.rue_resid","individus.cp_resid","individus.ville_resid"]
@@ -86,34 +60,15 @@ def GetFamilles():
 
     lstTypes = ["INTEGER","INTEGER","INTEGER","VARCHAR(100)","VARCHAR(100)",
                 "VARCHAR(100)","INTEGER","VARCHAR(100)","VARCHAR(11)","VARCHAR(80)"]
-    db = xdb.DB()
-    req = """   SELECT %s
-                FROM familles 
-                LEFT JOIN individus ON familles.adresse_individu = individus.IDindividu;
-                """ % (",".join(lstChamps))
-    retour = db.ExecuterReq(req, mess='%s.GetIndividus'%NOM_MODULE )
-    if retour == "ok":
-        recordset = db.ResultatReq()
-        if len(recordset) == 0:
-            retour = "aucun enregistrement disponible"
-    else:
-        wx.MessageBox("Erreur : %s" % retour)
-        return 'ko'
-    db.Close()
     lstCodesColonnes = [xformat.SupprimeAccents(x) for x in lstNomsColonnes]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
     lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes)
     # composition des données du tableau à partir du recordset
-    lstDonnees = []
-    for record in recordset:
-        ligne = ComposeLstDonnees( record, lstChamps)
-        lstDonnees.append(ligne)
 
     # matrice OLV
     lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
     dicOlv =    {
                 'listeColonnes': lstColonnes,
-                'listeDonnees': lstDonnees,
                 'checkColonne': False,
                 'colonneTri': COLONNETRI,
                 'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
@@ -122,89 +77,39 @@ def GetFamilles():
                 }
     return dicOlv
 
-class Dialog(wx.Dialog):
-    def __init__(self, mode='individus', titre=TITRE, intro=INTRO):
-        wx.Dialog.__init__(self, None, -1, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
-        if nuu.VerificationDroitsUtilisateurActuel("individus_fiche", "consulter") == False:
-            if self.IsModal():
-                self.EndModal(wx.ID_CANCEL)
-            else: self.Destroy()
-        self.mode = mode
-        self.SetTitle(NOM_MODULE)
-        self.choix= None
-        self.avecFooter = True
-        self.barreRecherche = True
+def ComposeLstDonnees(record,lstChamps):
+    # retourne les données pour colonnes, extraites d'un record défini par une liste de champs
+    lstdonnees=[]
+    for ix in range(len(lstChamps)):
+        lstdonnees.append(record[ix])
+    return lstdonnees
 
-        # Bandeau
-        self.ctrl_bandeau = xbd.Bandeau(self, titre=titre, texte=intro,  hauteur=18, nomImage="xpy/Images/32x32/Matth.png")
+class Pnl_tableau(xgt.PNL_tableau):
+    def __init__(self,parent,dicOlv):
+
+        dicOlv['autoSizer'] = False
+        xgt.PNL_tableau.__init__(self,parent,dicOlv)
 
         # Boutons
         bmpok = wx.Bitmap("xpy/Images/32x32/Action.png")
-        self.bouton_ok = wx.Button(self, id = wx.ID_APPLY,label=(ACTION))
-        self.bouton_ok.SetBitmap(bmpok)
+        bouton_ok = wx.Button(self, id = wx.ID_APPLY,label=(ACTION))
+        bouton_ok.SetBitmap(bmpok)
+        self.bouton_ok = bouton_ok
         bmpabort = wx.Bitmap("xpy/Images/32x32/Quitter.png")
-        self.bouton_fermer = wx.Button(self, id = wx.ID_CANCEL,label=(u"Quitter"))
-        self.bouton_fermer.SetBitmap(bmpabort)
+        bouton_fermer = wx.Button(self, id = wx.ID_CANCEL,label=(u"Quitter"))
+        bouton_fermer.SetBitmap(bmpabort)
+        bouton_fermer.SetToolTip(u"Cliquez ici pour fermer")
+        self.bouton_fermer = bouton_fermer
+        self.lstBtns = [bouton_ok,bouton_fermer]
 
-        # Initialisations
-        self.__init_olv()
-        self.__set_properties()
-        self.__do_layout()
-
-    def __init_olv(self):
-        if self.mode == 'familles':
-            dicOlv = GetFamilles()
-        else:
-            dicOlv = GetIndividus()
-
-        pnlOlv = xgt.PanelListView(self,**dicOlv)
-        if self.avecFooter:
-            self.ctrlOlv = pnlOlv.ctrl_listview
-            self.olv = pnlOlv
-        else:
-            self.ctrlOlv = xgt.ListView(self,**dicOlv)
-            self.olv = self.ctrlOlv
-        if self.barreRecherche:
-            self.ctrloutils = CTRL_Outils(self, listview=self.ctrlOlv, afficherCocher=False)
-        self.ctrlOlv.MAJ()
-
-    def __set_properties(self):
-        self.SetMinSize(MINSIZE)
-        self.bouton_fermer.SetToolTip(u"Cliquez ici pour fermer")
         # Binds
-        self.Bind(wx.EVT_BUTTON, self.OnDblClicOk, self.bouton_ok)
-        self.Bind(wx.EVT_BUTTON, self.OnDblClicFermer, self.bouton_fermer)
-        self.ctrlOlv.Bind(wx.EVT_LIST_ITEM_ACTIVATED,self.OnDblClicOk)
+        self.Bind(wx.EVT_BUTTON, self.OnDblClick, bouton_ok)
+        self.Bind(wx.EVT_BUTTON, self.OnDblClicFermer, bouton_fermer)
+        #self.ctrlOlv.Bind(wx.EVT_LIST_ITEM_ACTIVATED,self.OnDblClic)
+        self.ProprietesOlv()
+        self.Sizer()
 
-    def __do_layout(self):
-        gridsizer_base = wx.FlexGridSizer(rows=6, cols=1, vgap=0, hgap=0)
-        gridsizer_base.Add(self.ctrl_bandeau, 1, wx.EXPAND, 0)
-
-        sizerolv = wx.BoxSizer(wx.VERTICAL)
-        sizerolv.Add(self.olv, 10, wx.EXPAND, 10)
-        if self.barreRecherche:
-            sizerolv.Add(self.ctrloutils, 0, wx.EXPAND, 10)
-        gridsizer_base.Add(sizerolv, 10, wx.EXPAND, 10)
-        gridsizer_base.Add(wx.StaticLine(self), 0, wx.TOP| wx.EXPAND, 3)
-
-        # Boutons
-        gridsizer_boutons = wx.FlexGridSizer(rows=1, cols=3, vgap=0, hgap=0)
-        gridsizer_boutons.Add((20, 20), 1, wx.ALIGN_BOTTOM, 0)
-        gridsizer_boutons.Add(self.bouton_ok, 1, wx.EXPAND, 0)
-        gridsizer_boutons.Add(self.bouton_fermer, 1, wx.EXPAND, 0)
-        gridsizer_boutons.AddGrowableCol(0)
-        gridsizer_base.Add(gridsizer_boutons, 1, wx.RIGHT|wx.TOP|wx.BOTTOM|wx.EXPAND,5)
-        self.SetSizer(gridsizer_base)
-        gridsizer_base.Fit(self)
-        gridsizer_base.AddGrowableRow(1)
-        gridsizer_base.AddGrowableCol(0)
-        self.Layout()
-        self.CenterOnScreen()
-
-    def OnDblClicFermer(self, event):
-        self.EndModal(wx.ID_CANCEL)
-
-    def OnDblClicOk(self, event):
+    def OnDblClick(self,event):
         self.choix = self.ctrlOlv.GetSelectedObject()
         if self.choix == None:
             dlg = wx.MessageDialog(self, (u"Pas de sélection faite !\nIl faut choisir ou cliquer sur annuler"), (u"Accord Impossible"), wx.OK | wx.ICON_EXCLAMATION)
@@ -212,7 +117,7 @@ class Dialog(wx.Dialog):
             dlg.Destroy()
         else:
             if nuu.VerificationDroitsUtilisateurActuel("individus_coordonnees", "modifier") == False: return
-            if self.mode == 'familles':
+            if self.parent.mode == 'familles':
                 ID = self.choix.famille
                 nom = "famille"
                 prenom = self.choix.intitulefamille
@@ -220,7 +125,7 @@ class Dialog(wx.Dialog):
                 ID = self.choix.individu
                 nom = self.choix.nom
                 prenom = self.choix.prenom
-            dlg2 = nsa.DlgAdresses_saisie(ID,mode=self.mode, titre=u"Adresse de %d - %s %s"%(ID,nom,prenom))
+            dlg2 = nsa.DlgAdresses_saisie(ID,mode=self.parent.mode, titre=u"Adresse de %d - %s %s"%(ID,nom,prenom))
             ret = dlg2.ShowModal()
             if ret == wx.ID_OK:
                 lstAdresse = dlg2.lstAdresse
@@ -232,8 +137,118 @@ class Dialog(wx.Dialog):
                 self.ctrlOlv.SelectObject(self.choix)
             event.Skip()
 
+    def OnDblClicFermer(self, event):
+        self.parent.EndModal(wx.ID_CANCEL)
+
+
+class Dialog(wx.Dialog):
+    def __init__(self, mode='individus', titre=TITRE, intro=INTRO):
+        self.db = xdb.DB()
+        wx.Dialog.__init__(self, None, -1, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
+        if nuu.VerificationDroitsUtilisateurActuel("individus_fiche", "consulter") == False:
+            if self.IsModal():
+                self.EndModal(wx.ID_CANCEL)
+            else: self.Destroy()
+        self.mode = mode
+        self.SetTitle(NOM_MODULE)
+        self.choix= None
+
+        # Bandeau
+        self.ctrl_bandeau = xbd.Bandeau(self, titre=titre, texte=intro,  hauteur=18, nomImage="xpy/Images/32x32/Matth.png")
+
+        # composition des objets
+        if self.mode == 'familles':
+            dicOlv = dicOlvFamilles()
+            self.getDonnees = self.GetFamilles
+        else:
+            dicOlv = dicOlvIndividus()
+            self.getDonnees = self.GetIndividus
+
+        dicOlv['getDonnees'] = self.getDonnees
+        pnlOlv = Pnl_tableau(self, dicOlv)
+        self.ctrlOlv = pnlOlv.ctrlOlv
+        self.olv = pnlOlv
+        self.ctrlOlv.MAJ()
+
+        # Initialisations
+        self.__set_properties()
+        self.Sizer()
+
+
+    def __set_properties(self):
+        self.SetMinSize(MINSIZE)
+
+    def Sizer(self):
+        gridsizer_base = wx.FlexGridSizer(rows=6, cols=1, vgap=0, hgap=0)
+        gridsizer_base.Add(self.ctrl_bandeau, 1, wx.EXPAND, 0)
+
+        sizerolv = wx.BoxSizer(wx.VERTICAL)
+        sizerolv.Add(self.olv, 10, wx.EXPAND, 10)
+        gridsizer_base.Add(sizerolv, 10, wx.EXPAND, 10)
+        gridsizer_base.Add(wx.StaticLine(self), 0, wx.TOP| wx.EXPAND, 3)
+
+        self.SetSizer(gridsizer_base)
+        #gridsizer_base.Fit(self)
+        gridsizer_base.AddGrowableRow(1)
+        gridsizer_base.AddGrowableCol(0)
+        self.Layout()
+        self.SetSizer(gridsizer_base)
+        self.CenterOnScreen()
+
+
+    def GetIndividus(self,db,**kwd):
+        # appel des données à afficher
+        filtre = kwd.pop('filtre','')
+        lstChamps = kwd['dicOlv']['listeChamps']
+        lstColonnes = kwd['dicOlv']['listeColonnes']
+
+        whereFiltre = ''
+        if len(filtre) >0:
+            whereFiltre = xformat.ComposeWhereFiltre(filtre,lstChamps, lstColonnes = lstColonnes)
+        req = """SELECT %s
+                FROM individus
+                %s
+                ; """ % (",".join(lstChamps),whereFiltre)
+        retour = db.ExecuterReq(req, mess='%s.GetIndividus' % NOM_MODULE)
+        if retour == "ok":
+            recordset = db.ResultatReq()
+            if len(recordset) == 0:
+                retour = "aucun enregistrement disponible"
+        else:
+            wx.MessageBox("Erreur : %s" % retour)
+            return 'ko'
+        # composition des données du tableau à partir du recordset
+        lstDonnees = []
+        for record in recordset:
+            ligne = ComposeLstDonnees(record, lstChamps)
+            lstDonnees.append(ligne)
+        return lstDonnees
+
+    def GetFamilles(self,db,**kwd):
+        # appel des données à afficher
+        lstChamps = kwd['dicOlv']['listeChamps']
+
+        req = """   SELECT %s
+                    FROM familles 
+                    LEFT JOIN individus ON familles.adresse_individu = individus.IDindividu;
+                    """ % (",".join(lstChamps))
+        retour = db.ExecuterReq(req, mess='%s.GetIndividus' % NOM_MODULE)
+        if retour == "ok":
+            recordset = db.ResultatReq()
+            if len(recordset) == 0:
+                retour = "aucun enregistrement disponible"
+        else:
+            wx.MessageBox("Erreur : %s" % retour)
+            return 'ko'
+        # composition des données du tableau à partir du recordset
+        lstDonnees = []
+        for record in recordset:
+            ligne = ComposeLstDonnees(record, lstChamps)
+            lstDonnees.append(ligne)
+        return lstDonnees
+
     def GetChoix(self):
-        self.choix = self.listview.GetSelectedObject()
+        self.choix = self.ctrlOlv.GetSelectedObject()
         return self.choix
 
 #-------------------------------------------------

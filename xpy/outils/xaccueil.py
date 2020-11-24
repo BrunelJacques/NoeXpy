@@ -254,6 +254,7 @@ class Panel_Accueil(wx.Panel):
 class MyFrame(wx.Frame):
     def __init__(self, *args, **kwds):
         wx.Frame.__init__(self, *args, )
+        self.dictAppli = kwds.pop('dictAppli',{})
         self.SetSize((500, 700))
         lstButtons = [
             {"code": "modifAdresses", "label": ("&Modification d'adresses Individus"),
@@ -277,17 +278,23 @@ class MyFrame(wx.Frame):
         sizer.Add(self.panel, 0, wx.EXPAND, 0)
         self.SetSizerAndFit(sizer)
 
-
     def OnAction(self,event):
         wx.MessageBox("Voici mon action !!")
-
 
 if __name__ == '__main__':
     app = wx.App(0)
     import os
     os.chdir("..")
     os.chdir("..")
-    frame_1 = MyFrame(None, -1, "TEST")
+    dictAppli ={
+            'NOM_APPLICATION'       : "testappli",
+            'REP_DATA'              : "srcNoelite/Data",
+            'REP_SOURCES'              : "srcNoelite",
+            'TYPE_CONFIG'           : 'db_prim',
+            'CHOIX_CONFIGS': [('Donnees', "Base de travail, peut être la centrale  en mode connecté"),]
+            }
+    frame_1 = MyFrame(None, -1, "TEST",dictAppli=dictAppli)
     app.SetTopWindow(frame_1)
+
     frame_1.Show()
     app.MainLoop()

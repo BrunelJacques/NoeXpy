@@ -78,25 +78,35 @@ class MainFrame(wx.Frame):
                 xucfg.CreePath(rep)
             for rep in ('pathData', 'pathTemp','pathSrcAppli','pathXpy'):
                 self.dictAppli[rep] = eval('self.'+rep)
-            cfgU = xucfg.ParamUser()
-            self.config= cfgU.SetDict(self.dictAppli, groupe='APPLI')
 
-            # appel de la configuration base de données dans paramFile
-            cfgF = xucfg.ParamFile()
-            grpCONFIGS = cfgF.GetDict(dictDemande=None, groupe='CONFIGS')
-            nomAppli = self.dictAppli['NOM_APPLICATION']
-            nomConfig = ''
-            if 'choixConfigs' in grpCONFIGS:
-                if nomAppli and nomAppli in grpCONFIGS['choixConfigs'].keys():
-                    if 'lastConfig' in grpCONFIGS['choixConfigs'][nomAppli].keys():
-                        nomConfig = grpCONFIGS['choixConfigs'][nomAppli]['lastConfig']
-            messBD = "données: '%s'"%(nomConfig)
             # Crée un message initial de bas de fenêtre status bar
             self.CreateStatusBar()
-            self.nomVersion = "%s %s"%(self.dictAppli['NOM_APPLICATION'],xaccueil.GetVersion(self))
-            self.messageStatus = "%s |  %s"%(self.nomVersion,messBD)
-            self.SetStatusText(self.messageStatus)
+            self.MakeStatusText()
             return wx.OK
+
+    def MakeStatusText(self):
+        cfgU = xucfg.ParamUser()
+        self.config = cfgU.SetDict(self.dictAppli, groupe='APPLI')
+
+        # appel de la configuration base de données dans paramFile
+        cfgF = xucfg.ParamFile()
+        grpCONFIGS = cfgF.GetDict(dictDemande=None, groupe='CONFIGS')
+        nomAppli = self.dictAppli['NOM_APPLICATION']
+        nomConfig = ''
+        if 'choixConfigs' in grpCONFIGS:
+            if nomAppli and nomAppli in grpCONFIGS['choixConfigs'].keys():
+                if 'lastConfig' in grpCONFIGS['choixConfigs'][nomAppli].keys():
+                    nomConfig = grpCONFIGS['choixConfigs'][nomAppli]['lastConfig']
+        messBD = "données: '%s'" % (nomConfig)
+        self.nomVersion = "%s %s" % (self.dictAppli['NOM_APPLICATION'], xaccueil.GetVersion(self))
+        self.messageStatus = "%s |  %s" % (self.nomVersion, messBD)
+
+        if hasattr(self,'dictUser') and self.dictUser:
+            self.messageStatus += ",  Utilisateur: %s" % (self.dictUser['utilisateur'])
+        if hasattr(self,'infoStatus'):
+            self.messageStatus += " | %s" % (self.infoStatus)
+
+        self.SetStatusText(self.messageStatus)
 
     def MakeHello(self,message):
         # affichage d'un écran simple rappelant un message
@@ -252,7 +262,8 @@ class MainFrame(wx.Frame):
     def SaisieConfig(self):
         import xpy.xGestionConfig as gc
         cfg = gc.DLG_implantation(self, style = wx.RESIZE_BORDER )
-        return cfg.ShowModal()
+        cfg.ShowModal()
+        self.MakeStatusText()
 
 
 #************************   Pour Test    *******************************

@@ -10,7 +10,7 @@
 
 
 import wx
-import xpy.xGestionDB       as xdb
+import xpy.xUTILS_DB       as xdb
 
 def VerificationDroits(dictUtilisateur=None, categorie="", action="", IDactivite=""):
     """ Vérifie si un utilisateur peut accéder à une action """

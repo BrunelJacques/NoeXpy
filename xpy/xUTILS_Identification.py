@@ -8,7 +8,7 @@
 
 import sys
 import wx
-import xpy.xGestionDB as xdb
+import xpy.xUTILS_DB as xdb
 import xpy.outils.xchoixListe as xchoixliste
 import xpy.xUTILS_Shelve as xu_shelve
 import xpy.xGestionConfig as xGestionConfig
@@ -256,7 +256,7 @@ class Dialog(wx.Dialog):
         # le contrôle a déja envoyé le dic utilisateur dans ParamUser via shelve
         self.dictUtilisateur = dictUtilisateur
         if self.confirm:
-            wx.MessageBox("Bonjour %s\n\nVos droits: %s"%(dictUtilisateur["utilisateur"],
+            wx.MessageBox("Utilisateur %s\n\nAvec droits: %s"%(dictUtilisateur["utilisateur"],
                                                            dictUtilisateur["profil"]))
         # Fermeture de la fenêtre
         self.EndModal(wx.ID_OK)
