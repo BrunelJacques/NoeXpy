@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 #  Jacques Brunel x Sébastien Gouast
-#  MATTHANIA - évolution xGestion_Tableau.py ne reçoit pas les données mais une requête avec filtre qui s'actualise
+#  MATTHANIA - évolution surcouche OLV ne reçoit pas les données mais une requête avec filtre qui s'actualise
+#  permet d'interroger les tables volumineuses avec l'option LIMIT
+#  Le double clic lance une action sur la ligne
 #  2020/06/02
 
 import wx
@@ -100,26 +102,6 @@ class ListView(FastObjectListView):
         self.InitObjectListView()
         self.MAJ()
 
-    def Filtrer(self, texteRecherche=''):
-        # Filtre barre de recherche
-        self.filtre = texteRecherche
-        self.InitModel()
-        #self.Refresh()
-
-    def formerTracks(self,db=None):
-        self.db = db
-        if db:
-            self.listeDonnees = self.getDonnees(db=self.db,dicOlv=self.dicOlv,filtre=self.filtre)
-        else:
-            self.listeDonnees = self.getDonnees(dicOlv=self.dicOlv, filtre=self.filtre)
-        tracks = list()
-        if self.listeDonnees is None:
-            return tracks
-        for ligneDonnees in self.listeDonnees:
-            tracks.append(TrackGeneral(donnees=ligneDonnees,codesColonnes=self.lstCodesColonnes,
-                                            nomsColonnes=self.lstNomsColonnes,setterValues=self.lstSetterValues))
-        return tracks
-
     def formerCodeColonnes(self):
         codeColonnes = list()
         for colonne in self.listeColonnes:
@@ -152,10 +134,17 @@ class ListView(FastObjectListView):
             setterValues.append(tip)
         return setterValues
 
-    def InitModel(self):
-        self.SetObjects(self.formerTracks(db=self.Parent.Parent.db))
-        if len(self.innerList) >0:
-            self.SelectObject(self.innerList[0])
+    def formerTracks(self,**kwd):
+        kwd['dicOlv'] = self.dicOlv
+        self.listeDonnees = self.getDonnees(**kwd)
+
+        tracks = list()
+        if self.listeDonnees is None:
+            return tracks
+        for ligneDonnees in self.listeDonnees:
+            tracks.append(TrackGeneral(donnees=ligneDonnees,codesColonnes=self.lstCodesColonnes,
+                                            nomsColonnes=self.lstNomsColonnes,setterValues=self.lstSetterValues))
+        return tracks
 
     def InitObjectListView(self):
         # Couleur en alternance des lignes
@@ -173,6 +162,14 @@ class ListView(FastObjectListView):
                 self.SortBy(1, self.sensTri)
             else:
                 self.SortBy(self.colonneTri, self.sensTri)
+
+    def InitModel(self,**kwd):
+        #kwd peut contenir  filtretxt et lstfiltres
+        if hasattr(self.Parent.Parent,'db'):
+            kwd['db'] = self.Parent.Parent.db
+        self.SetObjects(self.formerTracks(**kwd))
+        if len(self.innerList) >0:
+            self.SelectObject(self.innerList[0])
 
     def MAJ(self, ID=None):
         self.selectionID = ID

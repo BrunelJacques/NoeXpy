@@ -134,8 +134,9 @@ def CompareModels(original,actuel):
 
 def ComposeWhereFiltre(filtre,lstChamps,lstColonnes=None, lien='WHERE'):
         if lstColonnes:
-            champsStr =  [x.valueGetter for x in lstColonnes if isinstance(x.valueSetter,str)]
-            lstChamps = [x for x in lstChamps if x in champsStr]
+            lstNames = [x.valueGetter for x in lstColonnes]
+            lstColStr =  [x.valueGetter for x in lstColonnes if isinstance(x.valueSetter,str)]
+            lstChamps = [lstChamps[x] for x in range(len(lstChamps)) if lstNames[x] in lstColStr]
         whereFiltre = ''
         if filtre and len(filtre) > 0 and len(lstChamps)>0:
             texte = ''

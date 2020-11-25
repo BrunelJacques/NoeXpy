@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #  Jacques Brunel x Sébastien Gouast
-#  MATTHANIA - Projet XPY - xTableau.py (implémentation d'une saisie directe dans  un tableau paramétrable)
+#  MATTHANIA - Projet XPY -Evolution surcouche OLV permettant la saisie)
 #  2020/05/15
 # note l'appel des fonctions 2.7 passent par le chargement de la bibliothèque future (vue comme past)
 # ce module reprend les fonctions de xUTILS_Tableau sans y faire appel

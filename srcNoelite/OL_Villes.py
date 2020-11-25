@@ -156,7 +156,7 @@ class ListView(FastObjectListView):
         #self.Modifier(None)
         self.GetParent().OnBoutonChoisir(None)
                 
-    def InitModel(self):
+    def InitModel(self,**kwd):
         self.donnees = self.GetTracks()
 
     def GetTracks(self):

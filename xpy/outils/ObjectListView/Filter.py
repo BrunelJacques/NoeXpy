@@ -111,7 +111,7 @@ def Tail(num):
 #**************************  Gestion des filtres à ajouter************************************************************
 
 class CTRL_property(wxpg.PropertyGrid):
-    # grille property affiche les paramètres gérés par PNL_property
+    # grille property affiche les paramètres
     def __init__(self, parent, matrice={}, valeursDefaut={}, enable=True, style=wxpg.PG_SPLITTER_AUTO_CENTER):
         wxpg.PropertyGrid.__init__(self, parent, wx.ID_ANY, style=style)
         self.parent = parent
@@ -131,7 +131,7 @@ class CTRL_property(wxpg.PropertyGrid):
 
     def OnPropGridChange(self, event):
         event.Skip()
-        self.parent.OnBtnOK(False)
+        self.parent.OnChoix(False)
 
     def InitMatrice(self, matrice):
         # Compose la grille de saisie des paramètres selon le dictionnaire matrice
@@ -208,52 +208,54 @@ class DLG_saisiefiltre(wx.Dialog):
     def __init__(self,parent, *args, **kwds):
         self.parent = parent
         self.listview = kwds.pop('listview',None)
+        mode = kwds.pop('mode','ajout')
         self.etape=0
-        self.idxdefault = 1
+        idxDefault = 1
         titre = kwds.pop('titre',"Pas d'argument kwd 'listview' pas de choix de colonnes")
         if self.listview:
             self.lstNomsColonnes = self.listview.lstNomsColonnes
             self.lstCodesColonnes = self.listview.lstCodesColonnes
             self.lstSetterValues = self.listview.lstSetterValues
             titre = kwds.pop('titre',"Saisie d'un filtre élaboré")
+
         wx.Dialog.__init__(self, parent, *args, title=titre, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
                            **kwds)
         self.marge = 10
         self.btnOK = wx.Button(self, id=wx.ID_ANY, label="OK")
         self.btnAbort = wx.Button(self, id=wx.ID_ANY, label="Abandon")
-        self.Bind(wx.EVT_BUTTON, self.OnBtnOK, self.btnOK)
+        self.Bind(wx.EVT_BUTTON, self.OnChoix, self.btnOK)
         self.Bind(wx.EVT_BUTTON, self.OnBtnAbort, self.btnAbort)
         if self.listview:
-            self.dictMatrice = {'nomchapitre': "Choix du filtre",
+            dictMatrice = {'nomchapitre': "Choix du filtre",
                                 'lignes': [{'genre': 'Enum', 'name': 'colonne', 'label': 'Colonne à filtrer :',
-                                            'value': self.idxdefault, 'help': 'Choisir par le triangle noir',
+                                            'value': idxDefault, 'help': 'Choisir par le triangle noir',
                                             'labels': self.lstNomsColonnes}], }
-            choixactions = self.GetChoixActions(self.idxdefault)
+            choixactions = self.GetChoixActions(idxDefault)
             values = []
             for (code, label) in choixactions:
                 values.append(label)
-            self.dictMatrice['lignes'].append({'genre': 'Enum', 'name': 'action', 'label': 'Type de filtre :',
+            dictMatrice['lignes'].append({'genre': 'Enum', 'name': 'action', 'label': 'Type de filtre :',
                                                'labels': values})
 
-            self.dictMatrice['lignes'].append({'genre': 'String', 'name': 'valeur', 'label': 'Valeur :',
+            dictMatrice['lignes'].append({'genre': 'String', 'name': 'valeur', 'label': 'Valeur :',
                                                       'value': '', 'help': 'Choisir la valeur'})
 
-            self.ctrl = CTRL_property(self, matrice=self.dictMatrice)
+            self.ctrl = CTRL_property(self, matrice=dictMatrice)
             self.Sizer()
             self.ctrl.SelectProperty('colonne',True)
 
     def Sizer(self):
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.ctrl, 1, wx.EXPAND | wx.ALL, self.marge)
-        gridsizer = wx.FlexGridSizer(1, 2, 0, 0)
-        gridsizer.Add(self.btnOK)
-        gridsizer.Add(self.btnAbort)
-        sizer.Add(gridsizer, 0, wx.ALL , self.marge)
-        sizer.SetSizeHints(self)
-        self.SetSizer(sizer)
+        sizerbase = wx.BoxSizer(wx.VERTICAL)
+        sizerbase.Add(self.ctrl, 1, wx.EXPAND | wx.ALL, self.marge)
+        gridpied = wx.FlexGridSizer(1, 2, 0, 0)
+        gridpied.Add(self.btnAbort)
+        gridpied.Add(self.btnOK)
+        sizerbase.Add(gridpied, 0, wx.ALL|wx.ALIGN_RIGHT , self.marge)
+        sizerbase.SetSizeHints(self)
+        self.SetSizer(sizerbase)
         self.Layout()
 
-    def OnBtnOK(self,evt):
+    def OnChoix(self,evt):
         values = self.ctrl.GetValeurs()
         nomColonne = values['colonne']
         ix = self.lstNomsColonnes.index(nomColonne)
@@ -261,10 +263,11 @@ class DLG_saisiefiltre(wx.Dialog):
         self.codeColonne = self.lstCodesColonnes[ix]
         self.action = values['action']
         self.valeur = values['valeur']
-        self.etape = ['colonne','action','valeur'].index(self.ctrl.dicProperties[self.ctrl.GetSelection()])+1
 
+        self.etape = ['colonne','action','valeur'].index(self.ctrl.dicProperties[self.ctrl.GetSelection()])+1
         if self.etape == 1:
-            self.Etape2()
+            # nouveau choix de colonne, les actions sont différentes
+            self.SetActions()
         elif self.etape == 2:
             pass
         elif self.etape == 3:
@@ -277,16 +280,16 @@ class DLG_saisiefiltre(wx.Dialog):
         self.EndModal(wx.ID_CANCEL)
 
     def GetChoixActions(self,ixColonne):
-        choixactions = []
         self.tip = type(self.lstSetterValues[ixColonne])
         if not self.tip in CHOIX_FILTRES.keys():
             nomColonne = self.lstNomsColonnes[ixColonne]
-            wx.MessageBox("Le type '%s' de la colonne '%s' n'est pas 'keys()' de CHOIX_FILTRES"%(str(self.tip),nomColonne))
+            wx.MessageBox("SetterValue de la colonne '%s' non connu de CHOIX_FILTRES"%(nomColonne),
+                          "outils.olv.Filter.py")
             self.tip = str
         choixactions = CHOIX_FILTRES[self.tip]
         return choixactions
 
-    def Etape2(self):
+    def SetActions(self):
         idx = self.colonne
         choixactions = self.GetChoixActions(idx)
         #recomposition des choix d'action
@@ -297,7 +300,6 @@ class DLG_saisiefiltre(wx.Dialog):
         choix = wxpg.PGChoices(labels, values=values)
         self.ctrl.dicProperties['action'].SetChoices(choix)
         self.Layout()
-
 
     def GetDonnees(self):
         codechoix = 'None'
@@ -406,24 +408,18 @@ class Chain(object):
                         modelcumul.append(ligne)
             return modelcumul
 
-if __name__ == '__main__':
-    app = wx.App(0)
+# pour test -------------------------------------------------
+class objet(object):
+    def __init__(self):
+        self.lstNomsColonnes = ['nbre', 'nom','date']
+        self.lstCodesColonnes = ['nbre', 'nom','date']
+        self.lstSetterValues = [0, 'bonjour', datetime.date.today()]
 
-    dictMatrice = {
-        "filtre":
-            {
-            'nomchapitre':"Filtre initial",
-            'lignes':
-                [
-                {'genre': 'Date', 'name': 'contient', 'label': 'Le nom contient', 'value': wx.DateTime.Today(),'help': 'Saisir une partie de mot'},
-                {'genre': 'Enum', 'name': 'type', 'label': 'Type de condition', 'values':['égal', 'différent', 'supérieur ou égal', 'inferieur ou égal'], 'help': 'Saisir une action'},
-                ],
-            }
-        }
+if __name__ == '__main__':
 # Lancement des tests
-    frame_3 = DLG_saisiefiltre(None,)
-    ctrlproperty = CTRL_property(frame_3,matrice=dictMatrice)
-    frame_3.Sizer(ctrlproperty)
+    app = wx.App(0)
+    obj = objet()
+    frame_3 = DLG_saisiefiltre(None,listview = obj)
     app.SetTopWindow(frame_3)
-    frame_3.Show()
+    frame_3.ShowModal()
     app.MainLoop()

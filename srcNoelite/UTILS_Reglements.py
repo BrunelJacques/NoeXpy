@@ -17,6 +17,7 @@ import xpy.xUTILS_SaisieParams      as xusp
 from xpy.outils import xformat
 
 SYMBOLE = "€"
+LIMITSQL =100
 
 def GetMatriceFamilles():
     dicBandeau = {'titre':"Recherche d'une famille",
@@ -48,14 +49,25 @@ def GetMatriceFamilles():
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 }
 
-def GetFamilles(db,dicOlv={}, filtre = None, limit=100):
+def GetFamilles(db,dicOlv={}, **kwd):
     # ajoute les données à la matrice pour la recherche d'une famille
+
+    # appel des données à afficher
+    filtreTxt = kwd.pop('filtreTxt', '')
+    nbreFiltres = kwd.pop('nbreFiltres', 0)
+
+    # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
+    # cf self.listeFiltresColonnes  à gérer avec champs au lieu de codes colonnes
+    limit = ''
+    if nbreFiltres == 0:
+        limit = "LIMIT %d" %LIMITSQL
+
     where = ""
-    if filtre:
+    if filtreTxt and len(filtreTxt) > 0:
         where = """WHERE familles.adresse_intitule LIKE '%%%s%%'
                         OR individus_1.ville_resid LIKE '%%%s%%'
                         OR individus.nom LIKE '%%%s%%'
-                        OR individus.prenom LIKE '%%%s%%' """%(filtre,filtre,filtre,filtre,)
+                        OR individus.prenom LIKE '%%%s%%' """%(filtreTxt,filtreTxt,filtreTxt,filtreTxt,)
 
     lstChamps = dicOlv['listeChamps']
     lstCodesColonnes = [x.valueGetter for x in dicOlv['listeColonnes']]
@@ -66,7 +78,8 @@ def GetFamilles(db,dicOlv={}, filtre = None, limit=100):
                 LEFT JOIN individus ON rattachements.IDindividu = individus.IDindividu) 
                 LEFT JOIN individus AS individus_1 ON familles.adresse_individu = individus_1.IDindividu
                 %s
-                LIMIT %d ;""" % (",".join(lstChamps),where,limit)
+                %s ;""" % (",".join(lstChamps),where,limit)
+
     retour = db.ExecuterReq(req, mess='GetFamilles' )
     recordset = ()
     if retour == "ok":
@@ -137,8 +150,18 @@ def GetMatriceDepots():
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 }
 
-def GetDepots(db=None,dicOlv={}, filtre = None, limit=100):
+def GetDepots(db=None,dicOlv={}, limit=100,**kwd):
     # ajoute les données à la matrice pour la recherche d'un depot
+    filtre = kwd.pop('filtreTxt', '')
+    nbreFiltres = kwd.pop('nbreFiltres', 0)
+
+    # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
+    # cf self.listeFiltresColonnes  à gérer avec champs au lieu de codes colonnes
+    limit = ''
+    if nbreFiltres == 0:
+        limit = "LIMIT %d" %LIMITSQL
+
+
     where = ""
     if filtre:
         where = """WHERE IDdepot LIKE '%%%s%%'
@@ -155,7 +178,7 @@ def GetDepots(db=None,dicOlv={}, filtre = None, limit=100):
                 LEFT JOIN comptes_bancaires ON comptes_bancaires.IDcompte = depots.IDcompte
                 %s 
                 ORDER BY depots.date DESC
-                LIMIT %d ;""" % (",".join(lstChamps),where,limit)
+                %s ;""" % (",".join(lstChamps),where,limit)
     retour = db.ExecuterReq(req, mess='GetDepots' )
     recordset = ()
     if retour == "ok":
@@ -217,7 +240,7 @@ def GetDepots(db=None,dicOlv={}, filtre = None, limit=100):
     dicOlv['listeDonnees']=lstDonnees
     return lstDonnees
 
-def GetBanquesNne(db,where = 'code_nne IS NOT NULL'):
+def GetBanquesNne(db,where = 'code_nne IS NOT NULL',**kwd):
     ldBanques = []
     lstChamps = ['IDcompte','nom','defaut','code_nne','iban','bic']
     req = """   SELECT %s
@@ -236,7 +259,7 @@ def GetBanquesNne(db,where = 'code_nne IS NOT NULL'):
         ldBanques.append(dicBanque)
     return ldBanques
 
-def GetModesReglements(db):
+def GetModesReglements(db,**kwd):
     if db.echec == 1:
         wx.MessageBox("ECHEC accès Noethys!\n\nabandon...")
         return wx.ID_ABORT
@@ -259,7 +282,7 @@ def GetModesReglements(db):
         ldModesRegls.append(dicModeRegl)
     return ldModesRegls
 
-def GetDesignationFamille(db,IDfamille):
+def GetDesignationFamille(db,IDfamille,**kwd):
     if not isinstance(IDfamille,int): return ""
     req = """   SELECT adresse_intitule
                 FROM familles
@@ -274,7 +297,7 @@ def GetDesignationFamille(db,IDfamille):
         designation = record[0]
     return designation
 
-def GetPayeurs(db,IDfamille):
+def GetPayeurs(db,IDfamille,**kwd):
     ldPayeurs = []
     lstChamps = ['IDpayeur','IDcompte_payeur','nom']
     req = """   SELECT %s
@@ -292,14 +315,14 @@ def GetPayeurs(db,IDfamille):
         ldPayeurs.append(dicPayeur)
     return ldPayeurs
 
-def SetPayeur(db,IDcompte_payeur,nom):
+def SetPayeur(db,IDcompte_payeur,nom,**kwd):
     listeDonnees = [('IDcompte_payeur',IDcompte_payeur),
                     ('nom',nom)]
     db.ReqInsert("payeurs", lstDonnees=listeDonnees,mess="UTILS_Reglements.SetPayeur")
     ID = db.newID
     return ID
 
-def GetReglements(db,IDdepot):
+def GetReglements(db,IDdepot,**kwd):
     listeDonnees = []
     #            IDreglement,date,IDfamille,designation,payeur,labelmode,numero,libelle,montant,IDpiece in recordset
     lstChamps = ['reglements.IDreglement', 'reglements.date', 'reglements.IDcompte_payeur', 'familles.adresse_intitule',
@@ -328,7 +351,7 @@ def GetReglements(db,IDdepot):
         listeDonnees.append(lstDonneesTrack)
     return listeDonnees
 
-def GetNewIDreglement(db,lstID):
+def GetNewIDreglement(db,lstID,**kwd):
     # Recherche le prochain ID reglement après ceux de la base et éventuellement déjà dans la liste ID préaffectés
     req = """SELECT MAX(IDreglement) 
             FROM reglements;"""
@@ -608,8 +631,16 @@ class Article(object):
                     'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                     }
 
-    def GetArticles(self,dicOlv,filtre = None):
+    def GetArticles(self,dicOlv,**kwd):
         # le pointeur de cette fonction est dans le dic généré par GetMatriceArticles,
+        filtre = kwd.pop('filtreTxt', '')
+        nbreFiltres = kwd.pop('nbreFiltres', 0)
+
+        # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
+        # cf self.listeFiltresColonnes  à gérer avec champs au lieu de codes colonnes
+        limit = ''
+        if nbreFiltres == 0:
+            limit = "LIMIT %d" % LIMITSQL
 
         nature = self.nature
         if nature: nature = nature.lower()
@@ -634,8 +665,9 @@ class Article(object):
         lstCodesColonnes = [x.valueGetter for x in dicOlv['listeColonnes']]
         req = """SELECT %s
                 FROM matPlanComptable
-                WHERE %s;
-                """ % (",".join(lstChamps),where)
+                WHERE %s
+                %s;
+                """ % (",".join(lstChamps),where,limit)
         retour = self.db.ExecuterReq(req, mess='UTILS_Reglements.GetArticles' )
         recordset = ()
         if retour == "ok":

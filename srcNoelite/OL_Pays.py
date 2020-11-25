@@ -42,7 +42,7 @@ class ListView(FastObjectListView):
         event.Skip()
         self.GetParent().OnBoutonChoisir(None)
 
-    def InitModel(self):
+    def InitModel(self,**kwd):
         self.donnees = self.GetTracks()
 
     def GetTracks(self):

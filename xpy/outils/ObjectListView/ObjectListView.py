@@ -2422,15 +2422,19 @@ class ObjectListView(wx.ListCtrl):
                 self.EnsureCellVisible(index, 0)
 
     def Filtrer(self, texteRecherche=None):
+        # andNotOr vient d'un bind d'une coche si plusieurs filtres
+        andNotOr = True
+        if hasattr(self,'filtrerAndNotOr'):
+            andNotOr = self.filtrerAndNotOr
         listeFiltres = []
-
         # Filtre barre de recherche
-        if texteRecherche != None:
+        if texteRecherche != None and len(texteRecherche)>0:
             filtre = Filter.TextSearch(self, self.columns[0:self.GetColumnCount()])
             filtre.SetText(texteRecherche)
             listeFiltres.append(filtre)
 
         # Filtres de colonnes
+        nbf = 0
         for texteFiltre in self.formatageFiltres(self.listeFiltresColonnes):
             filtre = None
             def fn(track):
@@ -2439,9 +2443,14 @@ class ObjectListView(wx.ListCtrl):
             filtre = Filter.Predicate(fn)
             if filtre:
                 listeFiltres.append(filtre)
-        if 'filtrerAndNotOr' in self.__dict__:
-            self.SetFilter(Filter.Chain(self.filtrerAndNotOr,*listeFiltres))
-        else: self.SetFilter(Filter.Chain(True,*listeFiltres))
+                nbf +=1
+
+        self.SetFilter(Filter.Chain(andNotOr,*listeFiltres))
+
+        if hasattr(self,'InitModel'):
+            self.InitModel(filtreTxt=texteRecherche,nbreFiltres=nbf)
+            self.original = True
+            self._BuildInnerList()
         self.RepopulateList()
         self.Refresh()
         #self.OnCheck(None)
@@ -4298,8 +4307,7 @@ class BarreRecherche(wx.SearchCtrl):
         self.rechercheEnCours = False
         self.toptime = None
 
-        # Assigne cette barre de recherche au listview
-        #self.listview.SetBarreRecherche(self)
+        # Assigne cette barre de recherche au listview :self.listview.SetBarreRecherche(self)
 
         self.SetDescriptiveText(texteDefaut)
         self.ShowSearchButton(True)

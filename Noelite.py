@@ -64,7 +64,7 @@ class MyFrame(xAppli.MainFrame):
             self.menu.EnableTop(numMenu, etat)
         self.panelAccueil.EnableBoutons(etat)
         if not etat:
-            self.infoStatus("lancé sans accès à Noethys!")
+            self.infoStatus="lancé sans accès à Noethys!"
         self.MakeStatusText()
 
 class MyApp(wx.App):

@@ -378,7 +378,7 @@ class Dlg_immo(xusp.DLG_vide):
         self.CenterOnScreen()
 
     def OnBtnSection(self,event):
-        wx.MessageBox("On va chercher")
+        wx.MessageBox("La recherche est prévue mais pas encore fait!")
 
     def OnAbandon(self,event):
         self.OnFermer(event)

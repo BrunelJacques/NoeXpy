@@ -11,7 +11,7 @@ import wx, copy
 from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn, Filter, CTRL_Outils
 import xpy.xUTILS_DB           as xdb
 import xpy.outils.xbandeau      as xbd
-import xpy.xGestion_Tableau     as xgt
+import xpy.xGestion_TableauRecherche     as xgt
 from xpy.outils import xformat
 
 class Track(object):
@@ -465,9 +465,10 @@ class DialogAffiche(wx.Dialog):
             lstColonnes=[]
             for i in range(len(lstDonnees[0])):
                 lstColonnes.append("col " + str(i))
+        self.lstDonnees = lstDonnees
         self.dicOlv = {
             'listeColonnes': self.ComposeColonnes(lstColonnes,lstWcol=lstWcol),
-            'listeDonnees': lstDonnees,
+            'getDonnees': self.GetDonnees,
             'checkColonne': False,
             'colonneTri': 0,
             'style': wx.LC_SINGLE_SEL | wx.LC_HRULES | wx.LC_VRULES,
@@ -497,9 +498,10 @@ class DialogAffiche(wx.Dialog):
 
     def __init_olv(self):
         dicOlv = self.dicOlv
-        pnlOlv = xgt.PanelListView(self,**dicOlv)
+        #pnlOlv = xgt.PanelListView(self,**dicOlv)
+        pnlOlv = xgt.PNL_tableau(self,dicOlv)
         if self.avecFooter:
-            self.ctrlOlv = pnlOlv.ctrl_listview
+            self.ctrlOlv = pnlOlv.ctrlOlv
             self.olv = pnlOlv
         else:
             self.ctrlOlv = xgt.ListView(self,**dicOlv)
@@ -537,6 +539,9 @@ class DialogAffiche(wx.Dialog):
         gridsizer_base.AddGrowableCol(0)
         self.Layout()
         self.CenterOnScreen()
+
+    def GetDonnees(self,**kwd):
+        return self.lstDonnees
 
     def ComposeColonnes(self,lstColonnes,lstWcol=None):
         lstDefn = []
@@ -590,7 +595,7 @@ if __name__ == u"__main__":
     app.SetTopWindow(dialog_3)
 
     #print(xformat.FmtMontant(-124566.45765,prec=3))
-    print(dialog_1.ShowModal())
-    print(dialog_1.choix)
+    print(dialog_3.ShowModal())
+    print(dialog_3.choix)
     app.MainLoop()
 

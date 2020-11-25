@@ -14,15 +14,15 @@ MINSIZE = (1200,650)
 WCODE = 150
 WLIBELLE = 100
 COLONNETRI = 2
+LIMITSQL =100
 
 import wx
 import xpy.outils.xbandeau      as xbd
-import xpy.xGestion_TableauRecherche     as xgt
+import xpy.xGestion_TableauRecherche     as xgtr
 import xpy.xUTILS_DB           as xdb
 import srcNoelite.UTILS_Utilisateurs  as nuu
 import srcNoelite.DLG_Adresses_saisie   as nsa
 import srcNoelite.UTILS_Adresses as nua
-from xpy.outils.ObjectListView import CTRL_Outils
 from xpy.outils         import xformat
 
 def dicOlvIndividus():
@@ -69,6 +69,7 @@ def dicOlvFamilles():
     lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
     dicOlv =    {
                 'listeColonnes': lstColonnes,
+                'listeChamps': lstChamps,
                 'checkColonne': False,
                 'colonneTri': COLONNETRI,
                 'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
@@ -84,12 +85,11 @@ def ComposeLstDonnees(record,lstChamps):
         lstdonnees.append(record[ix])
     return lstdonnees
 
-class Pnl_tableau(xgt.PNL_tableau):
+class Pnl_tableau(xgtr.PNL_tableau):
     def __init__(self,parent,dicOlv):
 
         dicOlv['autoSizer'] = False
-        xgt.PNL_tableau.__init__(self,parent,dicOlv)
-
+        xgtr.PNL_tableau.__init__(self,parent,dicOlv)
         # Boutons
         bmpok = wx.Bitmap("xpy/Images/32x32/Action.png")
         bouton_ok = wx.Button(self, id = wx.ID_APPLY,label=(ACTION))
@@ -140,9 +140,9 @@ class Pnl_tableau(xgt.PNL_tableau):
     def OnDblClicFermer(self, event):
         self.parent.EndModal(wx.ID_CANCEL)
 
-
 class Dialog(wx.Dialog):
     def __init__(self, mode='individus', titre=TITRE, intro=INTRO):
+        self.limitSql = LIMITSQL
         self.db = xdb.DB()
         wx.Dialog.__init__(self, None, -1, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
         if nuu.VerificationDroitsUtilisateurActuel("individus_fiche", "consulter") == False:
@@ -195,20 +195,26 @@ class Dialog(wx.Dialog):
         self.SetSizer(gridsizer_base)
         self.CenterOnScreen()
 
-
     def GetIndividus(self,db,**kwd):
         # appel des données à afficher
-        filtre = kwd.pop('filtre','')
+        filtreTxt = kwd.pop('filtreTxt','')
         lstChamps = kwd['dicOlv']['listeChamps']
         lstColonnes = kwd['dicOlv']['listeColonnes']
+        nbreFiltres = kwd.pop('nbreFiltres',0)
+
+        # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
+        # cf self.listeFiltresColonnes  à gérer avec champs au lieu de codes colonnes
+        limit = ''
+        if self.limitSql and (nbreFiltres == 0 ):
+            limit = "LIMIT %d"%self.limitSql
 
         whereFiltre = ''
-        if len(filtre) >0:
-            whereFiltre = xformat.ComposeWhereFiltre(filtre,lstChamps, lstColonnes = lstColonnes)
+        if len(filtreTxt) >0:
+            whereFiltre = xformat.ComposeWhereFiltre(filtreTxt,lstChamps, lstColonnes = lstColonnes)
         req = """SELECT %s
                 FROM individus
                 %s
-                ; """ % (",".join(lstChamps),whereFiltre)
+                %s; """ % (",".join(lstChamps),whereFiltre,limit)
         retour = db.ExecuterReq(req, mess='%s.GetIndividus' % NOM_MODULE)
         if retour == "ok":
             recordset = db.ResultatReq()
@@ -226,12 +232,26 @@ class Dialog(wx.Dialog):
 
     def GetFamilles(self,db,**kwd):
         # appel des données à afficher
+        filtreTxt = kwd.pop('filtreTxt','')
         lstChamps = kwd['dicOlv']['listeChamps']
+        lstColonnes = kwd['dicOlv']['listeColonnes']
+        nbreFiltres = kwd.pop('nbreFiltres',0)
 
+        # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
+        # cf self.listeFiltresColonnes  à gérer avec champs au lieu de codes colonnes
+        limit = ''
+        if self.limitSql and (nbreFiltres == 0 ):
+            limit = "LIMIT %d"%self.limitSql
+
+        whereFiltre = ''
+        if filtreTxt and len(filtreTxt) >0:
+                whereFiltre = xformat.ComposeWhereFiltre(filtreTxt,lstChamps, lstColonnes = lstColonnes,lien='WHERE')
         req = """   SELECT %s
                     FROM familles 
-                    LEFT JOIN individus ON familles.adresse_individu = individus.IDindividu;
-                    """ % (",".join(lstChamps))
+                    LEFT JOIN individus ON familles.adresse_individu = individus.IDindividu
+                    %s
+                    %s;
+                    """ % (",".join(lstChamps),whereFiltre,limit)
         retour = db.ExecuterReq(req, mess='%s.GetIndividus' % NOM_MODULE)
         if retour == "ok":
             recordset = db.ResultatReq()
