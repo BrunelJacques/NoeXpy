@@ -183,11 +183,11 @@ class PNL_params(xgc.PNL_paramsLocaux):
     #panel de paramètres de l'application
     def __init__(self, parent, **kwds):
         self.parent = parent
-        #('pos','size','style','name','matrice','donnees','lblbox')
+        #('pos','size','style','name','matrice','donnees','lblBox')
         kwds = {
                 'name':"PNL_params",
                 'matrice':MATRICE_PARAMS,
-                'lblbox':"Paramètres à saisir",
+                'lblBox':"Paramètres à saisir",
                 'pathdata':"srcNoelite/Data",
                 'nomfichier':"params",
                 'nomgroupe':"transpose"

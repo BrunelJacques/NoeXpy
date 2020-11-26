@@ -11,7 +11,7 @@ import wx
 import os
 import xpy.xUTILS_DB   as xdb
 from xpy.outils import xbandeau
-from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn, BarreRecherche, CTRL_Outils
+from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn, CTRL_Outils
 from xpy.outils.xconst import *
 
 # ------------------------------------------------------------------------------------------------------------------

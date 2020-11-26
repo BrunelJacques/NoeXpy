@@ -327,7 +327,7 @@ class CTRL_property(wxpg.PropertyGrid):
 
 class PNL_property(wx.Panel):
     #affichage d'une grille property sans autre bouton que sortie
-    def __init__(self, parent, topWin, *args, matrice={}, donnees=[], lblbox="Paramètres item_property", **kwds):
+    def __init__(self, parent, topWin, *args, matrice={}, donnees=[], lblBox="Paramètres item_property", **kwds):
         self.parent = parent
         wx.Panel.__init__(self, parent, *args, **kwds)
 
@@ -335,7 +335,7 @@ class PNL_property(wx.Panel):
         self.ctrl = CTRL_property(self,matrice,donnees)
         #***********************************************************************
 
-        cadre_staticbox = wx.StaticBox(self,wx.ID_ANY,label=lblbox)
+        cadre_staticbox = wx.StaticBox(self,wx.ID_ANY,label=lblBox)
         topbox = wx.StaticBoxSizer(cadre_staticbox)
         topbox.Add(self.ctrl,1,wx.ALL|wx.EXPAND,4)
         #topbox.MinSize = (300,400)
@@ -457,7 +457,7 @@ class PNL_ctrl(wx.Panel):
 
 class PNL_listCtrl(wx.Panel):
     #affichage d'une listeCtrl avec les boutons classiques pour gérer les lignes
-    def __init__(self, parent, *args, ltColonnes=[], llItems=[], lblbox="Paramètres listCtrl", **kwds):
+    def __init__(self, parent, *args, ltColonnes=[], llItems=[], lblBox="Paramètres listCtrl", **kwds):
         self.parent = parent
         self.llItems = llItems
         self.ltColonnes = ltColonnes
@@ -479,7 +479,7 @@ class PNL_listCtrl(wx.Panel):
         self.bouton_modifier = BTN_action(self,image=wx.Bitmap("xpy/Images/16x16/Modifier.png"),help="Modifier la ligne selectionnée",action=self.OnModifier )
         self.bouton_supprimer = BTN_action(self,image=wx.Bitmap("xpy/Images/16x16/Supprimer.png"),help="Supprimer la ligne selectionée",action=self.OnSupprimer )
         self.bouton_dupliquer = BTN_action(self,image=wx.Bitmap("xpy/Images/16x16/Dupliquer.png"),help="Dupliquer la ligne selectionée",action=self.OnDupliquer )
-        cadre_staticbox = wx.StaticBox(self,wx.ID_ANY,label=lblbox)
+        cadre_staticbox = wx.StaticBox(self,wx.ID_ANY,label=lblBox)
         topbox = wx.StaticBoxSizer(cadre_staticbox,wx.HORIZONTAL)
         topbox.Add(self.ctrl,1,wx.ALL|wx.EXPAND,4)
         droite_flex = wx.FlexGridSizer(4,1,0,0)
@@ -536,7 +536,7 @@ class PNL_listCtrl(wx.Panel):
 
 class BoxPanel(wx.Panel):
     # aligne les contrôles définis par la matrice dans une box verticale
-    def __init__(self, parent, *args, lblbox="Box", code = '1', lignes=[], dictDonnees={}, **kwds):
+    def __init__(self, parent, *args, lblBox="Box", code = '1', lignes=[], dictDonnees={}, **kwds):
         wx.Panel.__init__(self,parent, *args, **kwds)
         self.parent = parent
         self.code = code
@@ -632,11 +632,11 @@ class BoxPanel(wx.Panel):
 
 class TopBoxPanel(wx.Panel):
     #gestion de pluieurs BoxPanel juxtaposées horisontalement
-    def __init__(self, parent, topWin, *args, matrice={}, donnees={}, lblbox="Paramètres top", **kwds):
+    def __init__(self, parent, topWin, *args, matrice={}, donnees={}, lblBox="Paramètres top", **kwds):
         wx.Panel.__init__(self,parent,*args, **kwds)
         self.parent = parent
 
-        cadre_staticbox = wx.StaticBox(self,wx.ID_ANY,label=lblbox)
+        cadre_staticbox = wx.StaticBox(self,wx.ID_ANY,label=lblBox)
         self.topbox = wx.StaticBoxSizer(cadre_staticbox,wx.HORIZONTAL)
         self.ddDonnees = donnees
         self.lstBoxes = []
@@ -644,7 +644,7 @@ class TopBoxPanel(wx.Panel):
             if isinstance(code,str):
                 if not code in self.ddDonnees:
                      self.ddDonnees[code] = {}
-                box = BoxPanel(self, wx.ID_ANY, lblbox=label, code = code, lignes=matrice[(code,label)], dictDonnees=self.ddDonnees[code])
+                box = BoxPanel(self, wx.ID_ANY, lblBox=label, code = code, lignes=matrice[(code,label)], dictDonnees=self.ddDonnees[code])
                 self.lstBoxes.append(box)
                 self.topbox.Add(box, 1, wx.EXPAND,0)
         self.SetSizerAndFit(self.topbox)
@@ -694,7 +694,7 @@ class DLG_ligne(wx.Dialog):
     # variante DLG_vide, avec relais possible d'évènements Boutons ou Controles gérés dans matrice
     def __init__(self, parent, *args, dldMatrice={}, ddDonnees={}, **kwds):
         self.gestionProperty = kwds.pop('gestionProperty',False)
-        lblbox = kwds.pop('lblbox','Gestion d\'une ligne')
+        lblBox = kwds.pop('lblBox','Gestion d\'une ligne')
         self.marge = kwds.pop('marge',10)
         self.minSize = kwds.pop('minSize',(800, 500))
         self.couleur = kwds.pop('couleur',wx.WHITE)
@@ -715,9 +715,9 @@ class DLG_ligne(wx.Dialog):
         self.btn.Bind(wx.EVT_BUTTON, self.OnFermer)
         self.btnEsc = BTN_esc(self, action=self.OnBtnEsc)
         if self.gestionProperty:
-            self.pnl = PNL_property(self, self, matrice=self.dldMatrice, lblbox=lblbox)
+            self.pnl = PNL_property(self, self, matrice=self.dldMatrice, lblBox=lblBox)
         else:
-            self.pnl = TopBoxPanel(self, self, matrice=self.dldMatrice, lblbox=lblbox)
+            self.pnl = TopBoxPanel(self, self, matrice=self.dldMatrice, lblBox=lblBox)
         self.pnl.MinSize = self.minSize
         self.Sizer()
         self.pnl.SetValeurs(self.ddDonnees)
@@ -792,13 +792,13 @@ class Gestion_ligne(object):
 
         # enrichissement de kwds transmis soit déjà dans kwds ou posés après init par self.mot=valeur
         self.gestionProperty = None
-        self.lblbox = mode[:1].upper() + mode[1:] + " d'une ligne de %s"% table
+        self.lblBox = mode[:1].upper() + mode[1:] + " d'une ligne de %s"% table
         self.marge = None
         self.minSize = None
         self.couleur = None
         self.pos = None
-        self.altkwds = ['gestionProperty','lblbox','marge','minSize','couleur','pos']
-        self.altval = [self.gestionProperty,self.lblbox,self.marge,self.minSize,self.couleur,self.pos]
+        self.altkwds = ['gestionProperty','lblBox','marge','minSize','couleur','pos']
+        self.altval = [self.gestionProperty,self.lblBox,self.marge,self.minSize,self.couleur,self.pos]
 
         #liste associées aux champs à gérer
         lstChamps, lstTypes, lstHelp = datatable.GetChampsTypes(table, tous=True)
@@ -1049,7 +1049,7 @@ if __name__ == '__main__':
                    'values':['','choix1','choix2'],'ctrlAction':'OnAffect',
                    'btnLabel':'...','btnHelp':'aide sur action','btnAction':'OnBouton'},]}
     #dictDonnees = {('cat0','categorie0'):[{'affectation':''},]}
-    kwds = {'pos':(300,100),'minSize':(500,500),'lblbox':'titre box'}
+    kwds = {'pos':(300,100),'minSize':(500,500),'lblBox':'titre box'}
     frame_test = DLG_ligne(None, dldMatrice=dictMatrice, ddDonnees={}, **kwds)
 
     """

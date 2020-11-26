@@ -220,11 +220,11 @@ class Pnl_params(xgc.PNL_paramsLocaux):
     #panel de paramètres de l'application
     def __init__(self, parent, **kwds):
         self.parent = parent
-        #('pos','size','style','name','matrice','donnees','lblbox')
+        #('pos','size','style','name','matrice','donnees','lblBox')
         kwds = {
                 'name':"Pnl_params",
                 'matrice':lMATRICE_PARAMS,
-                'lblbox':None,
+                'lblBox':None,
                 'pathdata':"srcNoelite/Data",
                 'nomfichier':"params",
                 'nomgroupe': MODULE
@@ -409,11 +409,11 @@ class PNL_params(xgc.PNL_paramsLocaux):
     #panel de paramètres de l'application
     def __init__(self, parent, **kwds):
         self.parent = parent
-        #('pos','size','style','name','matrice','donnees','lblbox')
+        #('pos','size','style','name','matrice','donnees','lblBox')
         kwds = {
                 'name':"PNL_params",
                 'matrice':MATRICE_PARAMS,
-                'lblbox':None,
+                'lblBox':None,
                 'pathdata':"srcNoelite/Data",
                 'nomfichier':"params",
                 'nomgroupe': MODULE

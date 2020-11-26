@@ -22,7 +22,7 @@ MATRICE_IDENT = {
                         'help': 'Ce préfixe à votre nom permet de vous identifier'},
     {'name': 'username', 'genre': 'String', 'label': 'Identifiant session', 'value': "NomSession",
                         'help': "Nom d'ouverture de la sesssion sur l'ordi local"},
-    {'name': 'utilisateur', 'genre': 'String', 'label': "Nom présenté à l'application", 'value': "Nom pour l'appli",
+    {'name': 'utilisateur', 'genre': 'String', 'label': "Nom présenté à l'appli.", 'value': "Nom pour l'appli",
                         'help': ''},
     ],
 }
@@ -118,11 +118,11 @@ def GetLstConfigs(configs,typeconfig=None):
 
 # Panel de gestion des configurations
 class ChoixConfig(xusp.BoxPanel):
-    def __init__(self,parent,lblbox, codebox, lignes, dictDonnees):
+    def __init__(self,parent,lblBox, codebox, lignes, dictDonnees):
         #style = wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER
         # le codebox n'étant pas visible, on écrase le label devant le contrôle
         lignes[0]['label'] = codebox
-        xusp.BoxPanel.__init__(self, parent, lblbox=lblbox, code=codebox, lignes=lignes,
+        xusp.BoxPanel.__init__(self, parent, lblBox=lblBox, code=codebox, lignes=lignes,
                                dictDonnees=dictDonnees,)
         self.SetMinSize((350,50))
         self.Name = codebox+"."+lignes[0]['name']
@@ -226,7 +226,7 @@ class DLG_implantation(wx.Dialog):
 
         # USER : contrôle gérant la saisie des paramètres de connexion (USER) ----------------------------------------
         code,label,lignes = AppelLignesMatrice(None, MATRICE_USER)
-        self.ctrlConnect = xusp.BoxPanel(self, wx.ID_ANY, lblbox=label, code=code, lignes=lignes, dictDonnees={})
+        self.ctrlConnect = xusp.BoxPanel(self, wx.ID_ANY, lblBox=label, code=code, lignes=lignes, dictDonnees={})
 
         #pose dans la grille de saisie, les valeurs lues dans profilUser
         self.ctrlConnect.SetValues(choixUser)
@@ -367,7 +367,7 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
             self.lstIDconfigs, lstConfigsOK, lstConfigsKO = GetLstConfigs(grpConfigs,typeConfig)
             self.lddDonnees = lstConfigsOK
         # paramètres pour self.pnl contenu principal de l'écran
-        self.kwds['lblbox'] = 'Configurations disponibles'
+        self.kwds['lblBox'] = 'Configurations disponibles'
         self.MinSize = (400,300)
         if self.dldMatrice != {}:
             self.InitDlgGestion()
@@ -431,7 +431,7 @@ class DLG_saisieUneConfig(xusp.DLG_vide):
         matrice[key][0]['value'] = nomConfig
         # grise le champ ID
         xusp.SetEnableID(matrice, False)
-        self.pnl = xusp.TopBoxPanel(self, matrice=matrice, lblbox='Ajout d\'un accès pour la compta')
+        self.pnl = xusp.TopBoxPanel(self, matrice=matrice, lblBox='Ajout d\'un accès pour la compta')
         self.Sizer(self.pnl)
 
     def GetValeurs(self):
@@ -445,7 +445,7 @@ class PNL_paramsLocaux(xusp.TopBoxPanel):
     # Ecran de saisie de paramètres mono écran repris du disque de la station
     def __init__(self, parent, *args, **kwds):
         kwdsTopBox = {}
-        for key in ('pos','size','style','name','matrice','donnees','lblbox'):
+        for key in ('pos','size','style','name','matrice','donnees','lblBox'):
             if key in kwds.keys(): kwdsTopBox[key] = kwds[key]
         super().__init__(parent, *args, **kwdsTopBox)
         self.pathData = kwds.pop('pathdata',"")
@@ -477,7 +477,7 @@ class xFrame(wx.Frame):
         self.pathData = 'c:\\Temp'
         titre = listArbo[-1:][0] + "/" + self.__class__.__name__
         wx.Frame.__init__(self,*args, title=titre, name = titre)
-        self.topPnl = PNL_paramsLocaux(self,wx.ID_ANY, nomfichier='test', matrice={}, donnees={}, lblbox={})
+        self.topPnl = PNL_paramsLocaux(self,wx.ID_ANY, nomfichier='test', matrice={}, donnees={}, lblBox={})
         self.topPnl.Init()
         self.btn0 = wx.Button(self, wx.ID_ANY, "Action Frame")
         self.btn0.Bind(wx.EVT_BUTTON,self.OnBoutonAction)

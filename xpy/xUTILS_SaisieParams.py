@@ -16,9 +16,9 @@ from copy                      import deepcopy
 from xpy.outils                import xformat
 
 OPTIONS_CTRL = ('name', 'label', 'ctrlAction', 'btnLabel', 'btnAction', 'value', 'labels', 'values', 'enable',
-                'genre', 'help','size','txtSize', 'btnHelp')
+                'genre', 'help','ctrlSize','txtSize', 'btnHelp','boxMaxSize','boxMinSize')
 # les Binds de ctrl se posent dans le pannel
-OPTIONS_PANEL = ('pos','style','name')
+OPTIONS_PANEL = ('pos','style','name', 'size')
 
 def SetEnableID(matrice,enable=False):
     trouve = False
@@ -95,13 +95,14 @@ def Transpose(matrice,dlColonnes,lddDonnees):
         return llItems
 
     # si pas de liste de colonnes pour une catégorie c'est toutes les colonnes qui sont prises
-    for (codm, label) in matrice:
-        if not codm in dlColonnes:
-            dlColonnes[codm] = []
-            for ligne in matrice[(codm, label)]:
-                if ('name' in ligne):
-                    if not 'pass' in ligne['name'].lower():
-                        dlColonnes[codm].append(ligne['name'])
+    if len(dlColonnes)==0:
+        for (codm, label) in matrice:
+            if not codm in dlColonnes:
+                dlColonnes[codm] = []
+                for ligne in matrice[(codm, label)]:
+                    if ('name' in ligne):
+                        if not 'pass' in ligne['name'].lower():
+                            dlColonnes[codm].append(ligne['name'])
     ltColonnes = LtColonnes(dlColonnes, matrice)
     llItems = LlItems(ltColonnes, lddDonnees)
     return lddDonnees, ltColonnes, llItems
@@ -379,7 +380,7 @@ class CTRL_property(wxpg.PropertyGrid):
 
 class PNL_property(wx.Panel):
     #affichage d'une grille property sans autre bouton que sortie
-    def __init__(self, parent, topWin, *args, matrice={}, donnees=[], lblbox="Paramètres item_property", **kwds):
+    def __init__(self, parent, topWin, *args, matrice={}, donnees=[], lblBox="Paramètres item_property", **kwds):
         self.parent = parent
         kw = DicFiltre(kwds,OPTIONS_PANEL)
         wx.Panel.__init__(self, parent, *args, **kw)
@@ -388,7 +389,7 @@ class PNL_property(wx.Panel):
         self.ctrl = CTRL_property(self,matrice,donnees)
         #***********************************************************************
 
-        cadre_staticbox = wx.StaticBox(self,wx.ID_ANY,label=lblbox)
+        cadre_staticbox = wx.StaticBox(self,wx.ID_ANY,label=lblBox)
         topbox = wx.StaticBoxSizer(cadre_staticbox)
         topbox.Add(self.ctrl,1,wx.ALL|wx.EXPAND,4)
         #topbox.MinSize = (300,400)
@@ -406,18 +407,18 @@ class PNL_ctrl(wx.Panel):
     """ et en option (code) un bouton d'action permettant de contrôler les saisies
         GetValue retourne la valeur choisie dans le ctrl avec action possible par bouton à droite"""
     def __init__(self, parent, *args, genre='string', name=None, label='', value= None, labels=[], values=[],
-                 help=None, btnLabel=None, btnHelp=None, size=None, txtSize=100, **kwds):
-        kw = DicFiltre(kwds,OPTIONS_PANEL)
+                 help=None, btnLabel=None, btnHelp=None,  txtSize=100, **kwds):
+
+        if 'ctrSize' in kwds:
+            kwds['size'] = kwds['ctrlSize']
+        kw = DicFiltre(kwds,OPTIONS_PANEL )
         wx.Panel.__init__(self,parent,*args, **kw)
         self.value = value
         self.name = name
         if btnLabel :
             self.avecBouton = True
         else: self.avecBouton = False
-        if not size:
-            size = (2000, 30)
-        self.MaxSize = size
-        lg = max(txtSize,len(label)*6)
+        lg = max(txtSize,int(len(label)*5.4))
         if label and len(label)>0:
             self.txt = wx.StaticText(self, wx.ID_ANY, label + " :")
             self.txt.MinSize = (lg, 25)
@@ -490,11 +491,11 @@ class PNL_ctrl(wx.Panel):
 
     def BoxSizer(self):
         topbox = wx.BoxSizer(wx.HORIZONTAL)
-        topbox.Add(self.txt,0, wx.LEFT|wx.TOP|wx.EXPAND|wx.ALIGN_TOP, 5)
-        topbox.Add(self.ctrl, 1, wx.ALL | wx.EXPAND, 4)
+        topbox.Add(self.txt,0, wx.LEFT|wx.TOP|wx.ALIGN_TOP, 5)
+        topbox.Add(self.ctrl, 1, wx.ALL|wx.EXPAND , 4)
         if self.avecBouton:
-            topbox.Add(self.btn, 0, wx.ALL|wx.EXPAND, 4)
-        self.SetSizer(topbox)
+            topbox.Add(self.btn, 0, wx.ALL, 4)
+        self.SetSizerAndFit(topbox)
 
     def GetValue(self):
         return self.ctrl.GetValue()
@@ -538,12 +539,15 @@ class PNL_ctrl(wx.Panel):
 
 class PNL_listCtrl(wx.Panel):
     #affichage d'une listeCtrl avec les boutons classiques pour gérer les lignes
-    def __init__(self, parent, *args, ltColonnes=[], llItems=[], lblbox="Paramètres listCtrl", **kwds):
+    def __init__(self, parent, *args, ltColonnes=[], llItems=[], **kwds):
+        self.lblList = kwds.pop('lblList',"Liste des éléments")
+
         self.parent = parent
         self.llItems = llItems
         self.ltColonnes = ltColonnes
         self.colonnes = []
         self.lddDonnees = []
+
         kw = DicFiltre(kwds,OPTIONS_PANEL)
         wx.Panel.__init__(self, parent, wx.ID_ANY, *args, **kw)
 
@@ -564,7 +568,10 @@ class PNL_listCtrl(wx.Panel):
                                            help="Supprimer la ligne selectionée",action=self.OnSupprimer )
         self.bouton_dupliquer = BTN_action(self,image=wx.Bitmap("xpy/Images/16x16/Dupliquer.png"),
                                            help="Dupliquer la ligne selectionée",action=self.OnDupliquer )
-        cadre_staticbox = wx.StaticBox(self,wx.ID_ANY,label=lblbox)
+        self.Sizer()
+
+    def Sizer(self):
+        cadre_staticbox = wx.StaticBox(self,wx.ID_ANY,label=self.lblList)
         topbox = wx.StaticBoxSizer(cadre_staticbox,wx.HORIZONTAL)
         topbox.Add(self.ctrl,1,wx.ALL|wx.EXPAND,4)
         droite_flex = wx.FlexGridSizer(4,1,0,0)
@@ -621,15 +628,20 @@ class PNL_listCtrl(wx.Panel):
 
 class BoxPanel(wx.Panel):
     # aligne les contrôles définis par la matrice dans une box verticale
-    def __init__(self, parent, *args, lblbox="Box", code = '1', lignes=[], dictDonnees={}, **kwds):
+    def __init__(self, parent, *args, lblBox="Box", code = '1', lignes=[], dictDonnees={}, **kwds):
         kw = DicFiltre(kwds,OPTIONS_PANEL)
         wx.Panel.__init__(self,parent, *args, **kw)
+        maxSize = kwds.pop('boxMaxSize',None)
+        minSize = kwds.pop('boxMinSize',None)
+        if maxSize: self.SetMaxSize(maxSize)
+        if minSize: self.SetMinSize(minSize)
+        self.kwds = kwds
         self.parent = parent
         self.code = code
         self.lstPanels=[]
         self.dictDonnees = dictDonnees
-        if lblbox:
-            cadre_staticbox = wx.StaticBox(self, wx.ID_ANY, label=lblbox)
+        if lblBox:
+            cadre_staticbox = wx.StaticBox(self, wx.ID_ANY, label=lblBox)
             self.ssbox = wx.StaticBoxSizer(cadre_staticbox, wx.VERTICAL)
         else:
             self.ssbox = wx.BoxSizer(wx.VERTICAL)
@@ -637,16 +649,16 @@ class BoxPanel(wx.Panel):
 
     def InitMatrice(self,lignes):
         for ligne in lignes:
-            kwds={}
+            kwdLigne= self.kwds.copy()
             for nom,valeur in ligne.items():
                 if nom in OPTIONS_CTRL + OPTIONS_PANEL:
-                    kwds[nom] = valeur
+                    kwdLigne[nom] = valeur
                 else:
                     possibles = "Liste des possibles: %s"%str(OPTIONS_CTRL)
                     wx.MessageBox("L'options '%s' de la ligne %s n'est pas reconnue!\n\n%s"%(nom,
                                                                                         ligne['name'],possibles))
             if 'genre' in ligne:
-                panel = PNL_ctrl(self, **kwds)
+                panel = PNL_ctrl(self, **kwdLigne)
                 if ligne['genre'].lower() in ['bool', 'check']:
                     self.UseCheckbox = 1
                 if panel:
@@ -746,23 +758,42 @@ class BoxPanel(wx.Panel):
 
 class TopBoxPanel(wx.Panel):
     #gestion de pluieurs BoxPanel juxtaposées horizontalement
-    def __init__(self, parent, *args, matrice={}, donnees={}, lblbox="Paramètres top", **kwds):
+    def __init__(self, parent, *args, matrice={}, donnees={}, **kwds):
         kw = DicFiltre(kwds,OPTIONS_PANEL)
         wx.Panel.__init__(self,parent,*args, **kw)
+
+        lblTopBox = kwds.pop('lblTopBox',None)
+
         self.parent = parent
         self.matrice = matrice
-        if lblbox:
-            cadre_staticbox = wx.StaticBox(self,wx.ID_ANY,label=lblbox)
+        self.ddDonnees = donnees
+
+        # Cadres suplémentaire possible si un label est donné à TopBox
+        if lblTopBox:
+            cadre_staticbox = wx.StaticBox(self,wx.ID_ANY,label=lblTopBox)
             self.topbox = wx.StaticBoxSizer(cadre_staticbox,wx.HORIZONTAL)
         else:
             self.topbox = wx.BoxSizer(wx.HORIZONTAL)
-        self.ddDonnees = donnees
+
+
+        kwdBox = {}
+        for nom, valeur in kwds.items():
+            if nom in OPTIONS_CTRL + OPTIONS_PANEL:
+                kwdBox[nom] = valeur
+            else:
+                possibles = "Liste des possibles: %s" % str(OPTIONS_CTRL + OPTIONS_PANEL)
+                wx.MessageBox("L'options '%s' pour la topbox n'est pas reconnue!\n\n%s" % (nom, possibles))
+
         self.lstBoxes = []
         for code, label in matrice:
             if isinstance(code,str):
                 if not code in self.ddDonnees:
                      self.ddDonnees[code] = {}
-                box = BoxPanel(self, wx.ID_ANY, lblbox=label, code = code, lignes=matrice[(code,label)], dictDonnees=self.ddDonnees[code])
+                box = BoxPanel(self, wx.ID_ANY, lblBox=label,
+                               code = code,
+                               lignes=matrice[(code,label)],
+                               dictDonnees=self.ddDonnees[code],
+                               **kwdBox)
                 self.lstBoxes.append(box)
                 self.topbox.Add(box, 1, wx.EXPAND|wx.ALL,3)
         self.SetSizerAndFit(self.topbox)
@@ -875,12 +906,15 @@ class DLG_listCtrl(wx.Dialog):
     """
     def __init__(self,parent, *args, dldMatrice={}, dlColonnes={}, lddDonnees=[], **kwds):
         listArbo=os.path.abspath(__file__).split("\\")
-        titre = listArbo[-1:][0] + "/" + self.__class__.__name__
-        super().__init__(parent, wx.ID_ANY, *args, title=titre,  style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER , **kwds)
+        titre = kwds.pop('titre',listArbo[-1:][0] + "/" + self.__class__.__name__)
+        super().__init__(parent, wx.ID_ANY, *args, title=titre,  style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER )
 
-        #pour une gestion simplifiée sans mot de passe caché ni checkbox ni gestion d'action de contrôle : gestionProperty True
-        self.gestionProperty = True
-        self.SetBackgroundColour(wx.WHITE)
+        #pour une gestion simplifiée sans mot de passe caché ni checkbox, ni action : gestionProperty True
+        self.gestionProperty =  kwds.pop('gestionProperty',False)
+        colorBack =             kwds.pop('colorBack',wx.WHITE)
+        self.lblList =          kwds.pop('lblList',"Liste des éléments")
+
+        self.SetBackgroundColour(colorBack)
         self.parent = parent
         self.dlColonnes=dlColonnes
         self.dldMatrice = dldMatrice
@@ -895,17 +929,19 @@ class DLG_listCtrl(wx.Dialog):
         self.MinSize = (400, 300)
         self.dlgGest = None
 
+    # définition de l'écran de gestion d'une ligne
     def InitDlgGestion(self):
-        # permet d'intervenir avant le lancement de Init
+
+        # permet d'intervenir avant le lancement du sizer global pour personnaliser l'écran de gestion
         self.dlgGest = DLG_vide(self,)
         if self.gestionProperty:
-            self.dlgGest.pnl = PNL_property(self.dlgGest, self, matrice=self.dldMatrice, lblbox='Ajout d\'une ligne')
+            self.dlgGest.pnl = PNL_property(self.dlgGest, self, matrice=self.dldMatrice, **self.kwds)
         else:
-            self.dlgGest.pnl = TopBoxPanel(self.dlgGest, matrice=self.dldMatrice, lblbox='Ajout d\'une ligne')
+            self.dlgGest.pnl = TopBoxPanel(self.dlgGest, matrice=self.dldMatrice, **self.kwds)
 
     def SizerDlgGestion(self):
+        # ne sera lancé que si self.dlGest n'a pas été personnalisé
         self.dlgGest.Sizer(self.dlgGest.pnl)
-
 
     def Init(self):
         if not self.dlgGest:
@@ -916,9 +952,10 @@ class DLG_listCtrl(wx.Dialog):
             self.lddDonnees, self.ltColonnes, self.llItems\
                 = Transpose(self.dldMatrice, self.dlColonnes, self.lddDonnees)
             #********************** Chaînage *******************************
-            self.kwds['ltColonnes'] = self.ltColonnes
-            self.kwds['llItems'] = self.llItems
-            self.pnl = PNL_listCtrl(self, *self.args, **self.kwds )
+            kwdList = {'lblList': self.lblList}
+            kwdList['ltColonnes'] = self.ltColonnes
+            kwdList['llItems'] = self.llItems
+            self.pnl = PNL_listCtrl(self, *self.args, **kwdList )
             #***************************************************************
         self.Sizer()
 
@@ -930,7 +967,7 @@ class DLG_listCtrl(wx.Dialog):
         btnbox.Add(self.btn, 0, wx.RIGHT,7)
         topbox.Add(btnbox,0,wx.RIGHT|wx.ALIGN_RIGHT,20)
         topbox.SetSizeHints(self)
-        self.SetSizer(topbox)
+        self.SetSizerAndFit(topbox)
 
     def OnAjouter(self,event):
         SetEnableID(self.dldMatrice,enable=True)
@@ -1066,7 +1103,7 @@ class DLG_monoLigne(wx.Dialog):
     # variante DLG_vide, avec relais possible d'évènements Boutons ou Controles gérés dans matrice
     def __init__(self, parent, *args, dldMatrice={}, ddDonnees={}, **kwds):
         self.gestionProperty = kwds.pop('gestionProperty',False)
-        lblbox = kwds.pop('lblbox','Gestion d\'une ligne')
+        lblBox = kwds.pop('lblBox','Gestion d\'une ligne')
         self.marge = kwds.pop('marge',10)
         self.minSize = kwds.pop('minSize',(800, 500))
         self.couleur = kwds.pop('couleur',wx.WHITE)
@@ -1087,9 +1124,9 @@ class DLG_monoLigne(wx.Dialog):
         self.btn.Bind(wx.EVT_BUTTON, self.OnFermer)
         self.btnEsc = BTN_esc(self, action=self.OnBtnEsc)
         if self.gestionProperty:
-            self.pnl = PNL_property(self, self, matrice=self.dldMatrice, lblbox=lblbox)
+            self.pnl = PNL_property(self, self, matrice=self.dldMatrice, lblBox=lblBox)
         else:
-            self.pnl = TopBoxPanel(self, matrice=self.dldMatrice, lblbox=lblbox)
+            self.pnl = TopBoxPanel(self, matrice=self.dldMatrice, lblBox=lblBox)
         self.pnl.MinSize = self.minSize
         self.Sizer()
         self.pnl.SetValeurs(self.ddDonnees)
@@ -1132,12 +1169,12 @@ class DLG_monoLigne(wx.Dialog):
 
 class xFrame(wx.Frame):
     # reçoit les controles à gérer sous la forme d'un ensemble de paramètres
-    def __init__(self, *args, matrice={}, donnees={}, btnaction=None, lblbox="Paramètres xf", **kwds):
+    def __init__(self, *args, matrice={}, donnees={}, btnaction=None, lblBox="Paramètres xf", **kwds):
         listArbo=os.path.abspath(__file__).split("\\")
         self.parent = None
         titre = listArbo[-1:][0] + "/" + self.__class__.__name__
         wx.Frame.__init__(self,*args, title=titre, **kwds)
-        self.topPnl = TopBoxPanel(self,wx.ID_ANY, matrice=matrice, donnees=donnees, lblbox=lblbox)
+        self.topPnl = TopBoxPanel(self,wx.ID_ANY, matrice=matrice, donnees=donnees, lblBox=lblBox)
         self.btn0 = wx.Button(self, wx.ID_ANY, "Action Frame")
         self.btn0.Bind(wx.EVT_BUTTON,self.OnBoutonAction)
         self.marge = 10
@@ -1219,21 +1256,23 @@ class FramePanels(wx.Frame):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dictDonnees = {"bd_reseau": {'serveur': 'my server',
+    dictDonnees = {"bd_reseau": {'serveur': 'serveur2',
                                  'bdReseau':False,
-                                 'utilisateur' : 'moi-meme',
                                  'config': DDstrdate2wxdate('2020-02-28',iso=True),
                                  'localisation': "ailleurs",
-                                 'choix': 12,'multi':[12, 13],
+                                 'choix': 12,
+                                 'multi':[12, 13],
                                 'nombre': 456.45,
                                  },
-                   "ident": {'domaine': 'mon domaine'}}
+                   "ident":      {'domaine': 'mon domaine',
+                                  'usateur': 'nouveau',},
+                  }
     dictMatrice = {
         ("ident", "Votre session"):
             [
                 {'genre': 'String', 'name': 'domaine', 'label': 'Votre organisation', 'value': "NomDuPC",
                                  'help': 'Ce préfixe à votre nom permet de vous identifier','enable':False},
-                {'genre': 'String', 'name': 'utilisateur', 'label': 'Votre identifiant', 'value': "NomSession",
+                {'genre': 'String', 'name': 'usateur', 'label': 'Utilisateur', 'value': "moi",
                                  'help': 'Confirmez le nom de sesssion de l\'utilisateur'},
             ],
         ("choix_config", "Choisissez votre configuration"):
@@ -1247,19 +1286,41 @@ if __name__ == '__main__':
             ],
         ("bd_reseau", "Base de donnée réseau"):
             [
-                {'genre': 'Dirfile', 'name': 'localisation', 'label': 'Fichier',
-                        'value': True,
+                {'genre': 'Dirfile', 'name': 'localisation', 'label': 'myHome.',
+                        'value': 'home',
                         'help': "Il faudra connaître les identifiants d'accès à cette base"},
                 {'genre': 'String', 'name': 'serveur', 'label': 'Nom du serveur', 'value': 'monServeur',
                         'help': "Il s'agit du serveur de réseau porteur de la base de données"},
-                {'genre': 'Float', 'name': 'nombre', 'label': 'float', 'value': 40.12,
+                {'genre': 'Float', 'name': 'nombre', 'label': 'Nombre', 'value': 40.12,
                  'help': "test de nombre"},
             ]
         }
+    dictColonnes = {'bd_reseau': ['serveur', 'choix', 'localisation', 'nombre'],
+                     'ident': ['usateur']}
+    dictDonneesSimple = {'filtre': {'serveur': 'my server',
+                              'localisation': "ailleurs",
+                              'nombre': 456.45,
+                              }, }
+    dictMatriceSimple = {
+        ('filtre', "Base de donnée réseau"):
+            [
+                {'name': 'localisation', 'label': 'Fichier',
+                 'value': True, 'genre': 'Dirfile',
+                 'help': "Il faudra connaître les identifiants d'accès à cette base"},
+                {'name': 'serveur', 'label': 'Nom du serveur',
+                 'genre': 'String', 'value': 'monServeur',
+                 'help': "Il s'agit du serveur de réseau porteur de la base de données"},
+                {'name': 'nombre', 'label': 'float',
+                 'genre': 'Float', 'value': 40.12,
+                 'help': "test de nombre"},
+            ]
+    }
+    dictColonnesSimple = {}
 
-# Lancement des tests
-    frame_4 = DLG_listCtrl(None,dldMatrice=dictMatrice, dlColonnes={'bd_reseau':['serveur','choix','localisation','nombre'],'ident':['utilisateur']},
-                lddDonnees=[dictDonnees,{"bd_reseau":{'serveur': 'serveur3'}}])
+    # Lancement des tests
+    frame_4 = DLG_listCtrl(None,dldMatrice=dictMatrice,
+                                dlColonnes=dictColonnes,
+                                lddDonnees=[dictDonnees])
     frame_4.Init()
     app.SetTopWindow(frame_4)
     frame_4.Show()
