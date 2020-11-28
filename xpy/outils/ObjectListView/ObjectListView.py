@@ -102,9 +102,9 @@ import operator
 import time
 import six
 import unicodedata
-from . import OLVEvent
+from . import OLVEvent, CellEditor
 from . import Filter
-from . import CellEditor
+from . import ListeFiltres
 
 
 __author__ = "Phillip Piper"
@@ -2456,8 +2456,6 @@ class ObjectListView(wx.ListCtrl):
 
     def SetFiltresColonnes(self, listeFiltresColonnes=[]):
         self.listeFiltresColonnes = listeFiltresColonnes
-        if self.Parent.ctrloutils.barreRecherche != None:
-            self.Parent.ctrloutils.barreRecherche.Cancel()
         self.Filtrer()
 
     def formatageFiltres(self, listeFiltres=[]):
@@ -4360,27 +4358,10 @@ class CTRL_Outils(wx.Panel):
         import wx.lib.platebtn as platebtn
 
         # Bouton Filtrer
-        self.bouton_filtrer = platebtn.PlateButton(self, -1, " Filtrer",
-                                                   wx.Bitmap("xpy/Images/16x16/Filtre.png", wx.BITMAP_TYPE_ANY))
+        self.bouton_filtrer = wx.BitmapButton(self, wx.ID_ANY,
+                            bitmap= wx.Bitmap("xpy/Images/16x16/Filtre.png", wx.BITMAP_TYPE_ANY))
         self.bouton_filtrer.SetToolTip("Cliquez ici pour filtrer cette liste")
-
-        menu = wx.Menu()
-        item = wx.MenuItem(menu, 10, "Gérer un filtre",
-                           "Cliquez ici pour accéder à la gestion d'un filtre")
-        item.SetBitmap(wx.Bitmap("xpy/Images/16x16/Filtre.png", wx.BITMAP_TYPE_ANY))
-        menu.Append(item)
-        menu.AppendSeparator()
-        item = wx.MenuItem(menu, 11, "Ajouter un autre filtre",
-                           "Cliquez ici pour ajouter un filtre supplémentaire")
-        item.SetBitmap(wx.Bitmap("xpy/Images/16x16/Filtre.png", wx.BITMAP_TYPE_ANY))
-        menu.Append(item)
-        menu.AppendSeparator()
-        item = wx.MenuItem(menu, 12, "Supprimer tous les filtres", "Cliquez ici pour supprimer tous les filtres")
-        item.SetBitmap(wx.Bitmap("xpy/Images/16x16/Filtre_supprimer.png", wx.BITMAP_TYPE_ANY))
-        menu.Append(item)
-        self.bouton_filtrer.SetMenu(menu)
-
-        self.Bind(wx.EVT_BUTTON, self.OnBoutonFiltrer, self.bouton_filtrer)
+        self.bouton_filtrer.Bind(wx.EVT_BUTTON, self.OnBoutonFiltrer)
 
         # Bouton Cocher
         if afficherCocher == True:
@@ -4448,22 +4429,14 @@ class CTRL_Outils(wx.Panel):
         self.listview.Filtrer()
         self.MAJ_ctrl_filtrer()
 
-    def ChoixFiltres(self):
-        dlg = Filter.DLG_saisiefiltre(self, listview=self.listview)
+    def OnBoutonFiltrer(self,event):
+        dlg = ListeFiltres.DLG_listeFiltres(self, listview=self.listview)
         if dlg.ShowModal() == wx.ID_OK:
-            self.listeFiltres.append(dlg.GetDonnees())
+            self.listeFiltres.append(dlg.GetFiltres())
             self.listview.SetFiltresColonnes(self.listeFiltres)
             self.listview.Filtrer()
             self.MAJ_ctrl_filtrer()
         dlg.Destroy()
-
-    def UnFiltre(self):
-        self.SupprimerFiltres()
-        self.ChoixFiltres()
-
-    def AjoutFiltre(self):
-        self.listview.original = False
-        self.ChoixFiltres()
 
     def SupprimerFiltres(self):
         self.listeFiltres = []
@@ -4475,20 +4448,8 @@ class CTRL_Outils(wx.Panel):
     def OnBoutonCocher(self, event):
         self.bouton_cocher.ShowMenu()
 
-    def OnBoutonFiltrer(self, event):
-        self.bouton_filtrer.ShowMenu()
-
     def OnMenu(self, event):
         ID = event.GetId()
-        # Accéder à la gestion des filtres
-        if ID == 10:
-            self.UnFiltre()
-        # ajouter un nouveau filtre
-        if ID == 11:
-            self.AjoutFiltre()
-        # Supprimer tous les filtres
-        if ID == 12:
-            self.SupprimerFiltres()
         # Tout cocher
         if ID == 20:
             self.listview.CocheListeTout()

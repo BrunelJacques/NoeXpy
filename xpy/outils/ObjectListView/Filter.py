@@ -30,7 +30,33 @@ import datetime
 import wx.propgrid as wxpg
 
 # Filtres OLV conditions possibles
-CHOIX_FILTRES = {float:[
+CHOIX_FILTRES = {
+        float:  ['EGAL','DIFFERENT','INF','INFEGAL','SUP','SUPEGAL'],
+        int:    ['EGAL','DIFFERENT','INF','INFEGAL','SUP','SUPEGAL'],
+        bool:   ['EGAL','DIFFERENT'],
+        wx.DateTime:    ['EGAL','DIFFERENT','INF','INFEGAL','SUP','SUPEGAL'],
+        datetime.date:  ['EGAL','DIFFERENT','INF','INFEGAL','SUP','SUPEGAL'],
+        datetime.datetime:['EGAL','DIFFERENT','INF','INFEGAL','SUP','SUPEGAL'],
+        str:    ['CONTIENT','CONTIENTPAS','COMMENCE','DIFFERENT','EGAL','PASVIDE','VIDE','DANS','INFEGAL','SUPEGAL'],
+        }
+DIC_FILTRES = {
+                    'COMMENCE': 'commence par ',
+                    'CONTIENT': 'contient ',
+                    'CONTIENTPAS': 'ne contient pas ',
+                    'DANS': 'dans la liste ',
+                    'DIFFERENT': 'différent de ',
+                    'EGAL': 'égal à ',
+                    'INF': 'inférieur à ',
+                    'INFEGAL': 'inférieur ou égal à ',
+                    'AVANTEGAL': 'avant ou égal à ',
+                    'PASVIDE': 'pas à blanc ',
+                    'SUP': 'supérieur à ',
+                    'APRES': 'après ',
+                    'SUPEGAL': 'supérieur ou égal à ',
+                    'APRESGAL': 'après ou égal à ',
+                    'VIDE': 'est à blanc ',}
+
+ZZCHOIX_FILTRES = {float:[
                             ('EGAL','égal à '),
                             ('DIFFERENT','différent de '),
                             ('INF','inférieur à '),
@@ -204,7 +230,7 @@ class CTRL_property(wxpg.PropertyGrid):
             ddDonnees[nom] = label
         return ddDonnees
 
-class DLG_saisiefiltre(wx.Dialog):
+class zzDLG_saisiefiltre(wx.Dialog):
     def __init__(self,parent, *args, **kwds):
         self.listview = kwds.pop('listview',None)
         self.etape=0

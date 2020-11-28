@@ -533,7 +533,7 @@ class Dialog(xusp.DLG_vide):
             valeur = self.pnlParams.lstBoxes[1].GetOneValue('journal')
             box.SetOneValues('journal',lstLibJournaux)
             box.SetOneValue('journal',valeur)
-        pnlJournal = self.pnlParams.GetPanel('journal', 'compta')
+        pnlJournal = self.pnlParams.GetPnlCtrl('journal', 'compta')
         x = False
         if compta : x = True
         pnlJournal.btn.Enable(x)

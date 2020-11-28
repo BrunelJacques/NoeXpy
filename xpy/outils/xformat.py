@@ -4,9 +4,26 @@ SYMBOLE = "€"
 import wx
 import datetime
 import unicodedata
-from xpy.outils.ObjectListView import ColumnDefn, CellEditor
 
 # fonctions pour OLV
+def AppelLignesMatrice(categ=None, possibles={}):
+    # retourne les lignes de la  matrice de l'argument categ
+    # ou la première catégorie si not categ
+    code = None
+    label = ''
+    lignes = {}
+    if possibles:
+        for code, labelCategorie in possibles:
+            if isinstance(code, str):
+                if categ:
+                    if categ == code:
+                        label = labelCategorie
+                        lignes = possibles[(code, labelCategorie)]
+                else:
+                    label = labelCategorie
+                    lignes = possibles[(code, labelCategorie)]
+                    break
+    return code, label, lignes
 
 def SupprimeAccents(texte,lower=True):
     # met en minuscule sans accents et sans caractères spéciaux
@@ -30,6 +47,7 @@ def GetLstColonnes(table=None,cutend=None,IDcache=True,wxDates=True):
     return DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
 
 def DefColonnes(lstNoms,lstCodes,lstValDef,lstLargeur):
+    from xpy.outils.ObjectListView import ColumnDefn
     # Composition d'une liste de définition de colonnes d'un OLV; remarque faux ami: 'nom, code' == 'label, name'
     ix=0
     for lst in (lstCodes,lstValDef,lstLargeur):
@@ -130,7 +148,6 @@ def CompareModels(original,actuel):
             continue
         elif not track.vierge: lstNews.append(track.donnees)
     return lstNews,lstCancels,lstModifs
-
 
 def ComposeWhereFiltre(filtre,lstChamps,lstColonnes=None, lien='WHERE'):
         if lstColonnes:

@@ -13,6 +13,7 @@ import os
 import xpy.xUTILS_SaisieParams as xusp
 import xpy.xUTILS_Shelve as xucfg
 import xpy.xUTILS_DB as xdb
+import xpy.outils.xformat as xformat
 
 # Constantes de paramétrage des écrans de configuration et identification
 
@@ -31,7 +32,7 @@ MATRICE_USER = {
     {'name': 'mpUserDB', 'genre': 'Mpass', 'label': 'Mot de Passe du Serveur',
                         'help': "C\'est le mot de passe d'accès à la base défini dans la configuration," +
                                 "\nce n'est pas le vôtre, demandé au lancement de l'appli ou de votre authentification",
-                        'txtSize': 120},
+                        'txtSize': 140},
     ]
 }
 MATRICE_CHOIX_CONFIG = {
@@ -41,7 +42,7 @@ MATRICE_CHOIX_CONFIG = {
                         'ctrlAction':'OnCtrlConfig',
                         'btnLabel':"...", 'btnHelp':"Cliquez pour gérer les configurations d'accès aux données",
                         'btnAction':"OnBtnConfig",
-                        'txtSize': 120},]}
+                        'txtSize': 140},]}
 # db_prim et db_simple sont des types de config, pourront être présentes dans dictAPPLI['TYPE_CONFIG'] et xUTILS_DB
 MATRICE_CONFIGS = {
     ('db_prim', "Acccès à une base avec authentification"): [
@@ -71,25 +72,6 @@ MATRICE_CONFIGS = {
                          'help': "Base de donnée présente sur le serveur"},
     ],
 }
-
-def AppelLignesMatrice(categ=None, possibles={}):
-    # retourne les lignes de la  matrice de l'argument categ
-    # ou la première catégorie si not categ
-    code = None
-    label = ''
-    lignes = {}
-    if possibles:
-        for code, labelCategorie in possibles:
-            if isinstance(code, str):
-                if categ:
-                    if categ == code:
-                        label = labelCategorie
-                        lignes = possibles[(code, labelCategorie)]
-                else:
-                    label = labelCategorie
-                    lignes = possibles[(code, labelCategorie)]
-                    break
-    return code, label, lignes
 
 def GetLstCodesMatrice(matrice):
     # retourne une liste des premiers composant des tuples clé d'une matrice
@@ -190,7 +172,7 @@ class DLG_implantation(wx.Dialog):
         self.nomAppli = dictAppli['NOM_APPLICATION']
 
         # CONFIGS : appel du modèle des configurations ----------------------------------------------------------------
-        codeBox,labelBox,lignes = AppelLignesMatrice(None, MATRICE_CHOIX_CONFIG)
+        codeBox,labelBox,lignes = xformat.AppelLignesMatrice(None, MATRICE_CHOIX_CONFIG)
         # Composition des choix de configurations selon l'implantation
         self.lstChoixConfigs = []
         if self.parent and 'CHOIX_CONFIGS' in self.parent.dictAppli:
@@ -225,7 +207,7 @@ class DLG_implantation(wx.Dialog):
         self.titre =wx.StaticText(self, -1, "Eléments de connexion")
 
         # USER : contrôle gérant la saisie des paramètres de connexion (USER) ----------------------------------------
-        code,label,lignes = AppelLignesMatrice(None, MATRICE_USER)
+        code,label,lignes = xformat.AppelLignesMatrice(None, MATRICE_USER)
         self.ctrlConnect = xusp.BoxPanel(self, wx.ID_ANY, lblBox=label, code=code, lignes=lignes, dictDonnees={})
 
         #pose dans la grille de saisie, les valeurs lues dans profilUser
@@ -355,7 +337,6 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
         self.lstConfigsKO = []
         self.dldMatrice = {}
         # composition des paramètres
-        # seuls les paragraphes option choisis par l'appli et présents dans MATRICE_CONFIGS seront appelés.
         self.gestionProperty = False
         self.ok = False
         cle = GetCleMatrice(typeConfig,MATRICE_CONFIGS)
@@ -367,7 +348,7 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
             self.lstIDconfigs, lstConfigsOK, lstConfigsKO = GetLstConfigs(grpConfigs,typeConfig)
             self.lddDonnees = lstConfigsOK
         # paramètres pour self.pnl contenu principal de l'écran
-        self.kwds['lblBox'] = 'Configurations disponibles'
+        self.kwds['lblTopBox'] = 'Configurations disponibles'
         self.MinSize = (400,300)
         if self.dldMatrice != {}:
             self.InitDlgGestion()
@@ -431,7 +412,7 @@ class DLG_saisieUneConfig(xusp.DLG_vide):
         matrice[key][0]['value'] = nomConfig
         # grise le champ ID
         xusp.SetEnableID(matrice, False)
-        self.pnl = xusp.TopBoxPanel(self, matrice=matrice, lblBox='Ajout d\'un accès pour la compta')
+        self.pnl = xusp.TopBoxPanel(self, matrice=matrice, lblTopBox='Ajout d\'un accès pour la compta')
         self.Sizer(self.pnl)
 
     def GetValeurs(self):
@@ -445,7 +426,7 @@ class PNL_paramsLocaux(xusp.TopBoxPanel):
     # Ecran de saisie de paramètres mono écran repris du disque de la station
     def __init__(self, parent, *args, **kwds):
         kwdsTopBox = {}
-        for key in ('pos','size','style','name','matrice','donnees','lblBox'):
+        for key in ('pos','size','style','name','matrice','donnees','lblTopBox'):
             if key in kwds.keys(): kwdsTopBox[key] = kwds[key]
         super().__init__(parent, *args, **kwdsTopBox)
         self.pathData = kwds.pop('pathdata',"")
@@ -477,7 +458,7 @@ class xFrame(wx.Frame):
         self.pathData = 'c:\\Temp'
         titre = listArbo[-1:][0] + "/" + self.__class__.__name__
         wx.Frame.__init__(self,*args, title=titre, name = titre)
-        self.topPnl = PNL_paramsLocaux(self,wx.ID_ANY, nomfichier='test', matrice={}, donnees={}, lblBox={})
+        self.topPnl = PNL_paramsLocaux(self,wx.ID_ANY, nomfichier='test', matrice={}, donnees={}, lblTopBox={})
         self.topPnl.Init()
         self.btn0 = wx.Button(self, wx.ID_ANY, "Action Frame")
         self.btn0.Bind(wx.EVT_BUTTON,self.OnBoutonAction)
