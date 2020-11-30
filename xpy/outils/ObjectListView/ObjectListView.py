@@ -354,6 +354,7 @@ class ObjectListView(wx.ListCtrl):
         wx.ListCtrl.ClearAll(self)
         self.checkStateColumn = None
         self.columns = []
+        self.lstSetterValues = []
         self.dicChoices={}
         ix = 0
         for x in columns:
@@ -364,6 +365,9 @@ class ObjectListView(wx.ListCtrl):
             else:
                 # cas simple avec quelques un tuple de params dans l'ordre
                 self.AddColumnDefn(ColumnDefn(*x))
+            if hasattr(x,'valueSetter'):
+                self.lstSetterValues.append(x.valueSetter)
+            else: self.lstSetterValues.append(None)
             ix +=1
         # Try to preserve the column column
         sortCol = self.GetSortColumn()
@@ -2296,7 +2300,7 @@ class ObjectListView(wx.ListCtrl):
         # If all else fails, we use a string editor.
         creatorFunction = self.columns[subItemIndex].cellEditorCreator
         if creatorFunction is None:
-            value = value or self._CalcNonNullValue(subItemIndex)
+            value = value or self.CalcNonNullValue(subItemIndex)
             creatorFunction = CellEditor.CellEditorRegistry().GetCreatorFunction(
                 value)
             if creatorFunction is None:
@@ -2304,7 +2308,7 @@ class ObjectListView(wx.ListCtrl):
                     "")
         return creatorFunction(self, rowIndex, subItemIndex)
 
-    def _CalcNonNullValue(self, colIndex, maxRows=1000):
+    def CalcNonNullValue(self, colIndex, maxRows=1000):
         """
         Return the first non-null value in the given column, processing
         at most maxRows rows
@@ -2434,8 +2438,8 @@ class ObjectListView(wx.ListCtrl):
 
         # Filtres de colonnes
         nbf = 0
-        for texteFiltre in self.formatageFiltres(self.listeFiltresColonnes):
-            filtre = None
+
+        for texteFiltre in self.FormatageFiltres(self.listeFiltresColonnes):
             def fn(track):
                 result = eval(texteFiltre)
                 return result
@@ -2458,109 +2462,16 @@ class ObjectListView(wx.ListCtrl):
         self.listeFiltresColonnes = listeFiltresColonnes
         self.Filtrer()
 
-    def formatageFiltres(self, listeFiltres=[]):
+    def FormatageFiltres(self, listeFiltres=[]):
         # Formatage du filtre
         listeFiltresFinale = []
         filtre = None
         for dictFiltre in listeFiltres:
             code = dictFiltre["code"]
             choix = dictFiltre["choix"]
-            criteres = dictFiltre["criteres"]
+            critere = dictFiltre["critere"]
             typeDonnee = dictFiltre["typeDonnee"]
-
-            # Texte
-            if typeDonnee == str:
-                tpldate = criteres.split('/')
-                if len(tpldate)==3:
-                    criteres = ('20'+tpldate[2])[-4:]+'-'+('0'+tpldate[1])[-2:]+'-'+('0'+tpldate[0])[-2:]
-                if choix == "EGAL":
-                    filtre = "track.%s != None and track.%s.lower() == '%s'.lower()" % (code, code, criteres)
-                if choix == "DIFFERENT":
-                    filtre = "track.%s != None and track.%s.lower() != '%s'.lower()" % (code, code, criteres)
-                if choix == "CONTIENT":
-                    filtre = "track.%s != None and '%s'.lower() in track.%s.lower()" % (code, criteres, code)
-                if choix == "COMMENCE":
-                    lg = len(criteres)
-                    filtre = "track.%s != None and '%s'.lower()[:%d] == track.%s.lower()[:%d]" % (code, criteres, lg, code, lg)
-                if choix == "CONTIENTPAS":
-                    filtre = "track.%s != None and '%s'.lower() not in track.%s.lower()" % (code, criteres, code)
-                if choix == "VIDE":
-                    filtre = "track.%s == '' or track.%s == None" % (code, code)
-                if choix == "PASVIDE":
-                    filtre = "track.%s != '' and track.%s != None" % (code, code)
-                if choix == "DANS" :
-                    lst = criteres.split(";")
-                    serie = u"["
-                    for x in lst:
-                        serie += "'%s'"%x.lower().strip() + u","
-                    serie += u"]"
-                    filtre = "track.%s != None and track.%s.lower() in %s" % (code, code, serie)
-                if choix == "SUPEGAL":
-                    filtre = "track.%s.lower() >= '%s'.lower()" % (code, criteres)
-                if choix == "INFEGAL":
-                    filtre = "track.%s.lower() <= '%s'.lower()" % (code, criteres)
-
-            # Entier, montant
-            if typeDonnee in (int, float):
-                if choix == "COMPRIS" :
-                    min = str(criteres.split(";")[0])
-                    max = str(criteres.split(";")[1])
-                    filtre = "track.%s >= %s and track.%s <= %s" % (code, min, code, max)
-                else :
-                    criteres = str(criteres)
-                if choix == "EGAL":
-                    filtre = "track.%s == %s" % (code, criteres)
-                if choix == "DIFFERENT":
-                    filtre = "track.%s != %s" % (code, criteres)
-                if choix == "SUP":
-                    filtre = "track.%s > %s" % (code, criteres)
-                if choix == "SUPEGAL":
-                    filtre = "track.%s >= %s" % (code, criteres)
-                if choix == "INF":
-                    filtre = "track.%s < %s" % (code, criteres)
-                if choix == "INFEGAL":
-                    filtre = "track.%s <= %s" % (code, criteres)
-
-            # Bool
-            if typeDonnee == bool:
-                criteres = str(criteres)
-                if choix == "EGAL":
-                    filtre = "track.%s == %s" % (code, criteres)
-                if choix == "DIFFERENT":
-                    filtre = "track.%s != %s" % (code, criteres)
-                if choix == "SUP":
-                    filtre = "track.%s > %s" % (code, criteres)
-                if choix == "SUPEGAL":
-                    filtre = "track.%s >= %s" % (code, criteres)
-                if choix == "INF":
-                    filtre = "track.%s < %s" % (code, criteres)
-                if choix == "INFEGAL":
-                    filtre = "track.%s <= %s" % (code, criteres)
-
-            # Date
-            if typeDonnee in (datetime.date,wx.DateTime,datetime.datetime):
-                crit = "%s%s%s" %(criteres[-4:],criteres[3:5],criteres[:2])
-                trackdat = "(str(track.%s.year)+ ('0'+str(track.%s.month))[-2:]+ ('0'+str(track.%s.day))[-2:])"\
-                           %(code,code,code)
-                if typeDonnee == wx.DateTime:
-                    trackdat = "(str(track.%s.year)+ ('0'+str(track.%s.month+1))[-2:]+ ('0'+str(track.%s.day))[-2:])"\
-                               %(code,code,code)
-                if choix == "EGAL":
-                    filtre = " %s == '%s'" % (trackdat, crit)
-                if choix == "DIFFERENT":
-                    filtre = " %s != '%s'" % (trackdat, crit)
-                if choix == "SUP":
-                    filtre = " %s > '%s'" % (trackdat, crit)
-                if choix == "SUPEGAL":
-                    filtre = " %s >= '%s'" % (trackdat, crit)
-                if choix == "INF":
-                    filtre = " %s < '%s'" % (trackdat, crit)
-                if choix == "INFEGAL":
-                    filtre = " %s <= '%s'" % (trackdat, crit)
-            if not filtre:
-                wx.MessageBox("Pb de programmation\npour le type de donnée '%s' il n'y a pas de choix '%s' connu"
-                              %(typeDonnee,choix))
-
+            filtre = Filter.GetFiltrePython(typeDonnee,code,choix,critere)
             # Mémorisation
             listeFiltresFinale.append(filtre)
 
@@ -4430,9 +4341,9 @@ class CTRL_Outils(wx.Panel):
         self.MAJ_ctrl_filtrer()
 
     def OnBoutonFiltrer(self,event):
-        dlg = ListeFiltres.DLG_listeFiltres(self, listview=self.listview)
+        dlg = ListeFiltres.DLG_listeFiltres(self,self.listview,self.listeFiltres)
         if dlg.ShowModal() == wx.ID_OK:
-            self.listeFiltres.append(dlg.GetFiltres())
+            self.listeFiltres = dlg.GetFiltres()
             self.listview.SetFiltresColonnes(self.listeFiltres)
             self.listview.Filtrer()
             self.MAJ_ctrl_filtrer()
@@ -4471,8 +4382,8 @@ class TrackVierge(object):
             value = None
             if column.valueSetter != None:
                 value = column.valueSetter
-            if value == None and hasattr(olv,'lstSetterValue'):
-                value = olv.lstSetterValue[olv.columns.index(column)]
+            if value == None and hasattr(olv,'lstSetterValues'):
+                value = olv.lstSetterValues[olv.columns.index(column)]
             self.__setattr__(column.valueGetter, value)
             if isinstance(value,(wx.DateTime,datetime.date,datetime.datetime)):
                 value = str(value)[:10]

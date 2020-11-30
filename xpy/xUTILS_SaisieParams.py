@@ -63,6 +63,7 @@ def Transpose(matrice,dlColonnes,lddDonnees):
         for code in dlColonnes:
             for colonne in dlColonnes[code]:
                 cle = None
+                format = 'LEFT'
                 for (cat,libel) in matrice.keys():
                     if cat == code : cle = (cat,libel)
                 if cle :
@@ -72,7 +73,6 @@ def Transpose(matrice,dlColonnes,lddDonnees):
                                 if 'genre' in ligne:
                                     if ligne['genre'] in ['Float','Int']: format = 'RIGHT'
                                     elif ligne['genre'] in ['Check','Bool']: format = 'CENTER'
-                                    else: format = 'LEFT'
                                 namecol = code + '.' + ligne['name']
                                 if not 'label' in ligne:
                                     wx.MessageBox("Pb de matrice : il faut un champ 'label' dans le dictionnaire ci dessous\n%s" % ligne)
@@ -481,7 +481,6 @@ class PNL_ctrl(wx.Panel):
                 if btnHelp:
                     self.btn.SetToolTip(btnHelp)
             self.BoxSizer()
-
         except Exception as err:
             wx.MessageBox(
                 "Echec sur PNL_ctrl de:\ngenre: %s\nname: %s\nvalue: %s (%s)\n\nLe retour d'erreur est : \n%s\n\nSur commande : %s"
@@ -736,11 +735,11 @@ class BoxPanel(wx.Panel):
                         panel.btn.Bind(wx.EVT_BUTTON,self.parent.OnBtnAction)
                     if panel.ctrl.actionCtrl:
                         panel.ctrl.Bind(wx.EVT_TEXT_ENTER, self.parent.OnCtrlAction)
+                        panel.ctrl.Bind(wx.EVT_KILL_FOCUS, self.parent.OnCtrlAction)
                         if panel.ctrl.genreCtrl in ['enum','combo','multichoice']:
                             panel.ctrl.Bind(wx.EVT_COMBOBOX, self.parent.OnCtrlAction)
                             panel.ctrl.Bind(wx.EVT_CHECKBOX, self.parent.OnCtrlAction)
-                        else:
-                            panel.ctrl.Bind(wx.EVT_KILL_FOCUS,self.parent.OnCtrlAction)
+
                     self.lstPanels.append(panel)
         self.SetSizerAndFit(self.ssbox)
 
@@ -809,14 +808,21 @@ class BoxPanel(wx.Panel):
 
 class TopBoxPanel(wx.Panel):
     #gestion de pluieurs BoxPanel juxtaposées horizontalement
-    def __init__(self, parent, *args, matrice={}, donnees={}, **kwds):
+    def __init__(self, parent, *args, matrice={}, donnees={}, dlChamps=None,**kwds):
         kw = DicFiltre(kwds,OPTIONS_PANEL)
         wx.Panel.__init__(self,parent,*args, **kw)
 
         lblTopBox = kwds.pop('lblTopBox',None)
 
         self.parent = parent
-        self.matrice = matrice
+        self.matrice = matrice.copy()
+
+        # cas ou on limite les champs à éditer la matrice est réduite
+        if dlChamps and len(dlChamps) > 0:
+            for (code,label) in matrice:
+                lChamps = []
+                if code in dlChamps : lChamps = dlChamps[code]
+                self.matrice[(code,label)] = [x for x in matrice[(code,label)] if  x['name'] in lChamps]
         self.ddDonnees = donnees
 
         # Cadres suplémentaire possible si un label est donné à TopBox
@@ -836,13 +842,13 @@ class TopBoxPanel(wx.Panel):
                 wx.MessageBox("TopBox: L'option '%s' pour la topbox n'est pas reconnue!\n\n%s" % (nom, possibles))
 
         self.lstBoxes = []
-        for code, label in matrice:
+        for code, label in self.matrice:
             if isinstance(code,str):
                 if not code in self.ddDonnees:
                      self.ddDonnees[code] = {}
                 box = BoxPanel(self, wx.ID_ANY, lblBox=label,
                                code = code,
-                               lignes=matrice[(code,label)],
+                               lignes=self.matrice[(code,label)],
                                dictDonnees=self.ddDonnees[code],
                                **kwdBox)
                 self.lstBoxes.append(box)
@@ -955,7 +961,7 @@ class DLG_listCtrl(wx.Dialog):
     Par Transpose() ces infos sont restituées dans ltColonnes liste de tuples descritif ordonné des colonnes
             et llItems liste des lignes, listes d'items (autant que de colonnes)
     """
-    def __init__(self,parent, *args, dldMatrice={}, dlColonnes={}, lddDonnees=[], **kwds):
+    def __init__(self,parent, *args, dldMatrice={}, dlColonnes={}, lddDonnees=[], dlChamps=None, **kwds):
         listArbo=os.path.abspath(__file__).split("\\")
         titre = kwds.pop('titre',listArbo[-1:][0] + "/" + self.__class__.__name__)
         wx.Dialog.__init__(self,parent, wx.ID_ANY, *args, title=titre,  style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER )
@@ -964,7 +970,7 @@ class DLG_listCtrl(wx.Dialog):
         self.gestionProperty =  kwds.pop('gestionProperty',False)
         colorBack =             kwds.pop('colorBack',wx.WHITE)
         self.lblList =          kwds.pop('lblList',"Liste des éléments")
-
+        self.dlChamps = dlChamps
         self.SetBackgroundColour(colorBack)
         self.parent = parent
         self.dlColonnes=dlColonnes
@@ -988,7 +994,7 @@ class DLG_listCtrl(wx.Dialog):
         if self.gestionProperty:
             self.dlgGest.pnl = PNL_property(self.dlgGest, self, matrice=self.dldMatrice, **self.kwds)
         else:
-            self.dlgGest.pnl = TopBoxPanel(self.dlgGest, matrice=self.dldMatrice, **self.kwds)
+            self.dlgGest.pnl = TopBoxPanel(self.dlgGest, matrice=self.dldMatrice, dlChamps=self.dlChamps, **self.kwds)
 
     # Sizer optionnel de l'écran de gestion par défaut
     def SizerDlgGestion(self):
@@ -1024,32 +1030,34 @@ class DLG_listCtrl(wx.Dialog):
         topbox.SetSizeHints(self)
         self.SetSizerAndFit(topbox)
 
+    def SetOneItems(self,ddDonnees):
+        #Ajoute une ligne d'items dans le lddDonnees
+        self.lddDonnees.append(self.Calcul(ddDonnees))
+        self.lddDonnees, self.ltColonnes, self.llItems = Transpose(self.dldMatrice, self.dlColonnes, self.lddDonnees)
+        self.pnl.SetValeurs(self.llItems, self.ltColonnes)
+
+    def Calcul(self,ddDonnees):
+        # Possibilité de gérer un calcul combinant les lignes après saisie et avant affichage de la liste
+        pass
+
+
     def OnAjouter(self,event):
         SetEnableID(self.dldMatrice,enable=True)
         # l'ajout d'une ligne nécessite d'appeler un écran avec les champs en lignes
         ret = self.dlgGest.ShowModal()
         if ret == wx.OK:
             #récupération des valeurs saisies
-            ddDonnees = self.dlgGest.pnl.GetValeurs()
-            donnees={}
-            for (x,y) in ddDonnees.items():
-                donnees[x] = y
-            #donnees = deepcopy(ddDonnees)
-            self.lddDonnees.append(donnees)
-            self.lddDonnees, self.ltColonnes, self.llItems = Transpose(self.dldMatrice, self.dlColonnes, self.lddDonnees)
-            self.pnl.SetValeurs(self.llItems, self.ltColonnes)
-        #self.dlgGest.Destroy()
+            ddDonnees = self.Calcul(self.dlgGest.pnl.GetValeurs())
+            self.SetOneItems(ddDonnees)
 
     def OnModifier(self,event, items):
         # documentation dans dupliquer
         ddDonnees = self.lddDonnees[items]
         SetEnableID(self.dldMatrice)
         self.dlgGest.pnl.SetValeurs(ddDonnees)
-        #self.dlgGest.Sizer(self.dlgGest.pnl)
         ret = self.dlgGest.ShowModal()
         if ret == wx.OK:
-            ddDonnees = self.dlgGest.pnl.GetValeurs()
-            #self.lddDonnees[items] = deepcopy(ddDonnees)
+            ddDonnees = self.Calcul(self.dlgGest.pnl.GetValeurs())
             self.lddDonnees[items] = ddDonnees
             self.lddDonnees, self.ltColonnes, self.llItems = Transpose(self.dldMatrice, self.dlColonnes, self.lddDonnees)
             self.pnl.SetValeurs(self.llItems, self.ltColonnes)
@@ -1085,7 +1093,7 @@ class DLG_listCtrl(wx.Dialog):
         ret = self.dlgGest.ShowModal()
         if ret == wx.OK:
             #stockage des données
-            ddDonnees = self.dlgGest.pnl.GetValeurs()
+            ddDonnees = self.Calcul(self.dlgGest.pnl.GetValeurs())
             donnees = ddDonnees.copy()
             self.lddDonnees.append(donnees)
             self.lddDonnees, self.ltColonnes, self.llItems = Transpose(self.dldMatrice, self.dlColonnes, self.lddDonnees)
@@ -1156,9 +1164,8 @@ class DLG_vide(wx.Dialog):
             try:
                 eval(action)
             except Exception as err:
-                wx.MessageBox(
-                    "Commande: '%s' \n\nErreur: \n%s" % (action, err),
-                "Echec sur lancement de l'action bouton")
+                wx.MessageBox("Commande: '%s' \n\nErreur: \n%s" % (action, err),
+                              "Echec sur lancement de l'action bouton")
 
     def OnChildCtrlAction(self, event):
         # relais des actions sur boutons ou contrôles priorité si le parent gère ce relais
@@ -1174,9 +1181,9 @@ class DLG_vide(wx.Dialog):
 
 class DLG_monoLigne(wx.Dialog):
     # variante DLG_vide, avec relais possible d'évènements Boutons ou Controles gérés dans matrice
-    def __init__(self, parent, *args, dldMatrice={}, ddDonnees={}, **kwds):
+    def __init__(self, parent, *args, dldMatrice={}, ddDonnees={},dlChamps=None, **kwds):
         self.gestionProperty = kwds.pop('gestionProperty',False)
-        lblBox = kwds.pop('lblBox','Gestion d\'une ligne')
+        lblTopBox = kwds.pop('lblTopBox','Gestion d\'une ligne')
         self.marge = kwds.pop('marge',10)
         self.minSize = kwds.pop('minSize',(800, 500))
         self.couleur = kwds.pop('couleur',wx.WHITE)
@@ -1197,9 +1204,9 @@ class DLG_monoLigne(wx.Dialog):
         self.btn.Bind(wx.EVT_BUTTON, self.OnFermer)
         self.btnEsc = BTN_esc(self, action=self.OnBtnEsc)
         if self.gestionProperty:
-            self.pnl = PNL_property(self, self, matrice=self.dldMatrice, lblBox=lblBox)
+            self.pnl = PNL_property(self, self, matrice=self.dldMatrice, lblTopBox=lblTopBox)
         else:
-            self.pnl = TopBoxPanel(self, matrice=self.dldMatrice, lblBox=lblBox)
+            self.pnl = TopBoxPanel(self, matrice=self.dldMatrice, lblTopBox=lblTopBox,dlChamps=dlChamps)
         self.pnl.MinSize = self.minSize
         self.Sizer()
         self.pnl.SetValeurs(self.ddDonnees)
@@ -1247,7 +1254,7 @@ class xFrame(wx.Frame):
         self.parent = None
         titre = listArbo[-1:][0] + "/" + self.__class__.__name__
         wx.Frame.__init__(self,*args, title=titre, **kwds)
-        self.topPnl = TopBoxPanel(self,wx.ID_ANY, matrice=matrice, donnees=donnees, lblTopBox=lblTopBox)
+        self.topPnl = TopBoxPanel(self,wx.ID_ANY, matrice=matrice, donnees=donnees, dlChamps=None, lblTopBox=lblTopBox)
         self.btn0 = wx.Button(self, wx.ID_ANY, "Action Frame")
         self.btn0.Bind(wx.EVT_BUTTON,self.OnBoutonAction)
         self.marge = 10
@@ -1397,14 +1404,12 @@ if __name__ == '__main__':
     app.SetTopWindow(frame_4)
     frame_4.Show()
     """
-
     frame_3 = DLG_vide(None,)
     pnl = PNL_property(frame_3,frame_3,matrice=dictMatrice,donnees=dictDonnees)
     frame_3.Sizer(pnl)
     app.SetTopWindow(frame_3)
     frame_3.Show()
-    """
-    """
+
     frame_2 = FramePanels(None, )
     frame_2.Position = (500,300)
     frame_2.Show()
@@ -1413,6 +1418,7 @@ if __name__ == '__main__':
     app.SetTopWindow(frame_1)
     frame_1.Position = (50,50)
     frame_1.Show()
+
     frame_5 = DLG_monoLigne(None,dldMatrice=dictMatrice,
                 ddDonnees=dictDonnees,gestionProperty=False,minSize=(400,300))
     app.SetTopWindow(frame_5)

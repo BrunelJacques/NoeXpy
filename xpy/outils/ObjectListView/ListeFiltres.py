@@ -18,22 +18,27 @@ from xpy.outils.ObjectListView import Filter
 MATRICE = {
     ("filtre", "Composition du Filtre"):
         [
-            {'name': 'colonne','genre': 'Combo',  'label': "Colonne à filtrer",'value':'',
+            {'name': 'nomCol','genre': 'Combo',  'label': "Colonne à filtrer",'value':'',
                             'ctrlAction':'parent.OnChoixCol',
                             'txtSize':145,
                             'help': "Choisissez la colonne sur laquelle portera le filtre",},
-            {'name': 'choix', 'genre': 'Combo', 'label': "Choix d'action de filtre à appliquer",'value':'',
+            {'name': 'txtChoix', 'genre': 'Combo', 'label': "Action à appliquer",'value':'',
                             'ctrlAction': 'parent.OnChoixAction,',
                              'txtSize': 145,
                             'help': "Choisissez le type de filtre à appliquer dans la colonne", },
-            {'name': 'valeur', 'genre': 'texte', 'label': "Valeur",'value':'',
+            {'name': 'critere', 'genre': 'texte', 'label': "Valeur",'value':'',
                             'ctrlAction': 'parent.OnChoixValeur',
                             'txtSize':145,
                             'help': "Valeur proposée à l'action pour le filtre", },
+            {'name': 'code', 'label': "code de la Colonne stocké", 'value': '',},
+            {'name': 'choix', 'label': "code du choix stocké", 'value': '',},
+            {'name': 'designation', 'label': "Texte complet du filtre", 'value': '',},
         ]
         }
+CHAMPS = {'filtre':['nomCol','txtChoix','critere',]}
+COLONNES = {'filtre':['designation']}
 
-#------------------------------------------------------------------------------------
+#====================================================================================
 
 class PNL_listeFiltres(xusp.PNL_listCtrl):
     def __init__(self, parent, *args, **kwds):
@@ -48,24 +53,39 @@ class PNL_listeFiltres(xusp.PNL_listCtrl):
 
 class DLG_listeFiltres(xusp.DLG_listCtrl):
     def __init__(self, parent,listview =None,ldFiltres=[]):
-        self.listview = listview
-        if not hasattr(self.listview,'lstNomsColonnes'):
-            lstNoms, lstCodes, lstSet = [],[],[]
-            for col in self.listview.columns:
+
+        # recherche les liste définissants les colonnes
+        if not hasattr(listview,'lstNomsColonnes'):
+            lstNoms, lstCodes = [],[]
+            for col in listview.columns:
                 lstNoms.append(col.title)
                 lstCodes.append(col.valueGetter)
-                lstSet.append(col.valueSetter)
-            self.listview.lstNomsColonnes = lstNoms
-            self.listview.lstCodesColonnes = lstCodes
-            self.listview.lstSetterValues = lstSet
-        self.lstNomsColonnes = self.listview.lstNomsColonnes
-        self.lstCodesColonnes = self.listview.lstCodesColonnes
-        self.lstSetterValues = self.listview.lstSetterValues
-        matrice = MATRICE
+            listview.lstNomsColonnes = lstNoms
+            listview.lstCodesColonnes = lstCodes
+        self.lstNomsColonnes = listview.lstNomsColonnes
+        self.lstCodesColonnes = listview.lstCodesColonnes
 
+        # recherche la liste des valeurs par défaut pour déterminer le type de la colonne
+        if not hasattr(listview,'lstSetterValues'):
+            lstSet = []
+            for col in listview.columns:
+                lstSet.append(col.valueSetter)
+            listview.lstSetterValues = lstSet
+        for value in listview.lstSetterValues:
+            if not value:
+                ix = listview.lstSetterValues.index(value)
+                value = listview.CalcNonNullValue(ix)
+                listview.lstSetterValues[ix] = value
+        self.lstSetterValues = listview.lstSetterValues
+
+        self.listview = listview
+
+        self.codeBox =[x for (x,y) in MATRICE.keys()][0]
         super().__init__(parent,
-                                    dldMatrice=matrice,
+                                    dldMatrice=MATRICE,
+                                    dlColonnes=COLONNES,
                                     lddDonnees=[],
+                                    dlChamps=CHAMPS,
                                     lblList="Liste des filtres",
                                     gestionProperty=False,
                                     size=(800, 200),
@@ -78,17 +98,19 @@ class DLG_listeFiltres(xusp.DLG_listCtrl):
 
         self.Init()
         # alimentation des valeurs possibles premiere combo
-        pnlColonne = self.dlgGest.GetPnlCtrl('colonne')
+        pnlColonne = self.dlgGest.GetPnlCtrl('nomCol')
         pnlColonne.SetValues(choixColonnes)
         pnlColonne.SetValue(choixColonnes[0])
         pnlColonne.SetFocus()
+        self.lstChoix = []
+        self.lstTxtChoix = []
         self.SetFiltres(ldFiltres)
 
     # substitue un pnl spécifique en construisant
     def GetPnl_listCtrl(self,kwdList):
         return  PNL_listeFiltres(self, *self.args, **kwdList)
 
-    # Actions sur les ctrls affichés en gestion de ligne
+    # Actions sur les ctrls affichés en gestion de ligne-----------------------------
     def OnChoixCol(self,evt):
         # Choix d'une colonne
         nomCol = evt.EventObject.GetValue()
@@ -108,68 +130,84 @@ class DLG_listeFiltres(xusp.DLG_listCtrl):
 
     def VerifSetterValues(self):
         for ix in range(len(self.lstSetterValues)):
-            test = self.GetChoixActions(ix)
-
-    def GetChoixActions(self,ixColonne):
-        # récupère le type des valeurs de la colonne par défaut
-        if not self.lstSetterValues[ixColonne]:
-            self.lstSetterValues[ixColonne] = ''
-        self.tip = type(self.lstSetterValues[ixColonne])
-        # pour chercher le type d'actions à proposer
-        if not self.tip in Filter.CHOIX_FILTRES.keys():
-            nomColonne = self.lstNomsColonnes[ixColonne]
-            wx.MessageBox("ListeFiltres: SetterValue de la colonne '%s' non connu de CHOIX_FILTRES"%(nomColonne),
-                          "outils.olv.Filter.py")
-            self.tip = str
-        choixactions = Filter.CHOIX_FILTRES[self.tip]
-        return choixactions
+            self.GetChoixActions(ix)
 
     def SetChoixActions(self,ixcolonne):
-        pnlAction = self.dlgGest.GetPnlCtrl('choix')
+        pnlAction = self.dlgGest.GetPnlCtrl('txtChoix')
         oldval = pnlAction.GetValue()
-        # alimentation des valeurs possibles premiere combo
-        choixActions = [y for (x,y) in self.GetChoixActions(ixcolonne)]
-        pnlAction.SetValues(choixActions)
-        if oldval in choixActions:
+        # alimentation des valeurs possibles selon premiere combo
+        self.GetChoixActions(ixcolonne)
+        pnlAction.SetValues(self.lstTxtChoix)
+        if oldval in self.lstTxtChoix:
             pnlAction.SetValue(oldval)
-        else: pnlAction.SetValue(choixActions[0])
-        #pnlAction.ctrl.SetFocus()
+        else:
+            pnlAction.SetValue(self.lstTxtChoix[0])
+            pnlCritere = self.dlgGest.GetPnlCtrl('critere')
+            pnlCritere.SetValue('')
+            pnlCritere.Refresh()
+            pnlAction.Refresh()
 
-    # Actions sur le listCtrl
+    def GetChoixActions(self,ixColonne):
+        # retrourne la liste des choix d'actions possibles: selon le type de valeur...
+        if self.lstSetterValues[ixColonne] == None:
+            self.lstSetterValues[ixColonne] = ''
+        typeValeur = type(self.lstSetterValues[ixColonne])
+        # ...pour chercher le type d'actions à proposer
+        if not typeValeur in Filter.CHOIX_FILTRES.keys():
+            nomColonne = self.lstNomsColonnes[ixColonne]
+            wx.MessageBox("Le type de variable '%s', setterValue de '%s' absent dans Filter.CHOIX_FILTRES"%(typeValeur,
+                                                                                                            nomColonne),
+                          "outils.olv.Filter.py")
+            typeValeur = str
+        self.lstChoix = Filter.CHOIX_FILTRES[typeValeur]
+        self.lstTxtChoix = [ Filter.DIC_TXTFILTRES[x] for x in self.lstChoix]
+        return
+
+    def Calcul(self,ddDonnees,*args,**kwd):
+        # complète les données saisies par la grille avant d'afficher laliste
+        if not ddDonnees: return ddDonnees
+        for code in ddDonnees:
+            dx = ddDonnees[code]
+            dx['designation'] = '  '.join(["'%s'" % dx['nomCol'], dx['txtChoix'], "'%s'" % dx['critere']])
+            ixcol = self.lstNomsColonnes.index(dx['nomCol'])
+            dx['code'] = self.lstCodesColonnes[ixcol]
+            dx['choix'] = self.lstChoix[self.lstTxtChoix.index(dx['txtChoix'])]
+        return ddDonnees
+
+    # Actions sur le listCtrl ---------------------------------------------------------
     def SetFiltres(self,ldFiltres):
-
-        llFiltres = []
-        for x in ldFiltres:
-            tip = x['typeDonnee']
-            values = Filter.CHOIX_FILTRES[tip]
-            choixAction = [x['choix'][1]]
-            nomColonne = self.lstNomsColonnes[self.lstCodesColonnes.index(x['code'])]
-            llFiltres.append([nomColonne,choixAction,x['critere'],])
-        self.pnl.SetValeurs(llFiltres)
-
-    def OnFermer(self, event):
-        ldic = self.GetFiltres()
-        return self.Close()
+        # transpose les textes et insère la code de la box comme niveau supplémentaire
+        for dx in ldFiltres:
+            ixcol = self.lstCodesColonnes.index(dx['code'])
+            dx['nomCol'] = self.lstNomsColonnes[ixcol]
+            self.SetChoixActions(ixcol)
+            dx['txtChoix'] = self.lstTxtChoix[self.lstChoix.index(dx['choix'])]
+            ddDonnees = {self.codeBox: dx}
+            self.SetOneItems(ddDonnees)
 
     def GetFiltres(self):
-        llFiltres = self.pnl.GetValeurs()
         ldFiltres = []
-        for  nomColonne, choixAction, valeur in llFiltres:
-            ix = self.lstNomsColonnes.index(nomColonne)
-            code = self.lstCodesColonnes[ix]
-            typeDonnee = self.lstSetterValues[ix]
-            choix = Filter.CHOIX_FILTRES[choixAction][typeDonnee][0]
-            ldFiltres.append({"code": code, "choix": choix, "criteres": valeur,
-                                 "typeDonnee": typeDonnee, "titre": nomColonne})
+        for dDonnees in self.lddDonnees:
+            dx = dDonnees[self.codeBox]
+            ixcol = self.lstCodesColonnes.index(dx['code'])
+            typeDonnee = type(self.lstSetterValues[ixcol])
+            ldFiltres.append({  "code": dx['code'],
+                                "choix": dx['choix'],
+                                "critere": dx['critere'],
+                                "typeDonnee": typeDonnee,
+                                "titre": dx['nomCol']})
         return ldFiltres
 
+    def OnFermer(self, event):
+        self.EndModal(wx.ID_OK)
 
-# pour test -------------------------------------------------
+
+# pour test ***************************************************************************
 class objet(object):
     def __init__(self):
         self.lstNomsColonnes = ['Nbre', 'Nom_Complet','Date']
         self.lstCodesColonnes = ['nbre', 'nom','date']
-        self.lstSetterValues = [0, 'bonjour', datetime.date.today()]
+        self.lstSetterValues = [0.0, 'bonjour', datetime.date.today()]
 
 if __name__ == '__main__':
     app = wx.App(0)
@@ -177,8 +215,8 @@ if __name__ == '__main__':
     os.chdir("..")
     os.chdir("..")
     obj = objet()
-# Lancement des tests
+    # Lancement des tests
     dlg = DLG_listeFiltres(None,listview = obj,
-                           ldFiltres=[{'code':'nbre','choix':'EGAL','critere':'12','typeDonnee':float}])
+                           ldFiltres=[{'code':'date','choix':'DTEGAL','critere':'10/12/2019','typeDonnee':wx.DateTime},])
     #dlg = DLG_saisiefiltre(None,listview = obj)
     dlg.ShowModal()
