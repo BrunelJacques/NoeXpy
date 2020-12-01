@@ -8,20 +8,17 @@
 #------------------------------------------------------------------------
 
 import wx, copy
-from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn, Filter, CTRL_Outils
+from xpy.outils.ObjectListView import ObjectListView, FastObjectListView, ColumnDefn, Filter, CTRL_Outils
 import xpy.xUTILS_DB           as xdb
 import xpy.outils.xbandeau      as xbd
-import xpy.xGestion_TableauRecherche     as xgt
 from xpy.outils import xformat
 
 class Track(object):
     def __init__(self, donnees,champs):
+        self.donnees = donnees
         for ix in range(len(champs)):
             champ= champs[ix]
-            if isinstance(donnees[ix],(int,bool,float)):
-                commande = "self.%s = donnees[ix]"%(champ)
-            else:
-                commande = "self.%s = donnees[ix]"%(champ)
+            commande = "self.%s = donnees[ix]"%(champ)
             exec(commande)
 
 class DialogLettrage(wx.Dialog):
@@ -365,19 +362,19 @@ class DialogCoches(wx.Dialog):
         # Boutons
         self.bouton_ok = wx.Button(self, label=u"Valider" )
         self.bouton_ok.SetBitmap(wx.Bitmap("xpy/Images/32x32/Valider.png"))
-        self.bouton_fermer = wx.Button(self, label=u"Annuler")
-        self.bouton_fermer.SetBitmap(wx.Bitmap("xpy/Images/32x32/Annuler.png"))
+        self.bouton_annuler = wx.Button(self, label=u"Annuler")
+        self.bouton_annuler.SetBitmap(wx.Bitmap("xpy/Images/32x32/Annuler.png"))
 
         self.__set_properties()
         self.__do_layout()
         # Binds
         self.Bind(wx.EVT_BUTTON, self.OnClicOk, self.bouton_ok)
-        self.Bind(wx.EVT_BUTTON, self.OnClicFermer, self.bouton_fermer)
+        self.Bind(wx.EVT_BUTTON, self.OnClicFermer, self.bouton_annuler)
         self.listview.Bind(wx.EVT_LIST_ITEM_ACTIVATED,self.OnDblClic)
 
     def __set_properties(self):
         self.SetMinSize(self.minSize)
-        self.bouton_fermer.SetToolTip(u"Cliquez ici pour fermer")
+        self.bouton_annuler.SetToolTip(u"Cliquez ici pour fermer")
         self.listview.SetToolTip(u"Double Cliquez pour choisir")
         # Couleur en alternance des lignes
         self.listview.oddRowsBackColor = "#F0FBED"
@@ -412,7 +409,7 @@ class DialogCoches(wx.Dialog):
         gridsizer_boutons = wx.FlexGridSizer(rows=1, cols=3, vgap=0, hgap=0)
         gridsizer_boutons.Add((20, 20), 1, wx.ALIGN_BOTTOM, 0)
         gridsizer_boutons.Add(self.bouton_ok, 1, wx.EXPAND, 0)
-        gridsizer_boutons.Add(self.bouton_fermer, 1, wx.EXPAND, 0)
+        gridsizer_boutons.Add(self.bouton_annuler, 1, wx.EXPAND, 0)
         gridsizer_boutons.AddGrowableCol(0)
         gridsizer_base.Add(gridsizer_boutons, 1, wx.RIGHT|wx.BOTTOM|wx.EXPAND, 10)
         self.SetSizer(gridsizer_base)
@@ -446,13 +443,20 @@ class DialogCoches(wx.Dialog):
         self.listview.Refresh()
 
 class DialogAffiche(wx.Dialog):
-    def __init__(self, titre="Ici mon titre",
-                 intro="et mes explications",
-                 lstDonnees=[("a",2),("b",10)],
-                 lstColonnes=["let","nbre"],
-                 lstWcol=None,
-                 size=(600,600)):
-        wx.Dialog.__init__(self, None, -1, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
+    def __init__(self, *args,**kwd):
+        titre =     kwd.pop('titre',"Ici mon titre")
+        intro =     kwd.pop('intro',"et mes explications")
+        lstDonnees = kwd.pop('lstDonnees',[("a",2),("b",10),("c","jj")])
+        lstColonnes = kwd.pop('lstColonnes',["col1","col2"])
+        lstWnomsCol = [len(x)*6 for x in lstColonnes]
+        self.lstWcol =   kwd.pop('lstWcol',lstWnomsCol)
+        self.lstSetters = kwd.pop('lstSetters',lstDonnees[0])
+        self.withCheck  = kwd.pop('withCheck', False)
+        self.columnSort = kwd.pop('columnSort',1)
+        size =      kwd.pop('size',(600,600))
+
+
+        wx.Dialog.__init__(self, None, -1, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
         self.SetMinSize(size)
         mess = None
         if not lstDonnees or len(lstDonnees)==0 : mess = "xchoixListe.DialogAffiche reçoit 'lstDonnees' vide"
@@ -466,19 +470,10 @@ class DialogAffiche(wx.Dialog):
             for i in range(len(lstDonnees[0])):
                 lstColonnes.append("col " + str(i))
         self.lstDonnees = lstDonnees
-        self.dicOlv = {
-            'listeColonnes': self.ComposeColonnes(lstColonnes,lstWcol=lstWcol),
-            'getDonnees': self.GetDonnees,
-            'checkColonne': False,
-            'colonneTri': 0,
-            'style': wx.LC_SINGLE_SEL | wx.LC_HRULES | wx.LC_VRULES,
-            'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
-            'dictColFooter': {lstColonnes[0]: {"mode": "nombre", "alignement": wx.ALIGN_CENTER}, }
-        }
         self.SetTitle("xchoixListe.DialogAffiche")
         self.choix= None
-        self.avecFooter = True
-        self.barreRecherche = True
+        self.lstColonnes = lstColonnes
+        self.nbColonnes = len(lstColonnes)
 
         # Bandeau
         self.ctrl_bandeau = xbd.Bandeau(self, titre=titre, texte=intro,  hauteur=18, nomImage="xpy/Images/32x32/Python.png")
@@ -490,39 +485,47 @@ class DialogAffiche(wx.Dialog):
         bmpok = wx.Bitmap("xpy/Images/32x32/Valider.png")
         self.bouton_fermer = wx.Button(self, id=-1,label=(u"Valider"))
         self.bouton_fermer.SetBitmap(bmpok)
-
-        # Initialisations
-        self.__init_olv()
-        self.__set_properties()
-        self.__do_layout()
-
-    def __init_olv(self):
-        dicOlv = self.dicOlv
-        #pnlOlv = xgt.PanelListView(self,**dicOlv)
-        pnlOlv = xgt.PNL_tableau(self,dicOlv)
-        if self.avecFooter:
-            self.ctrlOlv = pnlOlv.ctrlOlv
-            self.olv = pnlOlv
-        else:
-            self.ctrlOlv = xgt.ListView(self,**dicOlv)
-            self.olv = self.ctrlOlv
-        if self.barreRecherche:
-            self.ctrloutils = CTRL_Outils(self, listview=self.ctrlOlv, afficherCocher=False)
-        self.ctrlOlv.MAJ()
-
-    def __set_properties(self):
         self.bouton_fermer.SetToolTip(u"Cliquez ici pour valider votre choix")
+        self.InitOlv()
+        self.__do_layout()
+        # Binds
         self.Bind(wx.EVT_BUTTON, self.OnDblClicOk, self.bouton_fermer)
-        self.ctrlOlv.Bind(wx.EVT_LIST_ITEM_ACTIVATED,self.OnDblClicOk)
+
+
+    def InitOlv(self):
+        self.listview = ObjectListView(self,style= wx.LC_REPORT)
+        self.listview.SetToolTip(u"Double Cliquez pour choisir")
+        # Couleur en alternance des lignes
+        self.listview.oddRowsBackColor = "#F0FBED"
+        self.listview.evenRowsBackColor = wx.Colour(255, 255, 255)
+        self.listview.useExpansionColumn = True
+        self.listview.Bind(wx.EVT_LIST_ITEM_ACTIVATED,self.OnDblClicOk)
+
+        lstColumns = []
+        self.lstCodes = [xformat.SupprimeAccents(x) for x in  self.lstColonnes]
+        for ix  in range(self.nbColonnes):
+            width = self.lstWcol[ix]
+            label = self.lstColonnes[ix]
+            code = self.lstCodes[ix]
+            setter = self.lstSetters[ix]
+            lstColumns.append(ColumnDefn(label, "left", width, code,  isSpaceFilling=True))
+
+        self.listview.SetColumns(lstColumns)
+        self.listview.SetSortColumn(self.columnSort)
+        if self.withCheck:
+            self.listview.CreateCheckStateColumn()
+
+        self.tracks = [Track(don,self.lstCodes) for don in self.lstDonnees]
+
+        self.listview.SetObjects(self.tracks)
+        self.listview.Refresh()
 
     def __do_layout(self):
         gridsizer_base = wx.FlexGridSizer(rows=6, cols=1, vgap=0, hgap=0)
         gridsizer_base.Add(self.ctrl_bandeau, 1, wx.EXPAND, 0)
 
         sizerolv = wx.BoxSizer(wx.VERTICAL)
-        sizerolv.Add(self.olv, 10, wx.EXPAND, 10)
-        if self.barreRecherche:
-            sizerolv.Add(self.ctrloutils, 0, wx.EXPAND, 10)
+        sizerolv.Add(self.listview, 10, wx.EXPAND, 10)
         gridsizer_base.Add(sizerolv, 10, wx.EXPAND, 10)
         gridsizer_base.Add(wx.StaticLine(self), 0, wx.TOP| wx.EXPAND, 3)
 
@@ -543,23 +546,9 @@ class DialogAffiche(wx.Dialog):
     def GetDonnees(self,**kwd):
         return self.lstDonnees
 
-    def ComposeColonnes(self,lstColonnes,lstWcol=None):
-        lstDefn = []
-        if lstWcol and len(lstWcol) != len(lstColonnes):
-            lstWcol = None
-        width = -1
-        spFil = True
-        for colonne in lstColonnes:
-            if lstWcol:
-                width = lstWcol[lstColonnes.index(colonne)]
-                if width != -1 : spFil = False
-            code = xdb.NoPunctuation(colonne)
-            lstDefn.append(ColumnDefn(colonne, "left",width,code,isSpaceFilling=spFil))
-        return lstDefn
-
     def OnDblClicOk(self, event):
-        selection = self.ctrlOlv.GetSelectedObject()
-        if selection == None and len(self.ctrlOlv.innerList)>1:
+        selection = self.listview.GetSelectedObject()
+        if selection == None and len(self.listview.innerList)>1:
             dlg = wx.MessageDialog(self, (u"Pas de sélection faite !\nIl faut choisir ou cliquer sur annuler"), (u"Accord Impossible"), wx.OK | wx.ICON_EXCLAMATION)
             dlg.ShowModal()
             dlg.Destroy()
@@ -569,12 +558,12 @@ class DialogAffiche(wx.Dialog):
             self.EndModal(wx.ID_OK)
 
     def GetChoix(self):
-        selection = self.ctrlOlv.GetSelectedObject()
+        selection = self.listview.GetSelectedObject()
         donnees = None
         if selection :
             donnees = selection.donnees
-        elif len(self.ctrlOlv.innerList) == 1:
-            donnees = self.ctrlOlv.innerList[0].donnees
+        elif len(self.listview.innerList) == 1:
+            donnees = self.listview.innerList[0].donnees
         return donnees
 
 if __name__ == u"__main__":
@@ -595,7 +584,7 @@ if __name__ == u"__main__":
     app.SetTopWindow(dialog_3)
 
     #print(xformat.FmtMontant(-124566.45765,prec=3))
-    print(dialog_3.ShowModal())
-    print(dialog_3.choix)
+    print(dialog_1.ShowModal())
+    print(dialog_1.choix)
     app.MainLoop()
 

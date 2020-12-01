@@ -65,7 +65,7 @@ DIC_TXTFILTRES = {
 }
 
 # Fonctions à lancer selon CHOIX_FILTRES
-def GetFiltrePython(typeDonnee,code,choix,critere):
+def GetFnFiltre(typeDonnee,code,choix,critere):
     filtre = None
     tpldate = critere.split('/')
     if len(tpldate) == 3:
@@ -155,7 +155,13 @@ def GetFiltrePython(typeDonnee,code,choix,critere):
     elif not filtre:
         wx.MessageBox("Pb de programmation\npour le type de donnée '%s' il n'y a pas de choix '%s' connu"
                       % (typeDonnee, choix),caption='Filter.GetFiltrePython')
-    return filtre
+
+    def fn(track):
+        result = eval(filtre)
+        return result
+    fnfiltre = Predicate(fn)
+
+    return fnfiltre
 
 def Predicate(predicate):
     """
@@ -236,8 +242,6 @@ class TextSearch(object):
         try :
             return texte.decode("iso-8859-15")
         except : return texte
-        
-
 
     def SetText(self, text):
         """
@@ -260,13 +264,11 @@ class Chain(object):
         #Create a filter that performs all the given filters. The order of the filters is important.
         self.filters = filters
         self.filterAndNotOr = filterAndNotOr
-        print('Init-----------------')
 
     def __call__(self, modelObjects):
         if self.filterAndNotOr:
             #Return the model objects that match all of our filters
             for filter in self.filters:
-                print(len(modelObjects),filter)
                 modelObjects = filter(modelObjects)
             return modelObjects
         else:

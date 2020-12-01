@@ -286,7 +286,7 @@ class ObjectListView(wx.ListCtrl):
         self.evenRowsBackColor = wx.Colour(255, 255, 245)
         self.oddRowsBackColor = wx.Colour(245, 245, 255)
         self.newRowsBackColor = wx.Colour(255,250,205)      # Jaune
-
+        self.texteRecherche = None
         self.lastGetObjectIndex = -1
 
         kwds = {}
@@ -1944,9 +1944,7 @@ class ObjectListView(wx.ListCtrl):
         self._FormatAllRows()
 
     def _SortItemsNow(self):
-        """
-        Sort the actual items in the list now, according to the current column and order
-        """
+        #Sort the actual items in the list now, according to the current column and order
         sortColumn = self.GetSortColumn()
         if not sortColumn:
             return
@@ -1971,6 +1969,7 @@ class ObjectListView(wx.ListCtrl):
             return result
 
         self.SortListItemsBy(_objectComparer)
+        return
 
     def SortListItemsBy(self, cmpFunc, ascending=None):
         """
@@ -2425,44 +2424,40 @@ class ObjectListView(wx.ListCtrl):
                 self.EnsureCellVisible(index, 0)
 
     def Filtrer(self, texteRecherche=None):
+        if texteRecherche == None and self.texteRecherche:
+            texteRecherche = self.texteRecherche
+        elif texteRecherche and len(texteRecherche) == 0 :
+            self.texteRecherche = None
+            texteRecherche = None
+        else: self.texteRecherche = texteRecherche
         # andNotOr vient d'un bind d'une coche si plusieurs filtres
         andNotOr = True
         if hasattr(self,'filtrerAndNotOr'):
             andNotOr = self.filtrerAndNotOr
         listeFiltres = []
-        # Filtre barre de recherche
+        # fn Filtre provenant de la barre de recherche
         if texteRecherche != None and len(texteRecherche)>0:
             filtre = Filter.TextSearch(self, self.columns[0:self.GetColumnCount()])
             filtre.SetText(texteRecherche)
             listeFiltres.append(filtre)
 
-        # Filtres de colonnes
-        nbf = 0
-
-        for texteFiltre in self.FormatageFiltres(self.listeFiltresColonnes):
-            def fn(track):
-                result = eval(texteFiltre)
-                return result
-            filtre = Filter.Predicate(fn)
-            if filtre:
-                listeFiltres.append(filtre)
-                nbf +=1
+        # Filtres de colonnes ajoutés
+        listeFiltres += self.lstFnFiltres(self.listeFiltresColonnes)
 
         self.SetFilter(Filter.Chain(andNotOr,*listeFiltres))
 
-        if hasattr(self,'InitModel'):
-            self.InitModel(filtreTxt=texteRecherche,nbreFiltres=nbf)
+        if hasattr(self,'InitModel') :
+            # relance de l'appel des données dans la base, reconstitue modelObjects
+            self.InitModel(filtreTxt=texteRecherche,
+                           nbreFiltres=len(self.listeFiltresColonnes),
+                           sortCol=self.sortColumnIndex,
+                           sortAsc=self.sortAscending)
             self.original = True
-            self._BuildInnerList()
         self.RepopulateList()
         self.Refresh()
         #self.OnCheck(None)
 
-    def SetFiltresColonnes(self, listeFiltresColonnes=[]):
-        self.listeFiltresColonnes = listeFiltresColonnes
-        self.Filtrer()
-
-    def FormatageFiltres(self, listeFiltres=[]):
+    def lstFnFiltres(self, listeFiltres=[]):
         # Formatage du filtre
         listeFiltresFinale = []
         filtre = None
@@ -2471,11 +2466,13 @@ class ObjectListView(wx.ListCtrl):
             choix = dictFiltre["choix"]
             critere = dictFiltre["critere"]
             typeDonnee = dictFiltre["typeDonnee"]
-            filtre = Filter.GetFiltrePython(typeDonnee,code,choix,critere)
+            filtre = Filter.GetFnFiltre(typeDonnee,code,choix,critere)
             # Mémorisation
             listeFiltresFinale.append(filtre)
-
         return listeFiltresFinale
+
+    def SetFiltresColonnes(self, listeFiltresColonnes=[]):
+        self.listeFiltresColonnes = listeFiltresColonnes
 
     def SetBarreRecherche(self, ctrl=None):
         self.barreRecherche = ctrl
@@ -2852,11 +2849,7 @@ class FastObjectListView(AbstractVirtualObjectListView):
     #  Sorting
 
     def _SortItemsNow(self):
-        """
-        Sort the items by our current settings.
-
-        FastObjectListView don't sort the items, they sort the model objects themselves.
-        """
+        #FastObjectListView don't sort the items, they sort the model objects themselves.
         selection = self.GetSelectedObjects()
         self._SortObjects()
 
@@ -4233,6 +4226,7 @@ class BarreRecherche(wx.SearchCtrl):
 
     def OnSearch(self, evt):
         self.Recherche()
+        evt.Skip()
 
     def OnCancel(self, evt):
         self.SetValue("")
@@ -4240,7 +4234,7 @@ class BarreRecherche(wx.SearchCtrl):
 
     def OnDoSearch(self, evt):
         txtSearch = self.GetValue()
-        if len(txtSearch) > 4 :
+        if len(txtSearch) > 4  or  txtSearch == '':
             self.Recherche()
 
     def Cancel(self):
@@ -4249,7 +4243,6 @@ class BarreRecherche(wx.SearchCtrl):
     def Recherche(self):
         txtSearch = self.GetValue()
         self.ShowCancelButton(len(txtSearch))
-        #self.listview.RepopulateList()
         self.listview.Filtrer(txtSearch)
         if hasattr(self.listview,'MAJ_footer'):
             self.listview.MAJ_footer()
@@ -4318,10 +4311,8 @@ class CTRL_Outils(wx.Panel):
         # Modifie l'image selon le nbre de filtres activés
         if nbreFiltres == 0:
             nomImage = "Filtre"
-        elif nbreFiltres < 10:
-            nomImage = "Filtre"
         else:
-            nomImage = "Filtre"
+            nomImage = "Filtre_actif"
         self.bouton_filtrer.SetBitmap(wx.Bitmap("xpy/Images/16x16/%s.png" % nomImage, wx.BITMAP_TYPE_ANY))
         self.bouton_filtrer.Refresh()
 
@@ -4353,7 +4344,7 @@ class CTRL_Outils(wx.Panel):
         self.listeFiltres = []
         self.listview.original = True
         self.listview.SetFiltresColonnes([])
-        self.listview.Filtrer()
+        self.listview.Filtrer('')
         self.MAJ_ctrl_filtrer()
 
     def OnBoutonCocher(self, event):

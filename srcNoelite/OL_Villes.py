@@ -13,7 +13,7 @@ import xpy.xUTILS_DB                   as xdb
 import srcNoelite.UTILS_Adresses   as usa
 import srcNoelite.UTILS_Utilisateurs    as nuu
 import srcNoelite.DLG_Pays          as DLG_Pays
-from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn, Filter, CTRL_Outils
+from xpy.outils.ObjectListView import ObjectListView, ColumnDefn, Filter, CTRL_Outils
 
 class CTRL_Bouton_image(wx.Button):
     def __init__(self, parent, id=wx.ID_APPLY, texte="", cheminImage=None):
@@ -137,7 +137,7 @@ class Track(object):
         self.mode = donnees[4]
 
     
-class ListView(FastObjectListView):
+class ListView(ObjectListView):
     def __init__(self, *args, **kwds):
         # Récupération des paramètres perso
         self.selectionID = None
@@ -147,7 +147,7 @@ class ListView(FastObjectListView):
         self.popupIndex = -1
         self.listeFiltres = []
         # Initialisation du listCtrl
-        FastObjectListView.__init__(self, *args, **kwds)
+        ObjectListView.__init__(self, *args, **kwds)
         # Binds perso
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
         self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)

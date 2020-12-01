@@ -284,15 +284,18 @@ class PNL_tableau(wx.Panel):
         dicBandeau = dicOlv.pop('dicBandeau',None)
         autoSizer = dicOlv.pop('autoSizer',True)
         self.lstBtns = kwds.pop('lstBtns',None)
+        if self.lstBtns == None:
+            self.lstBtns = dicOlv.pop('lstBtns', None)
         self.lstActions = kwds.pop('lstActions',None)
         self.dicOnClick = kwds.pop('dicOnClick',None)
         if self.lstBtns == None :
             #force la présence d'un pied d'écran par défaut
-            self.lstBtns =  [('BtnPrec', wx.ID_CANCEL, wx.ArtProvider.GetBitmap(wx.ART_DELETE, wx.ART_OTHER, (32, 32)),
+            self.lstBtns =  [
+                ('BtnPrec', wx.ID_CANCEL, wx.ArtProvider.GetBitmap(wx.ART_DELETE, wx.ART_OTHER, (32, 32)),
                 "Abandon, Cliquez ici pour retourner à l'écran précédent"),
                ('BtnOK', wx.ID_OK, wx.Bitmap("xpy/Images/32x32/Valider.png", wx.BITMAP_TYPE_ANY),
-                "Cliquez ici pour Choisir l'item sélectionné")
-               ]
+                "Cliquez ici pour Choisir l'item sélectionné"),
+            ]
 
         wx.Panel.__init__(self, parent, *args,  **kwds)
         #ci dessous l'ensemble des autres paramètres possibles pour OLV

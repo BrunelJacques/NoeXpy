@@ -160,6 +160,7 @@ class PnlAdresse(wx.Panel):
             dlg = xcl.DialogAffiche(titre=u"Précisez votre choix",intro=u"Sinon allez choisir la ville par '...'",
                                         lstDonnees=lstChoix,lstColonnes=self.lstColonnes)
             ret = dlg.ShowModal()
+            choix = dlg.GetChoix()
             if ret == wx.ID_OK and dlg.GetChoix():
                 ix = lstChoix.index(dlg.GetChoix())
                 ville = self.lstVilles[ix]
