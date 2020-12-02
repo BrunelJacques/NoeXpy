@@ -493,7 +493,7 @@ class DialogAffiche(wx.Dialog):
 
 
     def InitOlv(self):
-        self.listview = ObjectListView(self,style= wx.LC_REPORT)
+        self.listview = FastObjectListView(self,style= wx.LC_REPORT)
         self.listview.SetToolTip(u"Double Cliquez pour choisir")
         # Couleur en alternance des lignes
         self.listview.oddRowsBackColor = "#F0FBED"

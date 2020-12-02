@@ -133,14 +133,11 @@ def GetFnFiltre(typeDonnee,code,choix,critere):
             filtre = "track.%s != %s" % (code, critere)
 
     # Date
-    elif typeDonnee in (datetime.date, wx.DateTime, datetime.datetime):
-        crit = "%s%s%s" % (critere[-4:], critere[3:5], critere[:2])
+    elif typeDonnee in  (datetime.date, wx.DateTime, datetime.datetime):
+        crit = "%s%s%s" % (critere[:4], critere[5:7], critere[8:10])
         trackdat = "(str(track.%s.year)+ ('0'+str(track.%s.month))[-2:]+ ('0'+str(track.%s.day))[-2:])" \
                    % (code, code, code)
-        if typeDonnee == wx.DateTime:
-            trackdat = "(str(track.%s.year)+ ('0'+str(track.%s.month+1))[-2:]+ ('0'+str(track.%s.day))[-2:])" \
-                       % (code, code, code)
-        elif choix == "DTEGAL":
+        if choix == "DTEGAL":
             filtre = " %s == '%s'" % (trackdat, crit)
         elif choix == "DTDIFFERENT":
             filtre = " %s != '%s'" % (trackdat, crit)
@@ -157,7 +154,9 @@ def GetFnFiltre(typeDonnee,code,choix,critere):
                       % (typeDonnee, choix),caption='Filter.GetFiltrePython')
 
     def fn(track):
-        result = eval(filtre)
+        try:
+            result = eval(filtre)
+        except: result = False
         return result
     fnfiltre = Predicate(fn)
 

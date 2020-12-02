@@ -13,7 +13,7 @@ import xpy.xUTILS_DB                   as xdb
 import srcNoelite.UTILS_Adresses   as usa
 import srcNoelite.UTILS_Utilisateurs    as nuu
 import srcNoelite.DLG_Pays          as DLG_Pays
-from xpy.outils.ObjectListView import ObjectListView, ColumnDefn, Filter, CTRL_Outils
+from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn, Filter, CTRL_Outils
 
 class CTRL_Bouton_image(wx.Button):
     def __init__(self, parent, id=wx.ID_APPLY, texte="", cheminImage=None):
@@ -29,12 +29,12 @@ class DLG_Saisie(wx.Dialog):
     def __init__(self, parent, nom=None, cp=None, pays=None):
         wx.Dialog.__init__(self, parent, -1, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
         self.parent = parent
-        
+
         self.label_nom = wx.StaticText(self, -1, u"Nom de la ville :")
         self.ctrl_nom = wx.TextCtrl(self, -1, "", size=(280, -1))
         if nom != None :
             self.ctrl_nom.SetValue(nom)
-            
+
         self.label_cp = wx.StaticText(self, -1, u"Code postal :")
         self.ctrl_cp = wx.TextCtrl(self, -1, "", size=(80, -1))
         if cp !=None :
@@ -52,7 +52,7 @@ class DLG_Saisie(wx.Dialog):
 
         self.bouton_ok = CTRL_Bouton_image(self, texte=u"Ok", cheminImage="xpy/Images/32x32/Valider.png")
         self.bouton_annuler = CTRL_Bouton_image(self, id=wx.ID_CANCEL, texte=u"Annuler", cheminImage="xpy/Images/32x32/Annuler.png")
-        
+
         if nom == None :
             self.SetTitle(u"Saisie d'une ville")
         else:
@@ -83,12 +83,12 @@ class DLG_Saisie(wx.Dialog):
         grid_sizer_base.AddGrowableCol(0)
         self.Layout()
         self.CenterOnScreen()
-        
+
         self.Bind(wx.EVT_BUTTON, self.OnBoutonOk, self.bouton_ok)
 
     def GetNom(self):
         return self.ctrl_nom.GetValue().upper()
-    
+
     def GetCp(self):
         return self.ctrl_cp.GetValue().upper()
 
@@ -136,8 +136,8 @@ class Track(object):
         self.pays = donnees[3]
         self.mode = donnees[4]
 
-    
-class ListView(ObjectListView):
+
+class ListView(FastObjectListView):
     def __init__(self, *args, **kwds):
         # Récupération des paramètres perso
         self.selectionID = None
@@ -147,7 +147,7 @@ class ListView(ObjectListView):
         self.popupIndex = -1
         self.listeFiltres = []
         # Initialisation du listCtrl
-        ObjectListView.__init__(self, *args, **kwds)
+        FastObjectListView.__init__(self, *args, **kwds)
         # Binds perso
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnItemActivated)
         self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)

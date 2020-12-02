@@ -120,7 +120,6 @@ class DLG_listeFiltres(xusp.DLG_listCtrl):
 
     def OnChoixAction(self,evt):
         # choix d'une action
-        #pnlValeur = self.dlgGest.GetPnlCtrl('valeur')
         #pnlValeur.SetFocus()
         evt.Skip()
 

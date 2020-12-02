@@ -590,6 +590,8 @@ def SetReglement(dlg,track,db):
 
         montant = u"%.2f %s" % (track.montant, SYMBOLE)
         textePayeur = track.payeur
+        if not isinstance(track.IDreglement, int):
+            print('anomalie: ',track.IDreglement)
         nuh.InsertActions([{
             "IDfamille": track.IDfamille,
             "IDcategorie": IDcategorie,

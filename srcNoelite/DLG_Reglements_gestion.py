@@ -228,7 +228,7 @@ class PNL_corpsReglements(xgte.PNL_corps):
                 track.valide = False
         track = self.ctrlOlv.GetObjectAt(row)
 
-        if track.IDreglement in (None, 0):
+        if track.IDreglement in (None, 0, ''):
             track.IDreglement = nur.GetNewIDreglement(self.parent.db,self.lstNewReglements)
             self.lstNewReglements.append(track.IDreglement)
             track.ventilation = []
@@ -485,6 +485,7 @@ class Dialog(wx.Dialog):
         self.pnlParams.ctrlRef.SetValue('')
         self.ctrlOlv.listeDonnees = []
         self.ctrlOlv.MAJ()
+        self.pnlPied.SetItemsInfos(INFO_OLV, wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
         self.pnlOlv.Refresh()
 
     def OnGetDepot(self,event):

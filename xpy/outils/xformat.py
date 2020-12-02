@@ -483,28 +483,49 @@ def IncrementeRef(ref):
         refout = LettreSuivante(ref)
     return refout
 
-def BorneMois(dte,fin=True):
+def BorneMois(dte,fin=True, typeOut=datetime.date):
+
+    if not typeOut in (datetime.date,datetime.time,wx.DateTime,str):
+        typeOut = None
+
+    # traitement de sortien si typeOut a été précisé
+    def formatOut(wxdte):
+        if typeOut == datetime.date:
+            return WxdateToDatetime(wxdte)
+        if typeOut == str:
+            return WxDateToStr(wxdte,iso=True)
+        return wxdte
+
+    # traitement apres normalisation en wxDate
     def action(wxdte):
         # action  calcul début ou fin de mois sur les wx.DateTime
         if isinstance(wxdte,wx.DateTime):
             if fin:
-                dteout = wx.DateTime.FromDMY(1,wxdte.GetMonth()+1,wxdte.GetYear())
-                dteout -= wx.DateSpan(days=1)
+                dteout = wx.DateTime.FromDMY(1,wxdte.GetMonth(),wxdte.GetYear())
+                dteout += wx.DateSpan(days=-1,months=1)
             else:
                 # dte début de mois
                 dteout = wx.DateTime.FromDMY(1,wxdte.GetMonth(),wxdte.GetYear())
             return dteout
         return None
 
+    # analyse de l'entrée
     if isinstance(dte,(datetime.date,datetime.datetime)):
-        return WxdateToDatetime(action(DatetimeToWxdate(dte)))
+        if not typeOut:
+            formatOut = WxdateToDatetime
+        return formatOut(action(DatetimeToWxdate(dte)))
 
     elif isinstance(dte,wx.DateTime):
-        return action(dte)
+        if not typeOut or typeOut == wx.DateTime:
+            return action(dte)
+        return formatOut(action(dte))
 
     elif isinstance(dte,str):
         dte = dte.strip()
         wxdte = DateSqlToWxdate(FmtDate(dte))
+        if typeOut != str:
+            return formatOut(action(wxdte))
+        #  sans précision sur le retour : fait dans le format str initial
         if "-" in dte:
             return WxDateToStr(action(wxdte),iso=True)
         elif "/" in dte:
@@ -522,15 +543,18 @@ def BorneMois(dte,fin=True):
             else:
                 msg = "Date entrée non convertible : %s"%dte
                 raise Exception(msg)
+
+    # transformation en sortie
+
     return dte
 
-def FinDeMois(date):
+def FinDeMois(date,typeOut=datetime.date):
     # Retourne le dernier jour du mois dans le format reçu
-    return BorneMois(date,fin=True)
+    return BorneMois(date,fin=True,typeOut=typeOut)
 
-def DebutDeMois(date):
+def DebutDeMois(date,typeOut=datetime.date):
     # Retourne le dernier jour du mois dans le format reçu
-    return BorneMois(date,fin=False)
+    return BorneMois(date,fin=False,typeOut=typeOut)
 
 def ProrataCommercial(entree,sortie,debutex,finex):
     # Prorata d'une présence sur exercice sur la base d'une année commerciale pour un bien entré et sorti
@@ -575,8 +599,10 @@ if __name__ == '__main__':
     print(FmtDate('01022019'))
     print(SupprimeAccents("ÊLève!"))
     """
-    dte="15/02/0000"
-    print(DebutDeMois(dte),FinDeMois(dte),type(dte))
+    dte= '2001-12-20'
+    #dte = "09/12/2020"
+    dtfin = FinDeMois(dte)
+    print(dtfin,type(dtfin))
 
 
 

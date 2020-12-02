@@ -9,7 +9,9 @@
 
 import wx
 import os
+import datetime
 import xpy.xUTILS_DB   as xdb
+import xpy.outils.xformat as xfmt
 from xpy.outils import xbandeau
 from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn, CTRL_Outils
 from xpy.outils.xconst import *
@@ -464,18 +466,17 @@ class DLG_tableau(wx.Dialog):
 def GetDonnees(db=None,**kwds):
     filtre = kwds.pop('filtre',"")
     donnees = [[18, "Bonjour", -1230.05939, -1230.05939, None, None],
-                     [19, "Bonsoir", 57.5, 208.99, wx.DateTime.FromDMY(15, 11, 2018), '2019-03-29'],
-                     [1, "Jonbour", 0, 209, wx.DateTime.FromDMY(6, 11, 2018), '2019-03-01'],
-                     [29, "Salut", 57.082, 209, wx.DateTime.FromDMY(28, 1, 2019), '2019-11-23'],
-                     [None, "Salutation", 57.08, 0, wx.DateTime.FromDMY(1, 7, 1997), '2019-10-24'],
-                     [2, "Python", 1557.08, 29, wx.DateTime.FromDMY(7, 1, 1997), '2000-12-25'],
-                     [3, "Java", 57.08, 219, wx.DateTime.FromDMY(1, 0, 1900), ''],
+                     [19, "Bonsoir", 57.5, 208.99, wx.DateTime.FromDMY(2, 11, 2020), datetime.date.today()],
+                     [1, "Jonbour", 0, 209, wx.DateTime.FromDMY(6, 11, 2018), datetime.date(2018,12,6)],
+                     [29, "Salut", 57.082, 209, wx.DateTime.FromDMY(28, 1, 2020), datetime.date(2020,2,28)],
+                     [None, "Salutation", 57.08, 0, wx.DateTime.FromDMY(1, 7, 1997), datetime.date(1997,8,1)],
+                     [2, "Python", 1557.08, 29, wx.DateTime.FromDMY(7, 1, 1997), datetime.date(1997,2,7)],
+                     [3, "Java", 57.08, 219, wx.DateTime.FromDMY(1, 0, 1900), '2019-08-25'],
                      [98, "langage C", 10000, 209, wx.DateTime.FromDMY(1, 0, 1900), ''],
                      ]
     donneesFiltrees = [x for x in donnees if filtre.upper() in x[1].upper() ]
     return donneesFiltrees
 
-import xpy.outils.xformat as xfmt
 liste_Colonnes = [
     ColumnDefn("clé", 'left', 10, "cle",valueSetter=1,isSpaceFilling = True,),
     ColumnDefn("mot d'ici", 'left', 200, "mot",valueSetter=''),
@@ -483,7 +484,7 @@ liste_Colonnes = [
     ColumnDefn("prix", 'left', 80, "prix",valueSetter=0.0,isSpaceFilling = True, stringConverter=xfmt.FmtMontant),
     ColumnDefn("date", 'center', 80, "date",valueSetter=wx.DateTime.FromDMY(1,0,1900),isSpaceFilling = True,
                stringConverter=xfmt.FmtDate),
-    ColumnDefn("date SQL", 'center', 80, "datesql", valueSetter='2000-01-01',isSpaceFilling = True,
+    ColumnDefn("date SQL", 'center', 80, "datesql", valueSetter=datetime.date.today(),isSpaceFilling = True,
                stringConverter=xfmt.FmtDate)
 ]
 

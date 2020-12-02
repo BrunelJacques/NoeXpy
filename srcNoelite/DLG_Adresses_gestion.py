@@ -17,6 +17,7 @@ COLONNETRI = 2
 LIMITSQL =100
 
 import wx
+import datetime
 import xpy.outils.xbandeau      as xbd
 import xpy.xGestion_TableauRecherche     as xgtr
 import xpy.xUTILS_DB           as xdb
@@ -78,11 +79,18 @@ def dicOlvFamilles():
                 }
     return dicOlv
 
-def ComposeLstDonnees(record,lstChamps):
-    # retourne les données pour colonnes, extraites d'un record défini par une liste de champs
+def ComposeLstDonnees(record,lstChamps,lstColonnes):
+    # retourne les données pour colonnes, les champs doivent correspondre aux premières colonnes
     lstdonnees=[]
-    for ix in range(len(lstChamps)):
-        lstdonnees.append(record[ix])
+    nbcol = min(len(lstChamps),len(lstColonnes))
+    for ix in range(nbcol):
+        if type(lstColonnes[ix].valueSetter) in (wx.DateTime, datetime.date, datetime.datetime):
+            if type(lstColonnes[ix].valueSetter) == wx.DateTime:
+                lstdonnees.append(xformat.DateSqlToWxdate(record[ix]))
+            else:
+                lstdonnees.append(xformat.DateSqlToDatetime(record[ix]))
+        else:
+            lstdonnees.append(record[ix])
     return lstdonnees
 
 class Pnl_tableau(xgtr.PNL_tableau):
@@ -209,7 +217,7 @@ class Dialog(wx.Dialog):
             limit = "LIMIT %d"%self.limitSql
 
         whereFiltre = ''
-        if len(filtreTxt) >0:
+        if filtreTxt and len(filtreTxt) >0:
             whereFiltre = xformat.ComposeWhereFiltre(filtreTxt,lstChamps, lstColonnes = lstColonnes)
         req = """SELECT %s
                 FROM individus
@@ -226,7 +234,7 @@ class Dialog(wx.Dialog):
         # composition des données du tableau à partir du recordset
         lstDonnees = []
         for record in recordset:
-            ligne = ComposeLstDonnees(record, lstChamps)
+            ligne = ComposeLstDonnees(record, lstChamps,lstColonnes)
             lstDonnees.append(ligne)
         return lstDonnees
 
@@ -263,7 +271,7 @@ class Dialog(wx.Dialog):
         # composition des données du tableau à partir du recordset
         lstDonnees = []
         for record in recordset:
-            ligne = ComposeLstDonnees(record, lstChamps)
+            ligne = ComposeLstDonnees(record, lstChamps, lstColonnes)
             lstDonnees.append(ligne)
         return lstDonnees
 

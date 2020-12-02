@@ -13,7 +13,7 @@ import os
 import datetime
 import xpy.xUTILS_SaisieParams as xusp
 from xpy.outils                 import xformat
-from xpy.outils.ObjectListView  import ObjectListView, ColumnDefn, Footer, CTRL_Outils, OLVEvent,CellEditor
+from xpy.outils.ObjectListView  import FastObjectListView, ObjectListView, ColumnDefn, Footer, CTRL_Outils, OLVEvent,CellEditor
 from xpy.outils.xconst          import *
 
 # ----------- Objets divers ----------------------------------------------------------------
@@ -119,7 +119,7 @@ class Button(wx.Button):
                 fonction = onBtn
             self.Bind(wx.EVT_BUTTON, fonction)
 
-# ----------  Objets ObjectListView --------------------------------------------------------
+# ----------  Objets FastObjectListView --------------------------------------------------------
 
 class TrackGeneral(object):
     #    Cette classe va transformer une ligne en objet selon les listes de colonnes et valeurs par défaut(setter)
@@ -147,7 +147,7 @@ class TrackGeneral(object):
                         except : pass
             self.__setattr__(codesColonnes[ix], donnee)
 
-class ListView(ObjectListView):
+class ListView(FastObjectListView):
     """
     Lors de l'instanciation de cette classe vous pouvez y passer plusieurs parametres :
 
@@ -223,7 +223,7 @@ class ListView(ObjectListView):
         # Initialisation du listCtrl
         if not 'autoAddRow' in kwds: kwds['autoAddRow']=True
         if not 'sortable' in kwds: kwds['sortable']=True
-        ObjectListView.__init__(self, *args,**kwds)
+        FastObjectListView.__init__(self, *args,**kwds)
         # Binds perso
         self.Bind(OLVEvent.EVT_ITEM_CHECKED, self.MAJ_footer())
         self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)

@@ -413,6 +413,7 @@ class PNL_ctrl(wx.Panel):
             kwds['size'] = kwds['ctrlSize']
         kw = DicFiltre(kwds,OPTIONS_PANEL )
         wx.Panel.__init__(self,parent,*args, **kw)
+        genre = genre.lower()
         self.value = value
         self.name = name
         if btnLabel :
@@ -669,11 +670,8 @@ class PNL_listCtrl(wx.Panel):
         self.parent.OnDupliquer(event,self.ctrl.GetFirstSelected())
 
     def OnRaz(self, event):
-        ret = wx.MessageBox("Confirmez votre souhait de supprimer toutes les lignes !",
-                          'RAZ sans retour possible', wx.OK | wx.ICON_INFORMATION)
-        if ret == wx.OK:
-            # Action du clic sur l'icone sauvegarde renvoie au parent
-            self.parent.OnRaz(event,)
+        # Action du clic sur l'icone sauvegarde renvoie au parent
+        self.parent.OnRaz(event,)
 
 class BoxPanel(wx.Panel):
     # aligne les contrôles définis par la matrice dans une box verticale
@@ -717,7 +715,7 @@ class BoxPanel(wx.Panel):
                             ligne[cle]=None
                     self.ssbox.Add(panel,1,wx.ALL|wx.EXPAND,0)
                     codename = self.code + '.' + ligne['name']
-                    panel.ctrl.genreCtrl = ligne['genre']
+                    panel.ctrl.genreCtrl = ligne['genre'].lower()
                     panel.ctrl.nameCtrl = codename
                     panel.ctrl.labelCtrl = ligne['label']
                     panel.ctrl.actionCtrl = ligne['ctrlAction']
@@ -1038,7 +1036,7 @@ class DLG_listCtrl(wx.Dialog):
 
     def Calcul(self,ddDonnees):
         # Possibilité de gérer un calcul combinant les lignes après saisie et avant affichage de la liste
-        pass
+        return ddDonnees
 
 
     def OnAjouter(self,event):
@@ -1083,6 +1081,7 @@ class DLG_listCtrl(wx.Dialog):
         # documentation dans dupliquer
         self.pnl.ctrl.DeleteAllItems()
         self.lddDonnees = []
+        self.OnFermer(None)
 
     def OnDupliquer(self,event, items):
         # récupération des données de la ligne que l'on place dans l'écran de saisie

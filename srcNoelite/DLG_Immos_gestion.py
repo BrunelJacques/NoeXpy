@@ -237,7 +237,6 @@ class Pnl_corps(xgte.PNL_corps):
     def __init__(self, parent, dicOlv,*args, **kwds):
         xgte.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
         self.ctrlOlv.Choices={}
-        self.lstNewReglements = []
         self.flagSkipEdit = False
         self.oldRow = None
 
