@@ -11,10 +11,10 @@
 import wx
 import os
 import sys
-import xpy.xUTILS_RapportBugs
+import xpy.outils.xUTILS_RapportBugs
 import xpy.xUTILS_Shelve
 import xpy.xUTILS_Shelve    as xucfg
-from  xpy.outils import xaccueil,ximport
+from  xpy.outils import xaccueil
 
 
 def CrashReport(dictAppli):
@@ -24,7 +24,7 @@ def CrashReport(dictAppli):
     if 'VERSION_APPLICATION' in dictAppli.keys():
         version = dictAppli['VERSION_APPLICATION']
     else: version = appli
-    xpy.xUTILS_RapportBugs.Activer_rapport_erreurs(version=version, appli = appli)
+    xpy.outils.xUTILS_RapportBugs.Activer_rapport_erreurs(version=version, appli = appli)
     print('CrashReport ok')
 
     # Supprime le journal.log si supérieur à 10 Mo
@@ -279,8 +279,9 @@ if __name__ == "__main__":
         'NOM_FICHIER_LOG':"testLOG",
         'TYPE_CONFIG': 'db_prim',
         }
-    frm.xInit()
     CrashReport(frm.dictAppli)
+    frm.xInit()
+
     frm.Show()
     #frm.MakeHello("OK test")
     frm.SaisieConfig()

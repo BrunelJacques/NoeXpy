@@ -149,12 +149,12 @@ MATRICE_PARAMS = {
 def GetBoutons(dlg):
     return  [
                 {'name': 'btnImp', 'label': "Importer\nfichier",
-                    'toolTip': "Cliquez ici pour lancer l'importation du fichier de km consommés",
+                    'help': "Cliquez ici pour lancer l'importation du fichier de km consommés",
                     'size': (120, 35), 'image': wx.ART_UNDO,'onBtn':dlg.OnImporter},
                 {'name': 'btnExp', 'label': "Exporter\nfichier",
-                    'toolTip': "Cliquez ici pour lancer l'exportation du fichier selon les paramètres que vous avez défini",
+                    'help': "Cliquez ici pour lancer l'exportation du fichier selon les paramètres que vous avez défini",
                     'size': (120, 35), 'image': wx.ART_REDO,'onBtn':dlg.OnExporter},
-                {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'toolTip':"Cliquez ici pour fermer la fenêtre",
+                {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour fermer la fenêtre",
                     'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnFermer}
             ]
 

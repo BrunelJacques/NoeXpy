@@ -40,12 +40,12 @@ MATRICE_PARAMS = {}
 def GetBoutons(dlg):
     return  [
                 {'name': 'btnDot', 'label': "Calcul\ndotations",
-                    'toolTip': "Cliquez ici pour lancer l'importation du fichier de km consommés",
+                    'help': "Cliquez ici pour lancer l'importation du fichier de km consommés",
                     'size': (120, 35), 'image': wx.ART_UNDO,'onBtn':dlg.OnCalcul},
                 {'name': 'btnExp', 'label': "Exporter\ndotations",
-                    'toolTip': "Cliquez ici pour lancer l'exportation des dotations vers la compta",
+                    'help': "Cliquez ici pour lancer l'exportation des dotations vers la compta",
                     'size': (120, 35), 'image': wx.ART_REDO,'onBtn':dlg.OnExport},
-                {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'toolTip':"Cliquez ici pour fermer la fenêtre",
+                {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour fermer la fenêtre",
                     'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnFermer}
             ]
 
@@ -54,17 +54,17 @@ def GetOlvActions(pnl):
     # les fonctions appellées devront être présente dans PNL_corps qui implémentera les actions
     return  [
                 {'name': 'ajouter',
-                    'toolTip': "Ajouter une nouvelle ligne",
+                    'help': "Ajouter une nouvelle ligne",
                     'size': (25, 25), 
                     'image': wx.Bitmap("xpy/Images/16x16/Ajouter.png", wx.BITMAP_TYPE_ANY),
                     'onBtn': pnl.OnAjouter},
                 {'name': 'modifier',
-                    'toolTip': "Modifier les propriétés de la ligne selectionnée",
+                    'help': "Modifier les propriétés de la ligne selectionnée",
                     'size': (25, 25), 
                     'image': wx.Bitmap("xpy/Images/16x16/Modifier.png", wx.BITMAP_TYPE_ANY),
                     'onBtn': pnl.OnModifier},
                 {'name': 'supprimer',
-                 'toolTip': "Supprimer la ligne selectionnée",
+                 'help': "Supprimer la ligne selectionnée",
                  'size': (25, 25),
                  'image': wx.Bitmap("xpy/Images/16x16/Supprimer.png", wx.BITMAP_TYPE_ANY),
                  'onBtn': pnl.OnSupprimer},
@@ -167,9 +167,9 @@ lMATRICE_PARAMS = {
 # description des boutons en pied d'écran et de leurs actions
 def lGetBoutons(dlg):
     return  [
-                {'name':'btnAbandon','ID':wx.ID_CANCEL,'label':"Abandon",'toolTip':"Cliquez ici pour fermer sans modifs",
+                {'name':'btnAbandon','ID':wx.ID_CANCEL,'label':"Abandon",'help':"Cliquez ici pour fermer sans modifs",
                     'size':(120,36),'image':"xpy/Images/16x16/Abandon.png",'onBtn':dlg.OnAbandon},
-                {'name':'btnOK','ID':wx.ID_ANY,'label':"Valider",'toolTip':"Cliquez ici pour enrgistrer les modifs",
+                {'name':'btnOK','ID':wx.ID_ANY,'label':"Valider",'help':"Cliquez ici pour enrgistrer les modifs",
                     'size':(120,35),'image':"xpy/Images/32x32/Valider.png",'onBtn':dlg.OnValider},
             ]
 
@@ -462,8 +462,8 @@ class PNL_pied(xgte.PNL_pied):
 
 class DLG_immos(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self):
-        super().__init__(self,name = MODULE)
+    def __init__(self,parent):
+        super().__init__(parent,name = MODULE)
         self.ctrlOlv = None
         self.dicOlv = DICOLV
         self.noegest = nunoegest.Noegest(self)
@@ -614,7 +614,12 @@ if __name__ == '__main__':
     import os
     app = wx.App()
     os.chdir("..")
-    dlg = Dlg_immo(IDimmo=3)
-    #dlg = DLG_immos()
-    dlg.ShowModal()
+    frame_1 = wx.Frame()
+    app.SetTopWindow(frame_1)
+
+    #frame_1.dlg = DLG_implantation(frame_1)
+    frame_1.dlg = DLG_immos(frame_1)
+    frame_1.dlg.ShowModal()
     app.MainLoop()
+
+    #dlg = Dlg_immo(IDimmo=3)

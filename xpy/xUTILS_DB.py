@@ -57,6 +57,7 @@ class DB():
         self.lstIndex = None
         self.grpConfigs = None
         self.dictAppli = None
+        self.cfgParams = None
         if nomFichier:
             self.OuvertureFichierLocal(nomFichier)
             return
@@ -81,7 +82,6 @@ class DB():
                     if 'lastConfig' in grpCONFIGS['choixConfigs'][nomAppli].keys():
                         nomConfig = grpCONFIGS['choixConfigs'][nomAppli]['lastConfig']
             else: nomConfig=None
-            self.cfgParams = None
             try:
                 # priorité la config passée en kwds puis recherche de la dernière config dans 'USER'
                 if config:
@@ -91,8 +91,6 @@ class DB():
                     elif isinstance(config,dict):
                         nomConfig = None
                         self.cfgParams = copy.deepcopy(config)
-                        for cle, valeur in grpUSER.items():
-                            self.cfgParams[cle] = valeur
                 if nomConfig:
                     if 'lstConfigs' in grpCONFIGS:
                         lstNomsConfigs = [x[typeConfig]['ID'] for x in grpCONFIGS['lstConfigs']]
@@ -192,9 +190,9 @@ class DB():
             nomBase = config['nameDB']
             user = config['userDB']
             passwd = config['mpUserDB']
+
             # usage de  "mysql.connector":
-            self.connexion = mysql.connector.connect(host=host, user=user, passwd=passwd, port=int(port),
-                                                     use_unicode=True,)
+            self.connexion = mysql.connector.connect(**self.dictConnector)
 
             self.cursor = self.connexion.cursor()
             # Création
@@ -229,26 +227,19 @@ class DB():
             etape = 'Création du connecteur %s - %s - %s - %s'%(host,userdb,passwd, port)
             if self.typeDB == 'mysql':
                 self.connexion = mysql.connector.connect(host=host, user=userdb, passwd=passwd, port=int(port))
-                etape = 'Création du curseur, après connexion réussie'
+                etape = 'Création du curseur, après connexion'
                 self.cursor = self.connexion.cursor(buffered=True)
-                etape = 'premier accès base pour use %s' %nomFichier
-                self.cursor.execute("SHOW DATABASES;")
-                listeBases = self.cursor.fetchall()
-                # Utilisation
+                # Tentative d'Utilisation
+                etape = " Tentative d'accès à '%s'" %nomFichier
                 self.cursor.execute("USE %s;" % nomFichier)
+                self.echec = 0
             else:
                 wx.MessageBox('xDB: Accès BD non développé pour %s' %self.typeDB)
         except Exception as err:
-            wx.MessageBox("xDB: La connexion MYSQL a echoué à l'étape: %s, sur l'erreur :\n\n%s" %(etape,err))
+            wx.MessageBox("La connexion MYSQL a echoué.\n\nEtape: %s,\nErreur: '%s'" %(etape,err),caption="xUTILS_DB.ConnexionFichierReseau ")
             self.erreur = err
-        if self.connexion:
-            if not (nomFichier,) in listeBases:
-                lstBases = str(listeBases)
-                wx.MessageBox("xDB: La base '%s' n'est pas sur le serveur qui porte les bases :\n\n %s" % (nomFichier,
-                                                                                lstBases ), style=wx.ICON_STOP)
-                self.echec = 1
-                self.connexion = None
-            self.echec = 0
+            self.echec = 1
+            self.connexion = None
 
     def OuvertureFichierLocal(self, nomFichier):
         """ Version LOCALE avec SQLITE """
@@ -731,6 +722,11 @@ class DB():
                     print(mess)
                 else:
                     fenetreParente.SetStatusText(mess)
+
+    def GetDataBases(self):
+        self.cursor.execute("SHOW DATABASES;")
+        listeBases = self.cursor.fetchall()
+        return listeBases
 
     def GetListeTables(self,lower=True):
         # appel des tables et des vues

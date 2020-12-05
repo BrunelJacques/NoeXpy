@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: iso-8859-15 -*-
 # ------------------------------------------------------------------------
-# Application :    Noethys, gestion multi-activités
-# Site internet :  www.noethys.com
-# Auteur:           Ivan LUCAS
-# Copyright:       (c) 2010-13 Ivan LUCAS
+# Application :    Projet xpy, utilitaires de gestion de dates
+# Auteur:           Ivan LUCAS - Jacques BRUNEL
 # Licence:         Licence GNU GPL
 # ------------------------------------------------------------------------
 

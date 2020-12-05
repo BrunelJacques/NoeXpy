@@ -253,7 +253,7 @@ class Compta(object):
         ret = wx.ID_OK
         while (ret == wx.ID_OK) and (not configCpta):
             # gestion d'une configuration nouvelle
-            dlgGest = xgc.DLG_saisieUneConfig(compta)
+            dlgGest = xgc.DLG_saisieUneConfig(parent,compta)
             ret = dlgGest.ShowModal()
             if ret == wx.OK:
                 ddDonnees = dlgGest.GetValeurs()

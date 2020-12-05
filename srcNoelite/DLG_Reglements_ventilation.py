@@ -36,9 +36,9 @@ COULEUR_TOTAL = (0, 238, 0)
 def GetBoutons(dlg):
     return  [
                 {'name': 'btnAbort', 'label': "Abandon",
-                    'toolTip': "Cliquez ici pour renoncer à affecter le règlement a des prestations",
+                    'help': "Cliquez ici pour renoncer à affecter le règlement a des prestations",
                     'size': (110, 27), 'image':"xpy/Images/32x32/Annuler.png",'onBtn':dlg.OnAbort},
-                {'name':'btnOK','ID':wx.ID_ANY,'label':"Validez",'toolTip':"Cliquez ici pour enregistrer la ventilation",
+                {'name':'btnOK','ID':wx.ID_ANY,'label':"Validez",'help':"Cliquez ici pour enregistrer la ventilation",
                     'size':(100,30),'image':"xpy/Images/32x32/Valider.png",'onBtn':dlg.OnBoutonOK}
             ]
 

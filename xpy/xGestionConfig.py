@@ -13,10 +13,20 @@ import os
 import xpy.xUTILS_SaisieParams as xusp
 import xpy.xUTILS_Shelve as xucfg
 import xpy.xUTILS_DB as xdb
-import xpy.outils.xformat as xformat
+from  xpy.outils import xformat,xboutons
 
 # Constantes de paramétrage des écrans de configuration et identification
-
+MATRICE_CREATE_BASE = {
+("create_base","Création d'une nouvelle base de donnée"):[
+    {'name': 'nomBase', 'genre': 'texte', 'label': 'Nom de la base',
+                        'help': "C\'est le nom qui sera donné à la base de données",
+                        'txtSize': 140,
+                        'ctrlaction':"OnNomBase",
+                        'btnLabel':"...", 'btnHelp': "Cliquez pour gérer les configurations d'accès aux données",
+                        'btnAction': "OnBtnConfig",
+    },
+    ]
+}
 MATRICE_IDENT = {
 ("ident","Votre session"):[
     {'name': 'userdomain', 'genre': 'String', 'label': 'Votre organisation', 'value': "NomDuPC",
@@ -49,9 +59,9 @@ MATRICE_CONFIGS = {
     {'name': 'ID', 'genre': 'String', 'label': 'Désignation config', 'value': 'config1',
                     'help': "Désignez de manière unique cette configuration"},
     {'name': 'serveur', 'genre': 'String', 'label': 'Path ou Serveur', 'value':'',
-                    'help': "Répertoire 'c:\...' si local - Adresse IP ou nom du serveur si réseau"},
+                    'help': "Répertoire 'c:\...' si local - Adresse IP ou nom du serveur si réseau",},
     {'name': 'port', 'genre': 'Int', 'label': 'Port', 'value': 3306,
-                    'help': "Pour réseau seulement, information disponible aurpès de l'administrateur système"},
+                    'help': "Pour réseau seulement, information disponible aurpès de l'administrateur système",},
     {'name': 'typeDB', 'genre': 'Enum', 'label': 'Type de Base',
                     'help': "Le choix est limité par la programmation", 'value':0,
                     'values':['MySql','SqlServer','Access','SQLite'] },
@@ -81,6 +91,8 @@ def GetCleMatrice(code,matrice):
     # retourne la clé complète d'une matrice selon son ID
     cle = None
     for cle in matrice.keys():
+        if not code:
+            break
         if cle[0] == code:
             break
     return cle
@@ -133,9 +145,9 @@ class DLG_implantation(wx.Dialog):
         ddDonnees = {}
         valeurs = {}
         ident = None
-        self.btnTest = xusp.BTN_action(self,help='Test de la connexion réseau',
-                                       image=wx.Bitmap("xpy/Images/100x30/Bouton_tester.png"))
-        self.btnTest.Bind(wx.EVT_BUTTON, self.OnTest)
+        # Bouton sortie de pied d'écran
+        self.btnTest = xboutons.BTN_tester(self)
+        self.btn = xboutons.BTN_fermer(self)
 
         #  IDENT :  appel de l'identification IDENT partie grisée -----------------------------------------------------
         try:
@@ -216,9 +228,6 @@ class DLG_implantation(wx.Dialog):
         self.Sizer()
 
     def Sizer(self):
-        # Bouton sortie de pied d'écran
-        self.btn = xusp.BTN_fermer(self)
-        self.btn.Bind(wx.EVT_BUTTON, self.OnFermer)
         # Déroulé de la composition
         cadre_staticbox = wx.StaticBox(self, -1, label='identification')
         topbox = wx.StaticBoxSizer(cadre_staticbox, wx.VERTICAL)
@@ -237,7 +246,7 @@ class DLG_implantation(wx.Dialog):
         topbox.Add(piedbox, 0, wx.ALIGN_RIGHT, 0)
         self.SetSizerAndFit(topbox)
 
-    def OnTest(self,event):
+    def OnTester(self,event):
         self.OnCtrlConfig(None)
         DB = xdb.DB(typeConfig=self.typeConfig)
         DB.AfficheTestOuverture()
@@ -327,8 +336,10 @@ class DLG_implantation(wx.Dialog):
 class DLG_listeConfigs(xusp.DLG_listCtrl):
     # Ecran de saisie de paramètres en dialog
     def __init__(self, parent, *args, **kwds):
-        typeConfig = kwds.pop('typeConfig',None)
+        typeConfig = kwds.pop('typeConfig','db_prim')
+        mode = kwds.pop('mode',"visu")
         select = kwds.pop('select',None)
+        kwds['lblList'] = "Configurations actuelles"
         super().__init__(parent, *args, **kwds)
         self.parent = parent
         self.dlColonnes = {}
@@ -336,9 +347,11 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
         self.lstIDconfigs = []
         self.lstConfigsKO = []
         self.dldMatrice = {}
+        self.typeConfig = typeConfig
         # composition des paramètres
         self.gestionProperty = False
         self.ok = False
+        self.DB=None
         cle = GetCleMatrice(typeConfig,MATRICE_CONFIGS)
         self.dldMatrice[cle] = MATRICE_CONFIGS[cle]
         self.dlColonnes[typeConfig] = [x ['name'] for x in MATRICE_CONFIGS[cle]]
@@ -347,11 +360,22 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
         if 'lstConfigs' in grpConfigs:
             self.lstIDconfigs, lstConfigsOK, lstConfigsKO = GetLstConfigs(grpConfigs,typeConfig)
             self.lddDonnees = lstConfigsOK
+
         # paramètres pour self.pnl contenu principal de l'écran
         self.kwds['lblTopBox'] = 'Configurations disponibles'
-        self.MinSize = (400,300)
+        self.Size = (400,300)
+        # correctif selon le mode visu ou gestion
+        if mode == 'gestion':
+            self.dldMatrice[cle][4] = {
+                'name': 'nameDB', 'genre': 'combo', 'label': 'Nom de la Base',
+                     'help': "Base de donnée présente sur le serveur",
+                     'ctrlAction': 'OnNomBase',
+                     'btnLabel': "...", 'btnHelp': "Cliquez pour créer un nouvelle base de donnée",
+                     'btnAction': "OnBtnNomBase"}
+
         if self.dldMatrice != {}:
             self.InitDlgGestion()
+            self.dlgGest.SetSize(350,400)
             self.dlgGest.btn = self.Boutons(self.dlgGest)
             self.SizerDlgGestion()
             self.Init()
@@ -361,6 +385,36 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
                     ix = self.lstIDconfigs.index(select)
                     self.pnl.ctrl.Select(ix)
                     self.pnl.ctrl.SetItemState(ix,wx.LIST_STATE_SELECTED,wx.LIST_STATE_SELECTED)
+        self.dlgGest.OnNomBase = self.OnNomBase
+        self.dlgGest.OnBtnNomBase = self.OnBtnNomBase
+
+    def GetDB(self,cfgParams=None):
+        # connexion actuelle stockée pour vérif modifs
+        if not cfgParams or cfgParams['nameDB']=='':
+            #récupération d'un connexion antérieure, soit d'un précédent passage, soit celle par défaut
+            if not self.DB:
+                self.DB = xdb.DB()
+        else:
+            self.DB = xdb.DB(config=cfgParams)
+        if self.DB and self.DB.echec == 0:
+            self.cfgParams = self.DB.cfgParams
+            self.lstBases = self.DB.GetDataBases()
+        else:
+            self.cfgParams = None
+            self.lstBases = []
+
+    def OnNomBase(self,event):
+        cfgConfig = self.dlgGest.pnl.GetValeurs()[self.typeConfig]
+        # réaliment le contenu de la combo
+        self.GetDB(cfgConfig)
+        ctrl = self.dlgGest.pnl.GetPnlCtrl('nameDB')
+        self.lstBases = [x for (x,) in self.DB.GetDataBases() if x[-4:].lower()=='data']
+        ctrl.SetOneValues(self.lstBases)
+        event.Skip()
+
+    def OnBtnNomBase(self,event):
+        event.Skip()
+        pass
 
     def OnFermer(self, event):
         cfgF = xucfg.ParamFile()
@@ -382,16 +436,14 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
         else: choix=''
         return choix
 
-    def OnTest(self,event):
+    def OnTester(self,event):
         dicParam = event.EventObject.Parent.pnl.lstBoxes[0].GetValues()
-        DB = xdb.DB(config=dicParam,typeConfig=self.parent.typeConfig)
+        DB = xdb.DB(config=dicParam,typeConfig=self.typeConfig)
         DB.AfficheTestOuverture()
 
     def Boutons(self,dlg):
-        btnOK = wx.Button(dlg, wx.ID_ANY, 'Valider')
-        btnOK.Bind(wx.EVT_BUTTON, dlg.OnFermer)
-        btnTest = wx.Button(dlg, wx.ID_ANY, 'Tester')
-        btnTest.Bind(wx.EVT_BUTTON, self.OnTest)
+        btnOK = xboutons.BTN_fermer(dlg,label='Valider',onBtn=dlg.OnFermer)
+        btnTest = xboutons.BTN_tester(dlg,onBtn=self.OnTester)
         boxBoutons = wx.BoxSizer(wx.HORIZONTAL)
         boxBoutons.Add(btnTest, 0,  wx.RIGHT,20)
         boxBoutons.Add(btnOK, 0,  wx.RIGHT,20)
@@ -399,8 +451,10 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
 
 # Accès particulier à une config_base de donnée, sans passer par la liste des configs
 class DLG_saisieUneConfig(xusp.DLG_vide):
-    def __init__(self,nomConfig=None,**kwds):
-        super().__init__(self, **kwds)
+    def __init__(self,parent,nomConfig=None,**kwds):
+        kwds['size']=(300,330)
+        kwds['marge']= 15
+        super().__init__(parent, **kwds)
         # récup de la matrice ayant servi à la gestion des données
         typeConfig = kwds.pop('typeConfig',None)
         if not typeConfig:
@@ -410,9 +464,11 @@ class DLG_saisieUneConfig(xusp.DLG_vide):
         matrice = {key: MATRICE_CONFIGS[GetCleMatrice(typeConfig,MATRICE_CONFIGS)]}
         # suppose le champ ID en première position
         matrice[key][0]['value'] = nomConfig
+        self.pnl = xusp.TopBoxPanel(self, matrice=matrice, lblTopBox=None)
         # grise le champ ID
-        xusp.SetEnableID(matrice, False)
-        self.pnl = xusp.TopBoxPanel(self, matrice=matrice, lblTopBox='Ajout d\'un accès pour la compta')
+        ctrlID = self.pnl.GetPnlCtrl('ID')
+        ctrlID.Enable(False)
+
         self.Sizer(self.pnl)
 
     def GetValeurs(self):
@@ -475,17 +531,18 @@ class xFrame(wx.Frame):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    #frame_1 = DLG_implantation(None,typeConfig='db_prim')
     frame_1 = xFrame(None)
     app.SetTopWindow(frame_1)
-    frame_1.Position = (50,50)
+    frame_1.Position = (450,50)
     frame_1.dictAppli ={
             'NOM_APPLICATION'       : "testappli",
             'REP_DATA'              : "srcNoelite/Data",
             'TYPE_CONFIG'           : 'db_prim',
             'CHOIX_CONFIGS': [('Donnees', "Base de travail, peut être la centrale  en mode connecté"),]
             }
-    frame_1.dlg = DLG_implantation(frame_1)
+    #frame_1.dlg = DLG_implantation(frame_1)
+    frame_1.dlg = DLG_listeConfigs(frame_1,mode='gestion')
+    #frame_1.dlg = DLG_saisieUneConfig(frame_1,'compta')
     frame_1.dlg.ShowModal()
     app.MainLoop()
 

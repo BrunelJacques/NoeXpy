@@ -48,7 +48,14 @@ class DLG_Rapport(wx.Dialog):
         self.label_ligne_1 = wx.StaticText(self, wx.ID_ANY, (u"L'application %s a rencontré un problème !"%appli))
         self.label_ligne_2 = wx.StaticText(self, wx.ID_ANY, (u"Le rapport d'erreur ci-dessous est déja 'copié', vous pouvez le 'coller' dans un mail.\nMerci de bien vouloir le communiquer à l'administrateur informatique pour résoudre le bug."))
         self.ctrl_rapport = wx.TextCtrl(self, wx.ID_ANY, texte, style=wx.TE_MULTILINE | wx.TE_READONLY)
-        self.bouton_fermer = wx.BitmapButton(self, -1, wx.Bitmap('xpy/Images/100x30/Bouton_annuler.png'))
+        #self.bouton_fermer = wx.BitmapButton(self, -1, wx.Bitmap('xpy/Images/48x48/Quitter.png'))
+        self.bouton_fermer = wx.Button(self, -1, "Fermer")
+        font = wx.Font(14, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD,False)
+        self.bouton_fermer.SetFont(font)
+        self.bouton_fermer.SetForegroundColour((0,0,100))
+        self.bouton_fermer.SetBitmap( wx.Bitmap('xpy/Images/32x32/Quitter.png'))
+        self.bouton_fermer.SetInitialSize()
+
         self.__set_properties()
         self.__do_layout()
 

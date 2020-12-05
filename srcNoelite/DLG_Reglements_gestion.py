@@ -39,9 +39,9 @@ INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
 def GetBoutons(dlg):
     return  [
                 {'name': 'btnImp', 'label': "Imprimer\npour dépôt",
-                    'toolTip': "Cliquez ici pour imprimer et enregistrer le bordereau pour un dépôt",
+                    'help': "Cliquez ici pour imprimer et enregistrer le bordereau pour un dépôt",
                     'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
-                {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'toolTip':"Cliquez ici pour fermer la fenêtre",
+                {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour fermer la fenêtre",
                     'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnClose}
             ]
 
