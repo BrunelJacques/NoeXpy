@@ -592,8 +592,8 @@ class PNL_params(wx.Panel):
 class PNL_corps(wx.Panel):
     #panel olv avec habillage optionnel pour recherche (en bas), boutons actions (à droite)
     def __init__(self, parent, dicOlv,*args, **kwds):
-        hauteur = dicOlv.pop('hauteur',350)
-        largeur = dicOlv.pop('largeur',650)
+        minSize = dicOlv.pop('minSize',(400,150))
+        # size inutile car SizerAndFit l'ajustera
         getActions = dicOlv.pop('getActions',None)
         # récupére les éventuels boutons d'actions
         if getActions:
@@ -645,7 +645,7 @@ class PNL_corps(wx.Panel):
             if self.ctrlOlv.checkStateColumn: afficherCocher = True
             self.ctrloutils = CTRL_Outils(self, listview=self.ctrlOlv, afficherCocher=afficherCocher)
             self.olv.ctrloutils = self.ctrloutils
-        self.ctrlOlv.SetMinSize((largeur,hauteur))
+        self.ctrlOlv.SetMinSize(minSize)
         self.ctrlOlv.MAJ()
         self.Sizer()
 
@@ -772,8 +772,6 @@ if __name__ == '__main__':
                      ]
     dicOlv = {'lstColonnes': liste_Colonnes,
               'listeDonnees': liste_Donnees,
-              'hauteur': 350,
-              'largeur': 650,
               'checkColonne': False,
               'recherche': True,
               'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",

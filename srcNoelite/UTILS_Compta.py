@@ -253,10 +253,11 @@ class Compta(object):
         ret = wx.ID_OK
         while (ret == wx.ID_OK) and (not configCpta):
             # gestion d'une configuration nouvelle
-            dlgGest = xgc.DLG_saisieUneConfig(parent,compta)
+            kwd={'nomConfig':'compta','lblBox':"Paramètres BD de l'accès à la compta"}
+            dlgGest = xgc.DLG_saisieUneConfig(parent,**kwd)
             ret = dlgGest.ShowModal()
             if ret == wx.OK:
-                ddDonnees = dlgGest.GetValeurs()
+                ddDonnees = dlgGest.GetValues()
                 configCpta = dlgGest.GetConfig()
                 # test de l'accès
                 db = xdb.DB(config=configCpta)
@@ -335,7 +336,7 @@ class Compta(object):
                     'dicBandeau': dicBandeau,
                     'colonneTri': 2,
                     'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
-                    'largeur' : 500,
+                    'size' : (500,200),
                     'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                     }
 

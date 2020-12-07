@@ -47,7 +47,7 @@ def DateDDEnDateEng(datedd):
 
 class DB():
     # accès à la base de donnees principale
-    def __init__(self, IDconnexion = None, config=None, typeConfig='db_prim', nomFichier=None):
+    def __init__(self, IDconnexion = None, config=None, typeConfig='db_prim', nomFichier=None, mute=False):
         # config peut être soit un nom de config soit un dictionaire
         self.echec = 1
         self.IDconnexion = IDconnexion
@@ -58,6 +58,7 @@ class DB():
         self.grpConfigs = None
         self.dictAppli = None
         self.cfgParams = None
+        self.erreur = None
         if nomFichier:
             self.OuvertureFichierLocal(nomFichier)
             return
@@ -95,8 +96,11 @@ class DB():
                     if 'lstConfigs' in grpCONFIGS:
                         lstNomsConfigs = [x[typeConfig]['ID'] for x in grpCONFIGS['lstConfigs']]
                         if not (nomConfig in lstNomsConfigs):
-                            wx.MessageBox("xDB: Le nom de config '%s' n'est pas dans la liste des accès base de donnée"%(nomConfig))
-                            return
+                            mess = "xDB: Le nom de config '%s' n'est pas dans la liste des accès base de donnée"%(nomConfig)
+                            self.erreur = mess
+                            if not mute:
+                                wx.MessageBox(mess)
+                            return mess
                         ix = lstNomsConfigs.index(nomConfig)
                         # on récupére les paramétres dans toutes les configs par le pointeur ix dans les clés
                         self.cfgParams = grpCONFIGS['lstConfigs'][ix][typeConfig]
@@ -109,9 +113,11 @@ class DB():
                     else:
                         self.nomBase = self.cfgParams['serveur']+'\\'+self.cfgParams['nameDB']
             except Exception as err:
-                wx.MessageBox("xDB: La récup des identifiants de connexion a échoué : \nErreur detectee :%s" % err)
+                mess = "xDB: La récup des identifiants de connexion a échoué : \nErreur detectee :%s" % err
+                if not mute:
+                    wx.MessageBox(mess)
                 self.erreur = err
-                return
+                return mess
             if not self.cfgParams : return
             # Ouverture des bases de données selon leur type
             if 'typeDB' in self.cfgParams:
@@ -120,13 +126,16 @@ class DB():
             if 'typeDB' in self.cfgParams.keys() and  self.cfgParams['typeDB'].lower() in ['mysql','sqlserver']:
                 self.isNetwork = True
                 # Ouverture de la base de données
-                self.ConnexionFichierReseau(self.cfgParams)
+                self.ConnexionFichierReseau(self.cfgParams, mute=mute)
             elif 'typeDB' in self.cfgParams.keys() and  self.cfgParams['typeDB'].lower() in ['access','sqlite']:
                 self.isNetwork = False
                 self.ConnexionFichierLocal(self.cfgParams)
             else :
-                wx.MessageBox("xDB: Le type de Base de Données '%s' n'est pas géré!" % self.typeDB)
-                return
+                mess = "xDB: Le type de Base de Données '%s' n'est pas géré!" % self.typeDB
+                self.erreur = mess
+                if not mute:
+                    wx.MessageBox(mess)
+                return mess
 
             if self.connexion:
                 # Mémorisation de l'ouverture de la connexion et des requêtes
@@ -156,7 +165,7 @@ class DB():
         deltasec = 0
         nbre = 0
         ret = 1
-        while deltasec < 3 and ret != 0:
+        while deltasec < 3 and ret != 0 and nbre < 5:
             nbre +=1
             ret = subprocess.run(['ping', option, '1', '-w', '500', serveur,],
                                  capture_output=True).returncode
@@ -169,16 +178,18 @@ class DB():
             mess = "Time Out %d pings en %.3f secondes "%(nbre,deltasec)
             print(mess)
             raise NameError("Pas de réponse du serveur %s à la commande PING\n\n%s"%(serveur,mess))
-        return True
+            ret = 'ko'
+        else: ret = 'ok'
+        return ret
 
     def AfficheTestOuverture(self):
-        style = wx.ICON_WARNING
-        try:
-            if self.echec == 0: style = wx.ICON_INFORMATION
-            retour = ['avec succès', '!!!!!!!! SANS SUCCES !!!!!!!\n'][self.echec]
-            mess = "L'accès à la base '%s' s'est réalisé %s" % (self.nomBase, retour)
-        except:
-            mess = "Désolé "
+        style = wx.ICON_STOP
+        if self.echec == 0: style = wx.ICON_INFORMATION
+        accroche = ['Ouverture réussie',"Echec d'ouverture"][self.echec]
+        retour = ['avec succès', ' SANS SUCCES !\n'][self.echec]
+        mess = "%s\n\nL'accès à la base '%s' s'est réalisé %s" % (accroche,self.nomBase, retour)
+        if self.erreur:
+            mess += '\nErreur: %s'%self.erreur
         wx.MessageBox(mess, style=style)
 
     def CreateBaseMySql(self, config):
@@ -212,7 +223,7 @@ class DB():
         else:
             self.echec = 0
 
-    def ConnexionFichierReseau(self,config):
+    def ConnexionFichierReseau(self,config,mute=False):
         self.connexion = None
         self.echec = 1
         try:
@@ -224,22 +235,29 @@ class DB():
             nomFichier = config['nameDB']
             etape = 'Ping %s'%(host)
             ret = self.Ping(host)
+            if not ret == 'ok':
+                self.echec = 1
+                self.connexion = None
+                return
             etape = 'Création du connecteur %s - %s - %s - %s'%(host,userdb,passwd, port)
             if self.typeDB == 'mysql':
-                self.connexion = mysql.connector.connect(host=host, user=userdb, passwd=passwd, port=int(port))
+                connexion = mysql.connector.connect(host=host, user=userdb, passwd=passwd, port=int(port))
                 etape = 'Création du curseur, après connexion'
-                self.cursor = self.connexion.cursor(buffered=True)
-                # Tentative d'Utilisation
+                self.cursor = connexion.cursor(buffered=True)
+                self.connexion = connexion
+                # Tentative d'Utilisation de la base
                 etape = " Tentative d'accès à '%s'" %nomFichier
                 self.cursor.execute("USE %s;" % nomFichier)
                 self.echec = 0
             else:
                 wx.MessageBox('xDB: Accès BD non développé pour %s' %self.typeDB)
         except Exception as err:
-            wx.MessageBox("La connexion MYSQL a echoué.\n\nEtape: %s,\nErreur: '%s'" %(etape,err),caption="xUTILS_DB.ConnexionFichierReseau ")
-            self.erreur = err
+            mess = "La connexion MYSQL a echoué.\n\nEtape: %s,\nErreur: '%s'" %(etape,err)
+            if not mute:
+                wx.MessageBox(mess,caption="xUTILS_DB.ConnexionFichierReseau ")
+            self.erreur = "%s\n\nEtape: %s"%(err,etape)
             self.echec = 1
-            self.connexion = None
+
 
     def OuvertureFichierLocal(self, nomFichier):
         """ Version LOCALE avec SQLITE """
@@ -267,7 +285,7 @@ class DB():
                 wx.MessageBox('xDB: Accès DB non développé pour %s' %self.typeDB)
         except Exception as err:
             wx.MessageBox("xDB: La connexion base de donnée a echoué à l'étape: %s, sur l'erreur :\n\n%s" %(etape,err))
-            self.erreur = err
+            self.erreur = "%s\n\n: %s"%(err,etape)
 
     def ConnectAcessADO(self):
         """Important ne tourne qu'avec: 32bit MS driver - 32bit python!

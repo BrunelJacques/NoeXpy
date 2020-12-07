@@ -15,8 +15,8 @@ import wx.propgrid as wxpg
 from copy                      import deepcopy
 from xpy.outils                import xformat,xboutons
 
-OPTIONS_CTRL = ('name', 'label', 'ctrlAction', 'btnLabel', 'btnAction', 'value', 'labels', 'values', 'enable',
-                'genre', 'help','ctrlSize','txtSize', 'btnHelp','boxMaxSize','boxMinSize')
+OPTIONS_CTRL = ('name', 'label', 'ctrlAction', 'btnLabel', 'btnImage','btnAction', 'value', 'labels', 'values', 'enable',
+                'genre', 'help','ctrlSize','txtSize', 'btnHelp','boxMaxSize','boxMinSize','ctrl')
 # les Binds de ctrl se posent dans le pannel
 OPTIONS_PANEL = ('pos','style','name', 'size')
 
@@ -103,7 +103,7 @@ def Normalise(genre, name, label, value):
         if not isinstance(value, float): value = 0.0
     elif genre in ['bool', 'check','wxboolproperty']:
         if not isinstance(value, bool): value = True
-    elif genre in ['enum', 'combo','wxenumproperty']:
+    elif genre in ['enum', 'combo','choice','wxenumproperty']:
         if not isinstance(value, int): value = 0
     elif (genre in ['multichoice']):
         if (not isinstance(value, list)): value = []
@@ -204,6 +204,27 @@ def DicFiltre(dic,options):
 #**********************************************************************************
 #                   GESTION des CONTROLES: Grilles ou composition en panel
 #**********************************************************************************
+class AnyCtrl(wx.Panel):
+    # Exemple d'un controle pour s'insérer dans une matrice 'genre':'anyctrl', 'ctrl':'MyAnyCtrl'
+    def __init__(self,parent):
+        super().__init__(parent,wx.ID_ANY)
+        self.choice = wx.Choice(self,wx.ID_ANY,choices=[])
+        self.Sizer()
+
+    def Sizer(self):
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        box.Add(self.choice,1,wx.EXPAND, 0)
+        self.SetSizer(box)
+
+    def SetValue(self,value):
+        self.choice.SetStringSelection(value)
+
+    def GetValue(self):
+        return self.choice.GetStringSelection()
+
+    def Set(self,values):
+        # définie les values possibles dans le contrôle
+        self.choice.Set(values)
 
 class CTRL_property(wxpg.PropertyGrid):
     # grille property affiche les paramètres gérés par PNL_property
@@ -225,7 +246,7 @@ class CTRL_property(wxpg.PropertyGrid):
 
         # Remplissage des valeurs
         if len(self.dictValeursDefaut) > 0:
-            self.SetValeurs(self.dictValeursDefaut)
+            self.SetValues(self.dictValeursDefaut)
 
     def OnPropGridChange(self, event):
         event.Skip()
@@ -252,7 +273,7 @@ class CTRL_property(wxpg.PropertyGrid):
                         commande = ''
                         try:
                             commande = genre
-                            if genre in ['enum','combo']:
+                            if genre in ['enum','combo','choice']:
                                 values = list(range(0,len(ligne['labels'])))
                                 choix = wxpg.PGChoices(ligne['labels'], values=[])
                                 propriete = wxpg.EnumProperty(label, name,
@@ -297,7 +318,8 @@ class CTRL_property(wxpg.PropertyGrid):
 
                         except Exception as err:
                             wx.MessageBox(
-                            "Echec sur Property de name: '%s' - value: '%s' (%s)\nLe retour d'erreur est : \n%s\n\nSur commande : %s"
+                            "Echec sur Property de name: '%s' - value: '%s' (%s)\n"
+                            + "Le retour d'erreur est : \n%s\n\nSur commande : %s"
                             %(name,value,type(value),err,commande),
                             'CTRL_property.InitMatrice() : Paramètre ligne indigeste !', wx.OK | wx.ICON_STOP
                             )
@@ -308,9 +330,9 @@ class CTRL_property(wxpg.PropertyGrid):
         reponse = dlg.ShowModal()
         dlg.Destroy()
         if reponse == wx.ID_YES:
-            self.SetValeurs(self.dictValeursDefaut)
+            self.SetValues(self.dictValeursDefaut)
 
-    def SetValeurs(self, ddDonnees={}):
+    def SetValues(self, ddDonnees={}):
         # Alimente les valeurs dans la grille en composant le nom avec le code
         for code, valeurs in ddDonnees.items():
             for champ, valeur in valeurs.items():
@@ -323,7 +345,7 @@ class CTRL_property(wxpg.PropertyGrid):
                     genre,nom,label,valeur = Normalise(genre,nom,label,valeur)
                     propriete.SetValue(valeur)
 
-    def GetValeurs(self):
+    def GetValues(self):
         values = self.GetPropertyValues()
         ddDonnees = {}
         for nom, valeur in values.items():
@@ -349,11 +371,11 @@ class PNL_property(wx.Panel):
         #topbox.MinSize = (300,400)
         self.SetSizer(topbox)
 
-    def GetValeurs(self):
-        return self.ctrl.GetValeurs()
+    def GetValues(self):
+        return self.ctrl.GetValues()
 
-    def SetValeurs(self,donnees):
-        ret = self.ctrl.SetValeurs(donnees)
+    def SetValues(self,donnees):
+        ret = self.ctrl.SetValues(donnees)
         return ret
 
 class PNL_ctrl(wx.Panel):
@@ -361,7 +383,7 @@ class PNL_ctrl(wx.Panel):
     """ et en option (code) un bouton d'action permettant de contrôler les saisies
         GetValue retourne la valeur choisie dans le ctrl avec action possible par bouton à droite"""
     def __init__(self, parent, *args, genre='string', name=None, label='', value= None, labels=[], values=[],
-                 help=None, btnLabel=None, btnHelp=None,  txtSize=100, **kwds):
+                 help=None, btnLabel=None, btnImage=None, btnHelp=None,  txtSize=100, ctrl=None, **kwds):
 
         if 'ctrSize' in kwds:
             kwds['size'] = kwds['ctrlSize']
@@ -370,9 +392,9 @@ class PNL_ctrl(wx.Panel):
         genre = genre.lower()
         self.value = value
         self.name = name
-        self.SetOneValues = self.SetValues
+        self.SetOneSet = self.Set
 
-        if btnLabel :
+        if btnLabel or btnImage :
             self.avecBouton = True
         else: self.avecBouton = False
         lg = max(txtSize,int(len(label)*5.5))
@@ -390,12 +412,15 @@ class PNL_ctrl(wx.Panel):
         if len(values) > 0 and len(labels) == 0:
             labels = values
         self.genre = lgenre
-
+        self.values = values
         try:
             commande = 'debut'
             # construction des contrôles selon leur genre
-            if lgenre in ['enum','combo','multichoice']:
-                self.ctrl = wx.ComboBox(self, wx.ID_ANY,style = wx.TE_PROCESS_ENTER)
+            if lgenre in ['enum','combo','multichoice','choice']:
+                if lgenre == 'choice':
+                    style = wx.TE_PROCESS_ENTER | wx.CB_READONLY
+                else: style = wx.TE_PROCESS_ENTER
+                self.ctrl = wx.ComboBox(self, wx.ID_ANY,style = style)
                 if labels:
                     commande = 'Set in combo'
                     self.ctrl.Set(labels)
@@ -407,7 +432,8 @@ class PNL_ctrl(wx.Panel):
             elif lgenre in ['bool', 'check']:
                 self.ctrl = wx.CheckBox(self, wx.ID_ANY)
                 self.UseCheckbox = 1
-
+            elif lgenre == 'anyctrl':
+                self.ctrl = ctrl(self)
             else:
                 style = wx.TE_PROCESS_ENTER
                 if lname:
@@ -426,22 +452,22 @@ class PNL_ctrl(wx.Panel):
             if help:
                 self.ctrl.SetToolTip(help)
                 self.txt.SetToolTip(help)
+            commande = "création Boutons"
+            if not btnLabel: btnLabel = ''
             if lgenre in ('dir','dirfile'):
                 self.avecBouton = True
-                if not btnLabel: btnLabel = '...'
-                self.btn = wx.Button(self, wx.ID_ANY, btnLabel, size=(30, 20))
                 if lgenre == 'dirfile':
-                    self.btn.Bind(wx.EVT_BUTTON, self.OnDirfile)
+                    onBtn = self.OnDirfile
                 else:
-                    self.btn.Bind(wx.EVT_BUTTON, self.OnDir)
+                    onBtn = self.OnDir
+                self.btn = xboutons.Bouton(self,label=btnLabel, image=wx.ART_GO_DIR_UP,onBtn=onBtn)
             elif self.avecBouton:
-                self.btn = wx.Button(self, wx.ID_ANY, btnLabel, size=(30, 20))
-                if btnHelp:
-                    self.btn.SetToolTip(btnHelp)
+                self.btn = xboutons.Bouton(self,label=btnLabel, image=btnImage,help=btnHelp)
             self.BoxSizer()
         except Exception as err:
             wx.MessageBox(
-                "Echec sur PNL_ctrl de:\ngenre: %s\nname: %s\nvalue: %s (%s)\n\nLe retour d'erreur est : \n%s\n\nSur commande : %s"
+                "Echec sur PNL_ctrl de:\ngenre: %s\nname: %s\nvalue: %s (%s)\n\n"
+                +"Le retour d'erreur est : \n%s\n\nSur commande : %s"
                 % (lgenre, name, value, type(value), err, commande),
                 'PNL_ctrl.__init__() : Paramètre de ligne indigeste !', wx.OK | wx.ICON_STOP
             )
@@ -455,7 +481,7 @@ class PNL_ctrl(wx.Panel):
         self.SetSizer(topbox)
 
     def GetValue(self):
-        return self.ctrl.GetValue()
+            return self.ctrl.GetValue()
 
     def SetValue(self,value):
         if self.genre in ('int','float'):
@@ -468,12 +494,10 @@ class PNL_ctrl(wx.Panel):
                 value = 0
         if value == None:
             value = ''
-        if self.genre in ('combo','multichoice','enum'):
-            self.ctrl.SetValue(value)
-        else: self.ctrl.SetValue(value)
+        self.ctrl.SetValue(value)
 
     # c'est la mise à jour des choices du controle
-    def SetValues(self,values):
+    def Set(self,values):
         self.ctrl.Set(values)
 
     def OnDir(self,event):
@@ -515,7 +539,7 @@ class PNL_listCtrl(wx.Panel):
         # Remplissage de la matrice
         ret = self.InitMatrice(ltColonnes)
         # Remplissage des valeurs
-        self.SetValeurs(llItems,ltColonnes)
+        self.SetValues(llItems,ltColonnes)
         self.lstBtnAction = []
         self.InitLstBtnAction(self.lstBtnAction)
         self.Sizer()
@@ -571,7 +595,7 @@ class PNL_listCtrl(wx.Panel):
                                 help="Supprimer toutes les lignes",
                                 onBtn=self.OnRaz)
 
-    def SetValeurs(self, llItems=[], ltColonnes=[]):
+    def SetValues(self, llItems=[], ltColonnes=[]):
         # Alimente les valeurs dans la grille
         self.ctrl.DeleteAllItems()
         for items in llItems:
@@ -579,7 +603,7 @@ class PNL_listCtrl(wx.Panel):
         for i in range(len(ltColonnes)):
             self.ctrl.SetColumnWidth(i,wx.LIST_AUTOSIZE_USEHEADER)
 
-    def GetValeurs(self,ixLigne=None):
+    def GetValues(self,ixLigne=None):
         # réciproque de Set valeur  ou choix d'une seule ligne d'items-----------------------------------------------
         """ wx!!!: un item est une ligne dans la fonction Insert, mais un seul element dans les fonctions Set et Get
             la fonction Append permet de remplir la ligne, je n'ai pas trouve une fonction inverse il faut boucler
@@ -692,8 +716,7 @@ class BoxPanel(wx.Panel):
                     if panel.ctrl.actionCtrl:
                         panel.ctrl.Bind(wx.EVT_TEXT_ENTER, self.parent.OnCtrlAction)
                         panel.ctrl.Bind(wx.EVT_KILL_FOCUS, self.parent.OnCtrlAction)
-                        if panel.ctrl.genreCtrl in ['enum','combo','multichoice']:
-                            #panel.ctrl.Bind(wx.EVT_COMBOBOX, self.parent.OnCtrlAction)
+                        if panel.ctrl.genreCtrl in ['enum','combo','multichoice','choice']:
                             panel.ctrl.Bind(wx.EVT_COMBOBOX_DROPDOWN,self.parent.OnCtrlAction)
                             panel.ctrl.Bind(wx.EVT_CHECKBOX, self.parent.OnCtrlAction)
 
@@ -746,13 +769,13 @@ class BoxPanel(wx.Panel):
         return
 
     # SetChoices du ctrl nommé
-    def SetOneValues(self,name = '', values=None):
+    def SetOneSet(self,name = '', values=None):
         if values:
             for panel in self.lstPanels:
                 [code, champ] = panel.ctrl.nameCtrl.split('.')
                 if champ == name or panel.ctrl.nameCtrl == name:
-                    if panel.ctrl.genreCtrl.lower() in ['enum', 'combo','multichoice']:
-                        panel.SetValues(values)
+                    if panel.ctrl.genreCtrl.lower() in ['enum', 'combo','multichoice','choice']:
+                        panel.Set(values)
         return
 
     def GetPnlCtrl(self,name = ''):
@@ -810,6 +833,7 @@ class TopBoxPanel(wx.Panel):
                                **kwdBox)
                 self.lstBoxes.append(box)
                 self.topbox.Add(box, 1, wx.EXPAND|wx.ALL,3)
+
         self.SetSizer(self.topbox)
 
     def OnCtrlAction(self,event):
@@ -821,14 +845,14 @@ class TopBoxPanel(wx.Panel):
     def GetLstValeurs(self,):
         # récupère une liste à partir du ddDonnees
         lstChamps, lstDonnees = [], []
-        ddDonnees = self.GetValeurs()
+        ddDonnees = self.GetValues()
         for code, label in self.matrice.keys():
             for dicCtrl in self.matrice[(code,label)]:
                 lstChamps.append(dicCtrl['name'])
                 lstDonnees.append(ddDonnees[code][dicCtrl['name']])
         return lstChamps,lstDonnees
 
-    def GetValeurs(self):
+    def GetValues(self):
         ddDonnees = {}
         for box in self.lstBoxes:
             dic = box.GetValues()
@@ -848,7 +872,7 @@ class TopBoxPanel(wx.Panel):
         return valeur
 
     def SetLstValeurs(self,lstChamps,lstDonnees):
-        # compose un dict pour SetValeurs
+        # compose un dict pour SetValues
         ddDonnees = {}
         champs = [x.lower() for x in lstChamps]
         for code, label in self.matrice.keys():
@@ -858,16 +882,16 @@ class TopBoxPanel(wx.Panel):
                     valeur = lstDonnees[champs.index(dicCtrl['name'].lower())]
                     name = dicCtrl['name']
                     ddDonnees[code][name]=valeur
-        self.SetValeurs(ddDonnees)
+        self.SetValues(ddDonnees)
 
-    def SetValeurs(self, ddDonnees):
+    def SetValues(self, ddDonnees):
         for box in self.lstBoxes:
             if box.code in ddDonnees:
                 dic = ddDonnees[box.code]
                 box.SetValues(dic)
         return
 
-    def SetValeur(self,name=None,valeur=None,codeBox=None):
+    def SetOneValue(self,name=None,valeur=None,codeBox=None):
         if codeBox :
             box = self.GetBox(codeBox)
             box.SetOneValue(name,valeur)
@@ -994,7 +1018,7 @@ class DLG_listCtrl(wx.Dialog):
         #Ajoute une ligne d'items dans le lddDonnees
         self.lddDonnees.append(self.Calcul(ddDonnees))
         self.lddDonnees, self.ltColonnes, self.llItems = Transpose(self.dldMatrice, self.dlColonnes, self.lddDonnees)
-        self.pnl.SetValeurs(self.llItems, self.ltColonnes)
+        self.pnl.SetValues(self.llItems, self.ltColonnes)
 
     def Calcul(self,ddDonnees):
         # Possibilité de gérer un calcul combinant les lignes après saisie et avant affichage de la liste
@@ -1002,7 +1026,8 @@ class DLG_listCtrl(wx.Dialog):
 
     def EnableID(self,enable=True):
         ctrlID = self.dlgGest.pnl.GetPnlCtrl('ID')
-        ctrlID.Enable(enable)
+        if ctrlID:
+            ctrlID.Enable(enable)
 
     def OnAjouter(self,event):
         self.EnableID(enable=True)
@@ -1010,20 +1035,20 @@ class DLG_listCtrl(wx.Dialog):
         ret = self.dlgGest.ShowModal()
         if ret == wx.OK:
             #récupération des valeurs saisies
-            ddDonnees = self.Calcul(self.dlgGest.pnl.GetValeurs())
+            ddDonnees = self.Calcul(self.dlgGest.pnl.GetValues())
             self.SetOneItems(ddDonnees)
 
     def OnModifier(self,event, items):
         # documentation dans dupliquer
         ddDonnees = self.lddDonnees[items]
-        self.dlgGest.pnl.SetValeurs(ddDonnees)
+        self.dlgGest.pnl.SetValues(ddDonnees)
         self.EnableID(enable=False)
         ret = self.dlgGest.ShowModal()
         if ret == wx.OK:
-            ddDonnees = self.Calcul(self.dlgGest.pnl.GetValeurs())
+            ddDonnees = self.Calcul(self.dlgGest.pnl.GetValues())
             self.lddDonnees[items] = ddDonnees
             self.lddDonnees, self.ltColonnes, self.llItems = Transpose(self.dldMatrice, self.dlColonnes, self.lddDonnees)
-            self.pnl.SetValeurs(self.llItems, self.ltColonnes)
+            self.pnl.SetValues(self.llItems, self.ltColonnes)
         self.pnl.ctrl.Select(items)
         #self.dlgGest.Destroy()
 
@@ -1040,7 +1065,7 @@ class DLG_listCtrl(wx.Dialog):
             items = self.pnl.ctrl.GetFirstSelected()
         self.lddDonnees, self.ltColonnes, self.llItems = Transpose(self.dldMatrice,
                                          self.dlColonnes, self.lddDonnees)
-        self.pnl.SetValeurs(self.llItems, self.ltColonnes)
+        self.pnl.SetValues(self.llItems, self.ltColonnes)
 
     def OnRaz(self,event):
         # documentation dans dupliquer
@@ -1051,17 +1076,17 @@ class DLG_listCtrl(wx.Dialog):
     def OnDupliquer(self,event, items):
         # récupération des données de la ligne que l'on place dans l'écran de saisie
         ddDonnees = self.lddDonnees[items].copy()
-        self.dlgGest.pnl.SetValeurs(ddDonnees)
+        self.dlgGest.pnl.SetValues(ddDonnees)
         self.EnableID(enable=True)
         # affichage de l'écran de saisie
         ret = self.dlgGest.ShowModal()
         if ret == wx.OK:
             #stockage des données
-            ddDonnees = self.Calcul(self.dlgGest.pnl.GetValeurs())
+            ddDonnees = self.Calcul(self.dlgGest.pnl.GetValues())
             donnees = ddDonnees.copy()
             self.lddDonnees.append(donnees)
             self.lddDonnees, self.ltColonnes, self.llItems = Transpose(self.dldMatrice, self.dlColonnes, self.lddDonnees)
-            self.pnl.SetValeurs(self.llItems, self.ltColonnes)
+            self.pnl.SetValues(self.llItems, self.ltColonnes)
 
     def OnFermer(self, event):
         return self.Close()
@@ -1081,7 +1106,7 @@ class DLG_vide(wx.Dialog):
         size =      kwds.pop('size',(600, 450))
         minSize =   kwds.pop('minSize',(300, 150))
 
-        super().__init__(None, wx.ID_ANY, *args, title=name,  style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER , **kwds)
+        super().__init__(None, wx.ID_ANY, *args, title=title, style=style, pos=pos, **kwds)
         self.marge = kwds.pop('marge',10)
         self.couleur = kwds.pop('couleur',wx.WHITE)
         self.parent = parent
@@ -1127,11 +1152,7 @@ class DLG_vide(wx.Dialog):
             self.parent.OnChildBtnAction(event)
         else:
             action = 'self.%s(event)' % event.EventObject.actionBtn
-            try:
-                eval(action)
-            except Exception as err:
-                wx.MessageBox("Commande: '%s' \n\nErreur: \n%s" % (action, err),
-                              "Echec sur lancement de l'action bouton")
+            eval(action)
 
     def OnChildCtrlAction(self, event):
         # relais des actions sur boutons ou contrôles priorité si le parent gère ce relais
@@ -1139,11 +1160,7 @@ class DLG_vide(wx.Dialog):
             self.parent.OnChildCtrlAction(event)
         else:
             action = 'self.%s(event)' % event.EventObject.actionCtrl
-            try:
-                eval(action)
-            except Exception as err:
-                wx.MessageBox(
-                    "Echec sur lancement action sur ctrl: '%s' \nLe retour d'erreur est : \n%s" % (action, err))
+            eval(action)
 
 #************************   Pour Test ou modèle  *********************************
 
@@ -1298,7 +1315,7 @@ if __name__ == '__main__':
     dictColonnesSimple = {}
 
     # Lancement des tests
-    """
+
     dlg_4 = DLG_listCtrl(None,dldMatrice=dictMatrice,
                                 dlColonnes=dictColonnes,
                                 lddDonnees=[dictDonnees])
@@ -1306,13 +1323,14 @@ if __name__ == '__main__':
     app.SetTopWindow(dlg_4)
     dlg_4.Show()
     """
-
+    """
     dlg_3 = DLG_vide(None)
     pnl = PNL_property(dlg_3,dlg_3,matrice=dictMatrice,donnees=dictDonnees)
     dlg_3.Sizer(pnl)
     app.SetTopWindow(dlg_3)
     dlg_3.Show()
 
+    """
     """
     frame_2 = FramePanels(None, )
     frame_2.Position = (500,300)
@@ -1322,6 +1340,6 @@ if __name__ == '__main__':
     app.SetTopWindow(frame_1)
     frame_1.Position = (50,50)
     frame_1.Show()
-    """
+
 
     app.MainLoop()

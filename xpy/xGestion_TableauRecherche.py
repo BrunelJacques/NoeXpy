@@ -438,19 +438,18 @@ class DLG_tableau(wx.Dialog):
     # minimum fonctionnel dans dialog tout est dans pnl
     def __init__(self,parent,dicOlv={}, **kwds):
         self.parent = parent
-        largeur = dicOlv.pop("largeur", 800)
-        hauteur = dicOlv.pop("hauteur", 700)
+        # inutile si SetSizerAndFit qui ajuste
+        size = dicOlv.pop("size", (600,300))
         self.db = kwds.pop("db",xdb.DB())
         pnlTableau = dicOlv.pop("pnlTableau",PNL_tableau )
         listArbo=os.path.abspath(__file__).split("\\")
         titre = listArbo[-1:][0] + "/" + self.__class__.__name__
-        wx.Dialog.__init__(self,None, title=titre, size=(largeur,hauteur),style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
+        wx.Dialog.__init__(self,None, title=titre, size=size,style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
         self.SetBackgroundColour(wx.WHITE)
         self.marge = 10
         self.pnl = pnlTableau(self, dicOlv,  **kwds )
         self.ctrlOlv = self.pnl.ctrlOlv
         self.CenterOnScreen()
-        #self.Layout()
 
     def GetSelection(self):
         return self.pnl.ctrlOlv.GetSelectedObject()
@@ -496,8 +495,6 @@ dicOnClick = {'Action1': lambda evt: wx.MessageBox('ceci active la fonction acti
                 'Action2': 'self.parent.Close()',}
 dicOlv = {'listeColonnes':liste_Colonnes,
                 'getDonnees':GetDonnees,
-                'hauteur':650,
-                'largeur':850,
                 'recherche':True,
                 'msgIfEmpty':"Aucune donnée ne correspond à votre recherche",
                 'dictColFooter':{"nombre" : {"mode" : "total",  "alignement" : wx.ALIGN_RIGHT},

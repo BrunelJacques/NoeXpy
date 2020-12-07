@@ -103,7 +103,7 @@ FORMATS_IMPORT = {"LCL carte":{ 'champs':['date','montant','mode',None,'libelle'
 MATRICE_PARAMS = {
 ("fichiers","Paramètres fichiers"): [
     {'genre': 'dirfile', 'name': 'path', 'label': "Fichier d'origine",'value': "*.csv",
-     'help': "Pointez le fichier contenant les valeurs à transposer"},
+                     'help': "Pointez le fichier contenant les valeurs à transposer"},
     {'name': 'formatin', 'genre': 'Enum', 'label': 'Format import',
                     'help': "Le choix est limité par la programmation", 'value':0,
                     'values':[x for x in FORMATS_IMPORT.keys()],
@@ -124,7 +124,8 @@ MATRICE_PARAMS = {
                     'help': "Code comptable du compte de contrepartie de la banque",'size':(250,30)},
     {'name': 'lastpiece', 'genre': 'String', 'label': 'Dernier no de pièce',
                     'help': "Préciser avant l'import le dernier numéro de pièce à incrémenter",'size':(250,30)},
-    ]
+    ],
+("vide", ""): []
 }
 
 # description des boutons en pied d'écran et de leurs actions
@@ -164,8 +165,7 @@ def GetOlvColonnes(dlg):
 # paramètre les options de l'OLV
 def GetOlvOptions(dlg):
     return {
-            'hauteur': 400,
-            'largeur': 900,
+            'minSize': (500,150),
             'checkColonne': False,
             'recherche': True,
             'autoAddRow':False,
@@ -339,7 +339,6 @@ class Dialog(xusp.DLG_vide):
         sizer_base.Add(self.pnlPied, 0, wx.ALL | wx.EXPAND, 3)
         sizer_base.AddGrowableCol(0)
         sizer_base.AddGrowableRow(1)
-        self.CenterOnScreen()
         self.SetSizerAndFit(sizer_base)
         self.CenterOnScreen()
 
@@ -371,7 +370,7 @@ class Dialog(xusp.DLG_vide):
         self.table = self.GetTable()
 
     def InitOlv(self):
-        self.pnlParams.GetValeurs()
+        self.pnlParams.GetValues()
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
         self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.formerCodeColonnes()
         self.ctrlOlv.InitObjectListView()
@@ -379,13 +378,13 @@ class Dialog(xusp.DLG_vide):
 
     def GetDonneesIn(self):
         # importation des donnéees du fichier entrée
-        dic = self.pnlParams.GetValeurs()
+        dic = self.pnlParams.GetValues()
         nomFichier = dic['fichiers']['path']
         entrees = ximport.GetFichierCsv(nomFichier)
         return entrees
 
     def GetCompta(self):
-        dic = self.pnlParams.GetValeurs()
+        dic = self.pnlParams.GetValues()
         formatExp = dic['fichiers']['formatexp']
         compta = None
         if formatExp in UTILS_Compta.FORMATS_EXPORT.keys() :
@@ -405,7 +404,7 @@ class Dialog(xusp.DLG_vide):
             lstLibJournaux = [(x[0]+"   ")[:3]+' - '+x[1] for x in lstJournaux]
             box = self.pnlParams.GetBox('compta')
             valeur = self.pnlParams.lstBoxes[1].GetOneValue('journal')
-            box.SetOneValues('journal',lstLibJournaux)
+            box.SetOneSet('journal',lstLibJournaux)
             box.SetOneValue('journal',valeur)
         pnlJournal = self.pnlParams.GetPnlCtrl('journal', 'compta')
         x = False
@@ -414,12 +413,12 @@ class Dialog(xusp.DLG_vide):
         return compta
 
     def GetTable(self):
-        dicParams = self.pnlParams.GetValeurs()
+        dicParams = self.pnlParams.GetValues()
         formatIn = dicParams['fichiers']['formatin']
         return FORMATS_IMPORT[formatIn]['table']
 
     def OnImporter(self,event):
-        dicParams = self.pnlParams.GetValeurs()
+        dicParams = self.pnlParams.GetValues()
         formatIn = dicParams['fichiers']['formatin']
         self.table = FORMATS_IMPORT[formatIn]['table']
         self.ctrlOlv.listeDonnees = FORMATS_IMPORT[formatIn]['fonction'](dicParams,
@@ -454,7 +453,7 @@ class Dialog(xusp.DLG_vide):
                 return wx.CANCEL
 
         exp = UTILS_Compta.Export(self,self.compta)
-        ret = exp.Exporte(self.pnlParams.GetValeurs(),
+        ret = exp.Exporte(self.pnlParams.GetValues(),
                           donnees,
                           champsIn)
         if not ret == wx.OK:

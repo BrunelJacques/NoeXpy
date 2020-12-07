@@ -15,13 +15,15 @@ import xpy.xUTILS_Shelve as xucfg
 import xpy.xUTILS_DB as xdb
 from  xpy.outils import xformat,xboutons
 
+
+
 # Constantes de paramétrage des écrans de configuration et identification
 MATRICE_CREATE_BASE = {
 ("create_base","Création d'une nouvelle base de donnée"):[
-    {'name': 'nomBase', 'genre': 'texte', 'label': 'Nom de la base',
+    {'name': 'nameDB', 'genre': 'texte', 'label': 'Nom de la base',
                         'help': "C\'est le nom qui sera donné à la base de données",
                         'txtSize': 140,
-                        'ctrlaction':"OnNomBase",
+                        'ctrlaction':"OnNameDB",
                         'btnLabel':"...", 'btnHelp': "Cliquez pour gérer les configurations d'accès aux données",
                         'btnAction': "OnBtnConfig",
     },
@@ -58,15 +60,16 @@ MATRICE_CONFIGS = {
     ('db_prim', "Acccès à une base avec authentification"): [
     {'name': 'ID', 'genre': 'String', 'label': 'Désignation config', 'value': 'config1',
                     'help': "Désignez de manière unique cette configuration"},
-    {'name': 'serveur', 'genre': 'String', 'label': 'Path ou Serveur', 'value':'',
-                    'help': "Répertoire 'c:\...' si local - Adresse IP ou nom du serveur si réseau",},
-    {'name': 'port', 'genre': 'Int', 'label': 'Port', 'value': 3306,
+    {'name': 'serveur', 'genre': 'dirfile', 'label': 'Path ou Serveur', 'value':'',
+                    'help': "Choixir l'emplacement 'c:\...' pour un choix local - l'Adresse IP du serveur si réseau",},
+    {'name': 'port', 'genre': 'Int', 'label': 'Port',
                     'help': "Pour réseau seulement, information disponible aurpès de l'administrateur système",},
-    {'name': 'typeDB', 'genre': 'Enum', 'label': 'Type de Base',
+    {'name': 'typeDB', 'genre': 'choice', 'label': 'Type de Base',
                     'help': "Le choix est limité par la programmation", 'value':0,
-                    'values':['MySql','SqlServer','Access','SQLite'] },
-    {'name': 'nameDB', 'genre': 'String', 'label': 'Nom de la Base',
-                     'help': "Base de donnée présente sur le serveur"},
+                    'values':['MySql','Access','SQLite'],},
+    {'name': 'nameDB', 'genre': 'combo', 'label': 'Nom de la Base',
+                     'help': "Choisir un base de donnée présente sur le serveur",
+                     'ctrlAction':'OnNameDB'},
     {'name': 'userDB', 'genre': 'String', 'label': 'Utilisateur BD',
                     'help': "Si nécessaire, utilisateur ayant des droits d'accès à la base de donnée", 'value':'invite'},
     ],
@@ -97,6 +100,14 @@ def GetCleMatrice(code,matrice):
             break
     return cle
 
+def GetIxLigneMatrice(name,lignes):
+    ix = 0
+    for dic in lignes:
+        if dic['name'] == name:
+            ix = lignes.index(dic)
+            break
+    return ix
+
 def GetLstConfigs(configs,typeconfig=None):
     lstIDconfigs = []
     lstConfigsOK = []
@@ -109,6 +120,24 @@ def GetLstConfigs(configs,typeconfig=None):
                     lstConfigsOK.append(config)
                 else: lstConfigsKO.append(config)
     return lstIDconfigs,lstConfigsOK,lstConfigsKO
+
+def GetBases(self,cfgParams=None):
+        # connexion actuelle stockée pour vérif modifs
+        oldval = None
+        if not cfgParams or cfgParams['nameDB']=='':
+            #récupération d'un connexion antérieure, soit d'un précédent passage, soit celle par défaut
+            if not self.DB:
+                self.DB = xdb.DB(mute=True)
+        else:
+            oldval = cfgParams['nameDB']
+            self.DB = xdb.DB(config=cfgParams,mute=True)
+
+        if self.DB.connexion:
+            lstBases = [x for (x,) in self.DB.GetDataBases() if x[-4:].lower()=='data']
+        else:
+            lstBases = [oldval,'Recherche échouée',]
+        return lstBases
+
 
 # Panel de gestion des configurations
 class ChoixConfig(xusp.BoxPanel):
@@ -172,7 +201,7 @@ class DLG_implantation(wx.Dialog):
         self.ctrlID = xusp.CTRL_property(self, matrice=MATRICE_IDENT, enable=False)
         if ident:
             ddDonnees[ident] = valeurs
-            self.ctrlID.SetValeurs(ddDonnees=ddDonnees)
+            self.ctrlID.SetValues(ddDonnees=ddDonnees)
 
         # recherche dans profilUser ----------------------------------------------------------------------------------
         cfg = xucfg.ParamUser()
@@ -207,7 +236,7 @@ class DLG_implantation(wx.Dialog):
         choixConfigs = ddchoixConfigs[self.nomAppli]
         # alimente la liste des choix possibles
         for ctrlConfig in self.lstChoixConfigs:
-            ctrlConfig.SetOneValues(ctrlConfig.Name,self.lstIDconfigs)
+            ctrlConfig.SetOneSet(ctrlConfig.Name,self.lstIDconfigs)
             if ctrlConfig.Name in choixConfigs:
                 ctrlConfig.SetOneValue(ctrlConfig.Name,choixConfigs[ctrlConfig.Name])
         # last config sera affichée en 'Fermer' si pas modifiée
@@ -277,15 +306,15 @@ class DLG_implantation(wx.Dialog):
             "Echec sur lancement de l'action bouton")
 
     def OnBtnConfig(self,event):
-        ctrl = event.EventObject.GrandParent
+        ctrl = event.EventObject.Parent
         # sur clic du bouton pour élargir le choix de la combo
-        sc = DLG_listeConfigs(self,select=ctrl.GetOneValue(ctrl.Name),typeConfig=self.typeConfig)
+        sc = DLG_listeConfigs(self,select=ctrl.GetValue(),typeConfig=self.typeConfig)
         if sc.ok :
             sc.ShowModal()
             if len(self.lstIDconfigs) >0:
-                ctrl.SetOneValues(ctrl.Name,self.lstIDconfigs)
+                ctrl.Set(self.lstIDconfigs)
                 value = sc.GetChoix(idxColonne=0)
-                ctrl.SetOneValue(ctrl.Name,value)
+                ctrl.SetValue(value)
                 # choix de configs user stockées
                 self.SauveConfig()
         else: wx.MessageBox('DLG_listeConfigs : lancement impossible, cf MATRICE_CONFIGS et  TYPE_CONFIG')
@@ -298,7 +327,7 @@ class DLG_implantation(wx.Dialog):
             dic.update(ctrlConfig.GetValues())
         dic.update(self.ctrlConnect.GetValues())
         cfg.SetDict(dic, groupe='USER',close=False)
-        dic = self.ctrlID.GetValeurs()
+        dic = self.ctrlID.GetValues()
         cfg.SetDict(dic['ident'], groupe='IDENT')
 
     def SauveConfig(self):
@@ -323,7 +352,7 @@ class DLG_implantation(wx.Dialog):
         # enregistre les valeurs de l'utilisateur
         self.SauveParamUser()
         self.SauveConfig()
-        dic = self.ctrlID.GetValeurs()
+        dic = self.ctrlID.GetValues()
         utilisateur = dic['ident']['utilisateur']
         if utilisateur == '': utilisateur = 'local'
         utilisateur = "- Utilisateur: '%s'"%(utilisateur)
@@ -337,7 +366,6 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
     # Ecran de saisie de paramètres en dialog
     def __init__(self, parent, *args, **kwds):
         typeConfig = kwds.pop('typeConfig','db_prim')
-        mode = kwds.pop('mode',"visu")
         select = kwds.pop('select',None)
         kwds['lblList'] = "Configurations actuelles"
         super().__init__(parent, *args, **kwds)
@@ -364,14 +392,6 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
         # paramètres pour self.pnl contenu principal de l'écran
         self.kwds['lblTopBox'] = 'Configurations disponibles'
         self.Size = (400,300)
-        # correctif selon le mode visu ou gestion
-        if mode == 'gestion':
-            self.dldMatrice[cle][4] = {
-                'name': 'nameDB', 'genre': 'combo', 'label': 'Nom de la Base',
-                     'help': "Base de donnée présente sur le serveur",
-                     'ctrlAction': 'OnNomBase',
-                     'btnLabel': "...", 'btnHelp': "Cliquez pour créer un nouvelle base de donnée",
-                     'btnAction': "OnBtnNomBase"}
 
         if self.dldMatrice != {}:
             self.InitDlgGestion()
@@ -385,36 +405,35 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
                     ix = self.lstIDconfigs.index(select)
                     self.pnl.ctrl.Select(ix)
                     self.pnl.ctrl.SetItemState(ix,wx.LIST_STATE_SELECTED,wx.LIST_STATE_SELECTED)
-        self.dlgGest.OnNomBase = self.OnNomBase
-        self.dlgGest.OnBtnNomBase = self.OnBtnNomBase
+            self.InitDlGest()
 
-    def GetDB(self,cfgParams=None):
-        # connexion actuelle stockée pour vérif modifs
-        if not cfgParams or cfgParams['nameDB']=='':
-            #récupération d'un connexion antérieure, soit d'un précédent passage, soit celle par défaut
-            if not self.DB:
-                self.DB = xdb.DB()
-        else:
-            self.DB = xdb.DB(config=cfgParams)
-        if self.DB and self.DB.echec == 0:
-            self.cfgParams = self.DB.cfgParams
-            self.lstBases = self.DB.GetDataBases()
-        else:
-            self.cfgParams = None
-            self.lstBases = []
+    def InitDlGest(self):
+        # pose les relais pour révupérer les actions
+        self.dlgGest.OnNameDB = self.OnNameDB
+        #self.dlgGest.OnBtnNameDB = self.OnBtnNameDB
+        self.dlgGest.OnTypeDB = self.OnTypeDB
 
-    def OnNomBase(self,event):
-        cfgConfig = self.dlgGest.pnl.GetValeurs()[self.typeConfig]
-        # réaliment le contenu de la combo
-        self.GetDB(cfgConfig)
-        ctrl = self.dlgGest.pnl.GetPnlCtrl('nameDB')
-        self.lstBases = [x for (x,) in self.DB.GetDataBases() if x[-4:].lower()=='data']
-        ctrl.SetOneValues(self.lstBases)
+    def OnTypeDB(self,event):
+        ctrl = self.dlgGest.pnl.GetPnlCtrl('typeDB')
+        valeurs = [x for x in ctrl.values]
+        ctrl2 = self.dlgGest.pnl.GetPnlCtrl('nameDB')
+        ctrl2.Set(valeurs)
+        print(valeurs)
+        ctrl2.ctrl.SetValue(valeurs[0])
+        val = ctrl2.ctrl.GetValue()
+        print(val)
         event.Skip()
 
-    def OnBtnNomBase(self,event):
-        event.Skip()
-        pass
+    def OnNameDB(self,event):
+        if event.EventType == wx.EVT_COMBOBOX_DROPDOWN.typeId:
+            cfgConfig = self.dlgGest.pnl.GetValues()[self.typeConfig]
+            # réalimente le contenu de la combo
+            lstBases = GetBases(self,cfgConfig)
+            ctrl = self.dlgGest.pnl.GetPnlCtrl('nameDB')
+            ctrl.Set(lstBases)
+            label = cfgConfig['nameDB']
+            ctrl.SetValue(label)
+        else: event.Skip()
 
     def OnFermer(self, event):
         cfgF = xucfg.ParamFile()
@@ -438,8 +457,9 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
 
     def OnTester(self,event):
         dicParam = event.EventObject.Parent.pnl.lstBoxes[0].GetValues()
-        DB = xdb.DB(config=dicParam,typeConfig=self.typeConfig)
+        DB = xdb.DB(config=dicParam,typeConfig=self.typeConfig,mute=True)
         DB.AfficheTestOuverture()
+        DB.Close()
 
     def Boutons(self,dlg):
         btnOK = xboutons.BTN_fermer(dlg,label='Valider',onBtn=dlg.OnFermer)
@@ -451,31 +471,77 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
 
 # Accès particulier à une config_base de donnée, sans passer par la liste des configs
 class DLG_saisieUneConfig(xusp.DLG_vide):
-    def __init__(self,parent,nomConfig=None,**kwds):
-        kwds['size']=(300,330)
-        kwds['marge']= 15
+    # saisie d'un nouvelle configuration d'accès aux données
+    def __init__(self,parent,**kwds):
+        nomConfig = kwds.pop('nomConfig',None)
+        lblBox =    kwds.pop('lblBox','')
+        modeBase =  kwds.pop('modeBase','pointeur')
+        kwds['size']=(350,430)
         super().__init__(parent, **kwds)
+        self.modeBase = modeBase
+        self.DB = None
         # récup de la matrice ayant servi à la gestion des données
         typeConfig = kwds.pop('typeConfig',None)
         if not typeConfig:
             lstcode = GetLstCodesMatrice(MATRICE_CONFIGS)
             typeConfig = lstcode[0]
-        key = (typeConfig,"Paramètres BD de l'accès à la compta")
+        key = (typeConfig,lblBox)
         matrice = {key: MATRICE_CONFIGS[GetCleMatrice(typeConfig,MATRICE_CONFIGS)]}
-        # suppose le champ ID en première position
-        matrice[key][0]['value'] = nomConfig
+        self.typeConfig = typeConfig
+
+        # ajustement de la matrice selon les modeBase
+        ix = GetIxLigneMatrice('nameDB', matrice[key])
+        if self.modeBase == 'pointeur':
+            matrice[key][ix] = {'name': 'nameDB', 'genre': 'combo', 'label': 'Nom de la Base',
+                    'help': "Le nom de la base est le fichier en local, ou son nom sur le serveur",
+                    'ctrlAction': 'OnNameDB',}
+
+        elif self.modeBase == 'creation':
+            matrice[key][ix] = {'name': 'nameDB', 'genre': 'texte', 'label': 'Nom de la Base',
+                    'help': "Choisir un base de donnée non présente sur le serveur ou fichier non existant",
+                    'ctrlAction': 'OnNameDB',}
+
+        # place la valeur du champ ID
+        if nomConfig:
+            ix = GetIxLigneMatrice('ID',matrice[key])
+            matrice[key][ix]['value'] = nomConfig
         self.pnl = xusp.TopBoxPanel(self, matrice=matrice, lblTopBox=None)
         # grise le champ ID
         ctrlID = self.pnl.GetPnlCtrl('ID')
-        ctrlID.Enable(False)
+        if self.modeBase == 'pointeur':
+            enable = False
+        else: enable = True
+        ctrlID.Enable(enable)
 
         self.Sizer(self.pnl)
 
-    def GetValeurs(self):
-        return self.pnl.GetValeurs()
+    def GetValues(self):
+        return self.pnl.GetValues()
 
     def GetConfig(self):
-        return self.pnl.GetValeurs()['db_prim']
+        return self.pnl.GetValues()['db_prim']
+
+    def OnNameDB(self,event):
+        cfgConfig = self.pnl.GetValues()[self.typeConfig]
+        if self.modeBase == 'creation':
+            if event.EventType == wx.EVT_KILL_FOCUS.typeId:
+                #Vérification de l'unicité
+                label = cfgConfig['nameDB']
+                lstBases = GetBases(self,cfgConfig)
+                if label in lstBases:
+                    wx.MessageBox("En mode création, il faut choisir un nom nouveau!",caption="Base de donnée déjà présente")
+
+        elif self.modeBase == 'pointeur':
+            if event.EventType == wx.EVT_COMBOBOX_DROPDOWN.typeId:
+                # réalimente le contenu de la combo
+                lstBases = GetBases(self,cfgConfig)
+                ctrl = self.pnl.GetPnlCtrl('nameDB')
+                ctrl.Set(lstBases)
+                label = cfgConfig['nameDB']
+                ctrl.SetValue(label)
+            else:
+                event.Skip()
+
 
 # Gestion d'un jeu de paramètres d'une Appli stockés localement, reçus par kwds
 class PNL_paramsLocaux(xusp.TopBoxPanel):
@@ -496,12 +562,12 @@ class PNL_paramsLocaux(xusp.TopBoxPanel):
         self.paramsFile = xucfg.ParamFile(nomFichier=self.nomFichier, path=self.pathData)
         self.dicParams = self.paramsFile.GetDict(dictDemande=None, groupe=self.nomGroupe, close=False)
         if self.dicParams:
-            # pose dans la grille la valeur de la dernière valeur utilisée
-            self.SetValeurs(self.dicParams)
+            # pose dans la grille la valeur de les dernières valeurs utilisées
+            self.SetValues(self.dicParams)
 
     def SauveParams(self,close=False):
         # peut être lancé avec close forcé du shelve
-        dicValeurs = self.GetValeurs()
+        dicValeurs = self.GetValues()
         self.paramsFile.SetDict(dictEnvoi=dicValeurs,groupe=self.nomGroupe,close=close )
 
 #************************   Pour Test ou modèle  *********************************
@@ -541,8 +607,8 @@ if __name__ == '__main__':
             'CHOIX_CONFIGS': [('Donnees', "Base de travail, peut être la centrale  en mode connecté"),]
             }
     #frame_1.dlg = DLG_implantation(frame_1)
-    frame_1.dlg = DLG_listeConfigs(frame_1,mode='gestion')
-    #frame_1.dlg = DLG_saisieUneConfig(frame_1,'compta')
+    #frame_1.dlg = DLG_listeConfigs(frame_1)
+    frame_1.dlg = DLG_saisieUneConfig(frame_1, modeBase='creation')
     frame_1.dlg.ShowModal()
     app.MainLoop()
 

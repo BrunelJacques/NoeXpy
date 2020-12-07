@@ -4296,6 +4296,7 @@ class CTRL_Outils(wx.Panel):
         sizerbase.Add(self.bouton_filtrer, 0, wx.LEFT | wx.EXPAND, 5)
         if afficherCocher == True:
             sizerbase.Add(self.bouton_cocher, 0, wx.LEFT | wx.EXPAND, 5)
+        sizerbase.Add((10,10), 1,wx.EXPAND,0)
         self.SetSizer(sizerbase)
         self.Layout()
 

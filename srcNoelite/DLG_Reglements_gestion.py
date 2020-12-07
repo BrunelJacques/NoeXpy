@@ -82,8 +82,7 @@ def GetOlvColonnes(dlg):
 def GetOlvOptions(dlg):
     # retourne les paramètres de l'OLV del'écran général
     return {
-            'hauteur': 200,
-            'largeur': 850,
+            'minSize': (600,200),
             'checkColonne': False,
             'recherche': True,
             'dictColFooter': {"designation": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},

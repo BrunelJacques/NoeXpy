@@ -197,7 +197,7 @@ class Dialog(wx.Dialog):
                                           **{'genre': 'combo', 'name': "configs",
                                                    'values': lstIDconfigs,
                                                    'help': "Choisissez la base de donnée qui servira à vous authentifier",
-                                                   'size': (250, 60),
+                                                   'size': (250, 30),
                                                     }
                                           )
         self.txtMdp = wx.StaticText(self, -1, "Utilisateur:")

@@ -191,8 +191,7 @@ def GetOlvColonnes(dlg):
 # paramètre les options de l'OLV
 def GetOlvOptions(dlg):
     return {
-            'hauteur': 400,
-            'largeur': 950,
+            'minSize': (600,300),
             'checkColonne': False,
             'recherche': True,
             'autoAddRow':True,
@@ -409,7 +408,7 @@ class Dialog(xusp.DLG_vide):
         self.compta = self.GetCompta()
         self.table = self.GetTable()
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
-        self.pnlParams.SetValeur('forcer',False)
+        self.pnlParams.SetOneValue('forcer',False)
         self.OnCloture(None)
 
     def Sizer(self):
@@ -437,7 +436,7 @@ class Dialog(xusp.DLG_vide):
             self.exercice = self.noegest.ltExercices[lClotures.index(self.noegest.cloture)]
         except: pass
         self.lstVehicules = [x[0] for x in self.noegest.GetVehicules(lstChamps=['abrege'])]
-        box.SetOneValues('vehicule',self.lstVehicules)
+        box.SetOneSet('vehicule',self.lstVehicules)
         self.ctrlOlv.dicChoices[self.ctrlOlv.lstCodesColonnes.index('vehicule')]= self.lstVehicules
         self.lstActivites = [x[0]+" "+x[1] for x in self.noegest.GetActivites(lstChamps=['IDanalytique','nom'])]
         self.noegest.GetConsosKm()
@@ -459,13 +458,13 @@ class Dialog(xusp.DLG_vide):
         if self.compta:
             item = self.compta.GetOneAuto(table='journOD',filtre=valeur)
             if item:
-                self.pnlParams.SetValeur('journal',valeur,'compta')
+                self.pnlParams.SetOneValue('journal',valeur,'compta')
 
     def OnBtnJournal(self,evt):
         if self.compta:
             item = self.compta.ChoisirItem(table='journOD')
             if item:
-                self.pnlParams.SetValeur('journal',item[0],'compta')
+                self.pnlParams.SetOneValue('journal',item[0],'compta')
 
     def OnBtnCompte(self,evt):
         nameBtn = evt.EventObject.nameBtn
@@ -473,14 +472,14 @@ class Dialog(xusp.DLG_vide):
         if self.compta:
             item = self.compta.ChoisirItem(table='cpt3car')
             if item:
-                self.pnlParams.SetValeur(lstName[1],item[0],lstName[0])
+                self.pnlParams.SetOneValue(lstName[1],item[0],lstName[0])
 
     def OnChoixExport(self,evt):
         self.compta = self.GetCompta()
         self.table = self.GetTable()
 
     def InitOlv(self):
-        self.pnlParams.GetValeurs()
+        self.pnlParams.GetValues()
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
         self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.formerCodeColonnes()
         self.ctrlOlv.InitObjectListView()
@@ -510,7 +509,7 @@ class Dialog(xusp.DLG_vide):
         return entete,entrees
 
     def GetCompta(self):
-        dic = self.pnlParams.GetValeurs()
+        dic = self.pnlParams.GetValues()
         formatExp = dic['compta']['formatexp']
         compta = None
         if formatExp in nucompta.FORMATS_EXPORT.keys() :
@@ -530,7 +529,7 @@ class Dialog(xusp.DLG_vide):
             lstLibJournaux = [(x[0]+"   ")[:3]+' - '+x[1] for x in lstJournaux]
             box = self.pnlParams.GetBox('compta')
             valeur = self.pnlParams.lstBoxes[1].GetOneValue('journal')
-            box.SetOneValues('journal',lstLibJournaux)
+            box.SetOneSet('journal',lstLibJournaux)
             box.SetOneValue('journal',valeur)
         pnlJournal = self.pnlParams.GetPnlCtrl('journal', 'compta')
         x = False
@@ -570,7 +569,7 @@ class Dialog(xusp.DLG_vide):
             self.ctrlOlv.Refresh()
 
     def OnExporter(self,event):
-        dicParams = self.pnlParams.GetValeurs()
+        dicParams = self.pnlParams.GetValues()
         dicParams['compta']['typepiece'] = 'I'
         dicParams['fichiers']={}
         dicParams['fichiers']['formatexp']= dicParams['compta']['formatexp']

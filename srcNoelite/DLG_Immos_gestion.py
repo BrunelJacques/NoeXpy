@@ -106,8 +106,7 @@ DICOLV = {
                   'immosComposants.valeur','immosComposants.type', 'immosComposants.tauxAmort',
                   'immosComposants.amortAnterieur','immosComposants.dotation', 'immosComposants.cessionDate'],
     'getActions': GetOlvActions,
-    'hauteur': 400,
-    'largeur': 1300,
+    'minSize': (1300,400),
     'sortColumnIndex':2,
     'sortAscending':True,
     'checkColonne': False,
@@ -184,8 +183,7 @@ lDICOLV = {
                       },
     'lstChamps': xformat.GetLstChamps(DB_schema.DB_TABLES['immosComposants'][:-lcutend]),
     'lstChmpEns': xformat.GetLstChamps(DB_schema.DB_TABLES['immobilisations']),
-    'hauteur': 400,
-    'largeur': 1350,
+    'minSize': (1350,400),
     'checkColonne': False,
     'recherche': True,
     'autoAddRow': True,
@@ -358,10 +356,10 @@ class Dlg_immo(xusp.DLG_vide):
         self.ctrlOlv.Refresh()
         # conservation des originaux
         self.modelOriginal = [deepcopy(x) for x in self.ctrlOlv.modelObjects if not hasattr(x,'vierge')]
-        self.ddParamsOriginal = self.pnlParams.GetValeurs()
+        self.ddParamsOriginal = self.pnlParams.GetValues()
         if self.IDimmo:
-            self.pnlParams.SetValeur('mode','Modification',codeBox='infos')
-        else: self.pnlParams.SetValeur('mode','Création',codeBox='infos')
+            self.pnlParams.SetOneValue('mode','Modification',codeBox='infos')
+        else: self.pnlParams.SetOneValue('mode','Création',codeBox='infos')
         self.pnlParams.Refresh()
 
     def Sizer(self):
@@ -383,7 +381,7 @@ class Dlg_immo(xusp.DLG_vide):
         self.OnFermer(event)
 
     def OnValider(self,event):
-        ddParams = self.pnlParams.GetValeurs()
+        ddParams = self.pnlParams.GetValues()
         flag = False
         for boxname, dict in ddParams.items():
             for ctrl, value in dict.items():

@@ -77,7 +77,12 @@ class Bouton(wx.Button):
         image =     kwds.pop('image',None)
         help =      kwds.pop('help',None)
         onBtn =     kwds.pop('onBtn',None)
-        size =      kwds.pop('size',(110,35))
+        # cas des boutons avec label
+        if image and len(label) > 0: defsize = (110,35)
+        # cas des '...' sans image ou image seule
+        elif len(label) <= 3 : defsize = (24,24)
+        else: defsize = (70,24)
+        size =      kwds.pop('size',defsize)
         sizeBmp =   kwds.pop('sizeBmp',None)
         sizeFont =  kwds.pop('sizeFont',None)
 
@@ -109,7 +114,9 @@ class Bouton(wx.Button):
                 # Teste si le label est trop long
                 nblettres = max([ len(x) for x in lignes])
                 lglabel = (nblettres * sizeFont * 1.0) + lgBmp
-                prorata = min(1,size[0] / lglabel)
+                if lglabel > 1:
+                    prorata = min(1,size[0] / lglabel)
+                else: prorata = 1
                 sizeFont = int(sizeFont * prorata)
         elif sizeFont:
             lg = 5
@@ -129,11 +136,11 @@ class Bouton(wx.Button):
 
         #----Construction----------------------------------------------------------------------------------
         kwds['name'] = name
-        kwds['size'] = size
+        if size : kwds['size'] = size
         super().__init__(parent,ID,label,**kwds)
-
-        font = wx.Font(sizeFont, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD,False)
-        self.SetFont(font)
+        if sizeFont:
+            font = wx.Font(sizeFont, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD,False)
+            self.SetFont(font)
         self.SetForegroundColour((0,0,100))
 
         # ajout de l'image

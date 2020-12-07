@@ -253,7 +253,7 @@ class Noegest(object):
         # un item unique n'a pas été trouvé on affiche les choix possibles
         getDonnees = getAnalytiques
         dicOlv = self.GetMatriceAnalytiques(axe,lstChamps,lstNomsCol,lstTypes,getDonnees)
-        dicOlv['largeur'] = 400
+        dicOlv['size'] = (400,200)
         dlg = xgtr.DLG_tableau(self,dicOlv=dicOlv, db=self.db)
         if filtre and len(filtre)>0:
             dlg.ctrlOlv.Parent.barreRecherche.SetValue(filtre)
@@ -570,7 +570,7 @@ class Noegest(object):
     def GetParam(self,cat,name):
         # récup des paramètres stockés sur le disque
         valeur = None
-        dicParams = self.parent.pnlParams.GetValeurs()
+        dicParams = self.parent.pnlParams.GetValues()
         if cat in dicParams:
             if name in dicParams[cat]:
                 valeur = dicParams[cat][name]
