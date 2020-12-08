@@ -12,8 +12,8 @@ import wx
 import os
 import sys
 import xpy.outils.xUTILS_RapportBugs
-import xpy.xUTILS_Shelve
-import xpy.xUTILS_Shelve    as xucfg
+import xpy.outils.xshelve
+import xpy.outils.xshelve    as xucfg
 from  xpy.outils import xaccueil
 
 

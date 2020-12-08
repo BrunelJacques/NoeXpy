@@ -10,7 +10,7 @@ import sys
 import wx
 import xpy.xUTILS_DB as xdb
 import xpy.outils.xchoixListe as xchoixliste
-import xpy.xUTILS_Shelve as xu_shelve
+import xpy.outils.xshelve as xu_shelve
 import xpy.xGestionConfig as xGestionConfig
 import xpy.xUTILS_SaisieParams as xusp
 

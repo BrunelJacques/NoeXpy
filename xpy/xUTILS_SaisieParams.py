@@ -1114,6 +1114,7 @@ class DLG_vide(wx.Dialog):
         self.SetSize(size)
         self.SetBackgroundColour(wx.WHITE)
         self.btn = None
+        self.bandeau = None
         #****************Exemple de Chaînage à faire passer au sizer*****************
         #self.pnl = PNL_property(self, parent, *args, matrice = matrice, **kwds )
         #****************************************************************************
@@ -1122,6 +1123,8 @@ class DLG_vide(wx.Dialog):
         # Le panel contient l'essentiel de l'écran, bouton peut être aussi un sizer de boutons en bas
         self.pnl = panel
         sizer = wx.BoxSizer(wx.VERTICAL)
+        if self.bandeau:
+            sizer.Add(self.bandeau, 0, wx.EXPAND | wx.ALL, self.marge)
         sizer.Add(self.pnl, 1, wx.EXPAND | wx.ALL, self.marge)
         if not self.btn:
             self.btn = xboutons.BTN_fermer(self,label="Valider")

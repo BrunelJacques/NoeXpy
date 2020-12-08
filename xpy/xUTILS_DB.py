@@ -17,7 +17,7 @@ import win32com.client
 import sqlite3
 import copy
 import datetime
-import xpy.xUTILS_Shelve as xucfg
+import xpy.outils.xshelve as xucfg
 
 DICT_CONNEXIONS = {}
 
@@ -45,9 +45,27 @@ def DateDDEnDateEng(datedd):
     jj = ('00'+str(datedd.day))[-2:]
     return aaaa+'-'+mm+'-'+jj
 
+def GetConfigs():
+    # appel des params de connexion stockés dans UserProfile et data
+    cfg = xucfg.ParamUser()
+    grpUSER = cfg.GetDict(groupe='USER', close=False)
+    grpAPPLI = cfg.GetDict(groupe='APPLI', close=False)
+    nomAppli = grpAPPLI.pop('NOM_APPLICATION', None)
+    # appel des params de connexion stockés dans Data
+    cfg = xucfg.ParamFile()
+    grpCONFIGS = cfg.GetDict(groupe='CONFIGS')
+    # recherche du nom de configuration par défaut, cad la dernière des choix
+    if 'choixConfigs' in grpCONFIGS:
+        if nomAppli and nomAppli in grpCONFIGS['choixConfigs'].keys():
+            if 'lastConfig' in grpCONFIGS['choixConfigs'][nomAppli].keys():
+                lastConfig = grpCONFIGS['choixConfigs'][nomAppli]['lastConfig']
+    else:
+        lastConfig = None
+    return grpAPPLI,grpUSER,grpCONFIGS,lastConfig
+
 class DB():
     # accès à la base de donnees principale
-    def __init__(self, IDconnexion = None, config=None, typeConfig='db_prim', nomFichier=None, mute=False):
+    def __init__(self, IDconnexion = None, config=None, nomFichier=None, mute=False):
         # config peut être soit un nom de config soit un dictionaire
         self.echec = 1
         self.IDconnexion = IDconnexion
@@ -64,25 +82,16 @@ class DB():
             return
         if not IDconnexion:
             self.connexion = None
-            # appel des params de connexion stockés dans UserProfile
-            cfg = xucfg.ParamUser()
-            grpUSER= cfg.GetDict(groupe='USER',close=False)
-            grpAPPLI = cfg.GetDict(groupe='APPLI',close=False)
-            self.dictAppli = grpAPPLI
-            if 'TYPE_CONFIG' in grpAPPLI:
-                typeConfig= grpAPPLI['TYPE_CONFIG']
 
-            nomAppli = grpAPPLI.pop('NOM_APPLICATION',None)
-            # appel des params de connexion stockés dans Data
-            cfg = xucfg.ParamFile()
-            grpCONFIGS= cfg.GetDict(groupe='CONFIGS')
+            # appel des params de connexion stockés dans UserProfile et Data
+            grpAPPLI, grpUSER, grpCONFIGS, lastConfig = GetConfigs()
+            typeConfig = 'db_prim'
+            if 'TYPE_CONFIG' in grpAPPLI:
+                typeConfig = grpAPPLI['TYPE_CONFIG']
+            self.dictAppli = grpAPPLI
             self.grpConfigs = grpCONFIGS
-            # recherche du nom de configuration par défaut, cad la dernière des choix
-            if 'choixConfigs' in grpCONFIGS:
-                if nomAppli and nomAppli in grpCONFIGS['choixConfigs'].keys():
-                    if 'lastConfig' in grpCONFIGS['choixConfigs'][nomAppli].keys():
-                        nomConfig = grpCONFIGS['choixConfigs'][nomAppli]['lastConfig']
-            else: nomConfig=None
+
+            # aiguillage dans les paramètres
             try:
                 # priorité la config passée en kwds puis recherche de la dernière config dans 'USER'
                 if config:
@@ -92,6 +101,8 @@ class DB():
                     elif isinstance(config,dict):
                         nomConfig = None
                         self.cfgParams = copy.deepcopy(config)
+                else: nomConfig = lastConfig
+
                 if nomConfig:
                     if 'lstConfigs' in grpCONFIGS:
                         lstNomsConfigs = [x[typeConfig]['ID'] for x in grpCONFIGS['lstConfigs']]
@@ -104,21 +115,21 @@ class DB():
                         ix = lstNomsConfigs.index(nomConfig)
                         # on récupére les paramétres dans toutes les configs par le pointeur ix dans les clés
                         self.cfgParams = grpCONFIGS['lstConfigs'][ix][typeConfig]
+
                 # on ajoute les choix pris dans grpUSER,  pour mot passe, aux paramètres de la config retenue
                 if self.cfgParams:
                     for cle, valeur in grpUSER.items():
                         self.cfgParams[cle] = valeur
-                    if self.cfgParams['serveur'][-1:] in ('/','\\'):
-                        self.nomBase = self.cfgParams['serveur']+self.cfgParams['nameDB']
-                    else:
-                        self.nomBase = self.cfgParams['serveur']+'\\'+self.cfgParams['nameDB']
+                        self.nomBase = self.cfgParams['nameDB']
             except Exception as err:
                 mess = "xDB: La récup des identifiants de connexion a échoué : \nErreur detectee :%s" % err
                 if not mute:
                     wx.MessageBox(mess)
                 self.erreur = err
                 return mess
-            if not self.cfgParams : return
+
+            if not self.cfgParams : return "Aucun fichier de paramètres de connexion trouvé!"
+
             # Ouverture des bases de données selon leur type
             if 'typeDB' in self.cfgParams:
                 self.typeDB = self.cfgParams['typeDB'].lower()
@@ -192,34 +203,27 @@ class DB():
             mess += '\nErreur: %s'%self.erreur
         wx.MessageBox(mess, style=style)
 
-    def CreateBaseMySql(self, config):
+    def CreateBaseMySql(self,ifExist=True):
         """ Version RESEAU avec MYSQL """
+
         try:
-            # Récupération des paramètres de connexion
-            host = config['serveur']
-            port = config['port']
-            nomBase = config['nameDB']
-            user = config['userDB']
-            passwd = config['mpUserDB']
-
             # usage de  "mysql.connector":
-            self.connexion = mysql.connector.connect(**self.dictConnector)
-
             self.cursor = self.connexion.cursor()
+            if ifExist: exist = 'IF NOT EXISTS'
+            else: exist = ''
             # Création
-            self.cursor.execute(
-                "CREATE DATABASE IF NOT EXISTS %s CHARSET utf8 COLLATE utf8_unicode_ci;" % nomBase)
+            req = "CREATE DATABASE %s %s;" %(exist,self.nomBase)
+            self.cursor.execute(req)
 
             # Utilisation
-            if nomBase not in ("", None):
-                self.cursor.execute("USE %s;" % nomBase)
+            if self.nomBase not in ("", None):
+                self.cursor.execute("USE %s;" % self.nomBase)
 
         except Exception as err:
-            print( "La connexion avec la base de donnees MYSQL a echouee. Erreur :")
-            print(err, )
+            mess= "La création de la base de donnees MYSQL a echoue. \nErreur: %s"%err
+            wx.MessageBox(mess,'CreateBaseMySql')
             self.erreur = err
             self.echec = 1
-            # AfficheConnexionOuvertes()
         else:
             self.echec = 0
 
@@ -239,7 +243,7 @@ class DB():
                 self.echec = 1
                 self.connexion = None
                 return
-            etape = 'Création du connecteur %s - %s - %s - %s'%(host,userdb,passwd, port)
+            etape = 'Création du connecteur %s:%s user: %s - %s'%(host, port,userdb,passwd)
             if self.typeDB == 'mysql':
                 connexion = mysql.connector.connect(host=host, user=userdb, passwd=passwd, port=int(port))
                 etape = 'Création du curseur, après connexion'
@@ -257,7 +261,6 @@ class DB():
                 wx.MessageBox(mess,caption="xUTILS_DB.ConnexionFichierReseau ")
             self.erreur = "%s\n\nEtape: %s"%(err,etape)
             self.echec = 1
-
 
     def OuvertureFichierLocal(self, nomFichier):
         """ Version LOCALE avec SQLITE """

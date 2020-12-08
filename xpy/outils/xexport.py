@@ -16,12 +16,11 @@ import six
 import decimal
 import platform
 
-from xpy.outils import xctrlbi
 from xpy.outils import xdates
-from xpy.outils import xselection
-from xpy.outils import xbandeau
+from xpy.outils import xchoixListe
 from xpy.outils.xconst import *
 from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn
+
 
 class DataType(object):
     #Classe permetant la conversion facile vers le format souhaité (nombre de caractéres, alignement, décimales)
@@ -216,7 +215,7 @@ def LanceFichierExterne(nomFichier) :
     if platform.system() == "Linux":
         os.system("xdg-open " + nomFichier)
 
-def ExportTexte(listview=None, grid=None, titre=u"", listeColonnes=None, listeValeurs=None, autoriseSelections=True):
+def ExportTexte(listview=None, grid=None, titre=u"", listeColonnes=None, listeValeurs=None, autoriseSelections=False):
     """ Export de la liste au format texte """
     if (listview != None and len(listview.innerList) == 0) or (
             grid != None and (grid.GetNumberRows() == 0 or grid.GetNumberCols() == 0)):
@@ -235,9 +234,9 @@ def ExportTexte(listview=None, grid=None, titre=u"", listeColonnes=None, listeVa
 
     # Selection des lignes
     if autoriseSelections == True:
-        dlg = xselection.Dialog(None, listeColonnes, listeValeurs, type="exportTexte")
+        dlg = xchoixListe.DialogAffiche(None, lstColonnes=listeColonnes, lstDonnees=listeValeurs)
         if dlg.ShowModal() == wx.ID_OK:
-            listeSelections = dlg.GetSelections()
+            listeSelections = dlg.GetChoix()
             dlg.Destroy()
         else:
             dlg.Destroy()
@@ -316,9 +315,8 @@ def ExportLgFixe(nomfic='',matrice={},valeurs=[],entete=False):
     f.close()
     return Confirmation(cheminFichier)
 
-def ExportExcel(listview=None, grid=None, titre="Liste", listeColonnes=None, listeValeurs=None, autoriseSelections=True):
+def ExportExcel(listview=None, grid=None, titre="Liste", listeColonnes=None, listeValeurs=None, autoriseSelections=False):
     # Export de la liste au format Excel
-    autoriseSelections = False
 
     # Vérifie si données bien présentes
     if (listview != None and len(listview.innerList) == 0) or (
@@ -338,9 +336,9 @@ def ExportExcel(listview=None, grid=None, titre="Liste", listeColonnes=None, lis
 
     # Selection des lignes
     if autoriseSelections == True:
-        dlg = xselection.Dialog(None, listeColonnes, listeValeurs, type="exportExcel")
+        dlg = xchoixListe.DialogAffiche(None, lstColonnes=listeColonnes, lstDonnees=listeValeurs, )
         if dlg.ShowModal() == wx.ID_OK:
-            listeSelections = dlg.GetSelections()
+            listeSelections = dlg.GetChoix()
             dlg.Destroy()
         else:
             dlg.Destroy()
@@ -538,63 +536,6 @@ def ExportExcel(listview=None, grid=None, titre="Liste", listeColonnes=None, lis
 
     return Confirmation(cheminFichier)
 
-# -------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-class DLG_Choix_action(wx.Dialog):
-    def __init__(self, parent):
-        wx.Dialog.__init__(self, parent, -1, name="DLG_Choix_action",
-                           style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX | wx.MINIMIZE_BOX)
-        self.parent = parent
-
-        # Bandeau
-        intro = "Vous pouvez enregistrer le fichier généré dans le répertoire souhaité."
-        titre = "Exporter vers Excel"
-        self.ctrl_bandeau = xbandeau.Bandeau(self, titre=titre, texte=intro,hauteur=30,
-                                                 nomImage=EXCEL_16X16_IMG)
-
-        self.bouton_enregistrer = xctrlbi.CTRL(self, texte="Enregistrer sous",
-                                               cheminImage= SAUVEGARDER_16X16_IMG,
-                                               tailleImage=(48, 48), margesImage=(40, 20, 40, 0),
-                                               positionImage=wx.TOP, margesTexte=(10, 10))
-        self.bouton_enregistrer.SetToolTip(wx.ToolTip("Enregistrer le fichier Excel"))
-
-        self.bouton_annuler = xctrlbi.CTRL(self, id=wx.ID_CANCEL, texte="Annuler",
-                                           cheminImage=ANNULER_32X32_IMG)
-
-        self.__set_properties()
-        self.__do_layout()
-
-        self.Bind(wx.EVT_BUTTON, self.OnBoutonEnregistrer, self.bouton_enregistrer)
-
-    def __set_properties(self):
-        self.SetTitle("Exporter vers Excel")
-        self.bouton_annuler.SetToolTip(wx.ToolTip("Annuler"))
-        self.SetMinSize((370, 300))
-
-    def __do_layout(self):
-        grid_sizer_base = wx.FlexGridSizer(rows=3, cols=1, vgap=10, hgap=10)
-        grid_sizer_boutons = wx.FlexGridSizer(rows=1, cols=3, vgap=10, hgap=10)
-        grid_sizer_contenu = wx.FlexGridSizer(rows=1, cols=2, vgap=10, hgap=10)  # mettre cols à 1 ?
-        grid_sizer_base.Add(self.ctrl_bandeau, 0, wx.EXPAND, 0)
-        grid_sizer_contenu.Add(self.bouton_enregistrer, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 10)
-        grid_sizer_contenu.AddGrowableRow(0)
-        grid_sizer_contenu.AddGrowableCol(0)
-        grid_sizer_contenu.AddGrowableCol(1)
-        grid_sizer_base.Add(grid_sizer_contenu, 1, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-        grid_sizer_boutons.Add((20, 20), 0, wx.EXPAND, 0)
-        grid_sizer_boutons.Add(self.bouton_annuler, 0, 0, 0)
-        grid_sizer_boutons.AddGrowableCol(1)
-        grid_sizer_base.Add(grid_sizer_boutons, 1, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 10)
-        self.SetSizer(grid_sizer_base)
-        grid_sizer_base.Fit(self)
-        grid_sizer_base.AddGrowableRow(1)
-        grid_sizer_base.AddGrowableCol(0)
-        self.Layout()
-        self.CenterOnScreen()
-
-    def OnBoutonEnregistrer(self, event):
-        self.Close()
-
 
 # ------------------------- POUR LES TESTS ---------------------------------------------
 
@@ -673,8 +614,7 @@ if __name__ == '__main__':
     os.chdir("..")
     os.chdir("..")
     # wx.InitAllImageHandlers()
-    #frame_1 = MyFrame(None, -1, "OL Test Export")
-    frame_1 = DLG_Choix_action( None,)
+    frame_1 = MyFrame(None, -1, "OL Test Export")
     app.SetTopWindow(frame_1)
     frame_1.Show()
     app.MainLoop()

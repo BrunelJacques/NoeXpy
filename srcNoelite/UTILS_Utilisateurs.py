@@ -67,7 +67,7 @@ def VerificationDroitsUtilisateurActuel(categorie="", action="", IDactivite="", 
         dictUtilisateur = None
     if not dictUtilisateur:
         try :
-            import xpy.xUTILS_Shelve as xucfg
+            import xpy.outils.xshelve as xucfg
             cfg = xucfg.ParamUser()
             dictUtilisateur = cfg.GetDict(groupe='USER')
         except:
@@ -89,7 +89,7 @@ def GetIDutilisateur(afficheMessage=True):
         dictUtilisateur = None
     if not dictUtilisateur:
         try :
-            import xpy.xUTILS_Shelve as xucfg
+            import xpy.outils.xshelve as xucfg
             cfg = xucfg.ParamUser()
             dictUtilisateur = cfg.GetDict(groupe='USER')
         except:
@@ -110,7 +110,7 @@ def GetDictUtilisateur(afficheMessage=True):
         dictUtilisateur = None
     if not dictUtilisateur:
         try :
-            import xpy.xUTILS_Shelve as xucfg
+            import xpy.outils.xshelve as xucfg
             cfg = xucfg.ParamUser()
             dictUtilisateur = cfg.GetDict(groupe='USER')
         except:

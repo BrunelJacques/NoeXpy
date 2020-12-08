@@ -15,12 +15,12 @@ import wx
 #import UTILS_Parametres
 
 import wx.propgrid as wxpg
-import copy
 import wx.html as html
 import sys
 
 from xpy.outils.xconst import *
-from xpy.outils import xctrlbi
+from xpy.outils.ObjectListView import xctrlbi
+
 
 class EditeurComboBoxAvecBoutons(wxpg.PGChoiceEditor):
     """
