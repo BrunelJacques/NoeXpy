@@ -80,17 +80,31 @@ def GetListeUsers(db=None):
     DB.Close()
     return listeUtilisateurs
 
-class AfficheUsers():
-    def __init__(self):
-        lstUsers = GetListeUsers()
-        if lstUsers:
-            lstAffiche = [[x['nom'],x['prenom'],x['profil']] for x in lstUsers]
-            lstColonnes = ["Nom", "Prénom", "Profil"]
-            dlg = xchoixliste.DialogAffiche(titre="Liste des utilisateurs",intro="pour consultation seulement",
-                                            lstDonnees=lstAffiche,
-                                            lstColonnes=lstColonnes )
-            dlg.ShowModal()
-            dlg.Destroy()
+def AfficheUsers(parent):
+    # affiche les utilisateur puis sollicite le mot de passe pour le valider
+    lstUsers = GetListeUsers()
+    if lstUsers:
+        lstAffiche = [[x['nom'],x['prenom'],x['profil']] for x in lstUsers]
+        lstColonnes = ["Nom", "Prénom", "Profil"]
+        dlgListe = xchoixliste.DialogAffiche(titre="Liste des utilisateurs",intro="pour consultation seulement",
+                                        lstDonnees=lstAffiche,
+                                        lstColonnes=lstColonnes )
+        ret = dlgListe.ShowModal()
+        if ret == wx.ID_OK:
+            dlgMp = Dialog(parent)
+            dlgMp.ShowModal()
+            dictUser = dlgMp.GetDictUtilisateur()
+            if dictUser:
+                parent.dictUser = dictUser
+                etat = True
+                for numMenu in range(1, 2):
+                    parent.menu.EnableTop(numMenu, etat)
+                parent.panelAccueil.EnableBoutons(etat)
+            parent.infoStatus = "!"
+            parent.MakeStatusText()
+            dlgMp.Destroy()
+        dlgListe.Destroy()
+        return ret
 
 class CTRL_Bouton_image(wx.Button):
     def __init__(self, parent, id=wx.ID_APPLY, texte="", cheminImage=None):
@@ -156,7 +170,7 @@ class CTRL_mdp(wx.SearchCtrl):
 # --------------------------- DLG de saisie de mot de passe ----------------------------
 
 class Dialog(wx.Dialog):
-    # Affiche la liste des utilisateur
+    # Affiche l'écran de saisie du mot de passe
     def __init__(self, parent, id=-1,title="xUTILS_Identification",confirm=True):
         wx.Dialog.__init__(self, parent, id, title, name="DLG_mdp",style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
         self.parent = parent

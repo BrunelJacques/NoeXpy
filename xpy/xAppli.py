@@ -277,7 +277,7 @@ if __name__ == "__main__":
         'REP_DATA': "srcMyAppli/Data",
         'REP_TEMP': "srcMyAppli/Temp",
         'NOM_FICHIER_LOG':"testLOG",
-        'TYPE_CONFIG': 'db_prim',
+        'TYPE_CONFIG': 'db_reseau',
         }
     CrashReport(frm.dictAppli)
     frm.xInit()

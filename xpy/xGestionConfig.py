@@ -41,8 +41,8 @@ MATRICE_IDENT = {
 MATRICE_USER = {
 ("infos_user","Accès base de donnée"):[
     {'name': 'mpUserDB', 'genre': 'Mpass', 'label': 'Mot de Passe du Serveur',
-                        'help': "C\'est le mot de passe d'accès à la base défini dans la configuration," +
-                                "\nce n'est pas le vôtre, demandé au lancement de l'appli ou de votre authentification",
+                        'help': "C'est le mot de passe d'accès à la base de données," +
+                                "\nce n'est pas celui demandé au lancement de l'appli ou lors de l'authentification",
                         'txtSize': 140},
     ]
 }
@@ -54,32 +54,35 @@ MATRICE_CHOIX_CONFIG = {
                         'btnLabel':"...", 'btnHelp':"Cliquez pour gérer les configurations d'accès aux données",
                         'btnAction':"OnBtnConfig",
                         'txtSize': 140},]}
-# db_prim et db_simple sont des types de config, pourront être présentes dans dictAPPLI['TYPE_CONFIG'] et xUTILS_DB
+# db_reseau et db_fichier sont des types de config, pourront être présentes dans dictAPPLI['TYPE_CONFIG'] et xUTILS_DB
 MATRICE_CONFIGS = {
-    ('db_prim', "Acccès à une base avec authentification"): [
+    ('db_reseau', "Acccès à une base avec authentification"): [
     {'name': 'ID', 'genre': 'String', 'label': 'Désignation config', 'value': 'config1',
                     'help': "Désignez de manière unique cette configuration"},
+    {'name': 'typeDB', 'genre': 'choice', 'label': 'Type de Base',
+                    'help': "Le choix est limité par la programmation", 'value':0,
+                    'values':['MySql','Access','SQLite'],},
     {'name': 'serveur', 'genre': 'dirfile', 'label': 'Path ou Serveur', 'value':'',
                     'help': "Choixir l'emplacement 'c:\...' pour un choix local - l'Adresse IP du serveur si réseau",},
     {'name': 'port', 'genre': 'Int', 'label': 'Port',
                     'help': "Pour réseau seulement, information disponible aurpès de l'administrateur système",},
-    {'name': 'typeDB', 'genre': 'choice', 'label': 'Type de Base',
-                    'help': "Le choix est limité par la programmation", 'value':0,
-                    'values':['MySql','Access','SQLite'],},
     {'name': 'nameDB', 'genre': 'combo', 'label': 'Nom de la Base',
                      'help': "Choisir un base de donnée présente sur le serveur",
                      'ctrlAction':'OnNameDB'},
     {'name': 'userDB', 'genre': 'String', 'label': 'Utilisateur BD',
                     'help': "Si nécessaire, utilisateur ayant des droits d'accès à la base de donnée", 'value':'invite'},
+    {'name': 'passwdDB', 'genre': 'Mpass', 'label': 'Mot de passe BD',
+                    'help': "C'est le mot de passe d'accès à la base de données," +
+                            "\nce n'est pas celui demandé au lancement de l'appli ou lors de l'authentification"},
     ],
-    ('db_simple',"Accès à une base locale"): [
-        {'name': 'ID', 'genre': 'String', 'label': 'Désignation config', 'value': 'config1',
-                        'help': "Désignez de manière unique cette configuration"},
-        {'name': 'serveur', 'genre': 'String', 'label': 'Path ou Serveur', 'value': '',
-                        'help': "Répertoire 'c:\...' si local - Adresse IP ou nom du serveur si réseau"},
+    ('db_fichier',"Accès à un fichier local"): [
         {'name': 'typeDB', 'genre': 'Enum', 'label': 'Type de Base',
                         'help': "Le choix est limité par la programmation", 'value': 0,
                         'values': ['Access', 'SQLite']},
+        {'name': 'ID', 'genre': 'String', 'label': 'Désignation config', 'value': 'config1',
+                        'help': "Désignez de manière unique cette configuration"},
+        {'name': 'serveur', 'genre': 'String', 'label': "Chemin d'accès:", 'value': '',
+                        'help': "Répertoire 'c:\...' si local - Adresse IP ou nom du serveur si réseau"},
         {'name': 'nameDB', 'genre': 'String', 'label': 'Nom de la Base',
                          'help': "Base de donnée présente sur le serveur"},
     ],
@@ -398,7 +401,7 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
             self.lddDonnees = lstConfigsOK
 
         # paramètres pour self.pnl contenu principal de l'écran
-        self.kwds['lblTopBox'] = 'Configurations disponibles'
+        self.kwds['lblTopBox'] = ''
         self.Size = (400,300)
 
         if self.dldMatrice != {}:
@@ -557,7 +560,7 @@ class DLG_saisieUneConfig(xusp.DLG_vide):
 
         # grise le champ ID
         ctrlID = self.pnl.GetPnlCtrl('ID')
-        ctrlID.Enable(False)
+        #ctrlID.Enable(False)
         if self.modeBase == 'creation' :
             titre = "Création d'une nouvelle base de données"
             texte = "Définissez les pointeurs d'accès et le nom de la base à y créer\n"
@@ -595,7 +598,7 @@ class DLG_saisieUneConfig(xusp.DLG_vide):
         return self.pnl.GetValues()
 
     def GetConfig(self):
-        return self.pnl.GetValues()['db_prim']
+        return self.pnl.GetValues()['db_reseau']
 
     def OnNameDB(self,event):
         cfgConfig = self.pnl.GetValues()[self.typeConfig]
@@ -667,7 +670,7 @@ if __name__ == '__main__':
     frame_1.dictAppli ={
             'NOM_APPLICATION'       : "Noelite",
             'REP_DATA'              : "srcNoelite/Data",
-            'TYPE_CONFIG'           : 'db_prim',
+            'TYPE_CONFIG'           : 'db_reseau',
             'CHOIX_CONFIGS': [('Donnees', "Base de travail, peut être la centrale  en mode connecté"),]
             }
     #frame_1.dlg = DLG_implantation(frame_1)

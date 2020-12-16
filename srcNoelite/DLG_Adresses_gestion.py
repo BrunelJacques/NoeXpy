@@ -31,7 +31,7 @@ def dicOlvIndividus():
     lstChamps = ["0","IDindividu", "nom", "prenom","date_naiss", "adresse_auto",
                 "rue_resid", "cp_resid", "ville_resid","tel_domicile", "tel_mobile", "mail"]
     lstNomsColonnes = ["null","Individu", "Nom", "Prenom","Naissance","adresse",
-                        "rue", "cp", "ville","teldom", "telmob", "mail"]
+                        "rue", "cp", "ville","tel domicile", "tel mobile", "mail"]
     lstTypes = ["INTEGER","INTEGER","VARCHAR(100)","VARCHAR(100)","DATE","INTEGER",
                 "VARCHAR(100)","VARCHAR(8)","VARCHAR(100)","VARCHAR(11)","VARCHAR(11)","VARCHAR(40)"]
     lstCodesColonnes = [xformat.SupprimeAccents(x) for x in lstNomsColonnes]
@@ -57,14 +57,13 @@ def dicOlvFamilles():
                  "individus.prenom","individus.adresse_auto","individus.rue_resid","individus.cp_resid","individus.ville_resid"]
 
     lstNomsColonnes = ["0","famille","individu","intitule famille","nom corresp.",
-                        "prenomcorresp.","adresse_auto","rue","cp","ville"]
+                        "prenomcorresp.","chez","rue","cp","ville"]
 
     lstTypes = ["INTEGER","INTEGER","INTEGER","VARCHAR(100)","VARCHAR(100)",
                 "VARCHAR(100)","INTEGER","VARCHAR(100)","VARCHAR(11)","VARCHAR(80)"]
     lstCodesColonnes = [xformat.SupprimeAccents(x) for x in lstNomsColonnes]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
     lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes)
-    # composition des données du tableau à partir du recordset
 
     # matrice OLV
     lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
@@ -152,7 +151,7 @@ class Dialog(wx.Dialog):
     def __init__(self, mode='individus', titre=TITRE, intro=INTRO):
         self.limitSql = LIMITSQL
         self.db = xdb.DB()
-        wx.Dialog.__init__(self, None, -1, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
+        wx.Dialog.__init__(self, None, -1,pos=(50,80),style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
         if nuu.VerificationDroitsUtilisateurActuel("individus_fiche", "consulter") == False:
             if self.IsModal():
                 self.EndModal(wx.ID_CANCEL)
@@ -182,7 +181,6 @@ class Dialog(wx.Dialog):
         self.__set_properties()
         self.Sizer()
 
-
     def __set_properties(self):
         self.SetMinSize(MINSIZE)
 
@@ -196,12 +194,11 @@ class Dialog(wx.Dialog):
         gridsizer_base.Add(wx.StaticLine(self), 0, wx.TOP| wx.EXPAND, 3)
 
         self.SetSizer(gridsizer_base)
-        #gridsizer_base.Fit(self)
+        gridsizer_base.Fit(self)
         gridsizer_base.AddGrowableRow(1)
         gridsizer_base.AddGrowableCol(0)
         self.Layout()
         self.SetSizer(gridsizer_base)
-        self.CenterOnScreen()
 
     def GetIndividus(self,db,**kwd):
         # appel des données à afficher
@@ -285,6 +282,6 @@ if __name__ == '__main__':
     app = wx.App(0)
     import os
     os.chdir("..")
-    dlg = Dialog(mode='individus')
+    dlg = Dialog(mode='familles')
     dlg.ShowModal()
     app.MainLoop()

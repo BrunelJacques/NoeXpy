@@ -16,7 +16,7 @@ dictAPPLI = {
             'REP_DATA'              : "srcNoelite/Data",
             'REP_TEMP'              : "srcNoelite/Temp",
             'NOM_FICHIER_LOG'       : "logsNoestock.log",
-            'TYPE_CONFIG'           : 'db_prim',
+            'TYPE_CONFIG'           : 'db_reseau',
             'CHOIX_CONFIGS': [('Centralisation',"Base au siège, cible pour les synchro et sauvegarde"),
                              ('Donnees', "Base de travail, peut être la centrale  en mode connecté")]
             }

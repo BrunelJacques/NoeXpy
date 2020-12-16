@@ -239,7 +239,7 @@ class Compta(object):
 
     # connecteur à la base compta
     def DB(self,parent,compta):
-        # recherche des configuration d'accès aux base de données clé 'db_prim'
+        # recherche des configuration d'accès aux base de données clé 'db_reseau'
         paramFile = xucfg.ParamFile(nomFichier="Config")
         dicConfig = paramFile.GetDict(None, 'CONFIGS')
         if not 'lstConfigs' in dicConfig.keys(): dicConfig['lstConfigs'] = []
@@ -247,9 +247,9 @@ class Compta(object):
         lddDonnees = dicConfig['lstConfigs']
         configCpta = None
         for config in lddDonnees:
-            if 'db_prim' in config.keys():
-                if config['db_prim']['ID'] == compta:
-                    configCpta = config['db_prim']
+            if 'db_reseau' in config.keys():
+                if config['db_reseau']['ID'] == compta:
+                    configCpta = config['db_reseau']
         ret = wx.ID_OK
         while (ret == wx.ID_OK) and (not configCpta):
             # gestion d'une configuration nouvelle

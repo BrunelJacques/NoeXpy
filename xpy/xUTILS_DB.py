@@ -85,7 +85,7 @@ class DB():
 
             # appel des params de connexion stockés dans UserProfile et Data
             grpAPPLI, grpUSER, grpCONFIGS, lastConfig = GetConfigs()
-            typeConfig = 'db_prim'
+            typeConfig = 'db_reseau'
             if 'TYPE_CONFIG' in grpAPPLI:
                 typeConfig = grpAPPLI['TYPE_CONFIG']
             self.dictAppli = grpAPPLI
@@ -126,9 +126,11 @@ class DB():
                 if not mute:
                     wx.MessageBox(mess)
                 self.erreur = err
-                return mess
+                return
 
-            if not self.cfgParams : return "Aucun fichier de paramètres de connexion trouvé!"
+            if not self.cfgParams :
+                self.erreur = "Aucun fichier de paramètres de connexion trouvé!"
+                return
 
             # Ouverture des bases de données selon leur type
             if 'typeDB' in self.cfgParams:

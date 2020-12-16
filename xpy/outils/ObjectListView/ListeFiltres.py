@@ -10,6 +10,7 @@ import os
 import datetime
 import xpy.xUTILS_SaisieParams as xusp
 from xpy.outils.ObjectListView import Filter
+from xpy.outils import xboutons
 
 #**************************  Gestion des filtres à ajouter************************************************************
 
@@ -20,15 +21,12 @@ MATRICE = {
         [
             {'name': 'nomCol','genre': 'Combo',  'label': "Colonne à filtrer",'value':'',
                             'ctrlAction':'parent.OnChoixCol',
-                            'txtSize':145,
                             'help': "Choisissez la colonne sur laquelle portera le filtre",},
             {'name': 'txtChoix', 'genre': 'Combo', 'label': "Action à appliquer",'value':'',
                             'ctrlAction': 'parent.OnChoixAction,',
-                             'txtSize': 145,
                             'help': "Choisissez le type de filtre à appliquer dans la colonne", },
-            {'name': 'critere', 'genre': 'texte', 'label': "Valeur",'value':'',
+            {'name': 'critere', 'genre': 'texte', 'label': "Valeur filtrée",'value':'',
                             'ctrlAction': 'parent.OnChoixValeur',
-                            'txtSize':145,
                             'help': "Valeur proposée à l'action pour le filtre", },
             {'name': 'code', 'label': "code de la Colonne stocké", 'value': '',},
             {'name': 'choix', 'label': "code du choix stocké", 'value': '',},
@@ -88,18 +86,20 @@ class DLG_listeFiltres(xusp.DLG_listCtrl):
                                     dlChamps=CHAMPS,
                                     lblList="Liste des filtres",
                                     gestionProperty=False,
-                                    size=(800, 200),
-                                    ctrlSize=(130,30),
-                                    txtSize=140,
-                                    boxMaxSize=(900,120))
+                                    boxSize=(300,250),
+                                    ctrlSize=(280,30),
+                                    txtSize=110)
 
         # alimentation des valeurs premiere combo
-        choixColonnes = [x for x in self.lstNomsColonnes if len(x)>2]
+        choixColonnes = [x for x in self.lstNomsColonnes if x != 'null' and len(x)>1]
+        self.btn.Destroy()
+        self.btn = xboutons.BTN_fermer(self,label="Filtrer")
+        self.btn.Bind(wx.EVT_BUTTON, self.OnFermer)
 
         self.Init()
         # alimentation des valeurs possibles premiere combo
         pnlColonne = self.dlgGest.GetPnlCtrl('nomCol')
-        pnlColonne.SetValues(choixColonnes)
+        pnlColonne.Set(choixColonnes)
         pnlColonne.SetValue(choixColonnes[0])
         pnlColonne.SetFocus()
         self.lstChoix = []
@@ -136,7 +136,7 @@ class DLG_listeFiltres(xusp.DLG_listCtrl):
         oldval = pnlAction.GetValue()
         # alimentation des valeurs possibles selon premiere combo
         self.GetChoixActions(ixcolonne)
-        pnlAction.SetValues(self.lstTxtChoix)
+        pnlAction.Set(self.lstTxtChoix)
         if oldval in self.lstTxtChoix:
             pnlAction.SetValue(oldval)
         else:

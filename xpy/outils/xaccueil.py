@@ -290,7 +290,7 @@ if __name__ == '__main__':
             'NOM_APPLICATION'       : "testappli",
             'REP_DATA'              : "srcNoelite/Data",
             'REP_SOURCES'              : "srcNoelite",
-            'TYPE_CONFIG'           : 'db_prim',
+            'TYPE_CONFIG'           : 'db_reseau',
             'CHOIX_CONFIGS': [('Donnees', "Base de travail, peut être la centrale  en mode connecté"),]
             }
     frame_1 = MyFrame(None, -1, "TEST",dictAppli=dictAppli)

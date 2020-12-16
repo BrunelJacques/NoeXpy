@@ -234,7 +234,7 @@ if __name__ == u"__main__":
     app = wx.App(0)
 
     cfgUser = ParamUser()
-    cfgNoelite  = ParamFile('Config',path='../srcNoelite/Data',flag='r')
+    cfgNoelite  = ParamFile('Config',path='../../srcNoelite/Data',flag='r')
 
     # del de clés
     #cfgUser.DelDictConfig(cle=None,groupe='USER')

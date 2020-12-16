@@ -9,7 +9,7 @@
 #------------------------------------------------------------------------
 
 import wx
-from xpy import xUTILS_Identification
+from xpy import xUTILS_Identification, xGestionConfig
 
 """ Paramétrage de la construction de la barre de menus """
 class MENU():
@@ -135,7 +135,9 @@ class MENU():
             self.parent.MakeStatusText()
 
     def On_gesBases(self,event):
-        pass
+        dlg = xGestionConfig.DLG_saisieUneConfig(self.parent, modeBase='creation')
+        ret = dlg.ShowModal()
+
     def On_gesTables(self,event):
         pass
     def On_sauve(self,event):
@@ -155,17 +157,17 @@ if __name__ == "__main__":
     """ Affichage du menu"""
     menu = MENU(None).ParamMenu()
     for dictColonne in menu:
-        print(dictColonne['code'], dictColonne['label'])
+        print('COL: ',dictColonne['code'], dictColonne['label'])
         for ligne in dictColonne['items']:
-            print('\t',end='')
+            print('\t'*3,'LIG: ',end='')
             if isinstance(ligne,str):
                 print(ligne)
             elif isinstance(ligne,dict):
-                print(ligne['code'],"\t", ligne['label'],"\n\t\t",ligne.keys())
+                print(ligne['code'],"\t", ligne['label'],"\n","\t"*7,ligne.keys())
             else: print("problème!!!!!!!!!!!")
+    print('\nFonctions ','-'*30)
     for dictColonne in menu:
         for dictligne in dictColonne['items']:
             if 'action' in dictligne:
                 if dictligne['action'][:1] != 'x':
-                    act = "MENU."+dictligne['action']+"(None)"
-                    print(act + "\t action >>\t")
+                    print('\t'*2,"MENU."+dictligne['action']+"(None)")

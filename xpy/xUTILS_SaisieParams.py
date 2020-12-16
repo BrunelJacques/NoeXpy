@@ -16,7 +16,7 @@ from copy                      import deepcopy
 from xpy.outils                import xformat,xboutons
 
 OPTIONS_CTRL = ('name', 'label', 'ctrlAction', 'btnLabel', 'btnImage','btnAction', 'value', 'labels', 'values', 'enable',
-                'genre', 'help','ctrlSize','txtSize', 'btnHelp','boxMaxSize','boxMinSize','ctrl')
+                'genre', 'help','ctrlSize','txtSize', 'btnHelp','boxMaxSize','boxMinSize','boxSize','ctrl')
 # les Binds de ctrl se posent dans le pannel
 OPTIONS_PANEL = ('pos','style','name', 'size')
 
@@ -385,7 +385,7 @@ class PNL_ctrl(wx.Panel):
     def __init__(self, parent, *args, genre='string', name=None, label='', value= None, labels=[], values=[],
                  help=None, btnLabel=None, btnImage=None, btnHelp=None,  txtSize=100, ctrl=None, **kwds):
 
-        if 'ctrSize' in kwds:
+        if 'ctrlSize' in kwds:
             kwds['size'] = kwds['ctrlSize']
         kw = DicFiltre(kwds,OPTIONS_PANEL )
         wx.Panel.__init__(self,parent,*args, **kw)
@@ -402,7 +402,7 @@ class PNL_ctrl(wx.Panel):
             self.txt = wx.StaticText(self, wx.ID_ANY, label + " :")
             self.txt.MinSize = (lg, 25)
         else: self.txt = wx.StaticText(self, wx.ID_ANY,  "")
-        self.SetMaxSize((600,35))
+        self.SetMaxSize((400,35))
 
         # seul le PropertyGrid gère le multichoices, pas le comboBox
         if genre == 'multichoice': genre = 'combo'
@@ -658,7 +658,9 @@ class PNL_listCtrl(wx.Panel):
 class BoxPanel(wx.Panel):
     # aligne les contrôles définis par la matrice dans une box verticale
     def __init__(self, parent, *args, lblBox="Box", code = '1', lignes=[], dictDonnees={}, **kwds):
+        size = kwds.pop('boxSize',None)
         kw = DicFiltre(kwds,OPTIONS_PANEL)
+        if size: kw['size']=size
         wx.Panel.__init__(self,parent, *args, **kw)
         maxSize = kwds.pop('boxMaxSize',None)
         minSize = kwds.pop('boxMinSize',None)
@@ -695,7 +697,7 @@ class BoxPanel(wx.Panel):
                                 'value', 'labels', 'values','enable'):
                         if not cle in ligne:
                             ligne[cle]=None
-                    self.ssbox.Add(panel,1,wx.ALL|wx.EXPAND,0)
+                    self.ssbox.Add(panel,1,wx.EXPAND, wx.ALL,0)
                     codename = self.code + '.' + ligne['name']
                     panel.ctrl.genreCtrl = ligne['genre'].lower()
                     panel.ctrl.nameCtrl = codename
@@ -1006,7 +1008,7 @@ class DLG_listCtrl(wx.Dialog):
 
     def Sizer(self):
         topbox = wx.BoxSizer(wx.VERTICAL)
-        topbox.Add(self.pnl, 1,wx.EXPAND | wx.ALL, self.marge)
+        topbox.Add(self.pnl, 1, wx.ALL, self.marge)
         btnbox = wx.BoxSizer(wx.HORIZONTAL)
         btnbox.Add(self.btnEsc, 0, wx.RIGHT,7)
         btnbox.Add(self.btn, 0, wx.RIGHT,7)
@@ -1129,8 +1131,7 @@ class DLG_vide(wx.Dialog):
         if not self.btn:
             self.btn = xboutons.BTN_fermer(self,label="Valider")
         sizer.Add(self.btn, 0,  wx.ALL|wx.ALIGN_RIGHT,self.marge)
-
-        #sizer.SetSizeHints(self)
+        sizer.SetSizeHints(self)
         self.SetSizer(sizer)
 
     def OnFermer(self, event):

@@ -17,7 +17,7 @@ dictAPPLI = {
             'REP_DATA'              : "srcNoelite/Data",
             'REP_TEMP'              : "srcNoelite/Temp",
             'NOM_FICHIER_LOG'       : "logsNoelite.log",
-            'TYPE_CONFIG'         : 'db_prim',
+            'TYPE_CONFIG'         : 'db_reseau',
 }
 
 class MyFrame(xAppli.MainFrame):
@@ -53,12 +53,12 @@ class MyFrame(xAppli.MainFrame):
         dlg = ncident.Dialog(self,confirm=False)
         etat = False
         if not dlg.echec:
+            #self.dictUser = dlg.GetDictUtilisateur()
+            #if not self.dictUser:
+            dlg.ShowModal()
             self.dictUser = dlg.GetDictUtilisateur()
-            if not self.dictUser:
-                ret = dlg.ShowModal()
-                self.dictUser = dlg.GetDictUtilisateur()
-                if self.dictUser:
-                    etat = True
+            if self.dictUser:
+                etat = True
         dlg.Destroy()
         for numMenu in range(1,2):
             self.menu.EnableTop(numMenu, etat)

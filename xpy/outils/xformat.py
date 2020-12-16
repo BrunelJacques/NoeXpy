@@ -70,7 +70,7 @@ def DefColonnes(lstNoms,lstCodes,lstValDef,lstLargeur):
             if '%' in colonne:
                 stringConverter = FmtPercent
             else:
-                stringConverter = FmtInt
+                stringConverter = FmtIntNoSpce
         elif isinstance(lstValDef[ix], (datetime.date,wx.DateTime)):
             stringConverter = FmtDate
         else: stringConverter = None
@@ -110,15 +110,17 @@ def LargeursDefaut(lstNomsColonnes,lstTypes,IDcache=True):
         ix = 1
     for ix in range(ix, len(lstNomsColonnes)):
         nomcol = lstNomsColonnes[ix]
+        lgtitle = int(len(nomcol) * 7.5)
         tip = lstTypes[ix]
         tip = tip.lower()
-        if tip[:3] == 'int': lstLargDef.append(50)
-        elif tip[:5] == 'float': lstLargDef.append(60)
-        elif tip[:4] == 'date': lstLargDef.append(80)
+        if tip[:3] == 'int': lstLargDef.append( max(lgtitle,50))
+        elif tip[:5] == 'float': lstLargDef.append(max(lgtitle,60))
+        elif tip[:4] == 'date': lstLargDef.append(max(lgtitle,80))
         elif tip[:7] == 'varchar':
-            lg = int(tip[8:-1])*3
-            if lg <= 16: lg=24
-            if lg > 150:
+            lgdef = int(tip[8:-1])*6
+            lg = max(lgtitle,lgdef)
+            if lg <= 24: lg=24
+            if lg > 200:
                 lg = -1
             lstLargDef.append(lg)
         else:
@@ -152,8 +154,8 @@ def CompareModels(original,actuel):
 def ComposeWhereFiltre(filtre,lstChamps,lstColonnes=None, lien='WHERE'):
         if lstColonnes:
             lstNames = [x.valueGetter for x in lstColonnes]
-            lstColStr =  [x.valueGetter for x in lstColonnes if isinstance(x.valueSetter,str)]
-            lstChamps = [lstChamps[x] for x in range(len(lstChamps)) if lstNames[x] in lstColStr]
+            #lstColStr =  [x.valueGetter for x in lstColonnes if isinstance(x.valueSetter,str)]
+            lstChamps = [lstChamps[x] for x in range(len(lstChamps)) if lstNames[x] in lstNames]
         whereFiltre = ''
         if filtre and len(filtre) > 0 and len(lstChamps)>0:
             texte = ''

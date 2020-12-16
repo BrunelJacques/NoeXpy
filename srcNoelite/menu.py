@@ -100,7 +100,7 @@ class MENU():
         ret = self.parent.SaisieConfig()
 
     def On_utilisateurs(self,event):
-        xUTILS_Identification.AfficheUsers()
+        ret = xUTILS_Identification.AfficheUsers(self.parent)
 
     def On_transpose(self,event):
         dlg = DLG_Transposition_ficher.Dialog()
