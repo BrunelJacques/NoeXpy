@@ -164,7 +164,7 @@ class Noegest(object):
         if retour == "ok":
             recordset = self.db.ResultatReq()
             lstDonnees = [list(x) for x in recordset]
-        dlg.ctrlOlv.listeDonnees = lstDonnees
+        dlg.ctrlOlv.lstDonnees = lstDonnees
         dlg.ctrlOlv.MAJ()
         dlg.ctrlOlv._FormatAllRows()
         return
@@ -184,7 +184,7 @@ class Noegest(object):
         if retour == "ok":
             recordset = self.db.ResultatReq()
             lstDonnees = [list(x) for x in recordset]
-        dlg.ctrlOlv.listeDonnees = lstDonnees
+        dlg.ctrlOlv.lstDonnees = lstDonnees
         dlg.ctrlOlv.MAJ()
         dlg.ctrlOlv._FormatAllRows()
         return
@@ -203,13 +203,13 @@ class Noegest(object):
         lstLargeurColonnes = xformat.LargeursDefaut(lstNomsCol, lstTypes,IDcache=False)
         lstColonnes = xformat.DefColonnes(lstNomsCol, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
         return {
-            'listeColonnes': lstColonnes,
-            'listeChamps': lstChamps,
+            'lstColonnes': lstColonnes,
+            'lstChamps': lstChamps,
             'listeNomsColonnes': lstNomsCol,
             'listeCodesColonnes': lstCodesColonnes,
             'getDonnees': getDonnees,
             'dicBandeau': dicBandeau,
-            'colonneTri': 1,
+            'sortColumnIndex': 1,
             'sensTri': False,
             'style': wx.LC_SINGLE_SEL | wx.LC_HRULES | wx.LC_VRULES,
             'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
@@ -365,7 +365,7 @@ class Noegest(object):
                     dicDonnees["consos.observation"],
                     ]
                 lstDonnees.append(donnees)
-        dlg.ctrlOlv.listeDonnees = lstDonnees
+        dlg.ctrlOlv.lstDonnees = lstDonnees
         dlg.ctrlOlv.MAJ()
         for object in dlg.ctrlOlv.modelObjects:
             self.ValideLigne(object)
@@ -390,8 +390,8 @@ class Noegest(object):
     def GetVehicules(self,lstChamps=None,**kwd):
         # matriceOlv et filtre résultent d'une saisie en barre de recherche
         matriceOlv = kwd.pop('dicOlv',{})
-        if (not lstChamps) and 'listeChamps' in matriceOlv:
-            lstChamps = matriceOlv['listeChamps']
+        if (not lstChamps) and 'lstChamps' in matriceOlv:
+            lstChamps = matriceOlv['lstChamps']
         filtre = kwd.pop('filtre','')
         kwd['filtre'] = filtre
         whereFiltre = kwd.pop('whereFiltre','')
@@ -418,8 +418,8 @@ class Noegest(object):
     def GetActivites(self,lstChamps=None,**kwd):
         # matriceOlv et filtre résultent d'une saisie en barre de recherche
         matriceOlv = kwd.pop('dicOlv',{})
-        if (not lstChamps) and 'listeChamps' in matriceOlv:
-            lstChamps = matriceOlv['listeChamps']
+        if (not lstChamps) and 'lstChamps' in matriceOlv:
+            lstChamps = matriceOlv['lstChamps']
         filtre = kwd.pop('filtre','')
         kwd['filtre'] = filtre
         whereFiltre = kwd.pop('whereFiltre','')
@@ -441,7 +441,7 @@ class Noegest(object):
                 track.observation = "%s / %s"%(track.nomtiers.strip(),track.observation)
         if track.IDtiers == None: track.IDtiers = ''
 
-        listeDonnees = [
+        lstDonnees = [
             ("IDconso", track.IDconso),
             ("IDanalytique", track.IDvehicule),
             ("cloture", xformat.DateFrToSql(self.cloture)),
@@ -458,12 +458,12 @@ class Noegest(object):
             ]
 
         if not track.IDconso or track.IDconso == 0:
-            ret = self.db.ReqInsert("vehiculesConsos",lstDonnees= listeDonnees[1:], mess="UTILS_Noegest.SetConsoKm")
+            ret = self.db.ReqInsert("vehiculesConsos",lstDonnees= lstDonnees[1:], mess="UTILS_Noegest.SetConsoKm")
             track.IDconso = self.db.newID
             IDcategorie = 6
             categorie = ("Saisie")
         else:
-            ret = self.db.ReqMAJ("vehiculesConsos", listeDonnees, "IDconso", track.IDconso)
+            ret = self.db.ReqMAJ("vehiculesConsos", lstDonnees, "IDconso", track.IDconso)
             IDcategorie = 7
             categorie = "Modification"
 

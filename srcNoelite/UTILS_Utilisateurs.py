@@ -42,9 +42,9 @@ def VerificationDroits(dictUtilisateur=None, categorie="", action="", IDactivite
                 FROM groupes_activites
                 WHERE %s;""" % condition
                 DB.ExecuterReq(req)
-                listeDonnees = DB.ResultatReq()
+                lstDonnees = DB.ResultatReq()
                 listeActivites = []
-                for IDgroupe_activite, IDactivite_temp in listeDonnees :
+                for IDgroupe_activite, IDactivite_temp in lstDonnees :
                     listeActivites.append(IDactivite_temp)
                 DB.Close()
                 

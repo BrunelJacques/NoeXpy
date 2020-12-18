@@ -537,7 +537,7 @@ class CTRL_Ventilation(gridlib.Grid):
     
     def InitGrid(self):
         """ Création de la grid et importation initiale des données """
-        listeColonnes = [
+        lstColonnes = [
             ( (""), 20),
             ( ("Date"), 175),
             ( ("Individu"), 124),
@@ -551,7 +551,7 @@ class CTRL_Ventilation(gridlib.Grid):
         # Initialisation de la grid
         self.SetMinSize((10, 10))
         self.moveTo = None
-        self.CreateGrid(0, len(listeColonnes))
+        self.CreateGrid(0, len(lstColonnes))
         self.SetRowLabelSize(1)
         self.DisableDragColSize()
         self.DisableDragRowSize()
@@ -560,7 +560,7 @@ class CTRL_Ventilation(gridlib.Grid):
         # Création des colonnes
         self.SetColLabelSize(22)
         numColonne = 0
-        for label, largeur in listeColonnes :
+        for label, largeur in lstColonnes :
             self.SetColLabelValue(numColonne, label)
             self.SetColSize(numColonne, largeur)
             numColonne += 1
@@ -591,10 +591,10 @@ class CTRL_Ventilation(gridlib.Grid):
         WHERE IDreglement=%d
         ;""" % IDreglement
         DB.ExecuterReq(req)
-        listeDonnees = DB.ResultatReq()     
+        lstDonnees = DB.ResultatReq()
         self.dictVentilation = {}
         self.dictVentilationInitiale = {}
-        for IDventilation, IDprestation, montant in listeDonnees :
+        for IDventilation, IDprestation, montant in lstDonnees :
             self.dictVentilation[IDprestation] = montant
             self.dictVentilationInitiale[IDprestation] = IDventilation
 
@@ -625,12 +625,12 @@ class CTRL_Ventilation(gridlib.Grid):
         ORDER BY date
         ;""" % self.IDcompte_payeur
         DB.ExecuterReq(req)
-        listeDonnees = DB.ResultatReq()     
+        lstDonnees = DB.ResultatReq()
         DB.Close()
         listeLignesPrestations = []
         for IDprestation, IDcompte_payeur, date, categorie, label, montant, IDactivite, nomActivite, IDtarif, nomTarif, \
             nomCategorieTarif, IDfacture, num_facture, date_facture, IDfamille, IDindividu, nomIndividu, prenomIndividu,\
-            montantVentilation in listeDonnees :
+            montantVentilation in lstDonnees :
             montant = montant
             if montantVentilation == None: montantVentilation = 0.0
             if num_facture == None : num_facture = 0
@@ -679,11 +679,11 @@ class CTRL_Ventilation(gridlib.Grid):
                 ORDER BY reglements.date_saisie
                 ;""" % IDprestation
         DB.ExecuterReq(req,mess="CTRL_Ventilation.CorrigeVentil2")
-        listeDonnees = DB.ResultatReq()
+        lstDonnees = DB.ResultatReq()
         lstSupprime = []
         mttcum = 0.0
         montant = 0.0
-        for IDventilation, ventile, montant, IDreglement in listeDonnees:
+        for IDventilation, ventile, montant, IDreglement in lstDonnees:
             # suppression de ventilation de signe inversé
             if (montant * ventile) < 0:
                 lstSupprime.append(IDventilation)
@@ -849,16 +849,16 @@ class CTRL_Ventilation(gridlib.Grid):
             
             if ligne.GetEtat() == True :
                 # Ajout ou modification
-                listeDonnees = [    
+                lstDonnees = [
                         ("IDreglement", IDreglement),
                         ("IDcompte_payeur", self.IDcompte_payeur),
                         ("IDprestation", IDprestation),
                         ("montant", montant),
                     ]
                 if IDventilation == None :
-                    DB.ReqInsert("ventilation", lstDonnees=listeDonnees,mess="DLG_Reglements_ventilation.Sauvegarde Insert")
+                    DB.ReqInsert("ventilation", lstDonnees=lstDonnees,mess="DLG_Reglements_ventilation.Sauvegarde Insert")
                 else:
-                    DB.ReqMAJ("ventilation",listeDonnees,"IDventilation", IDventilation,
+                    DB.ReqMAJ("ventilation",lstDonnees,"IDventilation", IDventilation,
                               mess="DLG_Reglements_ventilation.Sauvegarde Maj")
             else :
                 # Suppression

@@ -72,7 +72,7 @@ def GetOlvColonnes(dlg):
                         stringConverter=xformat.FmtDecimal),
             ColumnDefn("créer", 'centre', 38, 'creer', valueSetter=True,
                         isEditable=False,
-                        stringConverter=xformat.FmtCheck),
+                        stringConverter=xformat.FmtBool),
             ColumnDefn("differé", 'center', 80, 'differe', valueSetter=wx.DateTime.Today(), isSpaceFilling=False,
                         stringConverter=xformat.FmtDate,),
             ColumnDefn("IDprestation", 'centre', 0, 'IDprestation',
@@ -482,7 +482,7 @@ class Dialog(wx.Dialog):
     def OnRaz(self,event):
         # effacement des lignes sur l'écran
         self.pnlParams.ctrlRef.SetValue('')
-        self.ctrlOlv.listeDonnees = []
+        self.ctrlOlv.lstDonnees = []
         self.ctrlOlv.MAJ()
         self.pnlPied.SetItemsInfos(INFO_OLV, wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
         self.pnlOlv.Refresh()
@@ -518,7 +518,7 @@ class Dialog(wx.Dialog):
                 # set le nom de la banque
                 self.pnlParams.ctrlBanque.SetSelection(self.pnlParams.ctrlBanque.FindString(dicDepot['banque']))
                 # place les règlements du dépôt dans la grille
-                self.ctrlOlv.listeDonnees = lstDonnees
+                self.ctrlOlv.lstDonnees = lstDonnees
                 self.InitOlv(withDiffere=False)
                 # les écritures reprises sont censées être valides
                 for item in self.ctrlOlv.modelObjects[:-1]:

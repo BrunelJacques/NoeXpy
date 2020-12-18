@@ -250,7 +250,7 @@ DB_IX = {
 if __name__ == "__main__":
     """ Affichage de stats sur les tables """
     nbreChamps = 0
-    for nomTable, listeChamps in DB_TABLES.items() :
-        nbreChamps += len(listeChamps)
+    for nomTable, lstChamps in DB_TABLES.items() :
+        nbreChamps += len(lstChamps)
     print("Nbre de champs DATA =", nbreChamps)
     print("Nbre de tables DATA =", len(DB_TABLES.keys()))

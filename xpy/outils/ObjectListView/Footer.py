@@ -158,10 +158,10 @@ class Footer(wx.Control):
     def GetDonneesImpression(self, typeInfo="texte"):
         """ Renvoie infos pour impression """
         """ typeInfo = "texte" ou "alignement" """
-        listeDonnees = []
+        lstDonnees = []
         for info in self.listeImpression :
-            listeDonnees.append(info[typeInfo])
-        return listeDonnees[1:]
+            lstDonnees.append(info[typeInfo])
+        return lstDonnees[1:]
     
     def OnPaint(self, evt):
         dc = wx.BufferedPaintDC(self)

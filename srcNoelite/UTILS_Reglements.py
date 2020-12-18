@@ -38,13 +38,13 @@ def GetMatriceFamilles():
     lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes)
     lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
     return   {
-                'listeColonnes': lstColonnes,
-                'listeChamps':lstChamps,
+                'lstColonnes': lstColonnes,
+                'lstChamps':lstChamps,
                 'listeNomsColonnes':lstNomsColonnes,
                 'listeCodesColonnes':lstCodesColonnes,
                 'getDonnees': GetFamilles,
                 'dicBandeau': dicBandeau,
-                'colonneTri': 2,
+                'sortColumnIndex': 2,
                 'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 }
@@ -69,8 +69,8 @@ def GetFamilles(db,dicOlv={}, **kwd):
                         OR individus.nom LIKE '%%%s%%'
                         OR individus.prenom LIKE '%%%s%%' """%(filtreTxt,filtreTxt,filtreTxt,filtreTxt,)
 
-    lstChamps = dicOlv['listeChamps']
-    lstCodesColonnes = [x.valueGetter for x in dicOlv['listeColonnes']]
+    lstChamps = dicOlv['lstChamps']
+    lstCodesColonnes = [x.valueGetter for x in dicOlv['lstColonnes']]
 
     req = """   SELECT %s 
                 FROM ((familles 
@@ -107,7 +107,7 @@ def GetFamilles(db,dicOlv={}, **kwd):
             ligne.append(dic[code])
         lstDonnees.append(ligne)
     dicOlv =  dicOlv
-    dicOlv['listeDonnees']=lstDonnees
+    dicOlv['lstDonnees']=lstDonnees
     return lstDonnees
 
 def GetFamille(db):
@@ -138,13 +138,13 @@ def GetMatriceDepots():
     lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes)
     lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
     return   {
-                'listeColonnes': lstColonnes,
-                'listeChamps':lstChamps,
+                'lstColonnes': lstColonnes,
+                'lstChamps':lstChamps,
                 'listeNomsColonnes':lstNomsColonnes,
                 'listeCodesColonnes':lstCodesColonnes,
                 'getDonnees': GetDepots,
                 'dicBandeau': dicBandeau,
-                'colonneTri': 2,
+                'sortColumnIndex': 2,
                 'sensTri' : False,
                 'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
@@ -170,8 +170,8 @@ def GetDepots(db=None,dicOlv={}, limit=100,**kwd):
                         OR comptes_bancaires.nom LIKE '%%%s%%'
                         OR observations LIKE '%%%s%%' """%(filtre,filtre,filtre,filtre,filtre)
 
-    lstChamps = dicOlv['listeChamps']
-    lstCodesColonnes = [x.valueGetter for x in dicOlv['listeColonnes']]
+    lstChamps = dicOlv['lstChamps']
+    lstCodesColonnes = [x.valueGetter for x in dicOlv['lstColonnes']]
 
     req = """   SELECT %s
                 FROM depots
@@ -237,7 +237,7 @@ def GetDepots(db=None,dicOlv={}, limit=100,**kwd):
             ligne.append(dic[code])
         lstDonnees.append(ligne)
     dicOlv =  dicOlv
-    dicOlv['listeDonnees']=lstDonnees
+    dicOlv['lstDonnees']=lstDonnees
     return lstDonnees
 
 def GetBanquesNne(db,where = 'code_nne IS NOT NULL',**kwd):
@@ -316,14 +316,14 @@ def GetPayeurs(db,IDfamille,**kwd):
     return ldPayeurs
 
 def SetPayeur(db,IDcompte_payeur,nom,**kwd):
-    listeDonnees = [('IDcompte_payeur',IDcompte_payeur),
+    lstDonnees = [('IDcompte_payeur',IDcompte_payeur),
                     ('nom',nom)]
-    db.ReqInsert("payeurs", lstDonnees=listeDonnees,mess="UTILS_Reglements.SetPayeur")
+    db.ReqInsert("payeurs", lstDonnees=lstDonnees,mess="UTILS_Reglements.SetPayeur")
     ID = db.newID
     return ID
 
 def GetReglements(db,IDdepot,**kwd):
-    listeDonnees = []
+    lstDonnees = []
     #            IDreglement,date,IDfamille,designation,payeur,labelmode,numero,libelle,montant,IDpiece in recordset
     lstChamps = ['reglements.IDreglement', 'reglements.date', 'reglements.IDcompte_payeur', 'familles.adresse_intitule',
                  'payeurs.nom', 'modes_reglements.label', 'reglements.numero_piece', 'reglements.observations', 
@@ -348,8 +348,8 @@ def GetReglements(db,IDdepot,**kwd):
         # la reprise force la non création car déjà potentiellement fait. IDpiece contient l'ID de la prestation créée
         lstDonneesTrack = [IDreglement, date, IDfamille, designation,payeur, labelmode, numero, "", "", libelle,
                            montant,creer,IDpiece,prestcpta,compta]
-        listeDonnees.append(lstDonneesTrack)
-    return listeDonnees
+        lstDonnees.append(lstDonneesTrack)
+    return lstDonnees
 
 def GetNewIDreglement(db,lstID,**kwd):
     # Recherche le prochain ID reglement après ceux de la base et éventuellement déjà dans la liste ID préaffectés
@@ -410,7 +410,7 @@ def ValideLigne(db,track):
 
 def SetPrestation(track,db):
     # --- Sauvegarde de la prestation ---
-    listeDonnees = [
+    lstDonnees = [
         ("date", xformat.DatetimeToStr(datetime.date.today(),iso=True)),
         ("categorie", track.nature),
         ("label", track.libelle),
@@ -423,19 +423,19 @@ def SetPrestation(track,db):
     ]
 
     if (not hasattr(track,"IDpiece")) or (not track.IDpiece):
-        ret = db.ReqInsert("prestations",lstDonnees= listeDonnees, mess="UTILS_Reglements.SetPrestation",)
+        ret = db.ReqInsert("prestations",lstDonnees= lstDonnees, mess="UTILS_Reglements.SetPrestation",)
         IDcategorie = 6
         categorie = ("Saisie")
         if ret == 'ok':
            track.IDpiece = db.newID
     else:
-        ret = db.ReqMAJ("prestations", listeDonnees, "IDprestation", track.IDpiece)
+        ret = db.ReqMAJ("prestations", lstDonnees, "IDprestation", track.IDpiece)
         IDcategorie = 7
         categorie = "Modification"
 
     # mise à jour du règlement sur son numéro de pièce (ID de la prestation
-    listeDonnees = [("IDpiece",track.IDpiece)]
-    ret = db.ReqMAJ("reglements", listeDonnees, "IDreglement", track.IDreglement)
+    lstDonnees = [("IDpiece",track.IDpiece)]
+    ret = db.ReqMAJ("reglements", lstDonnees, "IDreglement", track.IDreglement)
 
     # --- Mémorise l'action dans l'historique ---
     if ret == 'ok':
@@ -458,8 +458,8 @@ def DelPrestation(track,db):
     # --- Mémorise l'action dans l'historique ---
     if ret == 'ok':
         # mise à jour du règlement sur son numéro de pièce (ID de la prestation
-        listeDonnees = [("IDpiece", None)]
-        db.ReqMAJ("reglements", listeDonnees, "IDreglement", track.IDreglement)
+        lstDonnees = [("IDpiece", None)]
+        db.ReqMAJ("reglements", lstDonnees, "IDreglement", track.IDreglement)
 
         montant = u"%.2f %s" % (track.montant, SYMBOLE)
         if not track.IDpiece: IDprest = 0
@@ -540,7 +540,7 @@ def SetReglement(dlg,track,db):
     if not IDpayeur:
         IDpayeur = SetPayeur(db,track.IDfamille,track.payeur)
 
-    listeDonnees = [
+    lstDonnees = [
         ("IDreglement", track.IDreglement),
         ("IDcompte_payeur", track.IDfamille),
         ("date", xformat.DatetimeToStr(track.date,iso=True)),
@@ -554,21 +554,21 @@ def SetReglement(dlg,track,db):
         ("IDutilisateur", dlg.IDutilisateur),
     ]
     if dlg.withDepot:
-        listeDonnees.append(("IDdepot",dlg.IDdepot))
+        lstDonnees.append(("IDdepot",dlg.IDdepot))
     attente = 0
     if hasattr(track,'differe'):
-        listeDonnees.append(("date_differe", xformat.DatetimeToStr(track.differe,iso=True)))
+        lstDonnees.append(("date_differe", xformat.DatetimeToStr(track.differe,iso=True)))
         if len(track.differe) > 0:
             attente = 1
-    listeDonnees.append(("encaissement_attente",attente))
+    lstDonnees.append(("encaissement_attente",attente))
 
     if track.IDreglement in dlg.pnlOlv.lstNewReglements:
         nouveauReglement = True
-        ret = db.ReqInsert("reglements",lstDonnees= listeDonnees, mess="UTILS_Reglements.SetReglement")
+        ret = db.ReqInsert("reglements",lstDonnees= lstDonnees, mess="UTILS_Reglements.SetReglement")
         dlg.pnlOlv.lstNewReglements.remove(track.IDreglement)
     else:
         nouveauReglement = False
-        ret = db.ReqMAJ("reglements", listeDonnees, "IDreglement", track.IDreglement)
+        ret = db.ReqMAJ("reglements", lstDonnees, "IDreglement", track.IDreglement)
 
     # --- Mémorise l'action dans l'historique ---
     if ret == 'ok':
@@ -622,13 +622,13 @@ class Article(object):
         lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes)
         lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
         return   {
-                    'listeColonnes': lstColonnes,
-                    'listeChamps':lstChamps,
+                    'lstColonnes': lstColonnes,
+                    'lstChamps':lstChamps,
                     'listeNomsColonnes':lstNomsColonnes,
                     'listeCodesColonnes':lstCodesColonnes,
                     'getDonnees': self.GetArticles,
                     'dicBandeau': dicBandeau,
-                    'colonneTri': 2,
+                    'sortColumnIndex': 2,
                     'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
                     'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                     }
@@ -663,8 +663,8 @@ class Article(object):
                             OR pctCodeComptable LIKE '%%%s%%'
                             OR pctCompte LIKE '%%%s%%')"""%(filtre,filtre,filtre)
 
-        lstChamps = dicOlv['listeChamps']
-        lstCodesColonnes = [x.valueGetter for x in dicOlv['listeColonnes']]
+        lstChamps = dicOlv['lstChamps']
+        lstCodesColonnes = [x.valueGetter for x in dicOlv['lstColonnes']]
         req = """SELECT %s
                 FROM matPlanComptable
                 WHERE %s
@@ -699,7 +699,7 @@ class Article(object):
                 ligne.append(dic[code])
             lstDonnees.append(ligne)
         dicOlv =  dicOlv
-        dicOlv['listeDonnees']=lstDonnees
+        dicOlv['lstDonnees']=lstDonnees
         return lstDonnees
 
     def GetArticle(self,db=None):
@@ -715,13 +715,13 @@ class Article(object):
 def SetDepot(dlg,db):
     # cas d'un nouveau depot à créer, retourne l'IDdepot
     IDdepot = None
-    listeDonnees = [
+    lstDonnees = [
         ("date", xformat.DatetimeToStr(datetime.date.today(), iso=True)),
         ("nom", "Saisie règlements via Noelite"),
         ("IDcompte", dlg.GetIDbanque()),
     ]
     if not hasattr(dlg, "IDdepot"):
-        ret = db.ReqInsert("depots", lstDonnees=listeDonnees, mess="UTILS_Reglements.SetDepot", )
+        ret = db.ReqInsert("depots", lstDonnees=lstDonnees, mess="UTILS_Reglements.SetDepot", )
         if ret == 'ok':
             IDdepot = db.newID
 

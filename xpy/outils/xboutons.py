@@ -8,23 +8,27 @@
 
 import wx
 
-def GetAddManyBtns(pnl,ldParamsBtns,**kwds):
-    # décompactage des paramètres, prouduit une liste pour Sizer.AddMany
+def GetAddManyBtns(pnl,lstBtns,**kwds):
+    # Trois possibles: déjàBouton, listeParams, dicParams.  Tous produisent une liste pour Sizer.AddMany
     marge = kwds.pop('marge',5)
     lstWxBtns = []
     
-    for dicParam in ldParamsBtns:
+    for itemBtn in lstBtns:
         # gestion par série :(code, ID, image ou texte, texteToolTip), image ou texte mais pas les deux!
         try:
-            # gestgion de l'ancien format par tuples, le label pouvait être remplacé par une image
-            if isinstance(dicParam, (tuple, list)):
-                (name, ID, label, tooltip) = dicParam
+            if isinstance(itemBtn,Bouton):
+                bouton = itemBtn
+            # gestion de l'ancien format par tuples, le label pouvait être remplacé par une image
+            elif isinstance(itemBtn, (tuple, list)):
+                (name, ID, label, tooltip) = itemBtn
                 if isinstance(label,wx.Bitmap):
                     image=label
                     label=''
                 else: image=None
-                dicParam = {'name':name,'ID':ID, 'label':label, 'help':tooltip,'image':image}
-            bouton= Bouton(pnl,**dicParam)
+                itemBtn = {'name':name,'ID':ID, 'label':label, 'help':tooltip,'image':image}
+                bouton= Bouton(pnl,**itemBtn)
+            elif isinstance(itemBtn,dict):
+                bouton= Bouton(pnl,**itemBtn)
         except Exception as err:
             bouton = wx.Button(pnl, wx.ID_ANY, 'Erreur\nparam!')
             print("Construction bouton: ",err)
@@ -50,8 +54,8 @@ def BTN_esc(parent,**kwds):
     # valeurs par défaut modifiables par kwds
     kw = {  'image': wx.ART_DELETE,
             'help': "Cliquez ici pour abandonner et fermer la fenêtre",
-            'label': "Abandon",
-            'onBtn': 'OnBtnEsc',}
+            'label': "Abandonner",
+            'onBtn': 'OnEsc',}
     kw.update(kwds)
     return Bouton(parent,**kw)
 
@@ -60,7 +64,6 @@ def BTN_fermer(parent,**kwds):
     kw = {  'image': 'xpy/Images/32x32/Valider.png',
             'help': "Cliquez ici pour enregistrer et fermer la fenêtre",
             'label': "Fermer",
-            'sizeFont':14,
             'onBtn': 'OnFermer',}
     kw.update(kwds)
     return Bouton(parent,**kw)
@@ -157,7 +160,10 @@ class Bouton(wx.Button):
         # implémente les fonctions bind transmises, soit par le pointeur soit par eval du texte
         if onBtn:
             if isinstance(onBtn, str):
-                fonction = eval("parent.%s"%onBtn)
+                try:
+                    fonction = eval("parent.%s"%onBtn)
+                except Exception:
+                    fonction = eval("parent.parent.%s"%onBtn)
             else:
                 fonction = onBtn
             self.Bind(wx.EVT_BUTTON, fonction)
@@ -177,9 +183,6 @@ class xFrame(wx.Frame):
         sizer_1 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_1.Add((10,10),1,0,0)
         sizer_1.AddMany(lstBtns)
-        for param in lstParamsBtns:
-            btn = Bouton(self,**param)
-            sizer_1.Add(btn,0,wx.ALL,5)
         self.SetSizer(sizer_1)
         self.CentreOnScreen()
 
@@ -194,15 +197,18 @@ class xFrame(wx.Frame):
 
     # description des boutons en pied d'écran et de leurs actions
     def GetLstParamsBtns(self):
-            return  [
-                        {'name': 'btnImp', 'label': "Importer\nfichier",
-                            'help': "Cliquez ici pour lancer l'importation du fichier de km consommés",
-                            'size': (120, 35), 'image': wx.ART_UNDO,'onBtn':self.OnAction1},
-                        {'name': 'btnExp', 'label': "Exporter\nfichier",
-                            'help': "Cliquez ici pour lancer l'exportation du fichier selon les paramètres que vous avez défini",
-                            'size': (120, 35), 'image': wx.ART_REDO,'onBtn':self.OnAction2},
-                        {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour fermer la fenêtre",
-                            'size':(120,35),'image':"../Images/32x32/Quitter.png",'onBtn':self.OnFermer}
+            return  [ BTN_fermer(self,image="../Images/32x32/Annuler.png"),
+                    ('BtnPrec2',-1, "Ecran\nprécédent", "Retour à l'écran précédent next"),
+                    ('BtnOK', -1, wx.Bitmap("../Images/32x32/Configuration.png", wx.BITMAP_TYPE_ANY),"Cliquez ici pour fermer la fenêtre"),
+
+                    {'name': 'btnImp', 'label': "Importer\nfichier",
+                        'help': "Cliquez ici pour lancer l'importation du fichier de km consommés",
+                        'size': (120, 35), 'image': wx.ART_UNDO,'onBtn':self.OnAction1},
+                    {'name': 'btnExp', 'label': "Exporter\nfichier",
+                        'help': "Cliquez ici pour lancer l'exportation du fichier selon les paramètres que vous avez défini",
+                        'size': (120, 35), 'image': wx.ART_REDO,'onBtn':self.OnAction2},
+                    {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour fermer la fenêtre",
+                        'size':(120,35),'image':"../Images/32x32/Quitter.png",'onBtn':self.OnFermer}
                     ]
         
 

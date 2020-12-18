@@ -54,11 +54,11 @@ class ListView(FastObjectListView):
         LEFT JOIN individus ON secteurs.IDsecteur = individus.IDsecteur
         GROUP BY secteurs.IDsecteur;"""
         db.ExecuterReq(req)
-        listeDonnees = db.ResultatReq()
+        lstDonnees = db.ResultatReq()
         db.Close()
 
         listeListeView = []
-        for item in listeDonnees :
+        for item in lstDonnees :
             valide = True
             if listeID != None :
                 if item[0] not in listeID :
@@ -192,8 +192,8 @@ class ListView(FastObjectListView):
                 return
             else:
                 DB = xdb.DB()
-                listeDonnees = [ ("nom", nom ), ]
-                IDsecteur = DB.ReqInsert("secteurs", listeDonnees)
+                lstDonnees = [ ("nom", nom ), ]
+                IDsecteur = DB.ReqInsert("secteurs", lstDonnees)
                 DB.Close()
                 self.MAJ(IDsecteur)
         dlg.Destroy()
@@ -217,8 +217,8 @@ class ListView(FastObjectListView):
                 return
             else:
                 DB = xdb.DB()
-                listeDonnees = [ ("nom", nom ), ]
-                DB.ReqMAJ("secteurs", listeDonnees, "IDsecteur", IDsecteur)
+                lstDonnees = [ ("nom", nom ), ]
+                DB.ReqMAJ("secteurs", lstDonnees, "IDsecteur", IDsecteur)
                 DB.Close()
                 self.MAJ(IDsecteur)
         dlg.Destroy()

@@ -44,12 +44,12 @@ class ListView(FastObjectListView):
     """
     Lors de l'instanciation de cette classe vous pouvez y passer plusieurs parametres :
 
-    listeColonnes : censé être une liste d'objets ColumndeFn
-    listeDonnees : est alimenté par la fonction getDonnees
+    lstColonnes : censé être une liste d'objets ColumndeFn
+    lstDonnees : est alimenté par la fonction getDonnees
 
     msgIfEmpty : une chaine de caractères à envoyer si le tableau est vide
 
-    colonneTri : Permet d'indiquer le numéro de la colonne selon laquelle on veut trier
+    sortColumnIndex : Permet d'indiquer le numéro de la colonne selon laquelle on veut trier
     sensTri : True ou False indique le sens de tri
 
     exportExcel : True par défaut, False permet d'enlever l'option 'Exporter au format Excel'
@@ -74,9 +74,9 @@ class ListView(FastObjectListView):
         self.filtre = ""
         self.dicOlv = kwds.copy()
         style = kwds.pop("style", wx.LC_SINGLE_SEL)
-        self.listeColonnes = kwds.pop("listeColonnes", [])
+        self.lstColonnes = kwds.pop("lstColonnes", [])
         self.msgIfEmpty = kwds.pop("msgIfEmpty", "Tableau vide")
-        self.colonneTri = kwds.pop("colonneTri", None)
+        self.sortColumnIndex = kwds.pop("sortColumnIndex", None)
         self.sensTri = kwds.pop("sensTri", True)
         self.menuPersonnel = kwds.pop("menuPersonnel", None)
         self.getDonnees = kwds.pop("getDonnees", None)
@@ -106,21 +106,21 @@ class ListView(FastObjectListView):
 
     def formerCodeColonnes(self):
         codeColonnes = list()
-        for colonne in self.listeColonnes:
+        for colonne in self.lstColonnes:
             code = colonne.valueGetter
             codeColonnes.append(code)
         return codeColonnes
 
     def formerNomsColonnes(self):
         nomColonnes = list()
-        for colonne in self.listeColonnes:
+        for colonne in self.lstColonnes:
             nom = colonne.title
             nomColonnes.append(nom)
         return nomColonnes
 
     def formerSetterValues(self):
         setterValues = list()
-        for colonne in self.listeColonnes:
+        for colonne in self.lstColonnes:
             fmt = colonne.stringConverter
             tip = None
             if colonne.valueSetter != None:
@@ -138,12 +138,12 @@ class ListView(FastObjectListView):
 
     def formerTracks(self,**kwd):
         kwd['dicOlv'] = self.dicOlv
-        self.listeDonnees = self.getDonnees(**kwd)
+        self.lstDonnees = self.getDonnees(**kwd)
 
         tracks = list()
-        if self.listeDonnees is None:
+        if self.lstDonnees is None:
             return tracks
-        for ligneDonnees in self.listeDonnees:
+        for ligneDonnees in self.lstDonnees:
             tracks.append(TrackGeneral(donnees=ligneDonnees,codesColonnes=self.lstCodesColonnes,
                                             nomsColonnes=self.lstNomsColonnes,setterValues=self.lstSetterValues))
         return tracks
@@ -154,16 +154,16 @@ class ListView(FastObjectListView):
         self.evenRowsBackColor = wx.Colour(255, 255, 255)
         self.useExpansionColumn = True
         # On définit les colonnes0
-        self.SetColumns(self.listeColonnes)
+        self.SetColumns(self.lstColonnes)
         # On définit le message en cas de tableau vide
         self.SetEmptyListMsg(self.msgIfEmpty)
         self.SetEmptyListMsgFont(wx.FFont(11, wx.DEFAULT))
         # Si la colonne à trier n'est pas précisée on trie selon la première par défaut
         if self.ColumnCount > 1:
-            if self.colonneTri == None:
+            if self.sortColumnIndex == None:
                 self.SortBy(1, self.sensTri)
             else:
-                self.SortBy(self.colonneTri, self.sensTri)
+                self.SortBy(self.sortColumnIndex, self.sensTri)
 
     def InitModel(self,**kwd):
         #kwd peut contenir  filtretxt et lstfiltres
@@ -312,9 +312,9 @@ class PNL_tableau(wx.Panel):
         #récup des seules clés possibles pour dicOLV
         lstParamsOlv = ['id',
                         'style',
-                        'listeColonnes',
-                        'listeChamps',
-                        'colonneTri',
+                        'lstColonnes',
+                        'lstChamps',
+                        'sortColumnIndex',
                         'getDonnees',
                         'getDonneesObj',
                         'msgIfEmpty',
@@ -493,7 +493,7 @@ lstActions = [('Action1',wx.ID_COPY,'Choix un',"Cliquez pour l'action 1"),
 # params des actions ou boutons: name de l'objet, fonction ou texte à passer par eval()
 dicOnClick = {'Action1': lambda evt: wx.MessageBox('ceci active la fonction action1'),
                 'Action2': 'self.parent.Close()',}
-dicOlv = {'listeColonnes':liste_Colonnes,
+dicOlv = {'lstColonnes':liste_Colonnes,
                 'getDonnees':GetDonnees,
                 'recherche':True,
                 'msgIfEmpty':"Aucune donnée ne correspond à votre recherche",

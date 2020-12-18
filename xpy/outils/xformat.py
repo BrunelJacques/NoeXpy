@@ -59,6 +59,9 @@ def DefColonnes(lstNoms,lstCodes,lstValDef,lstLargeur):
     for colonne in lstNoms:
         if isinstance(lstValDef[ix],(str,wx.DateTime,datetime.date)):
             posit = 'left'
+        elif isinstance(lstValDef[ix],bool):
+            #posit = 'centre'
+            posit = 'left'
         else: posit = 'right'
         # ajoute un converter à partir de la valeur par défaut
         if isinstance(lstValDef[ix], (float,)):
@@ -66,6 +69,13 @@ def DefColonnes(lstNoms,lstCodes,lstValDef,lstLargeur):
                 stringConverter = FmtPercent
             else:
                 stringConverter = FmtDecimal
+        elif isinstance(lstValDef[ix], bool):
+            if lstValDef[ix] == False:
+                # le false est à blanc True:'X'
+                stringConverter = FmtBoolX
+            else:
+                # le false est 'N' le True 'O'
+                stringConverter = FmtBool
         elif isinstance(lstValDef[ix], int):
             if '%' in colonne:
                 stringConverter = FmtPercent
@@ -73,6 +83,9 @@ def DefColonnes(lstNoms,lstCodes,lstValDef,lstLargeur):
                 stringConverter = FmtIntNoSpce
         elif isinstance(lstValDef[ix], (datetime.date,wx.DateTime)):
             stringConverter = FmtDate
+        elif lstCodes[ix][:3] == 'tel' and isinstance(lstValDef[ix],(str)):
+            # téléphone repéré par tel dans le début du code
+            stringConverter = FmtTelephone
         else: stringConverter = None
         if lstLargeur[ix] in ('',None,'None',-1):
             lstLargeur[ix] = -1
@@ -85,7 +98,7 @@ def DefColonnes(lstNoms,lstCodes,lstValDef,lstLargeur):
         ix += 1
     return lstColonnes
 
-def ValeursDefaut(lstNomsColonnes,lstTypes,wxDates=True):
+def ValeursDefaut(lstNomsColonnes,lstTypes,wxDates=False):
     # Détermine des valeurs par défaut selon le type des variables, précision pour les dates wx ou datetime
     # la valeur par défaut détermine le cellEditor
     lstValDef = [0,]
@@ -94,6 +107,7 @@ def ValeursDefaut(lstNomsColonnes,lstTypes,wxDates=True):
         if tip[:3] == 'int': lstValDef.append(0)
         elif tip[:10] == 'tinyint(1)': lstValDef.append(False)
         elif tip[:5] == 'float': lstValDef.append(0.0)
+        elif tip[:4] == 'bool': lstValDef.append(False)
         elif tip[:4] == 'date':
             if wxDates:
                 lstValDef.append(wx.DateTime.Today())
@@ -378,11 +392,47 @@ def FmtDate(date):
         return ''
     return DateSqlToFr(strdate)
 
-def FmtCheck(value):
+def FmtTelephone(texte):
+    # formatage du numéro de téléphone
+    if texte == None: return ''
+    if not isinstance(texte,str):
+        texte = str(texte)
+    if texte[:2] == '00':
+        texte = '+'+texte[2:]
+
+    # on accepte deux tirets pour les numéros étrangers, sinon c'est abusif
+    nbtir = texte.count('-')
+    if nbtir >2: texte= texte.replace('-',' ')
+
+    texte = texte.replace('.',' ')
+    nbspc = texte.count(' ')
+    # cas d'une saisie déjà formatée, on la laisse
+    if nbspc > 2 : return texte
+
+    # si moins de trois espaces on les enlève pour refaire
+    texte = texte.replace(' ','')
+    texte += 'xxx' # force la dernière occurence
+    if len(texte) == 10+3 and texte[0] != '+':
+        # cas français simple
+        ntel = ' '.join([i + j for i, j in zip(texte[::2], texte[1::2])])
+    else:
+        # autres cas découpés par 3
+        ntel = ' '.join([i + j + k for i, j, k in zip(texte[::3], texte[1::3],texte[2::3])])
+    ntel = ntel.replace('( ','(')
+    ntel = ntel.replace(' )',')')
+    ntel = ntel.replace('x','') # retire le forçage
+    return ntel.strip()
+
+def FmtBool(value):
     if value == False:
         return 'N'
     if value == True:
         return 'O'
+    return ''
+
+def FmtBoolX(value):
+    if value == True:
+        return 'X'
     return ''
 
 def FmtMontant(montant,prec=2,lg=None):
@@ -601,10 +651,9 @@ if __name__ == '__main__':
     print(FmtDate('01022019'))
     print(SupprimeAccents("ÊLève!"))
     """
-    dte= '2001-12-20'
-    #dte = "09/12/2020"
-    dtfin = FinDeMois(dte)
-    print(dtfin,type(dtfin))
+    ret = FmtTelephone('0494149367')
+
+    print(ret +'|')
 
 
 

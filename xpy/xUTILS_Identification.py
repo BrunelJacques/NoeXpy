@@ -39,10 +39,10 @@ def GetListeUsers(db=None):
     req = """SELECT IDdroit, IDutilisateur, IDmodele, categorie, action, etat
     FROM droits;"""
     DB.ExecuterReq(req)
-    listeDonnees = DB.ResultatReq()
+    lstDonnees = DB.ResultatReq()
     dictDroitsUtilisateurs = {}
     dictDroitsModeles = {}
-    for IDdroit, IDutilisateur, IDmodele, categorie, action, etat in listeDonnees:
+    for IDdroit, IDutilisateur, IDmodele, categorie, action, etat in lstDonnees:
         key = (categorie, action)
         if IDutilisateur != None:
             if not IDutilisateur in dictDroitsUtilisateurs:
@@ -58,10 +58,10 @@ def GetListeUsers(db=None):
     FROM utilisateurs
     WHERE actif=1;"""
     DB.ExecuterReq(req)
-    listeDonnees = DB.ResultatReq()
+    lstDonnees = DB.ResultatReq()
     listeUtilisateurs = []
 
-    for IDutilisateur, sexe, nom, prenom, mdp, profil, actif in listeDonnees:
+    for IDutilisateur, sexe, nom, prenom, mdp, profil, actif in lstDonnees:
         droits = None
         if profil.startswith("administrateur"):
             droits = None

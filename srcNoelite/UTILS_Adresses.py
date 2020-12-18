@@ -235,16 +235,16 @@ def GetOnePays(filtre=""):
         db.ExecuterReq(req,mess="UTILS_Adresses_saisie.GetOnePays")
         return db.ResultatReq()
 
-    listeDonnees = Requete(condition)
-    if len(listeDonnees) == 1:
-        pays =  listeDonnees[0][0]
+    lstDonnees = Requete(condition)
+    if len(lstDonnees) == 1:
+        pays =  lstDonnees[0][0]
     else:
         pays = ""
-        if len(listeDonnees) == 0:
+        if len(lstDonnees) == 0:
             # le pays saisi n'existe pas on propose tout
-            listeDonnees = Requete("")
+            lstDonnees = Requete("")
         # Choisir dans la liste
-        dlg = xcl.DialogAffiche(lstDonnees=listeDonnees, titre="Précisez le pays",
+        dlg = xcl.DialogAffiche(lstDonnees=lstDonnees, titre="Précisez le pays",
                                       intro="Si le pays n'existe pas passer par la gestion des pays postaux")
         ret = dlg.ShowModal()
         if ret == wx.ID_OK:
@@ -254,7 +254,7 @@ def GetOnePays(filtre=""):
     return pays
 
     listeListeView = []
-    for item in listeDonnees :
+    for item in lstDonnees :
         valide = True
         if listeID != None :
             if item[0] not in listeID :
@@ -475,16 +475,23 @@ def SetDBoldAdresse(DB,IDindividu=None,adresse = "\n\n\n\n\n\n\n"):
 
 def Validation(adresse):
     # controle de cohérence de l'adresse, retourne 'ok' ou message des anomalies
-    mess = "ANOMALIES:\n"
+    mess = ""
     if len(adresse[2].strip())==0 : mess += "\nUne adresse doit comporter à minima une rue."
-    if len(adresse[4].strip())!=5 and len(adresse[6].strip())==0 : mess += "\nLe code postal à 5 caractères en France."
+    if len(adresse[4].strip())!=5 and len(adresse[6].strip())==0 :
+            mess += "\nLe code postal à 5 caractères en France. Ou à blanc pour parti. "
     if len(adresse[5].strip())==0 :
         mess += "\nUne adresse doit comporter à minima une ville."
     else:
         ret = VerifieVille(adresse[4],adresse[5],adresse[6])
         if ret != "ok": mess += "\n%s"%ret
-    if mess != "ANOMALIES:\n":
-        return mess
+    # adresse sans code postal = acceptée
+    if len(adresse[4].strip())==0:
+        mess = "L'absence de code postal signifie que le client est parti\n"
+        mess += "Mettez le code postal devant la ville (pour les éventuelles factures)"
+        wx.MessageBox(mess)
+        mess = ""
+    if mess != "":
+        return "ANOMALIES:\n" + mess
     return wx.ID_OK
 
 def TransposeAdresse(adresse=[]):

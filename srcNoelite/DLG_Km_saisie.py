@@ -558,7 +558,7 @@ class Dialog(xusp.DLG_vide):
                     del donExist[-1]
                     del self.ctrlOlv.modelObjects[-1]
             donNew = ComposeFuncImp(self,entete,donnees)
-            self.ctrlOlv.listeDonnees = donExist + donNew
+            self.ctrlOlv.lstDonnees = donExist + donNew
             # ajout de la ligne dans olv
             self.ctrlOlv.AddTracks(donNew)
             # test de validité pour changer la couleur de la ligne

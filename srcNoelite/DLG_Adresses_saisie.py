@@ -96,8 +96,8 @@ class PnlAdresse(wx.Panel):
             ['batiment',u"Bâtiment, Résidence", u"Un numéro une lettre doivent être précédés de BATIMENT, zone optionnelle"],
             ['rue',     u"No et nom de rue",   u"Aucun caractère spécial ou ponctuation n'est accepté", u"Obligatoire"],
             ['bp',      u"BP, CS, TSA, lieu dit",     u"Uniquement pour préciser une distribution spéciale ou un lieu dit"],
-            ['cp', u"Code Postal", u"Saisir le début du code postal", u"Obligatoire"],
-            ['ville', u"Ville", u"Choix de la ville ou gestion par '...'", u"Obligatoire",["Choisir..."],
+            ['cp', u"Code Postal", u"Saisir le début du code postal ou a blanc pour client parti", u""],
+            ['ville', u"Ville", u"Choix de la ville ou gestion par '...'", u"Obligatoire",["Choisir ou saisir..."],
             u"Gestion des villes et des codes postaux",self.OnClicVille],
             ['pays', u"Pays étranger",
                     u"Seulement pour l'étranger, à blanc pour le pays national\nGestion des pays par les villes", "",],
@@ -380,17 +380,17 @@ class DlgAdresses_saisie(wx.Dialog):
         self.lstCtrl = self.panelAdresse.lstCtrl
         self.lstNomsChamps = self.panelAdresse.lstNomsChamps
 
+        if self.mode == 'familles':
+            self.panelAdresse.SetCorrespondant(self.dicCorrespondant)
         self.lstAdresse, self.IDindividuLu,(nom,prenom) = nua.GetDBadresse(self.IDindividu,retNom=True)
         if self.IDindividu == self.IDindividuLu:
             self.panelAdresse.SetAdresse(self.lstAdresse)
-            if self.mode == 'familles':
-                self.panelAdresse.SetCorrespondant(self.dicCorrespondant)
         elif not nom or nom == "":
-            mess = "Cette adresse est perdue,\n\nvous pouvez affecter un nouveau correspondant"
-            mess += "\nou voulez-vous lui créer une adresse personnelle?"
+            mess = "Cette adresse est perdue,\n\nVoulez-vous créer une nouvelle adresse?"
             ret = wx.MessageBox(mess, "Pas d'adresse personnelle", style=wx.YES_NO | wx.CENTER)
-            if ret != wx.YES:
-                self.Destroy()
+            if ret == wx.YES:
+                self.panelAdresse.SetAdresse(self.lstAdresse)
+            else: self.Destroy()
         else:
             mess = "Cette personne avait l'adresse de %s %s\n\nVoulez-vous lui créer une adresse personnelle?"%(prenom,nom)
             mess += "\nSinon changez l'adresse de l'individu %s"%self.IDindividuLu

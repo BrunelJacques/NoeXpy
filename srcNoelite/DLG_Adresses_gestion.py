@@ -8,29 +8,29 @@
 
 NOM_MODULE = "DLG_Adresses_gestion"
 ACTION = "Gestion\nadresse"
+ACTION2 = "Tél. /\nmails"
 TITRE = "Choisissez une ligne !"
 INTRO = "Double clic pour lancer la gestion de l'adresse"
 MINSIZE = (1200,650)
 WCODE = 150
 WLIBELLE = 100
-COLONNETRI = 2
 LIMITSQL =100
 
 import wx
 import datetime
-import xpy.outils.xbandeau      as xbd
 import xpy.xGestion_TableauRecherche     as xgtr
 import xpy.xUTILS_DB           as xdb
 import srcNoelite.UTILS_Utilisateurs  as nuu
 import srcNoelite.DLG_Adresses_saisie   as nsa
-import srcNoelite.UTILS_Adresses as nua
-from xpy.outils         import xformat
+import srcNoelite.UTILS_Adresses        as nua
+import srcNoelite.DLG_AdrMelTel_saisie  as nsc
+from xpy.outils import xformat, xbandeau, xboutons
 
 def dicOlvIndividus():
     # appel des données à afficher
     lstChamps = ["0","IDindividu", "nom", "prenom","date_naiss", "adresse_auto",
                 "rue_resid", "cp_resid", "ville_resid","tel_domicile", "tel_mobile", "mail"]
-    lstNomsColonnes = ["null","Individu", "Nom", "Prenom","Naissance","adresse",
+    lstNomsColonnes = ["null","Individu", "Nom", "Prenom","Naissance","chez",
                         "rue", "cp", "ville","tel domicile", "tel mobile", "mail"]
     lstTypes = ["INTEGER","INTEGER","VARCHAR(100)","VARCHAR(100)","DATE","INTEGER",
                 "VARCHAR(100)","VARCHAR(8)","VARCHAR(100)","VARCHAR(11)","VARCHAR(11)","VARCHAR(40)"]
@@ -41,10 +41,10 @@ def dicOlvIndividus():
     # matrice OLV
     lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
     dicOlv =    {
-                'listeColonnes': lstColonnes,
-                'listeChamps': lstChamps,
+                'lstColonnes': lstColonnes,
+                'lstChamps': lstChamps,
                 'checkColonne': False,
-                'colonneTri': COLONNETRI,
+                'sortColumnIndex': 2,
                 'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 'dictColFooter': {"nom": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},}
@@ -68,10 +68,10 @@ def dicOlvFamilles():
     # matrice OLV
     lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
     dicOlv =    {
-                'listeColonnes': lstColonnes,
-                'listeChamps': lstChamps,
+                'lstColonnes': lstColonnes,
+                'lstChamps': lstChamps,
                 'checkColonne': False,
-                'colonneTri': COLONNETRI,
+                'sortColumnIndex': 4,
                 'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 'dictColFooter': {"nom": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},}
@@ -98,23 +98,54 @@ class Pnl_tableau(xgtr.PNL_tableau):
         dicOlv['autoSizer'] = False
         xgtr.PNL_tableau.__init__(self,parent,dicOlv)
         # Boutons
-        bmpok = wx.Bitmap("xpy/Images/32x32/Action.png")
-        bouton_ok = wx.Button(self, id = wx.ID_APPLY,label=(ACTION))
-        bouton_ok.SetBitmap(bmpok)
-        self.bouton_ok = bouton_ok
+        bmpcoords = wx.Bitmap("xpy/Images/32x32/Mobile.png")
+        helpcoords = "Ouvre une nouvelle fenêtre pour gérer l'adresse"
+        bouton_coords = xboutons.Bouton(self,label=ACTION2,image=bmpcoords,help=helpcoords,onBtn=self.OnCoord)
+
+        bmpok = wx.Bitmap("xpy/Images/32x32/Boite.png")
+        helpok = "Ouvre une nouvelle fenêtre pour gérer l'adresse"
+        bouton_ok = xboutons.Bouton(self,label=ACTION,image=bmpok,help=helpok,onBtn=self.OnDblClick)
+
         bmpabort = wx.Bitmap("xpy/Images/32x32/Quitter.png")
         bouton_fermer = wx.Button(self, id = wx.ID_CANCEL,label=(u"Quitter"))
         bouton_fermer.SetBitmap(bmpabort)
         bouton_fermer.SetToolTip(u"Cliquez ici pour fermer")
         self.bouton_fermer = bouton_fermer
-        self.lstBtns = [bouton_ok,bouton_fermer]
+        self.lstBtns = [bouton_coords,bouton_ok,bouton_fermer]
 
         # Binds
-        self.Bind(wx.EVT_BUTTON, self.OnDblClick, bouton_ok)
         self.Bind(wx.EVT_BUTTON, self.OnDblClicFermer, bouton_fermer)
         #self.ctrlOlv.Bind(wx.EVT_LIST_ITEM_ACTIVATED,self.OnDblClic)
         self.ProprietesOlv()
         self.Sizer()
+
+    def OnCoord(self,event):
+        self.choix = self.ctrlOlv.GetSelectedObject()
+        if self.choix == None:
+            dlg = wx.MessageDialog(self, (u"Pas de sélection faite !\nIl faut choisir ou cliquer sur annuler"), (u"Accord Impossible"), wx.OK | wx.ICON_EXCLAMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+        else:
+            if nuu.VerificationDroitsUtilisateurActuel("individus_coordonnees", "modifier") == False: return
+            if self.parent.mode == 'familles':
+                ID = self.choix.famille
+                nom = "famille"
+                prenom = self.choix.intitulefamille
+            else:
+                ID = self.choix.individu
+                nom = self.choix.nom
+                prenom = self.choix.prenom
+            dlg2 = nsc.DlgAdrMelTel(ID,mode=self.parent.mode, titre=u"Adresse de %d - %s %s"%(ID,nom,prenom))
+            ret = dlg2.ShowModal()
+            if ret == wx.OK and self.parent.mode == 'individus':
+                tel_domicile, tel_mobile, mail = dlg2.GetRetourInd()
+                self.choix.tel_domicile = tel_domicile
+                self.choix.tel_mobile = tel_mobile
+                self.choix.mail = mail
+                self.ctrlOlv.SelectObject(self.choix)
+            self.ctrlOlv.SelectObject(self.choix)
+            dlg2.Destroy()
+            event.Skip()
 
     def OnDblClick(self,event):
         self.choix = self.ctrlOlv.GetSelectedObject()
@@ -137,11 +168,11 @@ class Pnl_tableau(xgtr.PNL_tableau):
             if ret == wx.ID_OK:
                 lstAdresse = dlg2.lstAdresse
                 rue, cp, ville = nua.LstAdresseToChamps(lstAdresse)
-                dlg2.Destroy()
                 self.choix.rue = rue
                 self.choix.ville = ville
                 self.choix.cp = cp
                 self.ctrlOlv.SelectObject(self.choix)
+            dlg2.Destroy()
             event.Skip()
 
     def OnDblClicFermer(self, event):
@@ -161,7 +192,7 @@ class Dialog(wx.Dialog):
         self.choix= None
 
         # Bandeau
-        self.ctrl_bandeau = xbd.Bandeau(self, titre=titre, texte=intro,  hauteur=18, nomImage="xpy/Images/32x32/Matth.png")
+        self.ctrl_bandeau = xbandeau.Bandeau(self, titre=titre, texte=intro,  hauteur=18, nomImage="xpy/Images/32x32/Matth.png")
 
         # composition des objets
         if self.mode == 'familles':
@@ -203,8 +234,8 @@ class Dialog(wx.Dialog):
     def GetIndividus(self,db,**kwd):
         # appel des données à afficher
         filtreTxt = kwd.pop('filtreTxt','')
-        lstChamps = kwd['dicOlv']['listeChamps']
-        lstColonnes = kwd['dicOlv']['listeColonnes']
+        lstChamps = kwd['dicOlv']['lstChamps']
+        lstColonnes = kwd['dicOlv']['lstColonnes']
         nbreFiltres = kwd.pop('nbreFiltres',0)
 
         # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
@@ -219,7 +250,8 @@ class Dialog(wx.Dialog):
         req = """SELECT %s
                 FROM individus
                 %s
-                %s; """ % (",".join(lstChamps),whereFiltre,limit)
+                ORDER BY %s DESC
+                %s; """ % (",".join(lstChamps),whereFiltre,lstChamps[1],limit)
         retour = db.ExecuterReq(req, mess='%s.GetIndividus' % NOM_MODULE)
         if retour == "ok":
             recordset = db.ResultatReq()
@@ -238,8 +270,8 @@ class Dialog(wx.Dialog):
     def GetFamilles(self,db,**kwd):
         # appel des données à afficher
         filtreTxt = kwd.pop('filtreTxt','')
-        lstChamps = kwd['dicOlv']['listeChamps']
-        lstColonnes = kwd['dicOlv']['listeColonnes']
+        lstChamps = kwd['dicOlv']['lstChamps']
+        lstColonnes = kwd['dicOlv']['lstColonnes']
         nbreFiltres = kwd.pop('nbreFiltres',0)
 
         # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
@@ -253,10 +285,11 @@ class Dialog(wx.Dialog):
                 whereFiltre = xformat.ComposeWhereFiltre(filtreTxt,lstChamps, lstColonnes = lstColonnes,lien='WHERE')
         req = """   SELECT %s
                     FROM familles 
-                    LEFT JOIN individus ON familles.adresse_individu = individus.IDindividu
+                    INNER JOIN individus ON familles.adresse_individu = individus.IDindividu
                     %s
+                    ORDER BY %s DESC
                     %s;
-                    """ % (",".join(lstChamps),whereFiltre,limit)
+                    """ % (",".join(lstChamps),whereFiltre,lstChamps[1],limit)
         retour = db.ExecuterReq(req, mess='%s.GetIndividus' % NOM_MODULE)
         if retour == "ok":
             recordset = db.ResultatReq()
@@ -282,6 +315,6 @@ if __name__ == '__main__':
     app = wx.App(0)
     import os
     os.chdir("..")
-    dlg = Dialog(mode='familles')
+    dlg = Dialog(mode='individus')
     dlg.ShowModal()
     app.MainLoop()

@@ -105,9 +105,9 @@ def GetValeursListview(listview=None, format="texte"):
     """ Récupère les valeurs affichées sous forme de liste """
     """ format = "texte" ou "original" """
     # Récupère les labels de colonnes
-    listeColonnes = []
+    lstColonnes = []
     for colonne in listview.columns:
-        listeColonnes.append((colonne.title, colonne.align, colonne.width, colonne.valueGetter))
+        lstColonnes.append((colonne.title, colonne.align, colonne.width, colonne.valueGetter))
 
     # Récupère les valeurs
     listeValeurs = []
@@ -122,14 +122,14 @@ def GetValeursListview(listview=None, format="texte"):
             valeursLigne.append(valeur)
         listeValeurs.append(valeursLigne)
 
-    return listeColonnes, listeValeurs
+    return lstColonnes, listeValeurs
 
 def GetValeursGrid(grid=None):
     """ Récupère les valeurs affichées sous forme de liste """
     # Récupère les labels de colonnes
-    listeColonnes = [("titre_ligne", None, grid.GetColLabelSize(), "titre_ligne"), ]
+    lstColonnes = [("titre_ligne", None, grid.GetColLabelSize(), "titre_ligne"), ]
     for numCol in range(0, grid.GetNumberCols()):
-        listeColonnes.append(
+        lstColonnes.append(
             (grid.GetColLabelValue(numCol), None, grid.GetColSize(numCol), grid.GetColLabelValue(numCol)))
 
     # Récupère les valeurs
@@ -144,7 +144,7 @@ def GetValeursGrid(grid=None):
             valeursLigne.append(valeur)
         listeValeurs.append(valeursLigne)
 
-    return listeColonnes, listeValeurs
+    return lstColonnes, listeValeurs
 
 def ChoixDestination(nomFichier,wildcard):
     # Demande à l'utilisateur le nom de fichier et le répertoire de destination
@@ -215,7 +215,7 @@ def LanceFichierExterne(nomFichier) :
     if platform.system() == "Linux":
         os.system("xdg-open " + nomFichier)
 
-def ExportTexte(listview=None, grid=None, titre=u"", listeColonnes=None, listeValeurs=None, autoriseSelections=False):
+def ExportTexte(listview=None, grid=None, titre=u"", lstColonnes=None, listeValeurs=None, autoriseSelections=False):
     """ Export de la liste au format texte """
     if (listview != None and len(listview.innerList) == 0) or (
             grid != None and (grid.GetNumberRows() == 0 or grid.GetNumberCols() == 0)):
@@ -225,16 +225,16 @@ def ExportTexte(listview=None, grid=None, titre=u"", listeColonnes=None, listeVa
         return wx.CANCEL
 
     # Récupération des valeurs
-    if listview != None and listeColonnes == None and listeValeurs == None:
-        listeColonnes, listeValeurs = GetValeursListview(listview, format="texte")
+    if listview != None and lstColonnes == None and listeValeurs == None:
+        lstColonnes, listeValeurs = GetValeursListview(listview, format="texte")
 
-    if grid != None and listeColonnes == None and listeValeurs == None:
+    if grid != None and lstColonnes == None and listeValeurs == None:
         autoriseSelections = False
-        listeColonnes, listeValeurs = GetValeursGrid(grid)
+        lstColonnes, listeValeurs = GetValeursGrid(grid)
 
     # Selection des lignes
     if autoriseSelections == True:
-        dlg = xchoixListe.DialogAffiche(None, lstColonnes=listeColonnes, lstDonnees=listeValeurs)
+        dlg = xchoixListe.DialogAffiche(None, lstColonnes=lstColonnes, lstDonnees=listeValeurs)
         if dlg.ShowModal() == wx.ID_OK:
             listeSelections = dlg.GetChoix()
             dlg.Destroy()
@@ -251,7 +251,7 @@ def ExportTexte(listview=None, grid=None, titre=u"", listeColonnes=None, listeVa
     # Création du fichier texte
     texte = ""
     separateur = ";"
-    for labelCol, alignement, largeur, code in listeColonnes:
+    for labelCol, alignement, largeur, code in lstColonnes:
         try:
             if "CheckState" in str(code):
                 code = "Coche"
@@ -315,7 +315,7 @@ def ExportLgFixe(nomfic='',matrice={},valeurs=[],entete=False):
     f.close()
     return Confirmation(cheminFichier)
 
-def ExportExcel(listview=None, grid=None, titre="Liste", listeColonnes=None, listeValeurs=None, autoriseSelections=False):
+def ExportExcel(listview=None, grid=None, titre="Liste", lstColonnes=None, listeValeurs=None, autoriseSelections=False):
     # Export de la liste au format Excel
 
     # Vérifie si données bien présentes
@@ -327,16 +327,16 @@ def ExportExcel(listview=None, grid=None, titre="Liste", listeColonnes=None, lis
         return wx.CANCEL
 
     # Récupération des valeurs
-    if listview != None and listeColonnes == None and listeValeurs == None:
-        listeColonnes, listeValeurs = GetValeursListview(listview, format="original")
+    if listview != None and lstColonnes == None and listeValeurs == None:
+        lstColonnes, listeValeurs = GetValeursListview(listview, format="original")
 
-    if grid != None and listeColonnes == None and listeValeurs == None:
+    if grid != None and lstColonnes == None and listeValeurs == None:
         autoriseSelections = False
-        listeColonnes, listeValeurs = GetValeursGrid(grid)
+        lstColonnes, listeValeurs = GetValeursGrid(grid)
 
     # Selection des lignes
     if autoriseSelections == True:
-        dlg = xchoixListe.DialogAffiche(None, lstColonnes=listeColonnes, lstDonnees=listeValeurs, )
+        dlg = xchoixListe.DialogAffiche(None, lstColonnes=lstColonnes, lstDonnees=listeValeurs, )
         if dlg.ShowModal() == wx.ID_OK:
             listeSelections = dlg.GetChoix()
             dlg.Destroy()
@@ -382,7 +382,7 @@ def ExportExcel(listview=None, grid=None, titre="Liste", listeColonnes=None, lis
     # Création des labels de colonnes
     x = 0
     y = 0
-    for labelCol, alignement, largeur, nomChamp in listeColonnes:
+    for labelCol, alignement, largeur, nomChamp in lstColonnes:
         try:
             if "CheckState" in nomChamp:
                 nomChamp = "Coche"

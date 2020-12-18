@@ -145,7 +145,7 @@ def ExportExcel(formatExp, lstValeurs):
     widths      = [x['lg'] for x in matrice]
     lstColonnes = [[x, None, widths[champsOut.index(x)], x] for x in champsOut]
     # envois dans un fichier excel
-    return xexport.ExportExcel(listeColonnes=lstColonnes,
+    return xexport.ExportExcel(lstColonnes=lstColonnes,
                         listeValeurs=lstValeurs,
                         titre=formatExp)
 
@@ -328,13 +328,13 @@ class Compta(object):
         lstLargeurColonnes = matrice['lstLargeurColonnes']
         lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
         return   {
-                    'listeColonnes': lstColonnes,
-                    'listeChamps':lstChamps,
+                    'lstColonnes': lstColonnes,
+                    'lstChamps':lstChamps,
                     'listeNomsColonnes':lstNomsColonnes,
                     'listeCodesColonnes':lstCodesColonnes,
                     'getDonnees': self.GetDonnees,
                     'dicBandeau': dicBandeau,
-                    'colonneTri': 2,
+                    'sortColumnIndex': 2,
                     'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
                     'size' : (500,200),
                     'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",

@@ -179,7 +179,7 @@ class ListView(FastObjectListView):
         FROM villes %s
         ORDER BY nom; """ % self.criteres
         DB.ExecuterReq(req)
-        listeDonnees = DB.ResultatReq()
+        lstDonnees = DB.ResultatReq()
         DB.Close()
         # Importation des corrections de villes et codes postaux
         DB = xdb.DB()
@@ -194,10 +194,10 @@ class ListView(FastObjectListView):
         for IDcorrection, mode, IDville, nom, cp, pays in listeCorrections :
             dictCorrections[IDville] = {"mode":mode, "nom":nom, "cp":cp, "pays":pays,  "IDcorrection":IDcorrection}
             if mode == "ajout" :
-                listeDonnees.append((100000+IDcorrection, nom, cp, pays))
+                lstDonnees.append((100000+IDcorrection, nom, cp, pays))
 
         listeListeView = []
-        for IDville, nom, cp, pays in listeDonnees :
+        for IDville, nom, cp, pays in lstDonnees :
             mode = None
             if not pays: pays = ""
             if len(cp) < 5 and len(pays) == 0:
@@ -390,8 +390,8 @@ class ListView(FastObjectListView):
                 if mode == "ajout" :
                     ret = DB.ReqDEL("corrections_villes", "IDcorrection", IDcorrection, mess="OL_Villes.ListView.Supprimer")
                 if mode == "modif" :
-                    listeDonnees = [("mode", "suppr"), ("nom", None), ("cp", None), ("pays", None)]
-                    DB.ReqMAJ("corrections_villes", listeDonnees, "IDcorrection", IDcorrection)
+                    lstDonnees = [("mode", "suppr"), ("nom", None), ("cp", None), ("pays", None)]
+                    DB.ReqMAJ("corrections_villes", lstDonnees, "IDcorrection", IDcorrection)
                     
             DB.Close()
             self.MAJ()

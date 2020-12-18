@@ -49,11 +49,11 @@ class ListView(FastObjectListView):
     Lors de l'instanciation de cette classe vous pouvez y passer plusieurs parametres :
 
     lstColonnes : censé être une liste d'objets ColumndeFn
-    listeDonnees : liste de listes ayant la même longueur que le nombre de colonnes.
+    lstDonnees : liste de listes ayant la même longueur que le nombre de colonnes.
 
     msgIfEmpty : une chaine de caractères à envoyer si le tableau est vide
 
-    colonneTri : Permet d'indiquer le numéro de la colonne selon laquelle on veut trier
+    sortColumnIndex : Permet d'indiquer le numéro de la colonne selon laquelle on veut trier
     sensTri : True ou False indique le sens de tri
 
     exportExcel : True par défaut, False permet d'enlever l'option 'Exporter au format Excel'
@@ -80,15 +80,15 @@ class ListView(FastObjectListView):
 
     def __init__(self, *args, **kwds):
         self.parent = args[0].parent
-        self.pnlfooter = kwds.pop("pnlfooter", None)
+        self.pnlFooter = kwds.pop("pnlFooter", None)
         self.checkColonne = kwds.pop("checkColonne",True)
         self.lstColonnes = kwds.pop("lstColonnes", [])
         self.editMode = kwds.pop("editMode", True)
         self.msgIfEmpty = kwds.pop("msgIfEmpty", "Tableau vide")
-        self.colonneTri = kwds.pop("colonneTri", None)
+        self.sortColumnIndex = kwds.pop("sortColumnIndex", None)
         self.sensTri = kwds.pop("sensTri", True)
         self.menuPersonnel = kwds.pop("menuPersonnel", None)
-        self.listeDonnees = kwds.pop("listeDonnees", None)
+        self.lstDonnees = kwds.pop("lstDonnees", None)
         self.lstCodesColonnes = self.formerCodeColonnes()
         self.lstNomsColonnes = self.formerNomsColonnes()
         self.lstSetterValues = self.formerSetterValues()
@@ -133,7 +133,7 @@ class ListView(FastObjectListView):
         self.ctrl_footer.dictColFooter = dictColFooter
 
     def MAJ_footer(self):
-        if self.ctrl_footer and self.pnlfooter:
+        if self.ctrl_footer and self.pnlFooter:
             self.ctrl_footer.MAJ_totaux()
             self.ctrl_footer.MAJ_affichage()
 
@@ -146,9 +146,10 @@ class ListView(FastObjectListView):
 
     def formerTracks(self):
         tracks = list()
-        if self.listeDonnees is None:
+        if self.lstDonnees is None:
             return tracks
-        for ligneDonnees in self.listeDonnees:
+
+        for ligneDonnees in self.lstDonnees:
             tracks.append(TrackGeneral(donnees=ligneDonnees,codesColonnes=self.lstCodesColonnes,
                                             nomsColonnes=self.lstNomsColonnes,setterValues=self.lstSetterValues))
         return tracks
@@ -203,7 +204,7 @@ class ListView(FastObjectListView):
     def MAJ(self, ID=None):
         self.selectionID = ID
         self.InitObjectListView()
-        if self.pnlfooter:
+        if self.pnlFooter:
             self.MAJ_footer()
         # Rappel de la sélection d'un item
         if self.selectionID != None and len(self.innerList) > 0:
@@ -424,8 +425,8 @@ class PanelListView(wx.Panel):
         self.dictColFooter = kwargs.pop("dictColFooter", {})
         if not "id" in kwargs: kwargs["id"] = wx.ID_ANY
         if not "style" in kwargs: kwargs["style"] = wx.LC_REPORT|wx.NO_BORDER|wx.LC_HRULES|wx.LC_VRULES
-        if len(self.dictColFooter.keys())>0:
-            kwargs["pnlfooter"]=True
+        if self.dictColFooter and len(self.dictColFooter.keys())>0:
+            kwargs["pnlFooter"]=True
 
         self.buffertracks = None
         self.ctrl_listview = ListView(self,**kwargs)
@@ -514,6 +515,14 @@ class PanelListView(wx.Panel):
     def OnEditStarted(self,event):
         row, col = self.ctrl_listview.cellBeingEdited
         code = self.ctrl_listview.lstCodesColonnes[col]
+
+        # conservation de l'ancienne valeur
+        track = self.ctrl_listview.GetObjectAt(row)
+        track.oldValue = None
+        try:
+            eval("track.oldValue = track.%s"%code)
+        except: pass
+
         # appel des éventuels spécifiques
         if hasattr(self.parent, 'OnEditStarted'):
             self.parent.OnEditStarted(code)
@@ -604,7 +613,7 @@ class PNL_corps(wx.Panel):
         lstParamsOlv = ['id',
                         'style',
                         'lstColonnes',
-                        'listeDonnees',
+                        'lstDonnees',
                         'msgIfEmpty',
                         'sensTri',
                         'exportExcel',
@@ -761,7 +770,7 @@ if __name__ == '__main__':
         ColumnDefn("choice", 'center', 40, "choice", valueSetter="mon item",choices=['CHQ','VRT','ESP'], isSpaceFilling=True,
                    cellEditorCreator = CellEditor.ChoiceEditor,)
     ]
-    liste_Donnees = [[1,False, "Bonjour", -1230.05939, -1230.05939, None,"deux"],
+    lstDonnees = [[1,False, "Bonjour", -1230.05939, -1230.05939, None,"deux"],
                      [2,None, "Bonsoir", 57.5, 208.99,datetime.date.today(),None],
                      [3,'', "Jonbour", 0, 'remisé', datetime.date(2018, 11, 20), "mon item"],
                      [4,29, "Salut", 57.082, 209, wx.DateTime.FromDMY(28, 1, 2019),"Gérer l'entrée dans la cellule"],
@@ -771,7 +780,7 @@ if __name__ == '__main__':
                      [None,98, "langage C", 10000, 209, wx.DateTime.FromDMY(1, 0, 1900), ''],
                      ]
     dicOlv = {'lstColonnes': liste_Colonnes,
-              'listeDonnees': liste_Donnees,
+              'lstDonnees': lstDonnees,
               'checkColonne': False,
               'recherche': True,
               'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",

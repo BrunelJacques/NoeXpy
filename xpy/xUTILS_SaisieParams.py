@@ -1093,7 +1093,7 @@ class DLG_listCtrl(wx.Dialog):
     def OnFermer(self, event):
         return self.Close()
 
-    def OnBtnEsc(self, event):
+    def OnEsc(self, event):
             self.Destroy()
 
 class DLG_vide(wx.Dialog):
@@ -1104,34 +1104,61 @@ class DLG_vide(wx.Dialog):
         name =      kwds.pop('name',self.__class__.__name__)
         title =     kwds.pop('title',listArbo[-1] + "/" + name)
         style =     kwds.pop('style',wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
-        pos =       kwds.pop('pos',(300,150))
+        pos =       kwds.pop('pos',(200,100))
         size =      kwds.pop('size',(600, 450))
-        minSize =   kwds.pop('minSize',(300, 150))
+        minSize =   kwds.pop('minSize',(300, 250))
+        marge =     kwds.pop('marge',10)
+        couleur =   kwds.pop('couleur',wx.WHITE)
 
         super().__init__(None, wx.ID_ANY, *args, title=title, style=style, pos=pos, **kwds)
-        self.marge = kwds.pop('marge',10)
-        self.couleur = kwds.pop('couleur',wx.WHITE)
+        self.marge = marge
         self.parent = parent
         self.SetMinSize(minSize)
         self.SetSize(size)
-        self.SetBackgroundColour(wx.WHITE)
-        self.btn = None
+        self.SetBackgroundColour(couleur)
+
+        # composants possibles de l'écran
         self.bandeau = None
+        self.pnlParams = None
+        self.pnl = None
+        self.pnlPied = None
+        self.btn = None
+
         #****************Exemple de Chaînage à faire passer au sizer*****************
-        #self.pnl = PNL_property(self, parent, *args, matrice = matrice, **kwds )
+        # définir self.bandeau ou self.pnlParam pour le haut
+        # self.btn  ou self.pnlPied pour le bas
+        # envoyer au Sizer
+        #       pnl = PNL_property(self, parent, *args, matrice = matrice, **kwds )
+        #       pnl = TopBoxPanel(self, matrice=dictMatrice, donnees=dictDonnees)
         #****************************************************************************
 
-    def Sizer(self,panel):
-        # Le panel contient l'essentiel de l'écran, bouton peut être aussi un sizer de boutons en bas
-        self.pnl = panel
+    def Sizer(self,pnl=None):
+        # Le panel contient l'essentiel de l'écran, il est transmis par le parent qui appelle Sizer
+        if pnl:
+            self.pnl = pnl
+
         sizer = wx.BoxSizer(wx.VERTICAL)
+        # bouton à minima par défaut
+        if not self.btn and not self.pnlPied:
+            self.btn = xboutons.BTN_fermer(self,label="Valider")
+
+        # haut d'écran
         if self.bandeau:
             sizer.Add(self.bandeau, 0, wx.EXPAND | wx.ALL, self.marge)
-        sizer.Add(self.pnl, 1, wx.EXPAND | wx.ALL, self.marge)
-        if not self.btn:
-            self.btn = xboutons.BTN_fermer(self,label="Valider")
-        sizer.Add(self.btn, 0,  wx.ALL|wx.ALIGN_RIGHT,self.marge)
-        sizer.SetSizeHints(self)
+        if self.pnlParams:
+            sizer.Add(self.pnlParams, 0, wx.EXPAND | wx.ALL, self.marge)
+
+        # corps de l'écran
+        if self.pnl:
+            sizer.Add(self.pnl, 1, wx.EXPAND | wx.ALL, self.marge)
+
+        # bas d'écran
+        if self.btn:
+            sizer.Add(self.btn, 0,  wx.ALL|wx.ALIGN_RIGHT,self.marge)
+        if self.pnlPied:
+            sizer.Add(self.pnlPied, 0,  wx.ALL|wx.ALIGN_RIGHT,self.marge)
+
+        #sizer.SetSizeHints(self)
         self.SetSizer(sizer)
 
     def OnFermer(self, event):
@@ -1144,9 +1171,14 @@ class DLG_vide(wx.Dialog):
         else:
             self.Close()
 
+    def OnEsc(self, event):
+        if self.IsModal():
+            self.EndModal(wx.CANCEL)
+        else:
+            self.Close()
+
     def GetPnlCtrl(self,name,codebox=None):
         return self.pnl.GetPnlCtrl(name,codebox)
-
 
     # ------------------- Lancement des actions sur Bind -----------------------
 
@@ -1319,7 +1351,7 @@ if __name__ == '__main__':
     dictColonnesSimple = {}
 
     # Lancement des tests
-
+    """
     dlg_4 = DLG_listCtrl(None,dldMatrice=dictMatrice,
                                 dlColonnes=dictColonnes,
                                 lddDonnees=[dictDonnees])
@@ -1327,14 +1359,14 @@ if __name__ == '__main__':
     app.SetTopWindow(dlg_4)
     dlg_4.Show()
     """
-    """
+
     dlg_3 = DLG_vide(None)
-    pnl = PNL_property(dlg_3,dlg_3,matrice=dictMatrice,donnees=dictDonnees)
+    #pnl = PNL_property(dlg_3,dlg_3,matrice=dictMatrice,donnees=dictDonnees)
+    pnl = TopBoxPanel(dlg_3,matrice=dictMatrice,donnees=dictDonnees)
     dlg_3.Sizer(pnl)
     app.SetTopWindow(dlg_3)
     dlg_3.Show()
 
-    """
     """
     frame_2 = FramePanels(None, )
     frame_2.Position = (500,300)
@@ -1344,6 +1376,6 @@ if __name__ == '__main__':
     app.SetTopWindow(frame_1)
     frame_1.Position = (50,50)
     frame_1.Show()
-
+    """
 
     app.MainLoop()

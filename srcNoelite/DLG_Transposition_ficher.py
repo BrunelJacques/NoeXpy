@@ -421,7 +421,7 @@ class Dialog(xusp.DLG_vide):
         dicParams = self.pnlParams.GetValues()
         formatIn = dicParams['fichiers']['formatin']
         self.table = FORMATS_IMPORT[formatIn]['table']
-        self.ctrlOlv.listeDonnees = FORMATS_IMPORT[formatIn]['fonction'](dicParams,
+        self.ctrlOlv.lstDonnees = FORMATS_IMPORT[formatIn]['fonction'](dicParams,
                                                            self.GetDonneesIn(),
                                                            self.ctrlOlv.lstCodesColonnes,self.compta,self.table)
         self.InitOlv()

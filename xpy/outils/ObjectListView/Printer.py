@@ -222,10 +222,10 @@ class ObjectListViewPrinter(object):
             return False
 
         # Remplacement des mots-clés
-        listeChamps = ["pied_page_texte_gauche", "pied_page_texte_milieu", "pied_page_texte_droite"]
+        lstChamps = ["pied_page_texte_gauche", "pied_page_texte_milieu", "pied_page_texte_droite"]
         nomOrganisateur = self.GetNomOrganisateur()
         for key, valeur in dictOptions.items():
-            if key in listeChamps:
+            if key in lstChamps:
                 valeur = valeur.replace("{DATE_JOUR}", xdates.DateDDEnFr(datetime.date.today()))
                 valeur = valeur.replace("{TITRE_DOCUMENT}", self.titre)
                 valeur = valeur.replace("{NOM_ORGANISATEUR}", nomOrganisateur)
@@ -462,10 +462,10 @@ class ObjectListViewPrinter(object):
         # req = """SELECT nom, rue, cp, ville
         # FROM organisateur WHERE IDorganisateur=1;"""  # Pourquoi récupérer tous les champs ?
         # DB.ExecuterReq(req)
-        # listeDonnees = DB.ResultatReq()
+        # lstDonnees = DB.ResultatReq()
         # DB.Close()
-        # if len(listeDonnees) == 0: return ""
-        # nom = listeDonnees[0][0]
+        # if len(lstDonnees) == 0: return ""
+        # nom = lstDonnees[0][0]
         # if nom == None:
         #    nom = ""
         # return nom

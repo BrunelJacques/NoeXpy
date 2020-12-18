@@ -278,6 +278,9 @@ class DB():
 
     def ConnexionFichierLocal(self, config):
         self.connexion = None
+        if config['serveur'][-1] != "\\":
+            config['serveur'] += "\\"
+        self.nomBase = config['serveur'] + config['nameDB']
         try:
             etape = 'Création du connecteur'
             if self.typeDB == 'access':
@@ -377,10 +380,10 @@ class DB():
         finally:
             return self.retourReq
 
-    def Executermany(self, req="", listeDonnees=[], commit=True):
+    def Executermany(self, req="", lstDonnees=[], commit=True):
         """ Executemany pour local ou réseau """
         """ Exemple de req : "INSERT INTO table (IDtable, nom) VALUES (?, ?)" """
-        """ Exemple de listeDonnees : [(1, 2), (3, 4), (5, 6)] """
+        """ Exemple de lstDonnees : [(1, 2), (3, 4), (5, 6)] """
         # Adaptation réseau/local
         if self.isNetwork == True :
             # Version MySQL
@@ -389,7 +392,7 @@ class DB():
             # Version Sqlite
             req = req.replace("%s", "?")
         # Executemany
-        self.cursor.executemany(req, listeDonnees)
+        self.cursor.executemany(req, lstDonnees)
         if commit == True :
             self.connexion.commit()
 
@@ -592,14 +595,14 @@ class DB():
     def SupprChamp(self, nomTable="", nomChamp = ""):
         """ Suppression d'une colonne dans une table """
         if self.isNetwork == False :
-            listeChamps = self.GetListeChamps2(nomTable)
+            lstChamps = self.GetListeChamps2(nomTable)
 
             index = 0
             varChamps = ""
             varNomsChamps = ""
-            for nomTmp, typeTmp in listeChamps :
+            for nomTmp, typeTmp in lstChamps :
                 if nomTmp == nomChamp :
-                    listeChamps.pop(index)
+                    lstChamps.pop(index)
                     break
                 else:
                     varChamps += "%s %s, " % (nomTmp, typeTmp)
@@ -772,22 +775,22 @@ class DB():
 
     def GetListeChamps2(self, nomTable=""):
         """ Affiche la liste des champs de la table donnée """
-        listeChamps = []
+        lstChamps = []
         if self.typeDB == 'sqlite':
             # Version Sqlite
             req = "PRAGMA table_info('%s');" % nomTable
             self.ExecuterReq(req)
             listeTmpChamps = self.ResultatReq()
             for valeurs in listeTmpChamps:
-                listeChamps.append((valeurs[1], valeurs[2]))
+                lstChamps.append((valeurs[1], valeurs[2]))
         else:
             # Version MySQL
             req = "SHOW COLUMNS FROM %s;" % nomTable
             self.ExecuterReq(req)
             listeTmpChamps = self.ResultatReq()
             for valeurs in listeTmpChamps:
-                listeChamps.append((valeurs[0], valeurs[1]))
-        return listeChamps
+                lstChamps.append((valeurs[0], valeurs[1]))
+        return lstChamps
 
     def GetListeIndex(self):
         if self.typeDB == 'sqlite':

@@ -184,7 +184,7 @@ class CTRL_Parametres(CTRL_Propertygrid):
         CTRL_Propertygrid.__init__(self, parent)
 
     def Remplissage(self):
-        listeChampsPiedsPages = ["{DATE_JOUR}", "{TITRE_DOCUMENT}", "{NOM_ORGANISATEUR}", "{NUM_PAGE}", "{NBRE_PAGES}"]
+        lstChampsPiedsPages = ["{DATE_JOUR}", "{TITRE_DOCUMENT}", "{NOM_ORGANISATEUR}", "{NUM_PAGE}", "{NBRE_PAGES}"]
 
         # --------------------------- Divers ------------------------------------------
         self.Append(wxpg.PropertyCategory("Divers"))
@@ -416,7 +416,7 @@ class CTRL_Parametres(CTRL_Propertygrid):
         propriete = wxpg.StringProperty(label=PIED_TEXTE_GAUCHE_LABEL, name="pied_page_texte_gauche", value=valeur)
         propriete.SetHelpString(
             "Saisissez le texte de gauche du pied de page (Par défaut '%s'). Vous pouvez intégrer les mots-clés suivants : %s" % (
-            valeur, ", ".join(listeChampsPiedsPages)))
+            valeur, ", ".join(lstChampsPiedsPages)))
         self.Append(propriete)
 
         # Texte du milieu
@@ -424,7 +424,7 @@ class CTRL_Parametres(CTRL_Propertygrid):
         propriete = wxpg.StringProperty(label=PIED_TEXTE_MILIEU_LABEL, name="pied_page_texte_milieu", value=valeur)
         propriete.SetHelpString(
             "Saisissez le texte du milieu du pied de page (Par défaut '%s'). Vous pouvez intégrer les mots-clés suivants : %s" % (
-            valeur, ", ".join(listeChampsPiedsPages)))
+            valeur, ", ".join(lstChampsPiedsPages)))
         self.Append(propriete)
 
         # Texte de droite
@@ -432,7 +432,7 @@ class CTRL_Parametres(CTRL_Propertygrid):
         propriete = wxpg.StringProperty(label=PIED_TEXTE_DROITE_LABEL, name="pied_page_texte_droite", value=valeur)
         propriete.SetHelpString(
             "Saisissez le texte de droite du pied de page (Par défaut '%s'). Vous pouvez intégrer les mots-clés suivants : %s" % (
-            valeur, ", ".join(listeChampsPiedsPages)))
+            valeur, ", ".join(lstChampsPiedsPages)))
         self.Append(propriete)
 
         # Taille police

@@ -243,7 +243,8 @@ class EditorRegistry(object):
 
         # Standard types and their creator functions
         self.typeToFunctionMap[str] = self._MakeStringEditor
-        self.typeToFunctionMap[bool] = self._MakeBoolEditor
+        self.typeToFunctionMap[bool] = self._MakeCheckEditor
+        #self.typeToFunctionMap[bool] = self._MakeBoolEditor
         self.typeToFunctionMap[int] = self._MakeIntegerEditor
         #self.typeToFunctionMap[int] = self._MakeLongEditor
         self.typeToFunctionMap[float] = self._MakeFloatEditor
@@ -257,6 +258,7 @@ class EditorRegistry(object):
         Return the creator function that is register for the type of the given value.
         Return None if there is no registered function for the type.
         """
+        tip = type(aValue)
         return self.typeToFunctionMap.get(type(aValue), None)
 
     def RegisterCreatorFunction(self, aType, aFunction):
@@ -312,7 +314,7 @@ class EditorRegistry(object):
 
     @staticmethod
     def _MakeCheckEditor(olv, rowIndex, subItemIndex):
-        return CheckEditor(olv,)
+        return CheckEditor(olv,rowIndex, subItemIndex)
 
     @staticmethod
     def _MakeTimeEditor(olv, rowIndex, subItemIndex):
@@ -443,7 +445,6 @@ class DateEditor(wx.adv.DatePickerCtrl):
 # Base Texte et ses dérivés
 class BaseCellTextEditor(wx.TextCtrl):
     """This is a base text editor for text-like editors used in an ObjectListView"""
-
     def __init__(self, olv, row, subItemIndex, **kwargs):
         style = wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB
         self.error = None

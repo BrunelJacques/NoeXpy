@@ -1224,9 +1224,7 @@ class ObjectListView(wx.ListCtrl):
         """
         for (i, x) in enumerate(self.columns):
             if not x.isInternal and x.width > 0 :
-
                 return i
-
         return -1
 
     def GetSelectedObject(self):
@@ -2153,7 +2151,14 @@ class ObjectListView(wx.ListCtrl):
         if self.cellEditMode == self.CELLEDIT_NONE:
             return
 
-        if not self.columns[subItemIndex].isEditable:
+        aEditable =None
+        # accèdera à la première colonne éditable suivante
+        for ix in range(subItemIndex,len(self.columns)):
+            if self.columns[ix].isEditable:
+                aEditable = ix
+                subItemIndex = ix
+                break
+        if not aEditable:
             return
 
         if self.GetObjectAt(rowIndex) is None:
@@ -2299,7 +2304,8 @@ class ObjectListView(wx.ListCtrl):
         # If all else fails, we use a string editor.
         creatorFunction = self.columns[subItemIndex].cellEditorCreator
         if creatorFunction is None:
-            value = value or self.CalcNonNullValue(subItemIndex)
+            if value == None:
+                value = self.CalcNonNullValue(subItemIndex)
             creatorFunction = CellEditor.CellEditorRegistry().GetCreatorFunction(
                 value)
             if creatorFunction is None:
