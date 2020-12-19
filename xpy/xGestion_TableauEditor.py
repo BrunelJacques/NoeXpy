@@ -80,36 +80,33 @@ class ListView(FastObjectListView):
 
     def __init__(self, *args, **kwds):
         self.parent = args[0].parent
-        self.pnlFooter = kwds.pop("pnlFooter", None)
-        self.checkColonne = kwds.pop("checkColonne",True)
-        self.lstColonnes = kwds.pop("lstColonnes", [])
-        self.editMode = kwds.pop("editMode", True)
-        self.msgIfEmpty = kwds.pop("msgIfEmpty", "Tableau vide")
-        self.sortColumnIndex = kwds.pop("sortColumnIndex", None)
-        self.sensTri = kwds.pop("sensTri", True)
-        self.menuPersonnel = kwds.pop("menuPersonnel", None)
-        self.lstDonnees = kwds.pop("lstDonnees", None)
-        self.lstCodesColonnes = self.formerCodeColonnes()
-        self.lstNomsColonnes = self.formerNomsColonnes()
-        self.lstSetterValues = self.formerSetterValues()
-        self.dictColFooter = kwds.pop("dictColFooter", {})
+        self.pnlFooter = kwds.pop('pnlFooter', None)
+        self.checkColonne = kwds.pop('checkColonne',True)
+        self.lstColonnes = kwds.pop('lstColonnes', [])
+        self.editMode = kwds.pop('editMode', True)
+        self.msgIfEmpty = kwds.pop('msgIfEmpty', 'Tableau vide')
+        self.sortColumnIndex = kwds.pop('sortColumnIndex', None)
+        self.sensTri = kwds.pop('sensTri', True)
+        self.menuPersonnel = kwds.pop('menuPersonnel', False)
+        self.lstDonnees = kwds.pop('lstDonnees', None)
+        self.dictColFooter = kwds.pop('dictColFooter', {})
 
         # Choix des options du 'tronc commun' du menu contextuel
-        self.exportExcel = kwds.pop("exportExcel", True)
-        self.exportTexte = kwds.pop("exportTexte", True)
-        self.apercuAvantImpression = kwds.pop("apercuAvantImpression", True)
-        self.imprimer = kwds.pop("imprimer", True)
-        self.toutCocher = kwds.pop("toutCocher", True)
-        self.toutDecocher = kwds.pop("toutDecocher", True)
-        self.inverserSelection = kwds.pop("inverserSelection", True)
+        self.exportExcel = kwds.pop('exportExcel', True)
+        self.exportTexte = kwds.pop('exportTexte', True)
+        self.apercuAvantImpression = kwds.pop('apercuAvantImpression', True)
+        self.imprimer = kwds.pop('imprimer', True)
+        self.toutCocher = kwds.pop('toutCocher', True)
+        self.toutDecocher = kwds.pop('toutDecocher', True)
+        self.inverserSelection = kwds.pop('inverserSelection', True)
         if not self.checkColonne:
             self.toutCocher = False
             self.toutDecocher = False
             self.inverserSelection = False
 
         # Choix du mode d'impression
-        self.titreImpression = kwds.pop("titreImpression", "Tableau récapitulatif")
-        self.orientationImpression = kwds.pop("orientationImpression", False)
+        self.titreImpression = kwds.pop('titreImpression', "Tableau récapitulatif")
+        self.orientationImpression = kwds.pop('orientationImpression', False)
         self.selectionID = None
         self.selectionTrack = None
         self.criteres = ""
@@ -151,7 +148,7 @@ class ListView(FastObjectListView):
 
         for ligneDonnees in self.lstDonnees:
             tracks.append(TrackGeneral(donnees=ligneDonnees,codesColonnes=self.lstCodesColonnes,
-                                            nomsColonnes=self.lstNomsColonnes,setterValues=self.lstSetterValues))
+                                        nomsColonnes=self.lstNomsColonnes,setterValues=self.lstSetterValues))
         return tracks
 
     def formerCodeColonnes(self):
@@ -191,14 +188,14 @@ class ListView(FastObjectListView):
         self.useExpansionColumn = True
         # On définit les colonnes
         self.SetColumns(self.lstColonnes)
+        if self.checkColonne:
+            self.CreateCheckStateColumn(0)
         self.lstCodesColonnes = self.formerCodeColonnes()
         self.lstNomsColonnes = self.formerNomsColonnes()
         self.lstSetterValues = self.formerSetterValues()
-        if self.checkColonne:
-            self.CreateCheckStateColumn(0)
         # On définit le message en cas de tableau vide
         self.SetEmptyListMsg(self.msgIfEmpty)
-        self.SetEmptyListMsgFont(wx.FFont(11, wx.DEFAULT))
+        self.SetEmptyListMsgFont(wx.FFont(11, wx.FONTFAMILY_DEFAULT))
         self.SetObjects(self.formerTracks())
 
     def MAJ(self, ID=None):
@@ -214,25 +211,9 @@ class ListView(FastObjectListView):
         return self.GetSelectedObjects()
 
     def OnContextMenu(self, event):
-        """
-        Ouverture du menu contextuel
-
-        L'idée serait de créer dans ce menu tout le 'tronc commun' c'est à dire Aperçu avant impression, Imprimer,
-        Exporter au format texte , Exporter au format Excel, et pourquoi pas ajouter une option copier (la ligne ou tout le tableau)
-
-        Ensuite on pourrait passer en paramètre une partie du menu qui sera simplement ajoutée au début.
-
-        Par exemple les options 'tout cocher' et 'tout décocher' pourraient être activées de base et paramétrables lors de l'initialisation
-
-        """
-        if len(self.Selection()):  # equivalent a !=0
-            noSelection = False
-        else:
-            noSelection = True
-
-        # Création du menu contextuel ou alors récupération du menu donné en paramètre
+       # Création du menu contextuel
         if self.menuPersonnel:
-            menuPop = self.menuPersonnel
+            menuPop = self.Parent.GetMenuPersonnel()
             # On ajoute un séparateur ici ou dans la classe parent ?
             menuPop.AppendSeparator()
         else:
@@ -244,7 +225,7 @@ class ListView(FastObjectListView):
             bmp = wx.Bitmap(COCHER_16X16_IMG, wx.BITMAP_TYPE_PNG)
             item.SetBitmap(bmp)
             menuPop.Append(item)
-            self.Bind(wx.EVT_MENU, self.CocheTout, id=70)
+            self.Bind(wx.EVT_MENU, self.CocheListeTout, id=70)
 
         # Item Tout décocher
         if self.toutDecocher:
@@ -252,31 +233,25 @@ class ListView(FastObjectListView):
             bmp = wx.Bitmap(DECOCHER_16X16_IMG, wx.BITMAP_TYPE_PNG)
             item.SetBitmap(bmp)
             menuPop.Append(item)
-            self.Bind(wx.EVT_MENU, self.CocheRien, id=80)
+            self.Bind(wx.EVT_MENU, self.CocheListeRien, id=80)
 
         if self.inverserSelection and self.GetSelectedObject() is not None:
             item = wx.MenuItem(menuPop, 90, INVERSER_SELECTION_TXT)
             bmp = wx.Bitmap(DECOCHER_16X16_IMG, wx.BITMAP_TYPE_PNG)
             item.SetBitmap(bmp)
             menuPop.Append(item)
-            self.Bind(wx.EVT_MENU, self.InverserCocheSelection, id=90)
+            self.Bind(wx.EVT_MENU, self.CocheInvJusqua, id=90)
 
         # On met le separateur seulement si un des deux menus est present
         if self.toutDecocher or self.toutCocher:
             menuPop.AppendSeparator()
-        if self.parent.barreRecherche:
+        if self.parent.avecRecherche:
             # Item filtres
             item = wx.MenuItem(menuPop, 81, UN_FILTRE)
             bmp = wx.Bitmap(FILTRE_16X16_IMG, wx.BITMAP_TYPE_PNG)
             item.SetBitmap(bmp)
             menuPop.Append(item)
-            self.Bind(wx.EVT_MENU, self.UnFiltre, id=81)
-
-            item = wx.MenuItem(menuPop, 82, AJOUT_FILTRE)
-            bmp = wx.Bitmap(FILTRE_16X16_IMG, wx.BITMAP_TYPE_PNG)
-            item.SetBitmap(bmp)
-            menuPop.Append(item)
-            self.Bind(wx.EVT_MENU, self.AjoutFiltre, id=82)
+            self.Bind(wx.EVT_MENU, self.OnBoutonFiltrer, id=81)
 
             item = wx.MenuItem(menuPop, 83, SUPPRIMER_FILTRES)
             bmp = wx.Bitmap(FILTREOUT_16X16_IMG, wx.BITMAP_TYPE_PNG)
@@ -325,7 +300,9 @@ class ListView(FastObjectListView):
         menuPop.Destroy()
 
     def MenuNonVide(self):  # Permet de vérifier si le menu créé est vide
-        return self.exportExcel or self.exportTexte or self.apercuAvantImpression or self.toutCocher or self.toutDecocher or self.imprimer or self.menuPersonnel
+        return self.exportExcel or self.exportTexte \
+               or self.apercuAvantImpression or self.imprimer \
+               or self.toutCocher or self.toutDecocher or self.menuPersonnel
 
     def GetOrientationImpression(self):
         if self.orientationImpression:
@@ -352,27 +329,7 @@ class ListView(FastObjectListView):
         import xpy.outils.xexport
         xpy.outils.xexport.ExportExcel(self, titre=self.titreImpression, autoriseSelections=False)
 
-    def CocheTout(self, event=None):
-        if self.GetFilter() is not None:
-            listeObjets = self.GetFilteredObjects()
-        else:
-            listeObjets = self.GetObjects()
-        for track in listeObjets:
-            self.Check(track)
-            self.RefreshObject(track)
-        return
-
-    def CocheRien(self, event=None):
-        if self.GetFilter() is not None:
-            listeObjets = self.GetFilteredObjects()
-        else:
-            listeObjets = self.GetObjects()
-        for track in listeObjets:
-            self.Uncheck(track)
-            self.RefreshObject(track)
-        return
-
-    def InverserCocheSelection(self, event=None):
+    def zzCocheInvJusqua(self, event=None):
         if self.GetFilter() is not None:
             listeObjets = self.GetFilteredObjects()
         else:
@@ -391,14 +348,11 @@ class ListView(FastObjectListView):
     def GetTracksCoches(self):
         return self.GetCheckedObjects()
 
-    def UnFiltre(self, event=None):
-        self.parent.ctrloutils.UnFiltre()
-
-    def AjoutFiltre(self, event=None):
-        self.parent.ctrloutils.AjoutFiltre()
+    def OnBoutonFiltrer(self, event=None):
+        self.parent.ctrlOutils.OnBoutonFiltrer(event)
 
     def SupprimerFiltres(self, event=None):
-        self.parent.ctrloutils.SupprimerFiltres()
+        self.parent.ctrlOutils.SupprimerFiltres()
 
     def OnDelete(self,event):
         ix = 0
@@ -422,11 +376,11 @@ class PanelListView(wx.Panel):
         self.parent = parent
         stylePanel = wx.SUNKEN_BORDER | wx.TAB_TRAVERSAL
         wx.Panel.__init__(self, parent, id=id, style=stylePanel)
-        self.dictColFooter = kwargs.pop("dictColFooter", {})
-        if not "id" in kwargs: kwargs["id"] = wx.ID_ANY
-        if not "style" in kwargs: kwargs["style"] = wx.LC_REPORT|wx.NO_BORDER|wx.LC_HRULES|wx.LC_VRULES
+        self.dictColFooter = kwargs.pop('dictColFooter', {})
+        if not 'id' in kwargs: kwargs['id'] = wx.ID_ANY
+        if not 'style' in kwargs: kwargs['style'] = wx.LC_REPORT|wx.NO_BORDER|wx.LC_HRULES|wx.LC_VRULES
         if self.dictColFooter and len(self.dictColFooter.keys())>0:
-            kwargs["pnlFooter"]=True
+            kwargs['pnlFooter']=True
 
         self.buffertracks = None
         self.ctrl_listview = ListView(self,**kwargs)
@@ -488,7 +442,7 @@ class PanelListView(wx.Panel):
             olv.modelObjects.remove(track)
             olv.RepopulateList()
             olv._SelectAndFocus(ix)
-            wx.MessageBox(u" %d lignes supprimées et mémorisées pour prochain <ctrl> V"%len(self.buffertracks))
+            wx.MessageBox(" %d lignes supprimées et mémorisées pour prochain <ctrl> V"%len(self.buffertracks))
         return
 
     def OnCtrlV(self,event):
@@ -601,14 +555,20 @@ class PNL_params(wx.Panel):
 class PNL_corps(wx.Panel):
     #panel olv avec habillage optionnel pour recherche (en bas), boutons actions (à droite)
     def __init__(self, parent, dicOlv,*args, **kwds):
-        minSize = dicOlv.pop('minSize',(400,150))
         # size inutile car SizerAndFit l'ajustera
-        getActions = dicOlv.pop('getActions',None)
+        minSize =       dicOlv.pop('minSize',(400,150))
+        getActions =    dicOlv.pop('getActions',None)
+        self.avecRecherche= dicOlv.pop('recherche',True)
+        self.parent = parent
         # récupére les éventuels boutons d'actions
         if getActions:
             self.lstActions = getActions(self)
         else: self.lstActions = None
+
+        # init du super()
         wx.Panel.__init__(self, parent, *args,  **kwds)
+
+
         #ci dessous l'ensemble des autres paramètres possibles pour OLV
         lstParamsOlv = ['id',
                         'style',
@@ -634,12 +594,11 @@ class PNL_corps(wx.Panel):
                         'sortColumnIndex',
                         'sortAscending',
                         ]
+
         # le footer éventuel doit passer au niveau panel suivant, sinon on ne cherche pas à le transférer
         self.avecFooter = ('dictColFooter'  in dicOlv)
         if not self.avecFooter : lstParamsOlv.remove('dictColFooter')
-        if 'recherche' in dicOlv: self.barreRecherche = dicOlv['recherche']
-        else : self.barreRecherche = True
-        self.parent = parent
+
         #récup des seules clés possibles pour dicOLV
         dicOlvOut = {}
         for key,valeur in dicOlv.items():
@@ -648,12 +607,13 @@ class PNL_corps(wx.Panel):
 
         self.olv = PanelListView(self,**dicOlvOut)
         self.ctrlOlv = self.olv.ctrl_listview
+
         # choix  barre de recherche ou pas
-        if self.barreRecherche:
+        if self.avecRecherche:
             afficherCocher = False
             if self.ctrlOlv.checkStateColumn: afficherCocher = True
-            self.ctrloutils = CTRL_Outils(self, listview=self.ctrlOlv, afficherCocher=afficherCocher)
-            self.olv.ctrloutils = self.ctrloutils
+            self.ctrlOutils = CTRL_Outils(self, listview=self.ctrlOlv, afficherCocher=afficherCocher)
+            self.olv.ctrlOutils = self.ctrlOutils
         self.ctrlOlv.SetMinSize(minSize)
         self.ctrlOlv.MAJ()
         self.Sizer()
@@ -663,8 +623,8 @@ class PNL_corps(wx.Panel):
         sizerbase = wx.BoxSizer(wx.HORIZONTAL)
         sizercorps = wx.BoxSizer(wx.VERTICAL)
         sizercorps.Add(self.olv, 10, wx.EXPAND, 10)
-        if self.barreRecherche:
-            sizercorps.Add(self.ctrloutils, 0, wx.EXPAND, 10)
+        if self.avecRecherche:
+            sizercorps.Add(self.ctrlOutils, 0, wx.EXPAND, 10)
         sizerbase.Add(sizercorps, 10, wx.EXPAND, 10)
         # ajout des boutons d'actions
         if self.lstActions:
@@ -682,7 +642,7 @@ class PNL_pied(wx.Panel):
         self.dicOnClick = dicPied.pop('dicOnClick',None)
         if (not self.lstBtns) and (not self.lstInfos):
             #force la présence d'un pied d'écran par défaut
-            self.lstBtns = [('BtnOK', wx.ID_OK, wx.Bitmap("xpy/Images/100x30/Bouton_ok.png", wx.BITMAP_TYPE_ANY),
+            self.lstBtns = [('BtnOK', wx.ID_OK, wx.Bitmap('xpy/Images/100x30/Bouton_ok.png', wx.BITMAP_TYPE_ANY),
                            "Cliquez ici pour fermer la fenêtre et quitter")]
         wx.Panel.__init__(self, parent,  **kwds)
         self.parent = parent
@@ -755,33 +715,34 @@ class DLG_tableau(xusp.DLG_vide):
 
 if __name__ == '__main__':
     app = wx.App(0)
-    os.chdir("..")
+    os.chdir('..')
     # tableau OLV central de l'écran ,
     #                    stringConverter=xpy.outils.xformat.FmtMontant
     liste_Colonnes = [
-        ColumnDefn("null", 'centre', 0, "IX", valueSetter=''),
-        ColumnDefn("clé", 'centre', 60, "cle", valueSetter=True, isSpaceFilling=False ,cellEditorCreator = CellEditor.BooleanEditor),
-        ColumnDefn("mot d'ici", 'left', 200, "mot", valueSetter='A saisir', isEditable=True),
-        ColumnDefn("nbre", 'right', -1, "nombre", isSpaceFilling=True, valueSetter=0.0,
+        ColumnDefn("null", 'centre', 0, 'IX', valueSetter=''),
+        ColumnDefn("clé", 'centre', 60, 'cle', valueSetter=True,
+                   isSpaceFilling=False ,cellEditorCreator = CellEditor.BooleanEditor),
+        ColumnDefn("mot d'ici", 'left', 200, 'mot', valueSetter='A saisir', isEditable=True),
+        ColumnDefn("nbre", 'right', -1, 'nombre', isSpaceFilling=True, valueSetter=0.0,
                    stringConverter=xformat.FmtDecimal),
-        ColumnDefn("prix", 'left', 80, "prix", valueSetter=0.0, isSpaceFilling=True,cellEditorCreator = CellEditor.ComboEditor),
-        ColumnDefn("date", 'center', 80, "date", valueSetter=wx.DateTime.FromDMY(1, 0, 1900), isSpaceFilling=True,
+        ColumnDefn("prix", 'left', 80, 'prix', valueSetter=0.0, isSpaceFilling=True,cellEditorCreator = CellEditor.ComboEditor),
+        ColumnDefn("date", 'center', 80, 'date', valueSetter=wx.DateTime.FromDMY(1, 0, 1900), isSpaceFilling=True,
                    stringConverter=xformat.FmtDate),
-        ColumnDefn("choice", 'center', 40, "choice", valueSetter="mon item",choices=['CHQ','VRT','ESP'], isSpaceFilling=True,
+        ColumnDefn("choice", 'center', 40, 'choice', valueSetter='mon item',choices=['CHQ','VRT','ESP'], isSpaceFilling=True,
                    cellEditorCreator = CellEditor.ChoiceEditor,)
     ]
-    lstDonnees = [[1,False, "Bonjour", -1230.05939, -1230.05939, None,"deux"],
-                     [2,None, "Bonsoir", 57.5, 208.99,datetime.date.today(),None],
-                     [3,'', "Jonbour", 0, 'remisé', datetime.date(2018, 11, 20), "mon item"],
-                     [4,29, "Salut", 57.082, 209, wx.DateTime.FromDMY(28, 1, 2019),"Gérer l'entrée dans la cellule"],
-                     [None,None, "Salutation", 57.08, 0, wx.DateTime.FromDMY(1, 7, 1997), '2019-10-24'],
-                     [None,2, "Python", 1557.08, 29, wx.DateTime.FromDMY(7, 1, 1997), '2000-12-25'],
-                     [None,3, "Java", 57.08, 219, wx.DateTime.FromDMY(1, 0, 1900), None],
-                     [None,98, "langage C", 10000, 209, wx.DateTime.FromDMY(1, 0, 1900), ''],
+    lstDonnees = [[1,False, 'Bonjour', -1230.05939, -1230.05939, None,'deux'],
+                     [2,None, 'Bonsoir', 57.5, 208.99,datetime.date.today(),None],
+                     [3,'', 'Jonbour', 0, 'remisé', datetime.date(2018, 11, 20), 'mon item'],
+                     [4,29, 'Salut', 57.082, 209, wx.DateTime.FromDMY(28, 1, 2019),"Gérer l'entrée dans la cellule"],
+                     [None,None, 'Salutation', 57.08, 0, wx.DateTime.FromDMY(1, 7, 1997), '2019-10-24'],
+                     [None,2, 'Python', 1557.08, 29, wx.DateTime.FromDMY(7, 1, 1997), '2000-12-25'],
+                     [None,3, 'Java', 57.08, 219, wx.DateTime.FromDMY(1, 0, 1900), None],
+                     [None,98, 'langage C', 10000, 209, wx.DateTime.FromDMY(1, 0, 1900), ''],
                      ]
     dicOlv = {'lstColonnes': liste_Colonnes,
               'lstDonnees': lstDonnees,
-              'checkColonne': False,
+              'checkColonne': True,
               'recherche': True,
               'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
               'dictColFooter': {"nombre": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
@@ -794,7 +755,7 @@ if __name__ == '__main__':
                ('BtnOK', -1, wx.Bitmap("xpy/Images/100x30/Bouton_fermer.png", wx.BITMAP_TYPE_ANY),"Cliquez ici pour fermer la fenêtre")
                ]
     lstInfos = [wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, ),
-                wx.Bitmap("xpy/Images/16x16/Magique.png", wx.BITMAP_TYPE_PNG),
+                wx.Bitmap('xpy/Images/16x16/Magique.png', wx.BITMAP_TYPE_PNG),
                 "Autre\nInfo"]
 
     def modifLstInfos(self):
@@ -803,15 +764,15 @@ if __name__ == '__main__':
         return
     dicOnClick = {'BtnPrec': lambda evt: modifLstInfos(evt.EventObject.Parent)}
     # l'info se compmose d'une imgae et d'un texte
-    dicPied = {'lstBtns': lstBtns, 'dicOnClick': dicOnClick, "lstInfos": lstInfos}
+    dicPied = {'lstBtns': lstBtns, 'dicOnClick': dicOnClick, 'lstInfos': lstInfos}
 
     # cadre des paramètres
     import datetime
     dicParams = {
-            ("ident","Vos paramètres"):[
-                {'name': 'date', 'genre': 'Date', 'label': 'Début de période', 'value': datetime.date.today(),
+            ('ident',"Vos paramètres"):[
+            {'name': 'date', 'genre': 'Date', 'label': 'Début de période', 'value': datetime.date.today(),
                                     'help': 'Ce préfixe à votre nom permet de vous identifier'},
-                {'name': 'utilisateur', 'genre': 'String', 'label': 'Votre identifiant', 'value': "NomSession",
+            {'name': 'utilisateur', 'genre': 'String', 'label': 'Votre identifiant', 'value': "NomSession",
                                     'help': 'Confirmez le nom de sesssion de l\'utilisateur'},
                 ],
             }

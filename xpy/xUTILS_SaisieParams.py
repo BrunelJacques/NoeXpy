@@ -719,7 +719,7 @@ class BoxPanel(wx.Panel):
                         panel.ctrl.Bind(wx.EVT_TEXT_ENTER, self.parent.OnCtrlAction)
                         panel.ctrl.Bind(wx.EVT_KILL_FOCUS, self.parent.OnCtrlAction)
                         if panel.ctrl.genreCtrl in ['enum','combo','multichoice','choice']:
-                            panel.ctrl.Bind(wx.EVT_COMBOBOX_DROPDOWN,self.parent.OnCtrlAction)
+                            panel.ctrl.Bind(wx.EVT_COMBOBOX,self.parent.OnCtrlAction)
                             panel.ctrl.Bind(wx.EVT_CHECKBOX, self.parent.OnCtrlAction)
 
                     self.lstPanels.append(panel)

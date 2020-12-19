@@ -2495,7 +2495,7 @@ class ObjectListView(wx.ListCtrl):
             self.RefreshObject(track)
         #self.OnCheck(None)
 
-    def CocheJusqua(self, event=None):
+    def CocheInvJusqua(self, event=None):
         listeObjects = self.innerList  # listview.GetFilteredObjects()
         selection = self.GetSelectedObject()
         for track in listeObjects:
@@ -4365,7 +4365,7 @@ class CTRL_Outils(wx.Panel):
         if ID == 21:
             self.listview.CocheListeRien()
         if ID == 22:
-            self.listview.CocheJusqua()
+            self.listview.CocheInvJusqua()
 
 #======================================================================
 
@@ -4376,6 +4376,7 @@ class TrackVierge(object):
         self.vierge = True
         self.valide = False
         for column in olv.columns:
+            if column.isInternal: continue
             value = None
             if column.valueSetter != None:
                 value = column.valueSetter

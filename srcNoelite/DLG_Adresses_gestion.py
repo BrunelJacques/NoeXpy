@@ -95,6 +95,7 @@ def ComposeLstDonnees(record,lstChamps,lstColonnes):
 class Pnl_tableau(xgtr.PNL_tableau):
     def __init__(self,parent,dicOlv):
 
+        dicOlv['menuPersonnel'] = True
         dicOlv['autoSizer'] = False
         xgtr.PNL_tableau.__init__(self,parent,dicOlv)
         # Boutons
@@ -119,6 +120,20 @@ class Pnl_tableau(xgtr.PNL_tableau):
         self.ProprietesOlv()
         self.Sizer()
 
+    def GetMenuPersonnel(self):
+        menuPop = wx.Menu()
+        # On met un separateur
+        menuPop.AppendSeparator()
+        item = wx.MenuItem(menuPop, 13, "Téléphones/Mails")
+        item.SetBitmap(wx.Bitmap("xpy/Images/16x16/Mobile.png", wx.BITMAP_TYPE_PNG))
+        menuPop.Append(item)
+        self.Bind(wx.EVT_MENU, self.OnCoord, id=13)
+        item = wx.MenuItem(menuPop, 17, "Gérer l'adresse")
+        item.SetBitmap(wx.Bitmap("xpy/Images/16x16/Boite.png", wx.BITMAP_TYPE_PNG))
+        menuPop.Append(item)
+        self.Bind(wx.EVT_MENU, self.OnDblClick, id=17)
+        return menuPop
+
     def OnCoord(self,event):
         self.choix = self.ctrlOlv.GetSelectedObject()
         if self.choix == None:
@@ -138,14 +153,13 @@ class Pnl_tableau(xgtr.PNL_tableau):
             dlg2 = nsc.DlgAdrMelTel(ID,mode=self.parent.mode, titre=u"Adresse de %d - %s %s"%(ID,nom,prenom))
             ret = dlg2.ShowModal()
             if ret == wx.OK and self.parent.mode == 'individus':
-                tel_domicile, tel_mobile, mail = dlg2.GetRetourInd()
-                self.choix.tel_domicile = tel_domicile
-                self.choix.tel_mobile = tel_mobile
+                nele,teldomicile, telmobile, mail = dlg2.GetRetourInd()
+                self.choix.naissance = nele
+                self.choix.teldomicile= teldomicile
+                self.choix.telmobile = telmobile
                 self.choix.mail = mail
                 self.ctrlOlv.SelectObject(self.choix)
-            self.ctrlOlv.SelectObject(self.choix)
             dlg2.Destroy()
-            event.Skip()
 
     def OnDblClick(self,event):
         self.choix = self.ctrlOlv.GetSelectedObject()
@@ -173,7 +187,6 @@ class Pnl_tableau(xgtr.PNL_tableau):
                 self.choix.cp = cp
                 self.ctrlOlv.SelectObject(self.choix)
             dlg2.Destroy()
-            event.Skip()
 
     def OnDblClicFermer(self, event):
         self.parent.EndModal(wx.ID_CANCEL)
@@ -247,7 +260,12 @@ class Dialog(wx.Dialog):
         whereFiltre = ''
         if filtreTxt and len(filtreTxt) >0:
             whereFiltre = xformat.ComposeWhereFiltre(filtreTxt,lstChamps, lstColonnes = lstColonnes)
-        req = """SELECT %s
+
+        req = """FLUSH  TABLES individus;"""
+        retour = db.ExecuterReq(req, mess='%s.GetIndividus' % NOM_MODULE)
+
+        req = """
+                SELECT %s
                 FROM individus
                 %s
                 ORDER BY %s DESC
@@ -283,6 +301,9 @@ class Dialog(wx.Dialog):
         whereFiltre = ''
         if filtreTxt and len(filtreTxt) >0:
                 whereFiltre = xformat.ComposeWhereFiltre(filtreTxt,lstChamps, lstColonnes = lstColonnes,lien='WHERE')
+
+        req = """FLUSH  TABLES individus;"""
+        retour = db.ExecuterReq(req, mess='%s.GetIndividus' % NOM_MODULE)
         req = """   SELECT %s
                     FROM familles 
                     INNER JOIN individus ON familles.adresse_individu = individus.IDindividu

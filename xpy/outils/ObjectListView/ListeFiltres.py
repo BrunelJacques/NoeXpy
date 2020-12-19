@@ -70,7 +70,7 @@ class DLG_listeFiltres(xusp.DLG_listCtrl):
                 lstSet.append(col.valueSetter)
             listview.lstSetterValues = lstSet
         for value in listview.lstSetterValues:
-            if not value:
+            if value == None:
                 ix = listview.lstSetterValues.index(value)
                 value = listview.CalcNonNullValue(ix)
                 listview.lstSetterValues[ix] = value

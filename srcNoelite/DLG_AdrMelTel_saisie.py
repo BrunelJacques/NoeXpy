@@ -37,9 +37,9 @@ def GetDicOlvInd():
     lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
 
     # personnalise les colonnes : fixe les éditables, pose minwidth
-    for col in lstColonnes[4:]:
+    for col in lstColonnes[3:]:
         col.isEditable=True
-    for col in lstColonnes[:4]:
+    for col in lstColonnes[:3]:
         col.isEditable=False
     for col in lstColonnes:
         if col.width == -1: col.minimumWidth=60
@@ -309,7 +309,7 @@ class DlgAdrMelTel(xusp.DLG_vide):
         self.ctrl.MAJ()
 
     def GetRetourInd(self):
-        return (self.fixe,self.mobile,self.mail)
+        return (self.nele,self.teldomicile,self.telmobile,self.mail1)
 
     def Final(self):
         if len(self.ctrl.lstDonnees) == 0: return
@@ -330,9 +330,10 @@ class DlgAdrMelTel(xusp.DLG_vide):
             DB.ReqMAJ('familles',nomChampID='IDfamille',ID=self.IDref,lstChamps=['refus_pub','refus_mel'],
                       lstDonnees=donnees,mess="MAJ DLG_AdrMel refus")
         ligne = self.ctrl.lstDonnees[0]
-        self.fixe = ligne[self.ctrl.lstCodesColonnes.index('teldomicile')]
-        self.mobile = ligne[self.ctrl.lstCodesColonnes.index('telmobile')]
-        self.mail = ligne[self.ctrl.lstCodesColonnes.index('mail1')]
+        self.nele = ligne[self.ctrl.lstCodesColonnes.index('nele')]
+        self.teldomicile = ligne[self.ctrl.lstCodesColonnes.index('teldomicile')]
+        self.telmobile = ligne[self.ctrl.lstCodesColonnes.index('telmobile')]
+        self.mail1 = ligne[self.ctrl.lstCodesColonnes.index('mail1')]
         DB.Close()
 
 if __name__ == "__main__":
