@@ -132,7 +132,7 @@ def GetMatriceDepots():
 
     lstNomsColonnes = ['0','numéro', 'date', 'nomDépôt', 'banque', 'nbre', 'total', 'détail', 'observations']
 
-    lstTypes = ['INTEGER','INTEGER','VARCHAR(10)','VARCHAR(80)','VARCHAR(130)','VARCHAR(10)','VARCHAR(10)','VARCHAR(170)','VARCHAR(170)']
+    lstTypes = ['INTEGER','INTEGER','DATE','VARCHAR(80)','VARCHAR(130)','VARCHAR(10)','VARCHAR(10)','VARCHAR(170)','VARCHAR(170)']
     lstCodesColonnes = [xformat.SupprimeAccents(x).lower() for x in lstNomsColonnes]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
     lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes)
@@ -148,7 +148,7 @@ def GetMatriceDepots():
                 'sensTri' : False,
                 'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
-                }
+                'size':(900, 400)                }
 
 def GetDepots(db=None,dicOlv={}, limit=100,**kwd):
     # ajoute les données à la matrice pour la recherche d'un depot
@@ -263,7 +263,7 @@ def GetModesReglements(db,**kwd):
     if db.echec == 1:
         wx.MessageBox("ECHEC accès Noethys!\n\nabandon...")
         return wx.ID_ABORT
-    ldModesRegls = []
+    ddModesRegls = {}
     lstChamps = ['IDmode','label','numero_piece','nbre_chiffres','type_comptable','code_compta']
     req = """   SELECT %s
                 FROM modes_reglements
@@ -279,8 +279,34 @@ def GetModesReglements(db,**kwd):
         dicModeRegl = {}
         for ix in range(len(lstChamps)):
             dicModeRegl[lstChamps[ix]] = record[ix]
-        ldModesRegls.append(dicModeRegl)
-    return ldModesRegls
+        ddModesRegls[dicModeRegl['IDmode']] = dicModeRegl
+    return ddModesRegls
+
+def GetEmetteurs(db,lstModes,**kwd):
+    if db.echec == 1:
+        wx.MessageBox("ECHEC accès Noethys!\n\nabandon...")
+        return wx.ID_ABORT
+    dlEmetteurs = {}
+    dlIDemetteurs = {}
+    
+    for mode in lstModes:
+        dlEmetteurs[mode] = []
+        dlIDemetteurs[mode] = []
+    lstChamps = ['IDemetteur','IDmode','nom']
+    modes = [str(x) for x in lstModes]
+    req = """   SELECT %s
+                FROM emetteurs
+                WHERE IDmode IN (%s)
+                ;"""%(",".join(lstChamps),",".join(modes))
+    retour = db.ExecuterReq(req, mess='UTILS_Reglements.GetEmetteurs' )
+    recordset = ()
+    if retour == "ok":
+        recordset = db.ResultatReq()
+    else: return wx.ID_ABORT
+    for IDemetteur,IDmode,nom in recordset:
+        dlEmetteurs[IDmode].append(nom)
+        dlIDemetteurs[IDmode].append(IDemetteur)
+    return dlEmetteurs, dlIDemetteurs
 
 def GetDesignationFamille(db,IDfamille,**kwd):
     if not isinstance(IDfamille,int): return ""
@@ -322,34 +348,81 @@ def SetPayeur(db,IDcompte_payeur,nom,**kwd):
     ID = db.newID
     return ID
 
-def GetReglements(db,IDdepot,**kwd):
-    lstDonnees = []
-    #            IDreglement,date,IDfamille,designation,payeur,labelmode,numero,libelle,montant,IDpiece in recordset
-    lstChamps = ['reglements.IDreglement', 'reglements.date', 'reglements.IDcompte_payeur', 'familles.adresse_intitule',
-                 'payeurs.nom', 'modes_reglements.label', 'reglements.numero_piece', 'reglements.observations', 
-                 'reglements.montant', 'reglements.IDpiece','prestations.compta','reglements.compta']
+def TransposeDonnees(dlg,recordset,lstCodesChamps,lstCodesDonnees):
+    # ajustement des choix possibles selon le contenu du règlement
+    ixnat = lstCodesDonnees.index('nature')
+    ixdat = lstCodesDonnees.index('date')
+    ixmode = lstCodesDonnees.index('mode')
+    ixcreer = lstCodesDonnees.index('creer')
 
+    # les derniers champs ne sont pas dans la grille à afficher, mais tous dans les données
+    lstDonnees = []
+    # chaque ligne du recordset crée une ligne de données
+    for record in recordset:
+        donnees = [None, ] * len(lstCodesDonnees)
+
+        # alimente tous les champs de données présents dans le recordset en l'état
+        for ixdon in range(len(lstCodesDonnees)):
+            if lstCodesDonnees[ixdon] in lstCodesChamps:
+                ixch = lstCodesChamps.index(lstCodesDonnees[ixdon])
+                donnees[ixdon]= record[ixch]
+
+        # recherche du mode de règlement
+        IDmode = record[lstCodesChamps.index('IDmode')]
+        donnees[ixmode] = dlg.ddModesRegl[IDmode]['choice']
+
+        # détermination de la nature 'Règlement','Acompte','Don','Debour','Libre'
+        ixcat = lstCodesChamps.index('prestcateg')
+        if record[ixcat] and record[ixcat].lower() == 'don':
+            donnees[ixnat] = 'Don'
+            creer = 'O'
+        elif record[ixcat] and record[ixcat].lower() == 'debour':
+            donnees[ixnat] = 'Debour'
+            creer = 'O'
+        elif record[ixcat] and record[ixcat].lower() > 0:
+            donnees[ixnat] = 'Règlement'
+            creer = 'N'
+        else:
+            donnees[ixnat] = 'Acompte'
+            creer = 'N'
+        donnees[ixcreer] = creer
+
+        # date remise en format français
+        donnees[ixdat] = xformat.DateSqlToDatetime(donnees[ixdat])
+        lstDonnees.append(donnees)
+    return lstDonnees
+
+def GetReglements(dlg,IDdepot):
+    # Appelle les règlements associés à un dépôt
+    db = dlg.db
+    lstChamps = ['reglements.IDreglement','reglements.date','reglements.IDcompte_payeur','familles.adresse_intitule',
+            'payeurs.nom','reglements.IDmode','emetteurs.nom','reglements.numero_piece','reglements.observations',
+            'reglements.montant','Null','reglements.IDpiece','prestations.categorie','prestations.compta',
+            'reglements.compta', 'COUNT(ventilation.IDventilation)']
+    
+    lstCodesChamps = ['IDreglement','date','IDfamille','designation','payeur','IDmode','emetteur',
+                    'numero','libelle','montant','creer','IDpiece','prestcateg','prestcpta','reglcompta','nbventil']
+
+    #            IDreglement,date,IDfamille,designation,payeur,labelmode,numero,libelle,montant,IDpiece in recordset
     req = """   SELECT %s
-                FROM ((( reglements 
-                        LEFT JOIN modes_reglements ON reglements.IDmode = modes_reglements.IDmode) 
+                FROM (((( reglements 
                         LEFT JOIN payeurs ON reglements.IDpayeur = payeurs.IDpayeur) 
+                        LEFT JOIN emetteurs ON reglements.IDemetteur = emetteurs.IDemetteur) 
                         LEFT JOIN familles ON reglements.IDcompte_payeur = familles.IDfamille)
-                        LEFT JOIN prestations ON reglements.IDpiece = prestations.IDprestation
+                        LEFT JOIN prestations ON reglements.IDpiece = prestations.IDprestation)
+                        LEFT JOIN ventilation ON reglements.IDreglement = ventilation.IDreglement
                 WHERE ((reglements.IDdepot = %d))
-                ;""" % (",".join(lstChamps),IDdepot)
+                GROUP BY %s
+                ;""" % (",".join(lstChamps),IDdepot,",".join(lstChamps[:-1]))
 
     retour = db.ExecuterReq(req, mess='UTILS_Reglements.GetReglements')
     recordset = ()
     if retour == "ok":
         recordset = db.ResultatReq()
 
-    for IDreglement,date,IDfamille,designation,payeur,labelmode,numero,libelle,montant,IDpiece,prestcpta,compta in recordset:
-        creer = "N"
-        # la reprise force la non création car déjà potentiellement fait. IDpiece contient l'ID de la prestation créée
-        lstDonneesTrack = [IDreglement, date, IDfamille, designation,payeur, labelmode, numero, "", "", libelle,
-                           montant,creer,IDpiece,prestcpta,compta]
-        lstDonnees.append(lstDonneesTrack)
-    return lstDonnees
+    lstCodesDonnees = dlg.ctrlOlv.lstCodesColonnes + dlg.ctrlOlv.lstCodesSup
+
+    return TransposeDonnees(dlg,recordset,lstCodesChamps,lstCodesDonnees)
 
 def GetNewIDreglement(db,lstID,**kwd):
     # Recherche le prochain ID reglement après ceux de la base et éventuellement déjà dans la liste ID préaffectés
@@ -391,7 +464,7 @@ def ValideLigne(db,track):
         track.messageRefus += "Vous devez obligatoirement sélectionner un mode de règlement !\n"
 
     # Numero de piece
-    if track.mode[:3].upper() == 'CHQ':
+    if  track.mode and track.mode[:3].upper() == 'CHQ':
         if not track.numero or len(track.numero)<4:
             track.messageRefus += "Vous devez saisir un numéro de chèque 4 chiffres mini!\n"
         # libelle pour chèques
@@ -505,10 +578,9 @@ def SauveLigne(db,dlg,track):
 
 def DeleteLigne(db,track):
     # --- Supprime les différents éléments associés à la ligne ---
-    # si le montant est à zéro il n'y a pas eu d'enregistrements
-    if track.montant != 0.0:
+    if track.IDreglement != 0.0:
         # suppression  du réglement et des ventilations
-        ret = db.ReqDEL("reglements", "IDreglement", track.IDreglement,affichError=False)
+        ret = db.ReqDEL("reglements", "IDreglement", track.IDreglement,affichError=True)
         if track.valide:
             # --- Mémorise l'action dans l'historique ---
             if ret == 'ok':
@@ -529,7 +601,8 @@ def DeleteLigne(db,track):
 
 def SetReglement(dlg,track,db):
     # --- Sauvegarde du règlement ---
-    IDmode = dlg.dicModesRegl[track.mode]['IDmode']
+    IDmode = dlg.dicModesChoices[track.mode]['IDmode']
+    # transposition du payeur en son ID
     IDpayeur = None
     if not hasattr(dlg.pnlOlv,'ldPayeurs'):
         dlg.pnlOlv.ldPayeurs = GetPayeurs(db,track.IDfamille)
@@ -540,11 +613,17 @@ def SetReglement(dlg,track,db):
     if not IDpayeur:
         IDpayeur = SetPayeur(db,track.IDfamille,track.payeur)
 
+    # transposition de l'émetteur en son ID
+    IDemetteur = None
+    lstEmetteurs = dlg.dlEmetteurs[IDmode]
+    if len(lstEmetteurs) >= 0 and track.emetteur:
+        IDemetteur = dlg.dlIDemetteurs[IDmode][lstEmetteurs.index(track.emetteur)]
     lstDonnees = [
         ("IDreglement", track.IDreglement),
         ("IDcompte_payeur", track.IDfamille),
         ("date", xformat.DatetimeToStr(track.date,iso=True)),
         ("IDmode", IDmode),
+        ("IDemetteur", IDemetteur),
         ("numero_piece", track.numero),
         ("montant", track.montant),
         ("IDpayeur", IDpayeur),

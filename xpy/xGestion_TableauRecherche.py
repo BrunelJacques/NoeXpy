@@ -20,16 +20,23 @@ from xpy.outils.xconst import *
 
 class TrackGeneral(object):
     #    Cette classe va transformer une ligne en objet selon les listes de colonnes et valeurs par défaut(setter)
-    def __init__(self, donnees,codesColonnes, nomsColonnes, setterValues):
+    def __init__(self, donnees,codesColonnes, nomsColonnes, setterValues,codesSup=[]):
+        # il peut y avoir plus de données que le nombre de colonnes, elles sont non gérées par le tableau
+        if not (len(donnees)-len(codesSup) == len(codesColonnes) == len(nomsColonnes) == len(setterValues) ):
+            lst = [str(codesColonnes),str(nomsColonnes),str(setterValues),str(donnees)]
+            mess = "Problème de nombre d'occurences!\n\n"
+            mess += "%d - %d donnees, %d codes, %d colonnes et %d valeurs défaut"%(len(donnees),len(codesSup),
+                                                        len(codesColonnes), len(nomsColonnes), len(setterValues))
+            mess += '\n\n'+'\n\n'.join(lst)
+            wx.MessageBox(mess,caption="xGestion_TableauEditor.TrackGeneral")
         self.donnees = donnees
-        if not(len(donnees) == len(codesColonnes)== len(nomsColonnes) == len(setterValues)):
-            wx.MessageBox("Problème de nombre d'occurences!\n%d donnees, %d codes, %d colonnes et %d valeurs défaut"
-                          %(len(donnees), len(codesColonnes), len(nomsColonnes), len(setterValues)))
-        for ix in range(min(len(donnees),len(setterValues))):
+        for ix in range(len(codesColonnes + codesSup)):
             donnee = donnees[ix]
             if setterValues[ix]:
+                # prise de la valeur par défaut si pas de donnée
                 if (donnee is None):
                     donnee = setterValues[ix]
+                # le type de la donnée n'est pas celui attendu
                 else:
                     if not isinstance(donnee,type(setterValues[ix])):
                         try:
@@ -37,8 +44,10 @@ class TrackGeneral(object):
                                 donnee = float(donnee)
                             elif type(setterValues[ix]) == str:
                                 donnee = str(donnee)
+                            elif isinstance(setterValues[ix],(wx.DateTime,datetime.date,datetime.datetime,datetime.time)):
+                                donnee = xformat.DateSqlToDatetime(donnee)
                         except : pass
-            self.__setattr__(codesColonnes[ix], donnee)
+            self.__setattr__((codesColonnes + codesSup)[ix], donnee)
 
 class ListView(FastObjectListView):
     """
@@ -78,6 +87,7 @@ class ListView(FastObjectListView):
         style = kwds.pop('style', wx.LC_SINGLE_SEL)
         self.checkColonne = kwds.pop('checkColonne',False)
         self.lstColonnes = kwds.pop('lstColonnes', [])
+        self.lstCodesSup = kwds.pop('lstCodesSup', [])
         self.msgIfEmpty = kwds.pop('msgIfEmpty', 'Tableau vide')
         self.sortColumnIndex = kwds.pop('sortColumnIndex', None)
         self.sensTri = kwds.pop('sensTri', True)
@@ -152,8 +162,8 @@ class ListView(FastObjectListView):
         if self.lstDonnees is None:
             return tracks
         for ligneDonnees in self.lstDonnees:
-            tracks.append(TrackGeneral(donnees=ligneDonnees,codesColonnes=self.lstCodesColonnes,
-                                            nomsColonnes=self.lstNomsColonnes,setterValues=self.lstSetterValues))
+            tracks.append(TrackGeneral(ligneDonnees,self.lstCodesColonnes,self.lstNomsColonnes,self.lstSetterValues,
+                                        codesSup=self.lstCodesSup))
         return tracks
 
     def InitObjectListView(self):
@@ -357,6 +367,7 @@ class PNL_tableau(wx.Panel):
         lstParamsOlv = ['id',
                         'style',
                         'lstColonnes',
+                        'lstCodesSup',
                         'lstChamps',
                         'sortColumnIndex',
                         'getDonnees',

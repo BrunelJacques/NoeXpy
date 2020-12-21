@@ -238,7 +238,7 @@ class Pnl_corps(xgte.PNL_corps):
         self.flagSkipEdit = False
         self.oldRow = None
 
-    def OnEditStarted(self,code):
+    def OnEditStarted(self,code,editor=None):
         # affichage de l'aide
         if code in lDIC_INFOS.keys():
             self.parent.pnlPied.SetItemsInfos( lDIC_INFOS[code],

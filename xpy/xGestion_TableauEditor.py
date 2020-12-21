@@ -20,12 +20,17 @@ from xpy.outils.xconst          import *
 
 class TrackGeneral(object):
     #    Cette classe va transformer une ligne en objet selon les listes de colonnes et valeurs par défaut(setter)
-    def __init__(self, donnees,codesColonnes, nomsColonnes, setterValues):
-        self.donnees = donnees
-        if not(len(donnees) == len(codesColonnes)== len(nomsColonnes) == len(setterValues)):
-            wx.MessageBox("Problème de nombre d'occurences!\n%d donnees, %d codes, %d colonnes et %d valeurs défaut"
-                          %(len(donnees), len(codesColonnes), len(nomsColonnes), len(setterValues)))
-        for ix in range(len(donnees)):
+    def __init__(self, donnees,codesColonnes, nomsColonnes, setterValues,codesSup=[]):
+        # il peut y avoir plus de données que le nombre de colonnes, elles sont non gérées par le tableau
+        if not (len(donnees)-len(codesSup) == len(codesColonnes) == len(nomsColonnes) == len(setterValues) ):
+            lst = [str(codesColonnes),str(nomsColonnes),str(setterValues),str(donnees)]
+            mess = "Problème de nombre d'occurences!\n\n"
+            mess += "%d - %d donnees, %d codes, %d colonnes et %d valeurs défaut"%(len(donnees),len(codesSup),
+                                                        len(codesColonnes), len(nomsColonnes), len(setterValues))
+            mess += '\n\n'+'\n\n'.join(lst)
+            wx.MessageBox(mess,caption="xGestion_TableauEditor.TrackGeneral")
+        # pour chaque donnée affichée, attribut et ctrl setter value
+        for ix in range(len(codesColonnes)):
             donnee = donnees[ix]
             if setterValues[ix]:
                 # prise de la valeur par défaut si pas de donnée
@@ -42,7 +47,13 @@ class TrackGeneral(object):
                             elif isinstance(setterValues[ix],(wx.DateTime,datetime.date,datetime.datetime,datetime.time)):
                                 donnee = xformat.DateSqlToDatetime(donnee)
                         except : pass
-            self.__setattr__(codesColonnes[ix], donnee)
+            self.__setattr__((codesColonnes + codesSup)[ix], donnee)
+        # complément des autres données
+        for ixrel in range(len(codesSup)):
+            ixabs = len(codesColonnes) + ixrel
+            self.__setattr__((codesSup)[ixrel],donnees[ixabs])
+        self.donnees = donnees
+
 
 class ListView(FastObjectListView):
     """
@@ -83,6 +94,7 @@ class ListView(FastObjectListView):
         self.pnlFooter = kwds.pop('pnlFooter', None)
         self.checkColonne = kwds.pop('checkColonne',True)
         self.lstColonnes = kwds.pop('lstColonnes', [])
+        self.lstCodesSup = kwds.pop('lstCodesSup', [])
         self.editMode = kwds.pop('editMode', True)
         self.msgIfEmpty = kwds.pop('msgIfEmpty', 'Tableau vide')
         self.sortColumnIndex = kwds.pop('sortColumnIndex', None)
@@ -137,8 +149,8 @@ class ListView(FastObjectListView):
     def AddTracks(self,lstDonnees):
         tracks = []
         for ligneDonnees in lstDonnees:
-            tracks.append(TrackGeneral(donnees=ligneDonnees,codesColonnes=self.lstCodesColonnes,
-                                            nomsColonnes=self.lstNomsColonnes,setterValues=self.lstSetterValues))
+            tracks.append(TrackGeneral( ligneDonnees,self.lstCodesColonnes,self.lstNomsColonnes,self.lstSetterValues,
+                                        codesSup=self.lstCodesSup))
         self.AddObjects(tracks)
 
     def formerTracks(self):
@@ -147,8 +159,8 @@ class ListView(FastObjectListView):
             return tracks
 
         for ligneDonnees in self.lstDonnees:
-            tracks.append(TrackGeneral(donnees=ligneDonnees,codesColonnes=self.lstCodesColonnes,
-                                        nomsColonnes=self.lstNomsColonnes,setterValues=self.lstSetterValues))
+            tracks.append(TrackGeneral(ligneDonnees,self.lstCodesColonnes,self.lstNomsColonnes,self.lstSetterValues,
+                                        codesSup=self.lstCodesSup))
         return tracks
 
     def formerCodeColonnes(self):
@@ -479,7 +491,7 @@ class PanelListView(wx.Panel):
 
         # appel des éventuels spécifiques
         if hasattr(self.parent, 'OnEditStarted'):
-            self.parent.OnEditStarted(code)
+            self.parent.OnEditStarted(code,editor=event.editor)
 
         olv = self.ctrl_listview
         if olv.cellBeingEdited:
@@ -487,11 +499,6 @@ class PanelListView(wx.Panel):
             track = olv.GetObjectAt(row)
             track.old_data = track.donnees[col]
         event.Skip()
-
-    def ValideLigne(self,track):
-        # Cette procédure peut générer deux attributs track.valide track.message interceptés par CellEditor.
-        if hasattr(self.parent, 'ValideLigne'):
-            self.parent.ValideLigne(track)
 
     def OnEditFinishing(self, event):
         self.event = event
@@ -502,7 +509,7 @@ class PanelListView(wx.Panel):
         code = self.ctrl_listview.lstCodesColonnes[col]
         # appel des éventuels spécifiques
         if hasattr(self.parent, 'OnEditFinishing'):
-            self.parent.OnEditFinishing(code,self.valeur,parent=self)
+            self.parent.OnEditFinishing(code,self.valeur,editor=event.editor)
         # stockage de la nouvelle saisie
         track.__setattr__(code, self.valeur)
         track.donnees[col] = self.valeur
@@ -516,7 +523,7 @@ class PanelListView(wx.Panel):
             # appel des éventuels spécifiques
             if hasattr(self.parent, 'OnEditFinished'):
                 code = self.ctrl_listview.lstCodesColonnes[col]
-                self.parent.OnEditFinished(code, track, parent=self)
+                self.parent.OnEditFinished(code, track, editor=event.editor)
 
             self.ValideLigne(track)
         event.Skip()
@@ -526,6 +533,11 @@ class PanelListView(wx.Panel):
         if self.ctrl_listview.cellBeingEdited:
             self.parent.OnEditFunctionKeys(event)
             event.Skip()
+
+    def ValideLigne(self,track):
+        # Cette procédure peut générer deux attributs track.valide track.message interceptés par CellEditor.
+        if hasattr(self.parent, 'ValideLigne'):
+            self.parent.ValideLigne(track)
 
     # Initialisation d'une nouvelle track
     def InitTrackVierge(self,track,trackN1):
@@ -573,6 +585,7 @@ class PNL_corps(wx.Panel):
         lstParamsOlv = ['id',
                         'style',
                         'lstColonnes',
+                        'lstCodesSup',
                         'lstDonnees',
                         'msgIfEmpty',
                         'sensTri',

@@ -22,16 +22,17 @@ from xpy.outils                 import xformat,xbandeau
 TITRE = "Bordereau d'un dépôt de réglements: création, modification"
 INTRO = "Définissez la banque, choisissez un numéro si c'est pour une reprise, puis saisissez les règlements dans le tableau"
 DIC_INFOS = {'date':"Flèche droite pour le mois et l'année, Entrée pour valider.\nC'est la date de réception du règlement, qui sera la date comptable",
-            'IDfamille':    "<F4> Choix d'une famille, ou saisie directe du no famille",
-            'payeur':     "<F4> Gestion des payeurs, <UP> <DOWN> pour défiler l'existant",
-            'mode':         "<UP> <DOWN> pour défiler les possibles ou première lettre, \nChèques, Chèques non déposés, Virements,Espèces",
-            'numero':       "Derniers caractères du numéro du moyen de paiement ou référence externe",
-            'nature':       "<UP> <DOWN> pour défiler les nature d'affectation du reglement,\n"+
-                            "'Ne pas créer' pour une prestation déjà saisie dans Noethys",
-            'IDarticle':   "<F4> Choix d'une affectation du réglement selon sa nature ",
-            'libelle':     "S'il est connu, précisez l'affectation (objet) du règlement",
-            'montant':      "Montant en €",
-            'differe':     "Date future pour le dépot du chèque ou la promesse de règlement",
+            'IDfamille': "<F4> Choix d'une famille, ou saisie directe du no famille",
+            'payeur':   "<F4> Gestion des payeurs, <UP> <DOWN> pour défiler l'existant",
+            'mode':     "<UP> <DOWN> pour défiler les possibles ou première lettre, \nChèques, Chèques non déposés, Virements,Espèces",
+            'emetteur': "<UP> <DOWN> pour défiler les banques possibles ou première lettre, \nIl s'agit de la banque émétrice du chèque",
+            'numero':   "Derniers caractères du numéro du moyen de paiement ou référence externe",
+            'nature':   "<UP> <DOWN> pour défiler les nature d'affectation du reglement,\n"+
+                        "'Libre' pour une prestation déjà saisie dans Noethys, qu'il faudra rattacher ensuite",
+            'IDarticle':"<F4> Choix d'une affectation du réglement selon sa nature ",
+            'libelle':  "S'il est connu, précisez l'affectation (objet) du règlement",
+            'montant':  "Montant en €",
+            'differe':  "Date future pour le dépot du chèque ou la promesse de règlement",
              }
 
 INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
@@ -61,9 +62,12 @@ def GetOlvColonnes(dlg):
             ColumnDefn("mode", 'centre', 50, 'mode', valueSetter='',choices=['VRT virement', 'CHQ chèque','ESP espèces'],
                        isSpaceFilling=False,
                         cellEditorCreator=CellEditor.ChoiceEditor),
+            ColumnDefn("bqe ori.", 'centre', 120, 'emetteur',
+                        isSpaceFilling=False,
+                        cellEditorCreator=CellEditor.ChoiceEditor),
             ColumnDefn("n°ref", 'left', 50, 'numero', isSpaceFilling=False),
-            ColumnDefn("nat", 'centre', 50, 'nature',valueSetter='Règlement',
-                       choices=['Règlement','Acompte','Don','Debour','Ne pas créer'], isSpaceFilling=False,
+            ColumnDefn("nat", 'centre', 75, 'nature',valueSetter='Règlement',
+                       choices=['Règlement','Acompte','Don','Debour','Libre'], isSpaceFilling=False,
                         cellEditorCreator=CellEditor.ChoiceEditor),
             ColumnDefn("article", 'left', 50, 'article', isSpaceFilling=False,
                         isEditable=False),
@@ -79,6 +83,8 @@ def GetOlvColonnes(dlg):
                         isEditable=False),
             ]
 
+def GetOlvCodesSup(dlg):
+    return ['prestcateg','prestcpta','reglcompta','nbventil']
 def GetOlvOptions(dlg):
     # retourne les paramètres de l'OLV del'écran général
     return {
@@ -207,7 +213,7 @@ class PNL_corpsReglements(xgte.PNL_corps):
         # raz de certains champs à recomposer
         (track.IDreglement, track.date, track.IDprestation, track.IDpiece,track.compta) = (None,)*5
 
-    def OnEditStarted(self,code):
+    def OnEditStarted(self,code,editor=None):
         # affichage de l'aide
         if code in DIC_INFOS.keys():
             self.parent.pnlPied.SetItemsInfos( DIC_INFOS[code],
@@ -238,7 +244,19 @@ class PNL_corpsReglements(xgte.PNL_corps):
             eval("track.oldValue = track.%s"%code)
         except: pass
 
-    def OnEditFinishing(self,code=None,value=None,parent=None):
+        if code == 'emetteur' and len(track.mode)>0:
+            mode = track.mode
+            oldem = track.emetteur
+            # Appel des emetteurs selon le mode de règlement saisi
+            IDmode = self.parent.dicModesChoices[mode]['IDmode']
+            emetteurs = sorted(self.parent.dlEmetteurs[IDmode])
+            editor.Set(emetteurs)
+            if oldem:
+                # replace la valeur précédente
+                editor.SetStringSelection(oldem)
+                track.emetteur = oldem
+
+    def OnEditFinishing(self,code=None,value=None,editor=None):
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
         # flagSkipEdit permet d'occulter les évènements redondants. True durant la durée du traitement
         if self.flagSkipEdit : return
@@ -274,15 +292,23 @@ class PNL_corpsReglements(xgte.PNL_corps):
             self.ldPayeurs = nur.GetPayeurs(self.parent.db,value)
             payeurs = [x['nom'] for x in self.ldPayeurs]
             if len(payeurs)==0: payeurs.append(designation)
-            payeur = payeurs[0]
-            track.payeur = payeur
+            track.payeur = payeurs[0]
             self.ctrlOlv.dicChoices[self.ctrlOlv.lstCodesColonnes.index('payeur')]=payeurs
+        if code == 'mode':
+            # rend non éditable les champs suivants si pas d'option possible
+            IDmode = self.parent.dicModesChoices[value]['IDmode']
+            emetteurs = sorted(self.parent.dlEmetteurs[IDmode])
+            if len(emetteurs) == 0:
+                isedit = False
+            else: isedit = True
+            self.ctrlOlv.columns[self.ctrlOlv.lstCodesColonnes.index('emetteur')].isEditable = isedit
+            self.ctrlOlv.columns[self.ctrlOlv.lstCodesColonnes.index('numero')].isEditable = isedit
         if code == 'nature':
             # actualisation du flag créer
             if value.lower() in ('don','debour') :
                 # Seuls les dons et débours vont générer la prestation selon l'article
                 track.creer = True
-                # Choix article - code comptable
+                # Choix article - code comptable appellé en sortie de nature le code article n'est pas éditable
                 obj = nur.Article(self.parent.db,value)
                 compte = obj.GetArticle()
                 track.article = compte
@@ -290,7 +316,7 @@ class PNL_corpsReglements(xgte.PNL_corps):
                 track.article = ""
                 track.creer = False
         if code == 'montant':
-            if okSauve and track.nature in ('Règlement','Ne pas créer') and value != 0.0:
+            if okSauve and track.nature in ('Règlement','Libre') and value != 0.0:
                 # cas du règlement d'une prestation antérieure: appel de l'écran ventilations
                 dlg = ndrv.Dialog(self,-1,None,track.IDfamille,track.IDreglement,track.montant)
                 if dlg.ok:
@@ -336,59 +362,72 @@ class Dialog(wx.Dialog):
             if ret == wx.ID_ABORT: self.Destroy()
 
     def Init(self):
-            self.db = xdb.DB()
-            # définition de l'OLV
-            self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
-            self.dicOlv.update(GetOlvOptions(self))
-            self.depotOrigine = []
-            self.ctrlOlv = None
-            self.withDepot = True
-            # récup des modesReglements nécessaires pour passer du texte à un ID d'un mode ayant un mot en commun
-            choices = []
-            self.libelleDefaut = ''
-            for colonne in self.dicOlv['lstColonnes']:
-                if 'mode' in colonne.valueGetter:
-                    choices = colonne.choices
-                if 'libelle' in colonne.valueGetter:
-                    self.libelleDefaut = colonne.valueSetter
-            self.dicModesRegl = {}
-            ldModesDB = nur.GetModesReglements(self.db)
-            if ldModesDB == wx.ID_ABORT:
-                return wx.ID_ABORT
+        self.db = xdb.DB()
+        # définition de l'OLV
+        self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
+        self.dicOlv.update({'lstCodesSup': GetOlvCodesSup(self)})
+        self.dicOlv.update(GetOlvOptions(self))
+        self.depotOrigine = []
+        self.ctrlOlv = None
+        self.withDepot = True
+        # récup des modesReglements nécessaires pour passer du texte à un ID d'un mode ayant un mot en commun
+        choicesMode = []
+        self.libelleDefaut = ''
+        for colonne in self.dicOlv['lstColonnes']:
+            if 'mode' in colonne.valueGetter:
+                choicesMode = colonne.choices
+            if 'libelle' in colonne.valueGetter:
+                self.libelleDefaut = colonne.valueSetter
+                
+        # appel de modes de règlements
+        self.ddModesRegl = nur.GetModesReglements(self.db)
+        if self.ddModesRegl == wx.ID_ABORT:
+            return wx.ID_ABORT
 
-            for item in choices:
-                # les descriptifs de modes de règlements ne doivent pas avoir des mots en commun
-                lstMots = item.split(' ')
-                self.dicModesRegl[item]={'lstMots':lstMots}
-                ok = False
-                for dicMode in ldModesDB:
-                    for mot in lstMots:
-                        if mot.lower() in dicMode['label'].lower():
-                            self.dicModesRegl[item].update(dicMode)
-                            ok = True
-                            break
-                    if ok: break
-                if not ok:
-                    wx.MessageBox("Problème mode de règlement\n\n'%s' n'a aucun mot commun avec un mode de règlement paramétré!"%item)
+        # constitution d'un dictionnaire de modes de règlements possibles par choices de mode (vrt chq esp)
+        self.dicModesChoices = {}
+        for item in choicesMode:
+            # les descriptifs de modes de règlements ne doivent pas avoir des mots en commun
+            lstMots = item.split(' ')
+            self.dicModesChoices[item]={'lstMots':lstMots}
+            ok = False
+            for IDmode, dicMode in self.ddModesRegl.items():
+                # pour un mot dans les choices
+                for mot in lstMots:
+                    # présent dans le label d'un mode de règlement
+                    if mot.lower() in dicMode['label'].lower():
+                        self.dicModesChoices[item].update(dicMode)
+                        dicMode['choice'] = item
+                        ok = True
+                        break
+                if ok: break
+            if not ok:
+                wx.MessageBox("Problème mode de règlement\n\n'%s' n'a aucun mot commun avec un mode de règlement paramétré!"%item)
 
-            # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
-            self.txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"
-            lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),self.txtInfo]
-            dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
+        # appel d'émetteurs selon les modes de règlement
+        lstModes = [self.dicModesChoices[x]['IDmode'] for x in self.dicModesChoices.keys()]
+        self.dlEmetteurs, self.dlIDemetteurs = nur.GetEmetteurs(self.db,lstModes)
+        if self.dlEmetteurs == wx.ID_ABORT:
+            return wx.ID_ABORT
 
-            # lancement de l'écran en blocs principaux
-            self.pnlBandeau = xbandeau.Bandeau(self,TITRE,INTRO,nomImage="xpy/Images/32x32/Matth.png")
-            self.pnlParams = PNL_params(self)
-            self.pnlOlv = PNL_corpsReglements(self, self.dicOlv)
-            self.pnlPied = PNL_pied(self, dicPied)
-            self.ctrlOlv = self.pnlOlv.ctrlOlv
+        # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
+        self.txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"
+        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),self.txtInfo]
+        dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
 
-            # la grille est modifiée selon la coche sans dépôt
-            self.pnlParams.ctrlSsDepot.Bind(wx.EVT_KILL_FOCUS,self.OnSsDepot)
-            self.choicesNonDiffere = self.ctrlOlv.lstColonnes[self.ctrlOlv.lstCodesColonnes.index('mode')].choices
-            self.OnSsDepot(None)
-            self.Bind(wx.EVT_CLOSE,self.OnClose)
-            self.__Sizer()
+        # lancement de l'écran en blocs principaux
+        self.pnlBandeau = xbandeau.Bandeau(self,TITRE,INTRO,nomImage="xpy/Images/32x32/Matth.png")
+        self.pnlParams = PNL_params(self)
+        self.pnlOlv = PNL_corpsReglements(self, self.dicOlv)
+        self.pnlPied = PNL_pied(self, dicPied)
+        self.ctrlOlv = self.pnlOlv.ctrlOlv
+
+        # la grille est modifiée selon la coche sans dépôt
+        self.pnlParams.ctrlSsDepot.Bind(wx.EVT_KILL_FOCUS,self.OnSsDepot)
+        self.choicesNonDiffere = self.ctrlOlv.lstColonnes[self.ctrlOlv.lstCodesColonnes.index('mode')].choices
+        self.OnSsDepot(None)
+        self.Bind(wx.EVT_CLOSE,self.OnClose)
+        self.__Sizer()
 
     def __Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
@@ -441,32 +480,14 @@ class Dialog(wx.Dialog):
         if not withDiffere:
             del self.ctrlOlv.lstCodesColonnes[ixDiffere]
             del self.ctrlOlv.lstColonnes[ixDiffere]
+            # charge les choix possibles des modes de règlements
             self.ctrlOlv.lstColonnes[ixMode].choices = self.choicesNonDiffere
         else:
+            # change les choix des modes de règlements possibles
             self.ctrlOlv.lstColonnes[ixMode].choices = ['ND non déposés']
         self.ctrlOlv.InitObjectListView()
         self.Refresh()
 
-    def TransposeDonnees(self,lstDonnees):
-        # ajustement des choix possibles selon le contenu du règlement
-        ixmod = self.ctrlOlv.lstCodesColonnes.index('mode')
-        ixnat = self.ctrlOlv.lstCodesColonnes.index('nature')
-        ixdat = self.ctrlOlv.lstCodesColonnes.index('date')
-        for donnees in lstDonnees:
-            # choix du 'mode règlement'
-            ok = False
-            for mode,dicMod in self.dicModesRegl.items():
-                for mot in dicMod['lstMots']:
-                    if mot in donnees[ixmod].lower():
-                        donnees[ixmod] = mode
-                        ok = True
-                        break
-                if ok: break
-            # forcer ne pas créer pour la reprise d'un dépot avec la prestation déjà créée avant
-            donnees[ixnat] = 'Ne pas créer'
-            # date remise en format français
-            donnees[ixdat] = xformat.DateSqlToDatetime(donnees[ixdat])
-        return
 
     def OnSsDepot(self,event):
         # cas d'une saisie différée, la grille est modifiée
@@ -497,8 +518,11 @@ class Dialog(wx.Dialog):
             IDdepot = dicDepot['numero']
         self.pnlParams.ctrlSsDepot.Enable(True)
         if isinstance(IDdepot,int):
-            lstDonnees = [rec[:-2] for rec in  nur.GetReglements(self.db,IDdepot)]
-            lstEnCompta = [rec[:-2] for rec in  nur.GetReglements(self.db,IDdepot) if (rec[-2] or rec[-1])]
+            lstDonnees = nur.GetReglements(self,IDdepot)
+            nbcol = len(self.ctrlOlv.lstCodesColonnes)
+            ixpc = nbcol + self.ctrlOlv.lstCodesSup.index('prestcpta')
+            ixrc = nbcol + self.ctrlOlv.lstCodesSup.index('reglcompta')
+            lstEnCompta = [1 for rec in  lstDonnees if (rec[ixpc] or rec[ixrc])]
             # présence de lignes déjà transférées compta
             if len(lstEnCompta) >0:
                 self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
@@ -506,8 +530,6 @@ class Dialog(wx.Dialog):
                                            wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
 
             if len(lstDonnees)>0:
-                # transposition mode de règlement
-                self.TransposeDonnees(lstDonnees)
                 # marque dépot non différé car déjà déposé
                 self.pnlParams.ctrlSsDepot.Enable(False)
                 # set date du dépot
@@ -517,9 +539,11 @@ class Dialog(wx.Dialog):
                 self.pnlParams.ctrlRef.SetValue(str(IDdepot))
                 # set le nom de la banque
                 self.pnlParams.ctrlBanque.SetSelection(self.pnlParams.ctrlBanque.FindString(dicDepot['banque']))
-                # place les règlements du dépôt dans la grille
+
+                # place les règlements du dépôt dans la grille après compléments
                 self.ctrlOlv.lstDonnees = lstDonnees
                 self.InitOlv(withDiffere=False)
+
                 # les écritures reprises sont censées être valides
                 for item in self.ctrlOlv.modelObjects[:-1]:
                     item.valide = True
