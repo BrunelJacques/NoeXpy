@@ -9,6 +9,7 @@
 
 import wx
 import os
+import datetime
 import xpy.xGestion_TableauEditor       as xgte
 import xpy.xUTILS_DB                   as xdb
 import srcNoelite.UTILS_Utilisateurs    as nuu
@@ -21,7 +22,7 @@ from xpy.outils                 import xformat,xbandeau
 
 TITRE = "Bordereau d'un dépôt de réglements: création, modification"
 INTRO = "Définissez la banque, choisissez un numéro si c'est pour une reprise, puis saisissez les règlements dans le tableau"
-DIC_INFOS = {'date':"Flèche droite pour le mois et l'année, Entrée pour valider.\nC'est la date de réception du règlement, qui sera la date comptable",
+DIC_INFOS = {'date':"Saisie JJMMAA ou JJMMAAAA possibles Entrée pour valider.\nC'est la date de réception du règlement, qui sera la date comptable",
             'IDfamille': "<F4> Choix d'une famille, ou saisie directe du no famille",
             'payeur':   "<F4> Gestion des payeurs, <UP> <DOWN> pour défiler l'existant",
             'mode':     "<UP> <DOWN> pour défiler les possibles ou première lettre, \nChèques, Chèques non déposés, Virements,Espèces",
@@ -51,7 +52,7 @@ def GetOlvColonnes(dlg):
     return [
             ColumnDefn("ID", 'centre', 0, 'IDreglement',
                        isEditable=False),
-            ColumnDefn("date", 'center', 80, 'date', valueSetter=wx.DateTime.Today(),isSpaceFilling=False,
+            ColumnDefn("date", 'center', 80, 'date', valueSetter=datetime.date.today(),isSpaceFilling=False,
                        stringConverter=xformat.FmtDate),
             ColumnDefn("famille", 'centre', 50, 'IDfamille', valueSetter=0,isSpaceFilling=False,
                        stringConverter=xformat.FmtIntNoSpce),
@@ -59,7 +60,7 @@ def GetOlvColonnes(dlg):
                        isEditable=False),
             ColumnDefn("payeur", 'left', 80, "payeur", valueSetter='', isSpaceFilling=True,
                         cellEditorCreator=CellEditor.ComboEditor),
-            ColumnDefn("mode", 'centre', 50, 'mode', valueSetter='',choices=['VRT virement', 'CHQ chèque','ESP espèces'],
+            ColumnDefn("mode", 'centre', 60, 'mode', valueSetter='',choices=['VRT virement', 'CHQ chèque','ESP espèces'],
                        isSpaceFilling=False,
                         cellEditorCreator=CellEditor.ChoiceEditor),
             ColumnDefn("bqe ori.", 'centre', 120, 'emetteur',
@@ -71,24 +72,27 @@ def GetOlvColonnes(dlg):
                         cellEditorCreator=CellEditor.ChoiceEditor),
             ColumnDefn("article", 'left', 50, 'article', isSpaceFilling=False,
                         isEditable=False),
-            ColumnDefn("libelle", 'left', 200, 'libelle', valueSetter='à saisir', isSpaceFilling=True),
+            ColumnDefn("libelle", 'left', 200, 'libelle', valueSetter='', isSpaceFilling=True),
             ColumnDefn("montant", 'right',70, "montant", isSpaceFilling=False, valueSetter=0.0,
                         stringConverter=xformat.FmtDecimal),
             ColumnDefn("créer", 'centre', 38, 'creer', valueSetter=True,
                         isEditable=False,
                         stringConverter=xformat.FmtBool),
-            ColumnDefn("differé", 'center', 80, 'differe', valueSetter=wx.DateTime.Today(), isSpaceFilling=False,
+            ColumnDefn("differé", 'center', 80, 'differe', valueSetter=datetime.date.today(), isSpaceFilling=False,
                         stringConverter=xformat.FmtDate,),
             ColumnDefn("IDprestation", 'centre', 0, 'IDprestation',
                         isEditable=False),
             ]
 
 def GetOlvCodesSup(dlg):
-    return ['prestcateg','prestcpta','reglcompta','nbventil']
+    return ['prestcateg','prestcpta','reglcompta','nbventil','idprest']
+
 def GetOlvOptions(dlg):
     # retourne les paramètres de l'OLV del'écran général
     return {
             'minSize': (600,200),
+            'size': (1200,600),
+            'choicesDiffere':['Chèque differé'],
             'checkColonne': False,
             'recherche': True,
             'dictColFooter': {"designation": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
@@ -127,7 +131,10 @@ class PNL_params(wx.Panel):
         self.btnRaz.Bind(wx.EVT_BUTTON,self.parent.OnRaz)
 
         self.lblDate = wx.StaticText(self,-1, label="Date de saisie:  ",size=(85,20),style=wx.ALIGN_RIGHT)
-        self.ctrlDate = wx.adv.DatePickerCtrl(self,-1,size=(90,20),style=wx.ALIGN_CENTRE_HORIZONTAL)
+        self.ctrlDate = wx.TextCtrl(self,-1,size=(90,20),style=wx.ALIGN_LEFT|wx.TE_PROCESS_ENTER)
+        value = datetime.date.today()
+        self.ctrlDate.SetValue(xformat.FmtDate(value))
+        self.ctrlDate.Bind(wx.EVT_TEXT_ENTER,self.OnDateDepot)
         self.lblRef = wx.StaticText(self,-1, label="No Bordereau:  ",size=(90,20),style=wx.ALIGN_RIGHT)
         self.ctrlRef = wx.TextCtrl(self,-1,size=(70,20))
 
@@ -171,14 +178,19 @@ class PNL_params(wx.Panel):
         sz_bordereau.Add(boxBordereau,1,wx.ALL|wx.ALIGN_CENTRE,3)
 
         sizer_base = wx.FlexGridSizer(rows=1, cols=3, vgap=0, hgap=20)
-        sizer_base.Add(sz_banque,1,wx.LEFT|wx.BOTTOM|wx.EXPAND,3)
-        sizer_base.Add(sz_bordereau,1,wx.LEFT|wx.BOTTOM|wx.EXPAND,3)
+        sizer_base.Add(sz_banque,1,wx.LEFT|wx.BOTTOM,3)
+        sizer_base.Add(sz_bordereau,1,wx.LEFT|wx.BOTTOM,3)
         sizer_btn = wx.FlexGridSizer(rows=2,cols=1,vgap=0,hgap=10)
         sizer_btn.Add(self.btnDepot,1,wx.LEFT|wx.BOTTOM|wx.EXPAND,3)
         sizer_btn.Add(self.btnRaz,1,wx.LEFT|wx.BOTTOM,3)
         sizer_base.Add(sizer_btn,0,wx.ALL|wx.ALIGN_CENTRE,10)
-        sizer_base.AddGrowableCol(0)
+        #sizer_base.AddGrowableCol(0)
         self.SetSizer(sizer_base)
+
+    def OnDateDepot(self,evt):
+        value = evt.EventObject.GetValue()
+        evt.EventObject.SetValue(xformat.FmtDate(value))
+        evt.Skip()
 
     def OnKillFocusBanque(self,event):
         # le test de renseignement de la banque n'est passé que si on n'est pas en train de sortir
@@ -300,6 +312,8 @@ class PNL_corpsReglements(xgte.PNL_corps):
             emetteurs = sorted(self.parent.dlEmetteurs[IDmode])
             if len(emetteurs) == 0:
                 isedit = False
+                track.emetteur = None
+                track.numero = None
             else: isedit = True
             self.ctrlOlv.columns[self.ctrlOlv.lstCodesColonnes.index('emetteur')].isEditable = isedit
             self.ctrlOlv.columns[self.ctrlOlv.lstCodesColonnes.index('numero')].isEditable = isedit
@@ -367,6 +381,9 @@ class Dialog(wx.Dialog):
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup(self)})
         self.dicOlv.update(GetOlvOptions(self))
+        size = self.dicOlv.pop('size',None)
+        self.choicesDiffere = self.dicOlv.pop('choicesDiffere',[])
+        self.SetSize(size)
         self.depotOrigine = []
         self.ctrlOlv = None
         self.withDepot = True
@@ -378,6 +395,7 @@ class Dialog(wx.Dialog):
                 choicesMode = colonne.choices
             if 'libelle' in colonne.valueGetter:
                 self.libelleDefaut = colonne.valueSetter
+
                 
         # appel de modes de règlements
         self.ddModesRegl = nur.GetModesReglements(self.db)
@@ -386,7 +404,7 @@ class Dialog(wx.Dialog):
 
         # constitution d'un dictionnaire de modes de règlements possibles par choices de mode (vrt chq esp)
         self.dicModesChoices = {}
-        for item in choicesMode:
+        for item in choicesMode + self.choicesDiffere:
             # les descriptifs de modes de règlements ne doivent pas avoir des mots en commun
             lstMots = item.split(' ')
             self.dicModesChoices[item]={'lstMots':lstMots}
@@ -427,9 +445,9 @@ class Dialog(wx.Dialog):
         self.choicesNonDiffere = self.ctrlOlv.lstColonnes[self.ctrlOlv.lstCodesColonnes.index('mode')].choices
         self.OnSsDepot(None)
         self.Bind(wx.EVT_CLOSE,self.OnClose)
-        self.__Sizer()
+        self.Sizer()
 
-    def __Sizer(self):
+    def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
         sizer_base.Add(self.pnlBandeau, 0, wx.TOP | wx.EXPAND, 3)
         sizer_base.Add(self.pnlParams, 0, wx.TOP | wx.EXPAND, 3)
@@ -438,7 +456,7 @@ class Dialog(wx.Dialog):
         sizer_base.AddGrowableCol(0)
         sizer_base.AddGrowableRow(2)
         self.CenterOnScreen()
-        self.SetSizerAndFit(sizer_base)
+        self.SetSizer(sizer_base)
         self.CenterOnScreen()
 
     # ------------------- Gestion des actions -----------------------
@@ -470,7 +488,7 @@ class Dialog(wx.Dialog):
         banque = ctrl.GetString(ctrl.GetSelection())
         dte = self.pnlParams.ctrlDate.GetValue()
         if not IDdepot: IDdepot = "___"
-        self.ctrlOlv.titreImpression = "REGLEMENTS Dépot No %s, du %s, banque: %s "%(IDdepot,dte.FormatDate(),banque)
+        self.ctrlOlv.titreImpression = "REGLEMENTS Dépot No %s, du %s, banque: %s "%(IDdepot,dte,banque)
 
     def InitOlv(self,withDiffere=False):
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
@@ -484,7 +502,7 @@ class Dialog(wx.Dialog):
             self.ctrlOlv.lstColonnes[ixMode].choices = self.choicesNonDiffere
         else:
             # change les choix des modes de règlements possibles
-            self.ctrlOlv.lstColonnes[ixMode].choices = ['ND non déposés']
+            self.ctrlOlv.lstColonnes[ixMode].choices = self.choicesDiffere
         self.ctrlOlv.InitObjectListView()
         self.Refresh()
 
@@ -533,8 +551,7 @@ class Dialog(wx.Dialog):
                 # marque dépot non différé car déjà déposé
                 self.pnlParams.ctrlSsDepot.Enable(False)
                 # set date du dépot
-                if xformat.DateSqlToWxdate(dicDepot['date']):
-                    self.pnlParams.ctrlDate.SetValue(xformat.DateSqlToWxdate(dicDepot['date']))
+                self.pnlParams.ctrlDate.SetValue(xformat.FmtDate(dicDepot['date']))
                 # set IDdepot en référence
                 self.pnlParams.ctrlRef.SetValue(str(IDdepot))
                 # set le nom de la banque
