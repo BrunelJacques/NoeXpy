@@ -219,7 +219,6 @@ class Dialog(wx.Dialog):
         pnlOlv = Pnl_tableau(self, dicOlv)
         self.ctrlOlv = pnlOlv.ctrlOlv
         self.olv = pnlOlv
-        self.ctrlOlv.MAJ()
 
         # Initialisations
         self.__set_properties()
@@ -260,6 +259,9 @@ class Dialog(wx.Dialog):
         whereFiltre = ''
         if filtreTxt and len(filtreTxt) >0:
             whereFiltre = xformat.ComposeWhereFiltre(filtreTxt,lstChamps, lstColonnes = lstColonnes)
+
+        del db.cursor
+        db.cursor = db.connexion.cursor(buffered=False)
 
         req = """FLUSH  TABLES individus;"""
         retour = db.ExecuterReq(req, mess='%s.GetIndividus' % NOM_MODULE)
@@ -302,7 +304,7 @@ class Dialog(wx.Dialog):
         if filtreTxt and len(filtreTxt) >0:
                 whereFiltre = xformat.ComposeWhereFiltre(filtreTxt,lstChamps, lstColonnes = lstColonnes,lien='WHERE')
 
-        req = """FLUSH  TABLES individus;"""
+        req = """FLUSH TABLES individus;"""
         retour = db.ExecuterReq(req, mess='%s.GetIndividus' % NOM_MODULE)
         req = """   SELECT %s
                     FROM familles 

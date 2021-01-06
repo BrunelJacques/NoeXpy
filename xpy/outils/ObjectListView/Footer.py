@@ -38,6 +38,7 @@ class Footer(wx.Control):
         objects = self.listview.GetCheckedObjects()
         if len(objects) == 0:
             objects = self.listview.innerList
+        self.dictTotaux = {}
         for track in objects:
             for nomColonne, dictColonne in self.dictColFooter.items() :
                 if dictColonne["mode"] == "total" :

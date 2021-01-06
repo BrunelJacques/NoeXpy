@@ -120,7 +120,7 @@ class ListView(FastObjectListView):
         # Initialisation du listCtrl
         FastObjectListView.__init__(self, *args,style=style,**kwds)
         self.InitObjectListView()
-        self.MAJ()
+        self.InitModel()
 
     def formerCodeColonnes(self):
         codeColonnes = list()

@@ -30,7 +30,7 @@ DIC_INFOS = {'date':"Saisie JJMMAA ou JJMMAAAA possibles Entrée pour valider.\n
             'numero':   "Derniers caractères du numéro du moyen de paiement ou référence externe",
             'nature':   "<UP> <DOWN> pour défiler les nature d'affectation du reglement,\n"+
                         "'Libre' pour une prestation déjà saisie dans Noethys, qu'il faudra rattacher ensuite",
-            'IDarticle':"<F4> Choix d'une affectation du réglement selon sa nature ",
+            'compte':"<F4> Choix d'une affectation du réglement selon sa nature ",
             'libelle':  "S'il est connu, précisez l'affectation (objet) du règlement",
             'montant':  "Montant en €",
             'differe':  "Date future pour le dépot du chèque ou la promesse de règlement",
@@ -67,13 +67,13 @@ def GetOlvColonnes(dlg):
                         isSpaceFilling=False,
                         cellEditorCreator=CellEditor.ChoiceEditor),
             ColumnDefn("n°ref", 'left', 50, 'numero', isSpaceFilling=False),
-            ColumnDefn("nat", 'centre', 75, 'nature',valueSetter='Règlement',
-                       choices=['Règlement','Acompte','Don','Debour','Libre'], isSpaceFilling=False,
+            ColumnDefn("nat", 'centre', 80, 'nature',valueSetter='Règlement',
+                       choices=['Règlement','Acompte','Don','DonSsCerfa','Debour','Libre'], isSpaceFilling=False,
                         cellEditorCreator=CellEditor.ChoiceEditor),
-            ColumnDefn("article", 'left', 50, 'article', isSpaceFilling=False,
+            ColumnDefn("compte", 'left', 50, 'compte', isSpaceFilling=False,
                         isEditable=False),
             ColumnDefn("libelle", 'left', 200, 'libelle', valueSetter='', isSpaceFilling=True),
-            ColumnDefn("montant", 'right',70, "montant", isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("montant", 'right',70, 'montant', isSpaceFilling=False, valueSetter=0.0,
                         stringConverter=xformat.FmtDecimal),
             ColumnDefn("créer", 'centre', 38, 'creer', valueSetter=True,
                         isEditable=False,
@@ -134,6 +134,7 @@ class PNL_params(wx.Panel):
         self.ctrlDate = wx.TextCtrl(self,-1,size=(90,20),style=wx.ALIGN_LEFT|wx.TE_PROCESS_ENTER)
         value = datetime.date.today()
         self.ctrlDate.SetValue(xformat.FmtDate(value))
+        self.ctrlDate.Bind(wx.EVT_KILL_FOCUS,self.OnDateDepot)
         self.ctrlDate.Bind(wx.EVT_TEXT_ENTER,self.OnDateDepot)
         self.lblRef = wx.StaticText(self,-1, label="No Bordereau:  ",size=(90,20),style=wx.ALIGN_RIGHT)
         self.ctrlRef = wx.TextCtrl(self,-1,size=(70,20))
@@ -190,6 +191,8 @@ class PNL_params(wx.Panel):
     def OnDateDepot(self,evt):
         value = evt.EventObject.GetValue()
         evt.EventObject.SetValue(xformat.FmtDate(value))
+        if hasattr(self.parent,'IDdepot') and self.parent.IDdepot:
+            nur.SetDateDepot(self.parent.db,self.parent.IDdepot,xformat.DateFrToSql(value))
         evt.Skip()
 
     def OnKillFocusBanque(self,event):
@@ -320,14 +323,15 @@ class PNL_corpsReglements(xgte.PNL_corps):
         if code == 'nature':
             # actualisation du flag créer
             if value.lower() in ('don','debour') :
-                # Seuls les dons et débours vont générer la prestation selon l'article
+                # Seuls les dons et débours vont générer la prestation selon l'compte
                 track.creer = True
-                # Choix article - code comptable appellé en sortie de nature le code article n'est pas éditable
-                obj = nur.Article(self.parent.db,value)
-                compte = obj.GetArticle()
-                track.article = compte
+                # Choix compte - code comptable appellé en sortie de nature le code compte n'est pas éditable
+                obj = nur.Compte(self.parent.db,value)
+                compte, libelle = obj.GetCompte()
+                track.compte = compte
+                track.libelle = libelle
             else:
-                track.article = ""
+                track.compte = ""
                 track.creer = False
         if code == 'montant':
             if okSauve and track.nature in ('Règlement','Libre') and value != 0.0:
@@ -338,6 +342,9 @@ class PNL_corpsReglements(xgte.PNL_corps):
                     if ret == wx.ID_OK:
                         # --- Sauvegarde de la ventilation ---
                         dlg.panel.Sauvegarde(track.IDreglement)
+                else:
+                    # forcer acompte
+                    track.nature = 'Acompte'
                 dlg.Destroy()
 
         # enlève l'info de bas d'écran
@@ -355,6 +362,15 @@ class PNL_corpsReglements(xgte.PNL_corps):
 
     def OnDelete(self,noligne,track,parent=None):
         nur.DeleteLigne(self.parent.db,track)
+        # suppression du dépôt vidé
+        if len(self.ctrlOlv.modelObjects) <= 2:
+            lstNonNul = [x for x in self.ctrlOlv.modelObjects if x != track and x.IDfamille != 0]
+            if len(lstNonNul) == 0:
+                IDdepot = self.parent.pnlParams.ctrlRef.GetValue()
+                if IDdepot and int(IDdepot) >0:
+                    nur.DeleteDepot(int(IDdepot),self.parent.db)
+                    self.parent.IDdepot = None
+                    self.parent.pnlParams.ctrlRef.SetValue('')
 
 class PNL_pied(xgte.PNL_pied):
     #panel infos (gauche) et boutons sorties(droite)
@@ -505,7 +521,6 @@ class Dialog(wx.Dialog):
             self.ctrlOlv.lstColonnes[ixMode].choices = self.choicesDiffere
         self.ctrlOlv.InitObjectListView()
         self.Refresh()
-
 
     def OnSsDepot(self,event):
         # cas d'une saisie différée, la grille est modifiée

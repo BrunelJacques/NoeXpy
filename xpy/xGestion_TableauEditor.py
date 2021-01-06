@@ -54,7 +54,6 @@ class TrackGeneral(object):
             self.__setattr__((codesSup)[ixrel],donnees[ixabs])
         self.donnees = donnees
 
-
 class ListView(FastObjectListView):
     """
     Lors de l'instanciation de cette classe vous pouvez y passer plusieurs parametres :
@@ -420,7 +419,8 @@ class PanelListView(wx.Panel):
 
     def MAJ(self):
         self.ctrl_listview.MAJ()
-        self.ctrl_footer.MAJ()
+        self.ctrl_footer.MAJ_totaux()
+        self.ctrl_footer.MAJ_affichage()
 
     def GetListview(self):
         return self.ctrl_listview
@@ -526,6 +526,8 @@ class PanelListView(wx.Panel):
                 self.parent.OnEditFinished(code, track, editor=event.editor)
 
             self.ValideLigne(track)
+        self.ctrl_footer.MAJ_totaux()
+        self.ctrl_footer.MAJ_affichage()
         event.Skip()
 
     def OnEditFunctionKeys(self, event):

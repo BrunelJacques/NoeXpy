@@ -494,7 +494,7 @@ def SetPrestation(track,db):
         ("montant_initial", track.montant),
         ("montant", track.montant),
         ("IDcompte_payeur", track.IDfamille),
-        ("code_compta", track.article),
+        ("code_compta", track.compte),
         ("IDfamille", track.IDfamille),
         ("IDindividu", 0),
     ]
@@ -541,7 +541,7 @@ def DelPrestation(track,db,idPiece=None):
         idPiece = track.IDprestation
     if not idPiece: return False
     ret = db.ReqDEL("prestations", "IDprestation", idPiece)
-    db.ReqDel('ventilation','IDprestation',idPiece,afficheError=False)
+    db.ReqDEL('ventilation','IDprestation',idPiece,afficheError=False)
     IDcategorie = 8
     categorie = "Suppression"
     # mise à jour du règlement sur son numéro de pièce (ID de la prestation) et historisation
@@ -562,11 +562,11 @@ def DelPrestation(track,db,idPiece=None):
     return True
 
 def SauveLigne(db,dlg,track):
+    # --- Sauvegarde des différents éléments associés à la ligne ---
     if not track.valide:
         return False
     if not track.montant or not isinstance(track.montant,float):
         return False
-    # --- Sauvegarde des différents éléments associés à la ligne ---
     # gestion de l'ID depot si withDepot
     if not hasattr(dlg,"IDdepot") and dlg.withDepot:
         dlg.IDdepot = SetDepot(dlg,db)
@@ -606,10 +606,10 @@ def SauveLigne(db,dlg,track):
 
 def DeleteLigne(db,track):
     # --- Supprime les différents éléments associés à la ligne ---
-    if track.IDreglement != 0.0:
+    if not track.IDreglement in (0, ''):
         # suppression  du réglement et des ventilations
         ret = db.ReqDEL("reglements", "IDreglement", track.IDreglement,affichError=True)
-        if track.valide:
+        if hasattr(track,'valide') and track.valide:
             # --- Mémorise l'action dans l'historique ---
             if ret == 'ok':
                 IDcategorie = 8
@@ -711,17 +711,17 @@ def SetReglement(dlg,track,db):
         }, ],db=db)
     return True
 
-class Article(object):
+class Compte(object):
     def __init__(self,db,nature):
         self.nature = nature
         self.db = db
 
-    def GetMatriceArticles(self):
-        dicBandeau = {'titre':"Recherche d'un article prestation",
-                      'texte':"l'article choisi détermine le code du plan comptable de la prestation générée",
+    def GetMatriceComptes(self):
+        dicBandeau = {'titre':"Recherche d'un compte prestation",
+                      'texte':"le compte choisi détermine le code du plan comptable de la prestation générée",
                       'hauteur':15, 'nomImage':"xpy/Images/32x32/Matth.png"}
 
-        # Composition de la matrice de l'OLV articles, retourne un dictionnaire
+        # Composition de la matrice de l'OLV comptes, retourne un dictionnaire
 
         lstChamps = ['0','matPlanComptable.pctCompte','matPlanComptable.pctCodeComptable','matPlanComptable.pctLibelle',]
 
@@ -737,15 +737,15 @@ class Article(object):
                     'lstChamps':lstChamps,
                     'listeNomsColonnes':lstNomsColonnes,
                     'listeCodesColonnes':lstCodesColonnes,
-                    'getDonnees': self.GetArticles,
+                    'getDonnees': self.GetComptes,
                     'dicBandeau': dicBandeau,
                     'sortColumnIndex': 2,
                     'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
                     'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                     }
 
-    def GetArticles(self,dicOlv,**kwd):
-        # le pointeur de cette fonction est dans le dic généré par GetMatriceArticles,
+    def GetComptes(self,dicOlv,**kwd):
+        # le pointeur de cette fonction est dans le dic généré par GetMatriceComptes,
         filtre = kwd.pop('filtreTxt', '')
         nbreFiltres = kwd.pop('nbreFiltres', 0)
 
@@ -781,30 +781,30 @@ class Article(object):
                 WHERE %s
                 %s;
                 """ % (",".join(lstChamps),where,limit)
-        retour = self.db.ExecuterReq(req, mess='UTILS_Reglements.GetArticles' )
+        retour = self.db.ExecuterReq(req, mess='UTILS_Reglements.GetComptes' )
         recordset = ()
         if retour == "ok":
             recordset = self.db.ResultatReq()
             if len(recordset) == 0:
-                wx.MessageBox("Aucun article paramétré contenant '%s' ou '%s' dans le code ou le libellé"%(rad1,rad2))
+                wx.MessageBox("Aucun compte paramétré contenant '%s' ou '%s' dans le code ou le libellé"%(rad1,rad2))
 
-        # composition des données du tableau à partir du recordset, regroupement par article
-        dicArticles = {}
+        # composition des données du tableau à partir du recordset, regroupement par compte
+        dicComptes = {}
         ixID = lstCodesColonnes.index('code')
         for record in recordset:
-            if not record[ixID] in dicArticles.keys():
-                dicArticles[record[ixID]] = {}
+            if not record[ixID] in dicComptes.keys():
+                dicComptes[record[ixID]] = {}
                 for ix in range(len(lstCodesColonnes)):
-                    dicArticles[record[ixID]][lstCodesColonnes[ix]] = record[ix]
+                    dicComptes[record[ixID]][lstCodesColonnes[ix]] = record[ix]
             else:
                 # ajout de noms et prénoms si non encore présents
-                if not record[-2] in dicArticles[record[ixID]]['noms']:
-                    dicArticles[record[ixID]]['noms'] += "," + record[-2]
-                if not record[-1] in dicArticles[record[ixID]]['prenoms']:
-                    dicArticles[record[ixID]]['prenoms'] += "," + record[-1]
+                if not record[-2] in dicComptes[record[ixID]]['noms']:
+                    dicComptes[record[ixID]]['noms'] += "," + record[-2]
+                if not record[-1] in dicComptes[record[ixID]]['prenoms']:
+                    dicComptes[record[ixID]]['prenoms'] += "," + record[-1]
 
         lstDonnees = []
-        for key, dic in dicArticles.items():
+        for key, dic in dicComptes.items():
             ligne = []
             for code in lstCodesColonnes:
                 ligne.append(dic[code])
@@ -813,21 +813,33 @@ class Article(object):
         dicOlv['lstDonnees']=lstDonnees
         return lstDonnees
 
-    def GetArticle(self,db=None):
-        dicOlv = self.GetMatriceArticles()
+    def GetCompte(self,db=None):
+        dicOlv = self.GetMatriceComptes()
         dlg = xgtr.DLG_tableau(None,dicOlv=dicOlv,db=db)
         ret = dlg.ShowModal()
         if ret == wx.OK:
-            article = dlg.GetSelection().donnees[1]
-        else: article = None
+            retour = dlg.GetSelection().donnees
+            compte, libelle = retour[1],retour[3]
+        else:
+            compte, libelle = None, None
         dlg.Destroy()
-        return article
+        return compte, libelle
+
+def DeleteDepot(IDdepot,db):
+    # cas d'un depot vidé de ses lignes
+    db.ReqDEL("depots", "IDdepot", IDdepot, affichError=True)
+    return
+
+def SetDateDepot(db,IDdepot,date):
+    # cas d'un changement de la date du dépot après sa création
+    db.ReqMAJ('depots', [('date',date),],'IDdepot', IDdepot, affichError=True)
+    return
 
 def SetDepot(dlg,db):
     # cas d'un nouveau depot à créer, retourne l'IDdepot
     IDdepot = None
     lstDonnees = [
-        ("date", xformat.DatetimeToStr(datetime.date.today(), iso=True)),
+        ("date", xformat.DateFrToSql(dlg.pnlParams.ctrlDate.GetValue())),
         ("nom", "Saisie règlements via Noelite"),
         ("IDcompte", dlg.GetIDbanque()),
     ]
@@ -865,7 +877,7 @@ if __name__ == '__main__':
     #print(GetBanquesNne())
     #print(GetFamille(None))
     #print(GetPayeurs(1))
-    #art = Article('debour')
-    #print(art.GetArticle())
+    #art = Compte('debour')
+    #print(art.GetCompte())
     print(GetDepot())
     app.MainLoop()

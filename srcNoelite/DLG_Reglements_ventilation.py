@@ -1146,7 +1146,8 @@ class Dialog(wx.Dialog):
         self.CenterOnScreen()
         # Décrochement si rien à ventiler
         if len(self.panel.ctrl_ventilation.dictLignes) == 0:
-            wx.MessageBox("Pas de prestations non réglées dans Noethys! \nCe règlement n'est-il pas plutôt un acompte?",style=wx.ICON_INFORMATION)
+            wx.MessageBox("Pas de prestations non réglées dans Noethys! \nPas d'opération en cours c'est un acompte!",
+                          style=wx.ICON_INFORMATION)
             self.ok = False
         else: self.ok = True
 

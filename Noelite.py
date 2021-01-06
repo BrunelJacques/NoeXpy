@@ -53,8 +53,6 @@ class MyFrame(xAppli.MainFrame):
         dlg = ncident.Dialog(self,confirm=False)
         etat = False
         if not dlg.echec:
-            #self.dictUser = dlg.GetDictUtilisateur()
-            #if not self.dictUser:
             dlg.ShowModal()
             self.dictUser = dlg.GetDictUtilisateur()
             if self.dictUser:
