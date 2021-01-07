@@ -109,11 +109,14 @@ def GetDictUtilisateur(afficheMessage=True):
     except :
         dictUtilisateur = None
     if not dictUtilisateur:
-        try :
+        #try :
             import xpy.outils.xshelve as xucfg
             cfg = xucfg.ParamUser()
-            dictUtilisateur = cfg.GetDict(groupe='USER')
-        except:
+            #userdomain, username ,config, mpUserDB, seudo, utilisateur, nom,prenom, IDutilisateur, droits,profil
+            dictUtilisateur = cfg.GetDict(groupe='IDENT',close=False)
+            user = cfg.GetDict(groupe='USER')
+            dictUtilisateur.update(user)
+        #except:
             pass
     if dictUtilisateur:
         # Si la frame 'General' est chargée, on y récupère le dict de config

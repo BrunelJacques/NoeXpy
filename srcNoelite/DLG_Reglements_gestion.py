@@ -288,6 +288,9 @@ class PNL_corpsReglements(xgte.PNL_corps):
         # anticipe l'enregistrement du champ montant pour réussir la validation
         if code == 'montant' and value:
             track.montant = value
+        if code == 'emetteur' and track.libelle == '':
+            track.libelle = value
+
         nur.ValideLigne(self.parent.db,track)
 
         # l'enregistrement de la ligne se fait à chaque saisie pour gérer les montées et descentes
@@ -304,11 +307,10 @@ class PNL_corpsReglements(xgte.PNL_corps):
                 return
             designation = nur.GetDesignationFamille(self.parent.db,value)
             track.designation = designation
-            self.ldPayeurs = nur.GetPayeurs(self.parent.db,value)
-            payeurs = [x['nom'] for x in self.ldPayeurs]
-            if len(payeurs)==0: payeurs.append(designation)
-            track.payeur = payeurs[0]
-            self.ctrlOlv.dicChoices[self.ctrlOlv.lstCodesColonnes.index('payeur')]=payeurs
+            track.IDfamille = value
+            # alimente le choix des payeurs et selectionne l'existant éventuel
+            nur.SetPayeurs(self,track)
+
         if code == 'mode':
             # rend non éditable les champs suivants si pas d'option possible
             IDmode = self.parent.dicModesChoices[value]['IDmode']
@@ -384,7 +386,8 @@ class Dialog(wx.Dialog):
         titre = listArbo[-1:][0] + "/" + self.__class__.__name__
         wx.Dialog.__init__(self, None,-1,title=titre, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
 
-        self.IDutilisateur = nuu.GetIDutilisateur()
+        self.dictUtilisateur = nuu.GetDictUtilisateur()
+        self.IDutilisateur = self.dictUtilisateur['IDutilisateur']
         if (not self.IDutilisateur) or not nuu.VerificationDroitsUtilisateurActuel('reglements_depots','creer'):
             self.Destroy()
         else:

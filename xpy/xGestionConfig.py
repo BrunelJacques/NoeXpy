@@ -217,7 +217,7 @@ class DLG_implantation(wx.Dialog):
         # recherche dans profilUser ----------------------------------------------------------------------------------
         cfg = xshelve.ParamUser()
         # lecture des valeurs préalablement utilisées
-        choixUser= cfg.GetDict(dictDemande=None, groupe='USER', close=False)
+        choixUser= cfg.GetDict(dictDemande=None, groupe='USER', close=True)
         dictAppli= cfg.GetDict(dictDemande=None, groupe='APPLI')
         if dictAppli == {}:
             dictAppli = self.parent.dictAppli

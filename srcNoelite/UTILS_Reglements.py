@@ -342,6 +342,16 @@ def GetPayeurs(db,IDfamille,**kwd):
         ldPayeurs.append(dicPayeur)
     return ldPayeurs
 
+def SetPayeurs(pnl,track):
+    pnl.ldPayeurs = GetPayeurs(pnl.parent.db, track.IDfamille)
+    payeurs = [x['nom'] for x in pnl.ldPayeurs]
+    if len(payeurs) == 0: payeurs.append(track.designation)
+    ix = 0
+    if track.payeur in payeurs:
+        ix = payeurs.index(track.payeur)
+    track.payeur = payeurs[ix]
+    pnl.ctrlOlv.dicChoices[pnl.ctrlOlv.lstCodesColonnes.index('payeur')] = payeurs
+
 def SetPayeur(db,IDcompte_payeur,nom,**kwd):
     lstDonnees = [('IDcompte_payeur',IDcompte_payeur),
                     ('nom',nom)]
@@ -570,6 +580,9 @@ def SauveLigne(db,dlg,track):
     # gestion de l'ID depot si withDepot
     if not hasattr(dlg,"IDdepot") and dlg.withDepot:
         dlg.IDdepot = SetDepot(dlg,db)
+    elif dlg.withDepot:
+        dlg.IDdepot = dlg.pnlParams.ctrlRef.GetValue()
+        MajDepot(dlg,db,dlg.IDdepot)
 
     # Assure la présence des old donnees
     if not hasattr(track,'oldDonnees'):
@@ -629,10 +642,10 @@ def DeleteLigne(db,track):
 
 def SetReglement(dlg,track,db):
     # --- Sauvegarde du règlement ---
-    IDmode = dlg.dicModesChoices[track.mode]['IDmode']
+    IDemetteur = None
+    IDpayeur = None
 
     # transposition du payeur en son ID
-    IDpayeur = None
     if not hasattr(dlg.pnlOlv,'ldPayeurs'):
         dlg.pnlOlv.ldPayeurs = GetPayeurs(db,track.IDfamille)
     for dicPayeur in dlg.pnlOlv.ldPayeurs:
@@ -641,9 +654,12 @@ def SetReglement(dlg,track,db):
             break
     if not IDpayeur:
         IDpayeur = SetPayeur(db,track.IDfamille,track.payeur)
+        dlg.pnlOlv.ldPayeurs = GetPayeurs(db,track.IDfamille)
+        
+
+    IDmode = dlg.dicModesChoices[track.mode]['IDmode']
 
     # transposition de l'émetteur en son ID
-    IDemetteur = None
     lstEmetteurs = dlg.dlEmetteurs[IDmode]
     if len(lstEmetteurs) >= 0 and track.emetteur and track.emetteur in lstEmetteurs:
         IDemetteur = dlg.dlIDemetteurs[IDmode][lstEmetteurs.index(track.emetteur)]
@@ -669,7 +685,6 @@ def SetReglement(dlg,track,db):
     ]
     if dlg.withDepot:
         lstDonnees.append(("IDdepot",dlg.IDdepot))
-    attente = 0
     if hasattr(track,'differe'):
         lstDonnees.append(("date_differe", xformat.DatetimeToStr(track.differe,iso=True)))
 
@@ -835,14 +850,42 @@ def SetDateDepot(db,IDdepot,date):
     db.ReqMAJ('depots', [('date',date),],'IDdepot', IDdepot, affichError=True)
     return
 
+def MajDepot(dlg,db,IDdepot):
+    modes = ""
+    mindte, maxdte = datetime.date(2999,12,31), datetime.date(2000,1,1)
+    nb = len(dlg.ctrlOlv.modelObjects)
+    for track in dlg.ctrlOlv.modelObjects:
+        if track.mode and len(track.mode) > 0:
+            if not track.mode[:3] in modes: modes += track.mode[:3]+', '
+        mindte = min(mindte,track.date)
+        maxdte = max(maxdte, track.date)
+    if mindte == maxdte:
+        dates = "le %s"%(xformat.DatetimeToStr(mindte,iso=False))
+    else: dates = "du %s au %s"%(xformat.DatetimeToStr(mindte,iso=False),xformat.DatetimeToStr(maxdte,iso=False))
+    label = "Noelite: %d %s datés %s"%(nb,modes,dates)
+
+    lstDonnees = [
+        ("date", xformat.DateFrToSql(dlg.pnlParams.ctrlDate.GetValue())),
+        ("nom", label),
+        ("IDcompte", dlg.GetIDbanque()),
+        ]
+    # Mise à jour du libellé dépôt
+    db.ReqMAJ('depots', lstDonnees,'IDdepot', IDdepot, affichError=True)
+    return
+
 def SetDepot(dlg,db):
     # cas d'un nouveau depot à créer, retourne l'IDdepot
     IDdepot = None
+    today = xformat.DatetimeToStr(datetime.date.today(),iso=False)
+    label = "saisie '%s' sur '%s' via '%s' le %s"%(dlg.dictUtilisateur['utilisateur'],dlg.dictUtilisateur['userdomain'],
+                                                    dlg.dictUtilisateur['config'],today)
     lstDonnees = [
         ("date", xformat.DateFrToSql(dlg.pnlParams.ctrlDate.GetValue())),
         ("nom", "Saisie règlements via Noelite"),
+        ("verrouillage",0),
         ("IDcompte", dlg.GetIDbanque()),
-    ]
+        ("observations",label)
+        ]
     if not hasattr(dlg, "IDdepot"):
         ret = db.ReqInsert("depots", lstDonnees=lstDonnees, mess="UTILS_Reglements.SetDepot", )
         if ret == 'ok':

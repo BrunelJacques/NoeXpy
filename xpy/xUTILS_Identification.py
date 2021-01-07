@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#-----------------------------------------------------------
-# Application :    NoeXPY, gestion multi-activités
-# Auteur:           Ivan LUCAS, Jacques BRUNEL
+#-------------------------------------------------------------------------
+# Application :    NoeXPY, Saisie d'une identification avec mot de passe
+# Auteur:          Ivan LUCAS, Jacques BRUNEL
 # Licence:         Licence GNU GPL
-#-----------------------------------------------------------
+#--------------------------------------------------------------------------
 
 import sys
 import wx
@@ -14,25 +14,12 @@ import xpy.outils.xshelve as xu_shelve
 import xpy.xGestionConfig as xGestionConfig
 import xpy.xUTILS_SaisieParams as xusp
 
-def GetUserLocal():
-    # vient de Noethys, non encore utilisée
-    argStart = sys.argv
-    # lancement avec des arguments, le premier est l'user
-    if len(argStart)>1:
-        user = argStart[1]
-    # récup l'user systeme
-    else:
-        import os
-        os.environ['USERNAME']
-    return [{"IDutilisateur": "local", "nom": user, "prenom": "en Local", "sexe": "M", "mdp": "local",
-                        "profil": "", "actif": True, "droits": {}},]
-
 def GetListeUsers(db=None):
-
+    # Récupère la liste des utilisateurs et de leurs droits
+    """ suppose l'accès à une base de donnée qui contient les tables génériques 'utilisateurs' et 'droits'"""
     if not db :
         DB = xdb.DB()
     else: DB = db
-    """ Récupère la liste des utilisateurs et de leurs droits """
     if DB.echec:
         return False
     # Droits
@@ -265,7 +252,7 @@ class Dialog(wx.Dialog):
             self.listeUtilisateurs = GetListeUsers(db=DB)
         DB.Close()
 
-    # Fermeture de la fenêtre sur utiliasateur trouvé
+    # Fermeture de la fenêtre sur utilisateur trouvé
     def On_trouve(self, dictUtilisateur={}):
         # le contrôle a déja envoyé le dic utilisateur dans ParamUser via shelve
         self.dictUtilisateur = dictUtilisateur

@@ -60,10 +60,10 @@ class ParamFile():
         # recherche des configs dans la frame de lancement avec clé 'versus', puis dans UserProfile ou Data
         # le fichier est vu comme un quasi-dictionnaire il contient le dictionnaire du groupe de paramètres
         # le versus 'data' ou 'user' sera la clé de stockage en mémoire dictMem
-        self.versus = versus
+        self.flag = flag
         self.close = close
-        self.topWin = False
         self.dictMem= {}
+        self.topWin = False
 
         try :
             topWindow = wx.GetApp().GetTopWindow()
@@ -71,8 +71,8 @@ class ParamFile():
             if nomWindow :
                 # il y a une frame en top windows on va l'utiliser comme tampon mémoire
                 if not hasattr(topWindow,'config'):
-                    topWindow.config = {self.versus:{}}
-                self.dictMem = topWindow.config[self.versus]
+                    topWindow.config = {versus:{}}
+                self.dictMem = topWindow.config[versus]
                 self.topWin = True
         except : pass
 
@@ -87,22 +87,27 @@ class ParamFile():
                 del cfg
         if path == '':
             path = '../xpy/Data/'
-
-        # ouvre le fichier et le crée si nécessaire
-        # création du chemin et de tous les répertoires nécessaires
+        self.closed = True
         self.dictFic = {}
         if not path: path = '/'
-        if flag in ('c','n'):
+        if self.flag in ('c','n'):
             path = CreePath(path)
         if not (path[-1:] in ['/','\\'] ): path +='/'
         path = path.replace('\\','/')
         path = path[0:2]+path[2:].replace('//','/')
-        chemin = path+nomFichier
-        if os.path.isfile(chemin+'.dat') or flag == 'c':
-            self.dictFic = shelve.open(chemin, flag)
+        self.chemin = path+nomFichier
+        self.openFile()
+
+    def openFile(self):
+        # ouvre le fichier et le crée si nécessaire
+        # création du self.chemin et de tous les répertoires nécessaires
+        if os.path.isfile(self.chemin+'.dat') or self.flag == 'c':
+            self.dictFic = shelve.open(self.chemin, self.flag)
+            self.closed = False
         else:
             self.dictFic = {}
             self.close = False
+            self.closed = False
         if self.dictMem == {}:
             for cle, valeur in self.dictFic.items():
                 self.dictMem[cle] = valeur
@@ -111,6 +116,7 @@ class ParamFile():
         """ Recupere une copie du dictionnaire demandé ds le fichier de config
             Si dictDemande est None c'est l'ensemble du groupe,
             Si groupe est None : recherché dans l'ensemble des groupes"""
+        if self.closed : self.openFile()
         dictDonnees = {}
         if dictDemande == {} : dictDemande = None
         if groupe and (not (groupe in self.dictMem.keys())):
@@ -163,13 +169,15 @@ class ParamFile():
                 GetListKey(groupe)
                 GetDictGroupe(groupe)
 
-        if self.topWin and close and self.close :
+        if self.topWin and close and self.close and not self.closed :
             self.dictFic.close()
+            self.closed = True
         return dictDonnees
 
     def SetDict(self,dictEnvoi=None,groupe=None, close=True, memOnly=False):
         """ Ajoute ou met à jour les clés du dictionnaire ds le fichier de config
             par défaut ce sera le groupe param si groupe est None"""
+        if self.closed : self.openFile()
         if groupe and (not (groupe in self.dictMem.keys())):
             self.dictMem[groupe]={}
             if groupe in self.dictFic:
@@ -185,12 +193,14 @@ class ParamFile():
             # double enregistrement
             self.dictFic[groupe] = self.dictMem[groupe]
 
-        if close and self.close:
+        if close and self.close and not self.closed:
             self.dictFic.close()
+            self.closed = True
         return
 
     def DelDictConfig(self,cle=None,groupe=None, close=True):
         """ Supprime le itemdic du fichier de config présent sur le disque """
+        if self.closed : self.openFile()
         def delCle(itemdic,cle):
             for grp in itemdic.keys():
                 ssdic = itemdic[grp]
@@ -237,7 +247,7 @@ if __name__ == u"__main__":
     cfgNoelite  = ParamFile('Config',path='../../srcNoelite/Data',flag='r')
 
     # del de clés
-    #cfgUser.DelDictConfig(cle=None,groupe='USER')
+    #cfgUser.DelDictConfig(cle=None,groupe='APPLI')
 
     DumpFile(cfgUser.dictFic)
     print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Fichiers Noelite Data.Config')
