@@ -360,11 +360,12 @@ def SetPayeur(db,IDcompte_payeur,nom,**kwd):
     return ID
 
 def TransposeDonnees(dlg,recordset,lstCodesChamps,lstCodesDonnees):
-    # ajustement des choix possibles selon le contenu du règlement
+    # ajustement des choix possibles selon le contenu du règlement et de la prestation associée
     ixnat = lstCodesDonnees.index('nature')
     ixdat = lstCodesDonnees.index('date')
     ixmode = lstCodesDonnees.index('mode')
     ixcreer = lstCodesDonnees.index('creer')
+    ixcompte = lstCodesDonnees.index('compte')
 
     # les derniers champs ne sont pas dans la grille à afficher, mais tous dans les données
     lstDonnees = []
@@ -383,15 +384,22 @@ def TransposeDonnees(dlg,recordset,lstCodesChamps,lstCodesDonnees):
         donnees[ixmode] = dlg.ddModesRegl[IDmode]['choice']
 
         # détermination de la nature 'Règlement','Acompte','Don','Debour','Libre'
-        ixcat = lstCodesChamps.index('prestcateg')
-        ixnbv = lstCodesChamps.index('nbventil')
-        if record[ixcat] and record[ixcat].lower() == 'don':
+        compte = record[lstCodesChamps.index('prestcompte')]
+        nature = record[lstCodesChamps.index('prestcateg')]
+        nbVentil = record[lstCodesChamps.index('nbventil')]
+        if nature and nature.lower() == 'don':
             donnees[ixnat] = 'Don'
+            donnees[ixcompte] = compte
             creer = 'O'
-        elif record[ixcat] and record[ixcat].lower() == 'debour':
+        elif nature and nature.lower() == 'donsscerfa':
+            donnees[ixnat] = 'DonSsCerfa'
+            donnees[ixcompte] = compte
+            creer = 'O'
+        elif nature and nature.lower() == 'debour':
             donnees[ixnat] = 'Debour'
+            donnees[ixcompte] = compte
             creer = 'O'
-        elif record[ixnbv] and record[ixnbv] > 0:
+        elif nbVentil and nbVentil > 0:
             donnees[ixnat] = 'Règlement'
             creer = 'N'
         else:
@@ -409,11 +417,13 @@ def GetReglements(dlg,IDdepot):
     db = dlg.db
     lstChamps = ['reglements.IDreglement','reglements.date','reglements.IDcompte_payeur','familles.adresse_intitule',
             'payeurs.nom','reglements.IDmode','emetteurs.nom','reglements.numero_piece','reglements.observations',
-            'reglements.montant','Null','reglements.IDpiece','prestations.categorie','prestations.compta',
-            'reglements.compta', 'COUNT(ventilation.IDventilation)']
+            'reglements.montant','Null','reglements.IDpiece','prestations.categorie','prestations.code_compta',
+            'prestations.compta','reglements.compta', 'COUNT(ventilation.IDventilation)']
     
-    lstCodesChamps = ['IDreglement','date','IDfamille','designation','payeur','IDmode','emetteur',
-                    'numero','libelle','montant','creer','IDprestation','prestcateg','prestcpta','reglcompta','nbventil']
+    lstCodesChamps = ['IDreglement','date','IDfamille','designation',
+                      'payeur','IDmode','emetteur','numero','libelle',
+                      'montant','creer','IDprestation','prestcateg','prestcompte',
+                      'prestcpta','reglcompta','nbventil']
 
     #            IDreglement,date,IDfamille,designation,payeur,labelmode,numero,libelle,montant,IDpiece in recordset
     req = """   SELECT %s
@@ -495,8 +505,8 @@ def ValideLigne(db,track):
 
 def SetPrestation(track,db):
     # --- Sauvegarde de la prestation ---
-    if not track.nature.lower() in ('don','debour'):
-        raise Exception("UTILS_Reglements.SetPrestation no don ni debour!!")
+    if not track.nature.lower() in ('don','donsscerfa','debour'):
+        raise Exception("UTILS_Reglements.SetPrestation ni don ni debour!!")
     lstDonnees = [
         ("date", xformat.DatetimeToStr(datetime.date.today(),iso=True)),
         ("categorie", track.nature),
@@ -519,39 +529,43 @@ def SetPrestation(track,db):
         ret = db.ReqMAJ("prestations", lstDonnees, "IDprestation", track.IDprestation)
         IDcategorie = 7
         categorie = "Modification"
+    IDprestation = track.IDprestation
+
+    # supprime les ventilations du règlement
+    ret = db.ReqDEL("ventilation","IDreglement",track.IDreglement)
 
     # création d'une ventilation
-    lstDonnees = [('IDprestation',track.IDprestation),
+    lstDonnees = [('IDprestation',IDprestation),
                   ('IDreglement',track.IDreglement),
                   ('montant',track.montant),
                   ('IDcompte_payeur',track.IDfamille)]
     ret = db.ReqInsert("ventilation", lstDonnees=lstDonnees, mess="UTILS_Reglements.SetPrestation.ventilation", )
 
     # mise à jour du règlement sur son numéro de pièce (ID de la prestation
-    lstDonnees = [("IDpiece",track.IDprestation)]
+    lstDonnees = [("IDpiece",IDprestation)]
     ret = db.ReqMAJ("reglements", lstDonnees, "IDreglement", track.IDreglement)
 
     # --- Mémorise l'action dans l'historique ---
     if ret == 'ok':
         texteMode = track.mode
         montant = u"%.2f %s" % (track.montant, SYMBOLE)
-        if not track.IDprestation: IDprest = 0
-        else: IDprest = track.IDprestation
+        if not IDprestation: IDprest = 0
+        else: IDprest = IDprestation
         nuh.InsertActions([{
             "IDfamille": track.IDfamille,
             "IDcategorie": IDcategorie,
             "action": "Noelite %s de prestation associée regl ID%d : %s en %s "%(categorie, IDprest,
                                                                                  montant, track.libelle),
             },],db=db)
-    return True
+    return IDprestation
 
-def DelPrestation(track,db,idPiece=None):
+def DelPrestation(track,db,idPrest=None):
     # supprime une prestation et ses ventilations
-    if not idPiece:
-        idPiece = track.IDprestation
-    if not idPiece: return False
-    ret = db.ReqDEL("prestations", "IDprestation", idPiece)
-    db.ReqDEL('ventilation','IDprestation',idPiece,afficheError=False)
+    if not idPrest:
+        idPrest = track.IDprestation
+    if not idPrest: return False
+    ret = db.ReqDEL("prestations", "IDprestation", idPrest)
+    db.ReqDEL('ventilation','IDprestation',idPrest,afficheError=False)
     IDcategorie = 8
     categorie = "Suppression"
     # mise à jour du règlement sur son numéro de pièce (ID de la prestation) et historisation
@@ -577,6 +591,7 @@ def SauveLigne(db,dlg,track):
         return False
     if not track.montant or not isinstance(track.montant,float):
         return False
+
     # gestion de l'ID depot si withDepot
     if not hasattr(dlg,"IDdepot") and dlg.withDepot:
         dlg.IDdepot = SetDepot(dlg,db)
@@ -584,37 +599,34 @@ def SauveLigne(db,dlg,track):
         dlg.IDdepot = dlg.pnlParams.ctrlRef.GetValue()
         MajDepot(dlg,db,dlg.IDdepot)
 
-    # Assure la présence des old donnees
-    if not hasattr(track,'oldDonnees'):
-        track.oldDonnees = [None,]* len(dlg.ctrlOlv.lstCodesColonnes)
+    # annulations des prestations associées antérieurement et de leurs ventilations
+    ixnat = dlg.ctrlOlv.lstCodesColonnes.index('nature')
+    ixprest = dlg.ctrlOlv.lstCodesColonnes.index('IDprestation')
+    if track.oldDonnees[ixnat] and track.oldDonnees[ixnat].lower() in ('don','donsscerfa','debour'):
+        DelPrestation(track, db,idPrest=track.oldDonnees[ixprest])
+
+    # création  de la prestation associée et sa ventilation
+    if track.nature and track.nature.lower() in ('don','donsscerfa','debour'):
+        IDprestation = SetPrestation(track,db)
+    else:
+        IDprestation = None
+    track.donnees[ixprest] = IDprestation
+    track.IDprestation = IDprestation
+
+    # Vérif Prestation
+    message = ''
+    if track.creer == True  and not IDprestation:
+        message = "La prestation associée n'est pas créée!\n"
+    if track.creer == False and IDprestation:
+        message = "La prestation associée au règlement n'est pas supprimée!\n"
+    if len(message)>0: wx.MessageBox(message,"UTIL_Reglements.SauveLigne.verif")
 
     # gestion du réglement insertion ou modif
     ret = SetReglement(dlg,track,db)
 
-    if not hasattr(track,'IDprestation'): track.IDprestation = None
+    # stockage pour les prochaines modifs
+    track.oldDonnees = track.donnees
 
-    # annulations des prestations associées antérieurement et de leurs ventilations
-    ixnat = dlg.ctrlOlv.lstCodesColonnes.index('nature')
-    ixpie = dlg.ctrlOlv.lstCodesColonnes.index('IDprestation')
-    if track.oldDonnees[ixnat] and track.oldDonnees[ixnat].lower() in ('don','debour'):
-        DelPrestation(track, db,idPiece=track.oldDonnees[ixpie])
-
-    # création  de la prestation associée et sa ventilation
-    if track.nature and track.nature.lower() in ('don','debour'):
-        ret = SetPrestation(track,db)
-        track.donnees[ixpie]=track.IDprestation
-    else:
-        track.IDprestation = None
-        track.donnees[ixpie]=None
-
-    # Vérif Prestation
-    message = ''
-    if not hasattr(track,'IDprestation'): track.IDprestation = None
-    if track.creer == True  and not track.IDprestation:
-        message = "La prestation associée n'est pas créée!\n"
-    if track.creer == False and track.IDprestation:
-        message = "La prestation associée au règlement n'est pas supprimée!\n"
-    if len(message)>0: wx.MessageBox(message,"UTIL_Reglements.SauveLigne.verif")
     return ret
 
 def DeleteLigne(db,track):
@@ -644,6 +656,7 @@ def SetReglement(dlg,track,db):
     # --- Sauvegarde du règlement ---
     IDemetteur = None
     IDpayeur = None
+    if not hasattr(track,'IDprestation'):track.IDprestation = None
 
     # transposition du payeur en son ID
     if not hasattr(dlg.pnlOlv,'ldPayeurs'):
@@ -655,7 +668,6 @@ def SetReglement(dlg,track,db):
     if not IDpayeur:
         IDpayeur = SetPayeur(db,track.IDfamille,track.payeur)
         dlg.pnlOlv.ldPayeurs = GetPayeurs(db,track.IDfamille)
-        
 
     IDmode = dlg.dicModesChoices[track.mode]['IDmode']
 
@@ -667,6 +679,8 @@ def SetReglement(dlg,track,db):
         track.emetteur = None
         ixem = dlg.ctrlOlv.lstCodesColonnes.index('emetteur')
         track.donnees[ixem]
+    if not track.libelle: track.libelle = ""
+    if not track.numero: track.numero = ""
 
     lstDonnees = [
         ("IDreglement", track.IDreglement),
@@ -681,7 +695,7 @@ def SetReglement(dlg,track,db):
         ("IDcompte", dlg.GetIDbanque()),
         ("date_saisie", xformat.DatetimeToStr(datetime.date.today(),iso=True)),
         ("IDutilisateur", dlg.IDutilisateur),
-        ("IDpiece",None),
+        ("IDpiece",track.IDprestation),
     ]
     if dlg.withDepot:
         lstDonnees.append(("IDdepot",dlg.IDdepot))
@@ -853,6 +867,7 @@ def SetDateDepot(db,IDdepot,date):
 def MajDepot(dlg,db,IDdepot):
     modes = ""
     mindte, maxdte = datetime.date(2999,12,31), datetime.date(2000,1,1)
+
     nb = len(dlg.ctrlOlv.modelObjects)
     for track in dlg.ctrlOlv.modelObjects:
         if track.mode and len(track.mode) > 0:
@@ -896,7 +911,7 @@ def SetDepot(dlg,db):
     return IDdepot
 
 def GetDepot(db=None,**kwd):
-    # appel des dépots existants pour reprise d'un dépot
+    # lancement de l'appel des dépots existants pour reprise
     dicDepot = {}
     dicOlv = GetMatriceDepots()
     dlg = xgtr.DLG_tableau(None,dicOlv=dicOlv,db=db)

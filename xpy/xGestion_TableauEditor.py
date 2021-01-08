@@ -521,11 +521,13 @@ class PanelListView(wx.Panel):
             track = self.ctrl_listview.GetObjectAt(row)
 
             # appel des éventuels spécifiques
+            code = self.ctrl_listview.lstCodesColonnes[col]
             if hasattr(self.parent, 'OnEditFinished'):
-                code = self.ctrl_listview.lstCodesColonnes[col]
                 self.parent.OnEditFinished(code, track, editor=event.editor)
 
             self.ValideLigne(track)
+            if track.valide:
+                self.SauveLigne(code, track, event.editor)
         self.ctrl_footer.MAJ_totaux()
         self.ctrl_footer.MAJ_affichage()
         event.Skip()
@@ -540,6 +542,10 @@ class PanelListView(wx.Panel):
         # Cette procédure peut générer deux attributs track.valide track.message interceptés par CellEditor.
         if hasattr(self.parent, 'ValideLigne'):
             self.parent.ValideLigne(track)
+
+    def SauveLigne(self,code, track, editor):
+        # teste old donnees % en cas de modif lance le sauve ligne du parent
+        pass
 
     # Initialisation d'une nouvelle track
     def InitTrackVierge(self,track,trackN1):

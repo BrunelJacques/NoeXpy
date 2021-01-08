@@ -115,6 +115,9 @@ class PNL_params(wx.Panel):
         self.lblBanque = wx.StaticText(self,-1, label="Banque Noethys:  ",size=(130,20),style=wx.ALIGN_RIGHT)
 
         self.ctrlBanque = wx.Choice(self,size=(220,20),choices=lstBanques)
+        if len(lstBanques)>0:
+            # selection de la deuxième ligne (choix opportuniste pour matthania: banque principale)
+            self.ctrlBanque.Select(1)
         self.ctrlBanque.Bind(wx.EVT_KILL_FOCUS,self.OnKillFocusBanque)
 
         self.btnBanque = wx.Button(self, label="...",size=(40,22))
@@ -490,7 +493,7 @@ class Dialog(wx.Dialog):
         if len(self.ctrlOlv.innerList) != len(self.depotOrigine):
             return True
         saisie = False
-        # test de la modif de chaque ligne
+        # pour savoir s'il y a eu modif de lignes
         for ix in range(len(self.depotOrigine)):
             if self.ctrlOlv.innerList[ix].donnees != self.depotOrigine[ix].donnees:
                 saisie = True
