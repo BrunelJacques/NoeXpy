@@ -145,8 +145,8 @@ def EscapeAction(event):
     if hasattr(event.EventObject.GrandParent, 'OnEditStarted'):
         row, col = olv.cellBeingEdited
         track = olv.GetObjectAt(row)
-        if track.old_data:
-            event.EventObject.SetValue(track.old_data)
+        if track.oldValue:
+            event.EventObject.SetValue(track.oldValue)
     olv.FinishCellEdit()
     if hasattr(event.EventObject.GrandParent, 'OnEditStarted'):
         GetValideLigne(track)

@@ -217,56 +217,69 @@ class PNL_corpsReglements(xgte.PNL_corps):
         self.flagSkipEdit = False
         self.oldRow = None
 
-    def InitTrackVierge(self,track,trackN1):
+    def InitTrackVierge(self,track,modelObject):
         # Le premier accès sur la ligne va attribuer un ID, la sauvegarde se fera après la saisie du montant != 0.0
         if track.IDreglement in (None, 0):
             track.IDreglement = nur.GetNewIDreglement(self.parent.db,self.lstNewReglements)
             self.lstNewReglements.append(track.IDreglement)
             track.ventilation = []
+
         # reprise de la valeur 'mode' et date de la ligne précédente
-        track.mode = trackN1.mode
-        track.date = trackN1.date
+        if len(modelObject)>0:
+            trackN1 = modelObject[-1]
+            track.mode = trackN1.mode
+            track.date = trackN1.date
+        if track.nature.lower() in ('don','donsscerfa', 'debour'):
+            # Seuls les dons et débours vont générer la prestation selon l'compte
+            track.creer = True
+        else: track.creer = False
 
     def OnCtrlV(self,track):
         # raz de certains champs à recomposer
         (track.IDreglement, track.date, track.IDprestation, track.IDpiece,track.compta) = (None,)*5
 
-    def OnEditStarted(self,code,editor=None):
+    def OnNewRow(self,row,track):
+        pass
+
+    def OnEditStarted(self,code,track,editor=None):
         # affichage de l'aide
         if code in DIC_INFOS.keys():
             self.parent.pnlPied.SetItemsInfos( DIC_INFOS[code],
                                                wx.ArtProvider.GetBitmap(wx.ART_FIND, wx.ART_OTHER, (16, 16)))
         else:
             self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
-        row, col = self.ctrlOlv.cellBeingEdited
-
-        if not self.oldRow: self.oldRow = row
-        if row != self.oldRow:
-            track = self.ctrlOlv.GetObjectAt(self.oldRow)
-            test = nur.ValideLigne(self.parent.db,track)
-            if test:
-                track.valide = True
-                self.oldRow = row
-            else:
-                track.valide = False
-        track = self.ctrlOlv.GetObjectAt(row)
 
         if track.IDreglement in (None, 0, ''):
             track.IDreglement = nur.GetNewIDreglement(self.parent.db,self.lstNewReglements)
             self.lstNewReglements.append(track.IDreglement)
             track.ventilation = []
 
-        # conservation de l'ancienne valeur
-        track.oldValue = None
-        try:
-            eval("track.oldValue = track.%s"%code)
-        except: pass
+        if code == 'payeur':
+            self.SetPayeurs(track,editor)
 
-        if code == 'emetteur' and len(track.mode)>0:
-            mode = track.mode
+        if code == 'emetteur':
+            self.SetEmetteurs(track,editor)
+
+    def SetPayeurs(self,track,editor):
+        if track.IDfamille and track.IDfamille >0:
+            # alimente le choix des payeurs et selectionne l'existant éventuel
+            oldpay = track.payeur
+
+            self.ldPayeurs = nur.GetPayeurs(self.parent.db,track.IDfamille)
+            payeurs = [x['nom'] for x in self.ldPayeurs]
+            if len(payeurs) == 0: payeurs.append(track.designation)
+            editor.Set(payeurs)
+
+            # place une valeur choisie
+            if oldpay:
+                editor.SetStringSelection(oldpay)
+            else: editor.SetStringSelection(payeurs[-1])
+
+    def SetEmetteurs(self,track,editor):
+        if len(track.mode)>0:
             oldem = track.emetteur
             # Appel des emetteurs selon le mode de règlement saisi
-            IDmode = self.parent.dicModesChoices[mode]['IDmode']
+            IDmode = self.parent.dicModesChoices[track.mode]['IDmode']
             emetteurs = sorted(self.parent.dlEmetteurs[IDmode])
             editor.Set(emetteurs)
             if oldem:
@@ -283,24 +296,6 @@ class PNL_corpsReglements(xgte.PNL_corps):
         (row, col) = self.ctrlOlv.cellBeingEdited
         track = self.ctrlOlv.GetObjectAt(row)
 
-        # si pas de saisie on passe
-        if (not value) or track.oldValue == value:
-            self.flagSkipEdit = False
-            return
-
-        # anticipe l'enregistrement du champ montant pour réussir la validation
-        if code == 'montant' and value:
-            track.montant = value
-        if code == 'emetteur' and track.libelle == '':
-            track.libelle = value
-
-        nur.ValideLigne(self.parent.db,track)
-
-        # l'enregistrement de la ligne se fait à chaque saisie pour gérer les montées et descentes
-        okSauve = False
-        if track.valide:
-            okSauve = nur.SauveLigne(self.parent.db,self.parent, track)
-
         # Traitement des spécificités selon les zones
         if code == 'IDfamille':
             try:
@@ -311,9 +306,6 @@ class PNL_corpsReglements(xgte.PNL_corps):
             designation = nur.GetDesignationFamille(self.parent.db,value)
             track.designation = designation
             track.IDfamille = value
-            # alimente le choix des payeurs et selectionne l'existant éventuel
-            nur.SetPayeurs(self,track)
-
         if code == 'mode':
             # rend non éditable les champs suivants si pas d'option possible
             IDmode = self.parent.dicModesChoices[value]['IDmode']
@@ -327,7 +319,7 @@ class PNL_corpsReglements(xgte.PNL_corps):
             self.ctrlOlv.columns[self.ctrlOlv.lstCodesColonnes.index('numero')].isEditable = isedit
         if code == 'nature':
             # actualisation du flag créer
-            if value.lower() in ('don','debour') :
+            if value.lower() in ('don','donsscerfa','debour') :
                 # Seuls les dons et débours vont générer la prestation selon l'compte
                 track.creer = True
                 # Choix compte - code comptable appellé en sortie de nature le code compte n'est pas éditable
@@ -338,8 +330,10 @@ class PNL_corpsReglements(xgte.PNL_corps):
             else:
                 track.compte = ""
                 track.creer = False
+
+
         if code == 'montant':
-            if okSauve and track.nature in ('Règlement','Libre') and value != 0.0:
+            if track.nature in ('Règlement','Libre') and value != 0.0:
                 # cas du règlement d'une prestation antérieure: appel de l'écran ventilations
                 dlg = ndrv.Dialog(self,-1,None,track.IDfamille,track.IDreglement,track.montant)
                 if dlg.ok:
@@ -355,6 +349,12 @@ class PNL_corpsReglements(xgte.PNL_corps):
         # enlève l'info de bas d'écran
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
         self.flagSkipEdit = False
+
+    def ValideLigne(self,code,track):
+        nur.ValideLigne(self.Parent.db,track)
+
+    def SauveLigne(self,track):
+        nur.SauveLigne(self.Parent.db,self.Parent,track)
 
     def OnEditFunctionKeys(self,event):
         row, col = self.ctrlOlv.cellBeingEdited

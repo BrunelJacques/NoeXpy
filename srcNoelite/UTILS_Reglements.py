@@ -11,9 +11,7 @@
 import wx
 import datetime
 import srcNoelite.UTILS_Historique  as nuh
-import xpy.xGestion_TableauEditor   as xgte
 import xpy.xGestion_TableauRecherche as xgtr
-import xpy.xUTILS_SaisieParams      as xusp
 from xpy.outils import xformat
 
 SYMBOLE = "€"
@@ -342,16 +340,6 @@ def GetPayeurs(db,IDfamille,**kwd):
         ldPayeurs.append(dicPayeur)
     return ldPayeurs
 
-def SetPayeurs(pnl,track):
-    pnl.ldPayeurs = GetPayeurs(pnl.parent.db, track.IDfamille)
-    payeurs = [x['nom'] for x in pnl.ldPayeurs]
-    if len(payeurs) == 0: payeurs.append(track.designation)
-    ix = 0
-    if track.payeur in payeurs:
-        ix = payeurs.index(track.payeur)
-    track.payeur = payeurs[ix]
-    pnl.ctrlOlv.dicChoices[pnl.ctrlOlv.lstCodesColonnes.index('payeur')] = payeurs
-
 def SetPayeur(db,IDcompte_payeur,nom,**kwd):
     lstDonnees = [('IDcompte_payeur',IDcompte_payeur),
                     ('nom',nom)]
@@ -565,12 +553,12 @@ def DelPrestation(track,db,idPrest=None):
         idPrest = track.IDprestation
     if not idPrest: return False
     ret = db.ReqDEL("prestations", "IDprestation", idPrest)
-    db.ReqDEL('ventilation','IDprestation',idPrest,afficheError=False)
+    db.ReqDEL('ventilation','IDprestation',idPrest)
     IDcategorie = 8
     categorie = "Suppression"
     # mise à jour du règlement sur son numéro de pièce (ID de la prestation) et historisation
     if ret == 'ok':
-        lstDonnees = [("IDprestation", None)]
+        lstDonnees = [("IDpiece", None)]
         db.ReqMAJ("reglements", lstDonnees, "IDreglement", track.IDreglement)
         track.IDprestation = None
         # --- Mémorise l'action dans l'historique ---
@@ -597,7 +585,7 @@ def SauveLigne(db,dlg,track):
         dlg.IDdepot = SetDepot(dlg,db)
     elif dlg.withDepot:
         dlg.IDdepot = dlg.pnlParams.ctrlRef.GetValue()
-        MajDepot(dlg,db,dlg.IDdepot)
+    MajDepot(dlg,db,dlg.IDdepot)
 
     # annulations des prestations associées antérieurement et de leurs ventilations
     ixnat = dlg.ctrlOlv.lstCodesColonnes.index('nature')
@@ -731,7 +719,7 @@ def SetReglement(dlg,track,db):
         montant = u"%.2f %s" % (track.montant, SYMBOLE)
         textePayeur = track.payeur
         if not isinstance(track.IDreglement, int):
-            print('anomalie: ',track.IDreglement)
+            raise Exception('anomalie: IDreglement = %s'%track.IDreglement)
         nuh.InsertActions([{
             "IDfamille": track.IDfamille,
             "IDcategorie": IDcategorie,
@@ -788,20 +776,21 @@ class Compte(object):
         if nature: nature = nature.lower()
         if nature == 'don':
             rad1 = 'DON'
-            rad2 = 'PRET'
+            rad2 = 'SSCERFA'
+            where = """((pctCodeComptable Like '%s%%') AND NOT (pctCodeComptable Like '%s%%'))
+                    """%(rad1,rad2)
+        elif nature.lower() == 'donsscerfa':
+            rad1 = 'SSCERFA'
+            where = """(pctCodeComptable Like '%%%s%%')"""%(rad1)
         else:
             rad1 = 'RBT'
             rad2 = 'DEB'
-
-        where = """ ((pctLibelle Like '%s%%')
-                        OR (pctLibelle Like '%s%%')
-                        OR (pctCodeComptable Like '%s%%')
-                        OR (pctCodeComptable Like '%s%%'))
-                """%(rad1,rad2,rad1,rad2)
+            where = """((pctCodeComptable Like '%s%%') OR (pctCodeComptable Like '%s%%'))"""%(rad1,rad2)
         if filtre:
-            where += """AND (pctLibelle LIKE '%%%s%%'
-                            OR pctCodeComptable LIKE '%%%s%%'
-                            OR pctCompte LIKE '%%%s%%')"""%(filtre,filtre,filtre)
+            where += """
+                    AND (pctLibelle LIKE '%%%s%%'
+                        OR pctCodeComptable LIKE '%%%s%%'
+                        OR pctCompte LIKE '%%%s%%')"""%(filtre,filtre,filtre)
 
         lstChamps = dicOlv['lstChamps']
         lstCodesColonnes = [x.valueGetter for x in dicOlv['lstColonnes']]
@@ -815,7 +804,16 @@ class Compte(object):
         if retour == "ok":
             recordset = self.db.ResultatReq()
             if len(recordset) == 0:
-                wx.MessageBox("Aucun compte paramétré contenant '%s' ou '%s' dans le code ou le libellé"%(rad1,rad2))
+                where = where.replace("pctCodeComptable","code")
+                wx.MessageBox("Aucun compte paramétré répondant à :\n\n %s"%(where))
+                req = """SELECT %s
+                        FROM matPlanComptable
+                        ;
+                        """ % (",".join(lstChamps))
+                retour = self.db.ExecuterReq(req, mess='UTILS_Reglements.GetComptes' )
+                recordset = ()
+                if retour == "ok":
+                    recordset = self.db.ResultatReq()
 
         # composition des données du tableau à partir du recordset, regroupement par compte
         dicComptes = {}

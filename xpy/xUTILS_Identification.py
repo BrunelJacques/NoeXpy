@@ -8,6 +8,7 @@
 
 import sys
 import wx
+import os
 import xpy.xUTILS_DB as xdb
 import xpy.outils.xchoixListe as xchoixliste
 import xpy.outils.xshelve as xu_shelve
@@ -146,6 +147,8 @@ class CTRL_mdp(wx.SearchCtrl):
                 self.choix['IDutilisateur'] =  dictUtilisateur['IDutilisateur']
                 self.choix['droits'] = dictUtilisateur['droits']
                 self.choix['profil'] = dictUtilisateur['profil']
+                self.choix['username'] = os.environ['USERNAME']
+                self.choix['userdomain'] = os.environ['USERDOMAIN']
                 cfg.SetDict(self.choix, groupe='USER')
 
                 if hasattr(self.parent,'On_trouve'):

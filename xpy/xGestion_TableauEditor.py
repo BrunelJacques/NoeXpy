@@ -385,6 +385,7 @@ class PanelListView(wx.Panel):
     def __init__(self, parent, **kwargs):
         id = -1
         self.parent = parent
+        self.oldRow = None
         stylePanel = wx.SUNKEN_BORDER | wx.TAB_TRAVERSAL
         wx.Panel.__init__(self, parent, id=id, style=stylePanel)
         self.dictColFooter = kwargs.pop('dictColFooter', {})
@@ -481,23 +482,23 @@ class PanelListView(wx.Panel):
     def OnEditStarted(self,event):
         row, col = self.ctrl_listview.cellBeingEdited
         code = self.ctrl_listview.lstCodesColonnes[col]
-
-        # conservation de l'ancienne valeur
         track = self.ctrl_listview.GetObjectAt(row)
+
+        # cas d'une nouvelle ligne appel des éventuels traitements
+        if self.oldRow != row and hasattr(self.parent, 'OnNewRow'):
+            self.parent.OnNewRow(row,track)
+
+        # conservation de la valeur qui peut être modifiée
         track.oldValue = None
-        try:
-            eval("track.oldValue = track.%s"%code)
-        except: pass
+        track.oldValue = eval("track.%s"%code)
 
         # appel des éventuels spécifiques
         if hasattr(self.parent, 'OnEditStarted'):
-            self.parent.OnEditStarted(code,editor=event.editor)
+            self.parent.OnEditStarted(code,track,editor=event.editor)
 
-        olv = self.ctrl_listview
-        if olv.cellBeingEdited:
-            row, col = olv.cellBeingEdited
-            track = olv.GetObjectAt(row)
-            track.old_data = track.donnees[col]
+        # conservation des données de la ligne en cours
+        track.oldDonnees = [x for x in track.donnees]
+
         event.Skip()
 
     def OnEditFinishing(self, event):
@@ -505,29 +506,45 @@ class PanelListView(wx.Panel):
         # gestion des actions de sortie
         row, col = self.ctrl_listview.cellBeingEdited
         track = self.ctrl_listview.GetObjectAt(row)
-        self.valeur = self.ctrl_listview.cellEditor.GetValue()
+        value = self.ctrl_listview.cellEditor.GetValue()
         code = self.ctrl_listview.lstCodesColonnes[col]
+
+        # si pas de saisie on passe
+        if (not value) or track.oldValue == value:
+            track.noSaisie = True
+            event.Skip()
+            return
+        track.noSaisie = False
+
         # appel des éventuels spécifiques
         if hasattr(self.parent, 'OnEditFinishing'):
-            self.parent.OnEditFinishing(code,self.valeur,editor=event.editor)
+            self.parent.OnEditFinishing(code,value,editor=event.editor)
         # stockage de la nouvelle saisie
-        track.__setattr__(code, self.valeur)
-        track.donnees[col] = self.valeur
+        track.__setattr__(code, value)
+        track.donnees[col] = value
         event.Skip()
 
     def OnEditFinished(self, event):
         if self.ctrl_listview.cellBeingEdited:
             row, col = self.ctrl_listview.cellBeingEdited
             track = self.ctrl_listview.GetObjectAt(row)
+            self.oldRow = row
+
+            # si pas de saisie on passe
+            if track.noSaisie:
+                event.Skip()
+                return
 
             # appel des éventuels spécifiques
             code = self.ctrl_listview.lstCodesColonnes[col]
             if hasattr(self.parent, 'OnEditFinished'):
                 self.parent.OnEditFinished(code, track, editor=event.editor)
 
-            self.ValideLigne(track)
+            # lance l'enregistrement de la ligne
+            self.ValideLigne(code,track)
             if track.valide:
-                self.SauveLigne(code, track, event.editor)
+                self.SauveLigne(track)
+
         self.ctrl_footer.MAJ_totaux()
         self.ctrl_footer.MAJ_affichage()
         event.Skip()
@@ -538,20 +555,21 @@ class PanelListView(wx.Panel):
             self.parent.OnEditFunctionKeys(event)
             event.Skip()
 
-    def ValideLigne(self,track):
+    def ValideLigne(self,code,track):
         # Cette procédure peut générer deux attributs track.valide track.message interceptés par CellEditor.
         if hasattr(self.parent, 'ValideLigne'):
-            self.parent.ValideLigne(track)
+            self.parent.ValideLigne(code,track)
 
-    def SauveLigne(self,code, track, editor):
+    def SauveLigne(self,track):
         # teste old donnees % en cas de modif lance le sauve ligne du parent
-        pass
+        if hasattr(self.parent, 'SauveLigne'):
+            self.parent.SauveLigne(track)
 
     # Initialisation d'une nouvelle track
-    def InitTrackVierge(self,track,trackN1):
+    def InitTrackVierge(self,track,modelObject):
         # appel des éventuels spécifiques
         if hasattr(self.parent, 'InitTrackVierge'):
-            self.parent.InitTrackVierge(track,trackN1)
+            self.parent.InitTrackVierge(track,modelObject)
 
 # ----------- Composition de l'écran -------------------------------------------------------
 class PNL_params(wx.Panel):

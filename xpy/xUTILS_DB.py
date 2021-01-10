@@ -237,8 +237,14 @@ class DB():
             host = config['serveur']
             port = config['port']
             userdb = config['userDB']
-
             passwd = config['mpUserDB']
+            if len(userdb)>0 and len(config['mpUserDB'])==0:
+                if not mute:
+                    mess = "Pas de mot de passe saisi, veuillez configurer les accès réseau"
+                    wx.MessageBox(mess, caption="xUTILS_DB.ConnexionFichierReseau ")
+                self.erreur = "%s\n\nEtape: %s"%("Config incompète",mess)
+                self.echec = 1
+                return
             nomFichier = config['nameDB']
             etape = 'Ping %s'%(host)
             ret = self.Ping(host)

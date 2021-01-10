@@ -14,8 +14,8 @@ import srcNoelite.menu as menu
 dictAPPLI = {
             'NOM_APPLICATION'       : "Noelite",
             'REP_SOURCES'           : "srcNoelite",
-            'REP_DATA'              : "C:\\Users\\Public\\Data",
-            'REP_TEMP'              : "C:\\Users\\Public\\Temp",
+            'REP_DATA'              : "C:/ProgramData/Noelite",
+            'REP_TEMP'              : "C:/Temp",
             'NOM_FICHIER_LOG'       : "logsNoelite.log",
             'TYPE_CONFIG'         : 'db_reseau',
 }

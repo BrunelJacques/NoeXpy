@@ -575,11 +575,9 @@ class ObjectListView(wx.ListCtrl):
         return self.AddNamedImages(None, smallImage, normalImage)
 
     def GetTrackVierge(self,row = None):
-        if not row or row == 0:
-            return TrackVierge(self)
         track = TrackVierge(self)
         if hasattr(self.Parent,'InitTrackVierge'):
-            self.Parent.InitTrackVierge(track,self.modelObjects[row-1])
+            self.Parent.InitTrackVierge(track,self.modelObjects)
         return track
 
     def AddObject(self, modelObject):
