@@ -237,6 +237,7 @@ class DB():
             host = config['serveur']
             port = config['port']
             userdb = config['userDB']
+
             passwd = config['mpUserDB']
             nomFichier = config['nameDB']
             etape = 'Ping %s'%(host)

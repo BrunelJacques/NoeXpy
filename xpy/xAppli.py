@@ -54,8 +54,13 @@ class MainFrame(wx.Frame):
         os.chdir(self.pathXpy)
         os.chdir('..')
         pathCourant = os.getcwd()
-        self.pathTemp = pathCourant +"\\%s"%self.dictAppli['REP_TEMP']
         self.pathData = pathCourant +"\\%s"%self.dictAppli['REP_DATA']
+        if "c:" in self.dictAppli['REP_DATA'].lower():
+            self.pathData = self.dictAppli['REP_DATA']
+
+        self.pathTemp = pathCourant + "\\%s" % self.dictAppli['REP_TEMP']
+        if "c:" in self.dictAppli['REP_TEMP'].lower():
+            self.pathTemp = self.dictAppli['REP_TEMP']
         self.pathSrcAppli = pathCourant +"\\%s"%self.dictAppli['REP_SOURCES']
         # teste la présence de sources
         lstFiles = os.listdir(self.pathSrcAppli)

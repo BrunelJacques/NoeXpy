@@ -247,7 +247,8 @@ if __name__ == u"__main__":
     cfgNoelite  = ParamFile('Config',path='../../srcNoelite/Data',flag='r')
 
     # del de clés
-    #cfgUser.DelDictConfig(cle=None,groupe='APPLI')
+    #cfgUser.DelDictConfig(cle=None,groupe='USER')
+    #cfgUser.DelDictConfig(cle=None,groupe='IDENT')
 
     DumpFile(cfgUser.dictFic)
     print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Fichiers Noelite Data.Config')

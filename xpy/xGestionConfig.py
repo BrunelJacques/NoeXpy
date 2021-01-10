@@ -71,7 +71,7 @@ MATRICE_CONFIGS = {
                      'ctrlAction':'OnNameDB'},
     {'name': 'userDB', 'genre': 'String', 'label': 'Utilisateur BD',
                     'help': "Si nécessaire, utilisateur ayant des droits d'accès à la base de donnée", 'value':'invite'},
-    {'name': 'passwdDB', 'genre': 'Mpass', 'label': 'Mot de passe BD',
+    {'name': 'mpUserDB', 'genre': 'Mpass', 'label': 'Mot de passe BD',
                     'help': "C'est le mot de passe d'accès à la base de données," +
                             "\nce n'est pas celui demandé au lancement de l'appli ou lors de l'authentification"},
     ],
