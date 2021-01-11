@@ -6,6 +6,7 @@ Gestion des règlements :
 - Proposition de comptes de dons, différente si c'est sans cerfa (SSCERFA dans le code)
 - Recomposition des choix de payeur sans passer par la case famille
 - Si passage sur une zone sans saisie, passe de manière plus fluide et sans contrôles
+- Implantation des configurations dans c:\ProgramData\Noelite
 
 Version 1.2.7.05 (07/01/2021)
 - Mise au point de la saisie des règlements
