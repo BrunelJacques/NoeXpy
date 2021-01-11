@@ -1,10 +1,11 @@
-Version 1.2.7.05b (08/01/2021)
+Version 1.2.7.6 (11/01/2021)
 Gestion des règlements :
 - choix banque postale par défaut à l'entrée
 - Remontée du compte comptable (don ou débour) lors d'une reprise
 - Suppression du don ou débour créé par le règlement si il y a changement de nature
 - Proposition de comptes de dons, différente si c'est sans cerfa (SSCERFA dans le code)
 - Recomposition des choix de payeur sans passer par la case famille
+- Si passage sur une zone sans saisie, passe de manière plus fluide et sans contrôles
 
 Version 1.2.7.05 (07/01/2021)
 - Mise au point de la saisie des règlements
