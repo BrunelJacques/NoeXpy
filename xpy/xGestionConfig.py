@@ -239,7 +239,7 @@ class DLG_implantation(wx.Dialog):
         cfgF = xshelve.ParamFile()
         grpConfigs = cfgF.GetDict(dictDemande=None, groupe='CONFIGS')
         # filtrage des des configs selon type retenu
-        self.lstIDconfigs, self.lstConfigsOK, self.lstConfigsKO = GetLstConfigs(grpConfigs,self.typeConfig)
+        self.lstIDconfigsOK, self.lstConfigsOK, self.lstConfigsKO = GetLstConfigs(grpConfigs,self.typeConfig)
         ddchoixConfigs = grpConfigs.pop('choixConfigs',{})
         # les choix de config sont stockés par application car Data peut être commun à plusieurs
         if not (self.nomAppli in ddchoixConfigs):
@@ -247,7 +247,7 @@ class DLG_implantation(wx.Dialog):
         choixConfigs = ddchoixConfigs[self.nomAppli]
         # alimente la liste des choix possibles
         for ctrlConfig in self.lstChoixConfigs:
-            ctrlConfig.SetOneSet(ctrlConfig.Name,self.lstIDconfigs)
+            ctrlConfig.SetOneSet(ctrlConfig.Name,self.lstIDconfigsOK)
             if ctrlConfig.Name in choixConfigs:
                 ctrlConfig.SetOneValue(ctrlConfig.Name,choixConfigs[ctrlConfig.Name])
         # last config sera affichée en 'Fermer' si pas modifiée
@@ -322,8 +322,8 @@ class DLG_implantation(wx.Dialog):
         sc = DLG_listeConfigs(self,select=ctrl.GetValue(),typeConfig=self.typeConfig)
         if sc.ok :
             sc.ShowModal()
-            if len(self.lstIDconfigs) >0:
-                ctrl.Set(self.lstIDconfigs)
+            if len(self.lstIDconfigsOK) >0:
+                ctrl.Set(self.lstIDconfigsOK)
                 value = sc.GetChoix(idxColonne=0)
                 ctrl.SetValue(value)
                 # choix de configs user stockées
@@ -364,10 +364,6 @@ class DLG_implantation(wx.Dialog):
         self.SauveParamUser()
         self.SauveConfig()
         dic = self.ctrlID.GetValues()
-        utilisateur = dic['ident']['utilisateur']
-        if utilisateur == '': utilisateur = 'local'
-        utilisateur = "- Utilisateur: '%s'"%(utilisateur)
-        topWindow = wx.GetApp().GetTopWindow()
         if self.IsModal():
             self.EndModal(wx.ID_OK)
         else: self.Destroy()
@@ -383,7 +379,7 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
         self.parent = parent
         self.dlColonnes = {}
         self.lddDonnees = []
-        self.lstIDconfigs = []
+        self.lstIDconfigsOK = []
         self.lstConfigsKO = []
         self.dldMatrice = {}
         self.typeConfig = typeConfig
@@ -397,7 +393,7 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
         cfgF = xshelve.ParamFile()
         grpConfigs= cfgF.GetDict(None,'CONFIGS')
         if 'lstConfigs' in grpConfigs:
-            self.lstIDconfigs, lstConfigsOK, lstConfigsKO = GetLstConfigs(grpConfigs,typeConfig)
+            self.lstIDconfigsOK, lstConfigsOK, lstConfigsKO = GetLstConfigs(grpConfigs,typeConfig)
             self.lddDonnees = lstConfigsOK
 
         # paramètres pour self.pnl contenu principal de l'écran
@@ -412,8 +408,8 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
             self.Init()
             self.ok = True
             if 'lstConfigs' in grpConfigs:
-                if select in self.lstIDconfigs:
-                    ix = self.lstIDconfigs.index(select)
+                if select in self.lstIDconfigsOK:
+                    ix = self.lstIDconfigsOK.index(select)
                     self.pnl.ctrl.Select(ix)
                     self.pnl.ctrl.SetItemState(ix,wx.LIST_STATE_SELECTED,wx.LIST_STATE_SELECTED)
             self.InitDlGest()

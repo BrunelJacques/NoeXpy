@@ -266,10 +266,11 @@ class MainFrame(wx.Frame):
 
     def SaisieConfig(self):
         import xpy.xGestionConfig as gc
-        cfg = gc.DLG_implantation(self, style = wx.RESIZE_BORDER )
-        cfg.ShowModal()
-        self.MakeStatusText()
-
+        cfg = gc.DLG_implantation(self )
+        ret = cfg.ShowModal()
+        if ret == wx.ID_OK:
+            self.MakeStatusText()
+        return ret
 
 #************************   Pour Test    *******************************
 if __name__ == "__main__":

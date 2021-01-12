@@ -892,6 +892,8 @@ def SetDepot(dlg,db):
     today = xformat.DatetimeToStr(datetime.date.today(),iso=False)
     if not 'userdomain' in dlg.dictUtilisateur.keys():
         dlg.dictUtilisateur['userdomain'] = '_'
+        dlg.dictUtilisateur['config'] = '_'
+
     label = "saisie '%s' sur '%s' via '%s' le %s"%(dlg.dictUtilisateur['utilisateur'],dlg.dictUtilisateur['userdomain'],
                                                     dlg.dictUtilisateur['config'],today)
     lstDonnees = [

@@ -58,12 +58,18 @@ class MyFrame(xAppli.MainFrame):
             if self.dictUser:
                 etat = True
         dlg.Destroy()
-        for numMenu in range(1,2):
-            self.menu.EnableTop(numMenu, etat)
-        self.panelAccueil.EnableBoutons(etat)
+        self.GestMenu(etat)
         if not etat:
             self.infoStatus="lancé sans accès à Noethys!"
         self.MakeStatusText()
+
+    def GestMenu(self, etat):
+        # grise ou dégrise les options du menu selon l'identification
+        for numMenu in range(1,2):
+            self.menu.EnableTop(numMenu, etat)
+        self.panelAccueil.EnableBoutons(etat)
+
+
 
 class MyApp(wx.App):
     def OnInit(self):

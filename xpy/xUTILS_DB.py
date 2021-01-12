@@ -50,7 +50,9 @@ def GetConfigs():
     cfg = xucfg.ParamUser()
     grpUSER = cfg.GetDict(groupe='USER', close=False)
     grpAPPLI = cfg.GetDict(groupe='APPLI', close=False)
-    nomAppli = grpAPPLI.pop('NOM_APPLICATION', None)
+    nomAppli = None
+    if 'NOM_APPLICATION' in grpAPPLI.keys():
+        nomAppli = grpAPPLI['NOM_APPLICATION']
     # appel des params de connexion stockés dans Data
     cfg = xucfg.ParamFile()
     grpCONFIGS = cfg.GetDict(groupe='CONFIGS')

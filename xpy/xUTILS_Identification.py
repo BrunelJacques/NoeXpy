@@ -78,21 +78,24 @@ def AfficheUsers(parent):
                                         lstDonnees=lstAffiche,
                                         lstColonnes=lstColonnes )
         ret = dlgListe.ShowModal()
-        if ret == wx.ID_OK:
-            dlgMp = Dialog(parent)
-            dlgMp.ShowModal()
-            dictUser = dlgMp.GetDictUtilisateur()
-            if dictUser:
-                parent.dictUser = dictUser
-                etat = True
-                for numMenu in range(1, 2):
-                    parent.menu.EnableTop(numMenu, etat)
-                parent.panelAccueil.EnableBoutons(etat)
-            parent.infoStatus = "!"
-            parent.MakeStatusText()
-            dlgMp.Destroy()
         dlgListe.Destroy()
+        if ret == wx.ID_OK:
+            SaisieMotPasse(parent)
         return ret
+
+def SaisieMotPasse(parent):
+    # lance l'écran de saisie de mot de passe d'identification et affiche le résultat en bas d'écran
+    dlgMp = Dialog(parent)
+    dlgMp.ShowModal()
+    dictUser = dlgMp.GetDictUtilisateur()
+    etat = False
+    if dictUser:
+        parent.dictUser = dictUser
+        etat = True
+    parent.GestMenu(etat)
+    parent.infoStatus = "!"
+    parent.MakeStatusText()
+    dlgMp.Destroy()
 
 class CTRL_Bouton_image(wx.Button):
     def __init__(self, parent, id=wx.ID_APPLY, texte="", cheminImage=None):
@@ -191,6 +194,10 @@ class Dialog(wx.Dialog):
         self.dictUtilisateur = None
         DB.Close()
         lstIDconfigs,lstConfigs,lstConfigsKO = xGestionConfig.GetLstConfigs(self.grpConfigs)
+        try:
+            lastConfig = self.grpConfigs['choixConfigs'][self.dictAppli['NOM_APPLICATION']]['lastConfig']
+        except Exception:
+            lastConfig = lstConfigs[0]
 
         # composition de l'écran
         self.staticbox = wx.StaticBox(self, -1, "Authentification")
@@ -204,6 +211,7 @@ class Dialog(wx.Dialog):
                                                    'size': (250, 30),
                                                     }
                                           )
+        self.comboConfigs.SetValue(lastConfig)
         self.txtMdp = wx.StaticText(self, -1, "Utilisateur:")
         self.ctrlMdp = CTRL_mdp(self, listeUtilisateurs=self.listeUtilisateurs)
 
