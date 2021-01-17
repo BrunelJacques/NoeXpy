@@ -323,6 +323,7 @@ class DLG_implantation(wx.Dialog):
         if sc.ok :
             sc.ShowModal()
             if len(self.lstIDconfigsOK) >0:
+                self.lstIDconfigsOK = sc.GetDonnees()
                 ctrl.Set(self.lstIDconfigsOK)
                 value = sc.GetChoix(idxColonne=0)
                 ctrl.SetValue(value)
@@ -469,6 +470,10 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
             choix = cell.GetText()
         else: choix=''
         return choix
+
+    def GetDonnees(self):
+        self.lstIDconfigsOK = [x[self.typeConfig]['ID'] for x in self.lddDonnees ]
+        return self.lstIDconfigsOK
 
     def OnTester(self,event):
         dicParam = event.EventObject.Parent.pnl.lstBoxes[0].GetValues()

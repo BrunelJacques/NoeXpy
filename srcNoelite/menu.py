@@ -13,7 +13,6 @@ from  srcNoelite import DLG_Km_saisie, DLG_Transposition_ficher, \
     DLG_Reglements_gestion, DLG_Adresses_gestion
 from xpy import xUTILS_Identification
 
-
 """ Paramétrage de la construction de la barre de menus """
 class MENU():
     def __init__(self,parent):
