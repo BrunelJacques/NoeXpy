@@ -2351,7 +2351,6 @@ class ObjectListView(wx.ListCtrl):
         rowModel.vierge = False
         value = self.cellEditor.GetValue()
         if self.cellEditor.error:
-            print(self.cellEditor.error,wx.Bell())
             self.error = wx.ID_ABORT
             self.columns[subItemIndex].SetValue(rowModel, rowModel.old_data)
             self.cellEditor.SetValue(rowModel.old_data)

@@ -1,3 +1,6 @@
+Version 1.2.7.7 (18/01/2021)
+xpy : rafraichissement des choix configs en cas d'ajout
+
 Version 1.2.7.6 (11/01/2021)
 Gestion des règlements :
 - choix banque postale par défaut à l'entrée

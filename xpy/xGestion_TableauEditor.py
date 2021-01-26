@@ -518,7 +518,7 @@ class PanelListView(wx.Panel):
 
         # appel des éventuels spécifiques
         if hasattr(self.parent, 'OnEditFinishing'):
-            self.parent.OnEditFinishing(code,value,editor=event.editor)
+            self.parent.OnEditFinishing(code,value)
         # stockage de la nouvelle saisie
         track.__setattr__(code, value)
         track.donnees[col] = value
@@ -542,7 +542,7 @@ class PanelListView(wx.Panel):
 
             # lance l'enregistrement de la ligne
             self.ValideLigne(code,track)
-            if track.valide:
+            if hasattr(track,'valide') and track.valide:
                 self.SauveLigne(track)
 
         self.ctrl_footer.MAJ_totaux()

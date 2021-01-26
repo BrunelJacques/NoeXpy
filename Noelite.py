@@ -50,6 +50,8 @@ class MyFrame(xAppli.MainFrame):
         test = os.getcwd()
         self.MakeMenuBar()
         self.Show()
+
+        # Appel de l'écran mot de passe
         dlg = ncident.Dialog(self,confirm=False)
         etat = False
         if not dlg.echec:
@@ -68,8 +70,6 @@ class MyFrame(xAppli.MainFrame):
         for numMenu in range(1,2):
             self.menu.EnableTop(numMenu, etat)
         self.panelAccueil.EnableBoutons(etat)
-
-
 
 class MyApp(wx.App):
     def OnInit(self):

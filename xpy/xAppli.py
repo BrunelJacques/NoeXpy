@@ -265,8 +265,8 @@ class MainFrame(wx.Frame):
                       wx.OK|wx.ICON_INFORMATION)
 
     def SaisieConfig(self):
-        import xpy.xGestionConfig as gc
-        cfg = gc.DLG_implantation(self )
+        import xpy.xGestionConfig as xgc
+        cfg = xgc.DLG_choixConfig(self )
         ret = cfg.ShowModal()
         if ret == wx.ID_OK:
             self.MakeStatusText()

@@ -161,8 +161,8 @@ class ChoixConfig(xusp.BoxPanel):
         self.SetMinSize((350,50))
         self.Name = codebox+"."+lignes[0]['name']
 
-# Ecran de choix des configs d'implantation
-class DLG_implantation(wx.Dialog):
+# Ecran de choix des configurations d'implantation
+class DLG_choixConfig(wx.Dialog):
     # Ecran de saisie de paramètres en dialog
     def __init__(self, parent, **kwds):
         style = kwds.pop('style',wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
@@ -523,6 +523,7 @@ class DLG_saisieUneConfig(xusp.DLG_vide):
         nomAppli = dictAppli['NOM_APPLICATION']
 
         # récup des données à afficher après construction
+
         choixConfigs = grpConfigs['choixConfigs'][nomAppli]
         if 'lastConfig' in choixConfigs:
             lastConfig = choixConfigs['lastConfig']
@@ -674,7 +675,7 @@ if __name__ == '__main__':
             'TYPE_CONFIG'           : 'db_reseau',
             'CHOIX_CONFIGS': [('Donnees', "Base de travail, peut être la centrale  en mode connecté"),]
             }
-    #frame_1.dlg = DLG_implantation(frame_1)
+    #frame_1.dlg = DLG_choixConfig(frame_1)
     #frame_1.dlg = DLG_listeConfigs(frame_1)
     frame_1.dlg = DLG_saisieUneConfig(frame_1, modeBase='creation')
     #frame_1.dlg = DLG_saisieUneConfig(frame_1, modeBase='pointeur')

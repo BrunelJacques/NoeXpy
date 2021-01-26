@@ -326,7 +326,7 @@ class DlgAdrMelTel(xusp.DLG_vide):
             DB.ReqMAJ('individus',nomChampID='IDindividu',ID=IDindividu,lstChamps=lstChamps,
                       lstDonnees=donnees,mess="MAJ DLG_AdrMel")
         if self.mode == 'familles':
-            donnees = [self.famNoPub.Value,self.famNoMel.value]
+            donnees = [self.famNoPub,self.famNoMel]
             DB.ReqMAJ('familles',nomChampID='IDfamille',ID=self.IDref,lstChamps=['refus_pub','refus_mel'],
                       lstDonnees=donnees,mess="MAJ DLG_AdrMel refus")
         ligne = self.ctrl.lstDonnees[0]
@@ -341,7 +341,7 @@ if __name__ == "__main__":
     import os
     os.chdir("..")
     dlg = wx.Frame(None)
-    dlg.ID = 60
-    dlg2 = DlgAdrMelTel(dlg.ID, titre="Coordonnées de %d"%dlg.ID)
+    dlg.ID = 709
+    dlg2 = DlgAdrMelTel(dlg.ID, mode='familles',titre="Coordonnées de %d"%dlg.ID)
     dlg2.ShowModal()
     app.MainLoop()

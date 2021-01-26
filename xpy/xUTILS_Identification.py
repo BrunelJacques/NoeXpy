@@ -177,7 +177,7 @@ class Dialog(wx.Dialog):
         self.grpConfigs = DB.grpConfigs
         # la dernière connection n'est pas valable, on la recrée en appelant un écran de connection
         if DB.echec:
-            dlg = xGestionConfig.DLG_implantation(self)
+            dlg = xGestionConfig.DLG_choixConfig(self)
             ret = dlg.ShowModal()
             if ret == wx.ID_OK:
                 DB = xdb.DB()

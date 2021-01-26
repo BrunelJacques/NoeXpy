@@ -6,6 +6,7 @@
 import os
 import wx
 import xpy.xAppli as xAppli
+import xpy.xGestionConfig as xGestionConfig
 import xpy.outils.xaccueil as xaccueil
 import srcNoestock.menu as menu
 
@@ -13,8 +14,8 @@ import srcNoestock.menu as menu
 dictAPPLI = {
             'NOM_APPLICATION'       : "Noestock",
             'REP_SOURCES'           : "srcNoestock",
-            'REP_DATA'              : "srcNoelite/Data",
-            'REP_TEMP'              : "srcNoelite/Temp",
+            'REP_DATA'              : "C:/ProgramData/Noelite",
+            'REP_TEMP'              : "C:/Temp",
             'NOM_FICHIER_LOG'       : "logsNoestock.log",
             'TYPE_CONFIG'           : 'db_reseau',
             'CHOIX_CONFIGS': [('Centralisation',"Base au siège, cible pour les synchro et sauvegarde"),
@@ -50,12 +51,26 @@ class MyFrame(xAppli.MainFrame):
         # Activer le menu décrit dans  PATH_SOURCES/menu.py
         test = os.getcwd()
         self.MakeMenuBar()
-
         self.Show()
-        etat = True
-        for numMenu in range(1,2):
+
+        self.ConnectBase(False)
+
+    def ConnectBase(self, etat= False):
+        dlg = xGestionConfig.DLG_choixConfig(self)
+        dlg.OnTester(None)
+        dlg.Destroy()
+        self.GestMenu(etat)
+        if not etat:
+            self.infoStatus = "lancé sans accès à Noethys!"
+        self.MakeStatusText()
+        return
+
+    def GestMenu(self, etat):
+        # grise ou dégrise les options du menu selon l'identification
+        for numMenu in range(1, 3):
             self.menu.EnableTop(numMenu, etat)
         self.panelAccueil.EnableBoutons(etat)
+
 
 class MyApp(wx.App):
     def OnInit(self):

@@ -104,7 +104,6 @@ class CellEditEvent(VetoableEvent):
         self.cellValue = cellValue
         self.editor = editor
 
-
 # ----------------------------------------------------------------------------
 
 class CellEditStartedEvent(CellEditEvent):
