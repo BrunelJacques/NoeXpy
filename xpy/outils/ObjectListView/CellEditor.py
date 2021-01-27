@@ -187,7 +187,7 @@ def OnChar(editor, event):
             ShiftTabAction(event)
             return
 
-    if type(editor).__name__ in ('DateEditor','ChoiceEditor','ComboEditor','BoleanEditor'):
+    if type(editor).__name__ in ('DateEditor','ChoiceEditor','ComboEditor','BoleanEditor','CheckEditor'):
         # Gestion du comportement de tab pour adv.DatePickerCtrl
         if event.GetKeyCode() == wx.WXK_TAB:
             if event.GetModifiers() == wx.MOD_SHIFT:

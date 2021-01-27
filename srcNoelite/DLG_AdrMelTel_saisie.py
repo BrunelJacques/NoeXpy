@@ -63,17 +63,17 @@ def GetDicOlvFam():
     # appel des données à afficher
     lstChamps = ["individus.IDindividu","individus.nom","individus.prenom","familles.adresse_individu",
                  "rattachements.titulaire","rattachements.IDcategorie","individus.date_naiss",
-                 "individus.tel_domicile","individus.tel_mobile","individus.travail_tel",
-                 "individus.mail","individus.travail_mail","individus.refus_pub","individus.refus_mel"]
+                 "individus.tel_domicile","individus.tel_mobile", "individus.mail",
+                "individus.travail_mail","individus.refus_pub","individus.refus_mel","individus.travail_tel"]
 
     lstNomsColonnes = ["IDind","nom","prénom","catégorie","né le",
-                 "tel domicile","tel mobile","tel travail",
-                 "mail1","mail2","noPub","noMel"]
+                 "tel domicile","tel mobile",
+                 "mail1","mail2","noPub","noMel","tel travail"]
 
     lstTypes = ["INTEGER","VARCHAR(32)","VARCHAR(32)","VARCHAR(7)","DATE",
-                "VARCHAR(10)","VARCHAR(10)","VARCHAR(10)","VARCHAR(32)","VARCHAR(32)","BOOL","BOOL"]
+                "VARCHAR(10)","VARCHAR(10)","VARCHAR(32)","VARCHAR(32)","BOOL","BOOL","VARCHAR(10)"]
 
-    lstLargeurColonnes = [0,-1,-1,50,80,90,90,90,170,120,50,60]
+    lstLargeurColonnes = [0,-1,-1,50,80,90,90,170,120,50,50,90]
 
     lstCodesColonnes = [xformat.SupprimeAccents(x) for x in lstNomsColonnes]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)

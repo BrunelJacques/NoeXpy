@@ -510,7 +510,7 @@ class PanelListView(wx.Panel):
         code = self.ctrl_listview.lstCodesColonnes[col]
 
         # si pas de saisie on passe
-        if (not value) or track.oldValue == value:
+        if (value == None) or track.oldValue == value:
             track.noSaisie = True
             event.Skip()
             return
