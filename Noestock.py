@@ -6,6 +6,7 @@
 import os
 import wx
 import xpy.xAppli as xAppli
+import xpy.xUTILS_DB as xdb
 import xpy.xGestionConfig as xGestionConfig
 import xpy.outils.xaccueil as xaccueil
 import srcNoestock.menu as menu
@@ -56,11 +57,11 @@ class MyFrame(xAppli.MainFrame):
         self.ConnectBase(False)
 
     def ConnectBase(self, etat= False):
-        dlg = xGestionConfig.DLG_choixConfig(self)
-        dlg.OnTester(None,mute=True)
-        if dlg.echec == 0:
+        # test de connexion par défaut
+        DB = xdb.DB()
+        self.echec = DB.echec
+        if DB.echec == 0:
             etat = True
-        dlg.Destroy()
         self.GestMenu(etat)
         if not etat:
             self.infoStatus = "lancé sans accès à Noethys!"

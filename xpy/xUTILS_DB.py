@@ -49,21 +49,43 @@ def GetConfigs():
     # appel des params de connexion stockés dans UserProfile et data
     cfg = xucfg.ParamUser()
     grpUSER = cfg.GetDict(groupe='USER', close=False)
-    grpAPPLI = cfg.GetDict(groupe='APPLI', close=False)
-    nomAppli = None
-    if 'NOM_APPLICATION' in grpAPPLI.keys():
-        nomAppli = grpAPPLI['NOM_APPLICATION']
+    grpAPPLI = cfg.GetDict(groupe='APPLI')
     # appel des params de connexion stockés dans Data
     cfg = xucfg.ParamFile()
     grpCONFIGS = cfg.GetDict(groupe='CONFIGS')
-    # recherche du nom de configuration par défaut, cad la dernière des choix
-    if 'choixConfigs' in grpCONFIGS:
-        if nomAppli and nomAppli in grpCONFIGS['choixConfigs'].keys():
-            if 'lastConfig' in grpCONFIGS['choixConfigs'][nomAppli].keys():
-                lastConfig = grpCONFIGS['choixConfigs'][nomAppli]['lastConfig']
-    else:
-        lastConfig = None
-    return grpAPPLI,grpUSER,grpCONFIGS,lastConfig
+    return grpAPPLI,grpUSER,grpCONFIGS
+
+def GetOneConfig(self, nomConfig='lastConfig', mute=False):
+    # appel d'une configuration nommée, retourne le dict des params
+    cfg = xucfg.ParamFile()
+    grpCONFIGS = cfg.GetDict(groupe='CONFIGS')
+    cfg = xucfg.ParamUser()
+    grpAPPLI = cfg.GetDict(groupe='APPLI')
+    nomAppli = ''
+    if 'NOM_APPLICATION' in grpAPPLI.keys():
+        nomAppli = grpAPPLI['NOM_APPLICATION']
+
+    if nomConfig == 'lastConfig':
+        # recherche du nom de configuration par défaut, cad la dernière des choix
+        if 'choixConfigs' in grpCONFIGS:
+            if nomAppli in grpCONFIGS['choixConfigs'].keys():
+                if 'lastConfig' in grpCONFIGS['choixConfigs'][nomAppli].keys():
+                    nomConfig = grpCONFIGS['choixConfigs'][nomAppli]['lastConfig']
+
+    typeConfig = 'db_reseau'
+    if 'TYPE_CONFIG' in grpAPPLI:
+        typeConfig = grpAPPLI['TYPE_CONFIG']
+    if 'lstConfigs' in grpCONFIGS:
+        lstNomsConfigs = [x[typeConfig]['ID'] for x in grpCONFIGS['lstConfigs']]
+        if not (nomConfig in lstNomsConfigs):
+            mess = "xDB: Le nom de config '%s' n'est pas dans la liste des accès base de donnée" % (nomConfig)
+            self.erreur = mess
+            if not mute:
+                wx.MessageBox(mess)
+            return mess
+        ix = lstNomsConfigs.index(nomConfig)
+        # on récupére les paramétres de la config par le pointeur ix dans les clés
+        return grpCONFIGS['lstConfigs'][ix][typeConfig]
 
 class DB():
     # accès à la base de donnees principale
@@ -86,10 +108,7 @@ class DB():
             self.connexion = None
 
             # appel des params de connexion stockés dans UserProfile et Data
-            grpAPPLI, grpUSER, grpCONFIGS, lastConfig = GetConfigs()
-            typeConfig = 'db_reseau'
-            if 'TYPE_CONFIG' in grpAPPLI:
-                typeConfig = grpAPPLI['TYPE_CONFIG']
+            grpAPPLI, grpUSER, grpCONFIGS = GetConfigs()
             self.dictAppli = grpAPPLI
             self.grpConfigs = grpCONFIGS
 
@@ -103,21 +122,10 @@ class DB():
                     elif isinstance(config,dict):
                         nomConfig = None
                         self.cfgParams = copy.deepcopy(config)
-                else: nomConfig = lastConfig
+                else: nomConfig = 'lastConfig'
 
                 if nomConfig:
-                    if 'lstConfigs' in grpCONFIGS:
-                        lstNomsConfigs = [x[typeConfig]['ID'] for x in grpCONFIGS['lstConfigs']]
-                        if not (nomConfig in lstNomsConfigs):
-                            mess = "xDB: Le nom de config '%s' n'est pas dans la liste des accès base de donnée"%(nomConfig)
-                            self.erreur = mess
-                            if not mute:
-                                wx.MessageBox(mess)
-                            return mess
-                        ix = lstNomsConfigs.index(nomConfig)
-                        # on récupére les paramétres dans toutes les configs par le pointeur ix dans les clés
-                        self.cfgParams = grpCONFIGS['lstConfigs'][ix][typeConfig]
-
+                    self.cfgParams = GetOneConfig(self,nomConfig,mute=mute)
                 # on ajoute les choix pris dans grpUSER,  pour mot passe, aux paramètres de la config retenue
                 if self.cfgParams:
                     for cle, valeur in grpUSER.items():
@@ -197,10 +205,11 @@ class DB():
         else: ret = 'ok'
         return ret
 
-    def AfficheTestOuverture(self):
+    def AfficheTestOuverture(self,info=""):
         style = wx.ICON_STOP
         if self.echec == 0: style = wx.ICON_INFORMATION
-        accroche = ['Ouverture réussie',"Echec d'ouverture"][self.echec]
+        accroche = ['Ouverture réussie ',"Echec d'ouverture "][self.echec]
+        accroche += info
         retour = ['avec succès', ' SANS SUCCES !\n'][self.echec]
         mess = "%s\n\nL'accès à la base '%s' s'est réalisé %s" % (accroche,self.nomBase, retour)
         if self.erreur:

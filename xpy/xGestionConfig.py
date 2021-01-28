@@ -258,13 +258,6 @@ class DLG_choixConfig(wx.Dialog):
         # SEPARATEUR : simple texte
         self.titre =wx.StaticText(self, -1, "Eléments de connexion")
 
-        # USER : contrôle gérant la saisie des paramètres de connexion (USER) ----------------------------------------
-        code,label,lignes = xformat.AppelLignesMatrice(None, MATRICE_USER)
-        self.ctrlConnect = xusp.BoxPanel(self, wx.ID_ANY, lblBox=label, code=code, lignes=lignes, dictDonnees={})
-
-        #pose dans la grille de saisie, les valeurs lues dans profilUser
-        self.ctrlConnect.SetValues(choixUser)
-
         self.Sizer()
 
     def Sizer(self):
@@ -278,7 +271,6 @@ class DLG_choixConfig(wx.Dialog):
             topbox.Add((20,20), 0, wx.ALIGN_TOP, 0)
             topbox.Add(ctrlConfig, 0, wx.ALIGN_TOP | wx.EXPAND, 0)
         topbox.Add((20,20), 0, wx.ALIGN_TOP, 0)
-        topbox.Add(self.ctrlConnect, 0, wx.ALIGN_TOP| wx.EXPAND, 0)
         topbox.Add((40,40), 0, wx.EXPAND, 0)
         piedbox = wx.BoxSizer(wx.HORIZONTAL)
         piedbox.Add(self.btnTest, 0, 0, 0)
@@ -287,11 +279,15 @@ class DLG_choixConfig(wx.Dialog):
         self.SetSizerAndFit(topbox)
 
     def OnTester(self,event,mute=False):
+        # appelé par le bouton tester tente toutes les connexions de l'appli.
         self.OnCtrlConfig(None)
-        DB = xdb.DB()
-        self.echec = DB.echec
-        if not mute:
-            DB.AfficheTestOuverture()
+        for ctrlConfig in self.lstChoixConfigs:
+            nomConfig = ctrlConfig.dictDonnees['config']
+            config = xdb.GetOneConfig(self,nomConfig)
+            DB = xdb.DB(config=config,mute=True)
+            self.echec = DB.echec
+            if not mute:
+                DB.AfficheTestOuverture(info=" pour %s"%nomConfig)
 
     def OnCtrlAction(self, event):
         # relais des actions sur les ctrls
@@ -339,7 +335,7 @@ class DLG_choixConfig(wx.Dialog):
         dic = {}
         for ctrlConfig in self.lstChoixConfigs:
             dic.update(ctrlConfig.GetValues())
-        dic.update(self.ctrlConnect.GetValues())
+        #dic.update(self.ctrlConnect.GetValues())
         cfg.SetDict(dic, groupe='USER',close=False)
         dic = self.ctrlID.GetValues()
         cfg.SetDict(dic['ident'], groupe='IDENT')
@@ -478,6 +474,7 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
         return self.lstIDconfigsOK
 
     def OnTester(self,event):
+        # test à partir de l'écran de saisie d'une config
         dicParam = event.EventObject.Parent.pnl.lstBoxes[0].GetValues()
         DB = xdb.DB(config=dicParam,mute=True)
         DB.AfficheTestOuverture()
@@ -500,7 +497,6 @@ class DLG_saisieUneConfig(xusp.DLG_vide):
         dicUser = cfg.GetDict(dictDemande=None, groupe='USER')
         mess = "Accès aux ParamUser"
         try:
-            self.mpUserDB = dicUser['mpUserDB']
             # vérif des droits
             if modeBase == 'creation':
                 mess = "Echec de la vérification des droits de création"
@@ -633,7 +629,6 @@ class DLG_saisieUneConfig(xusp.DLG_vide):
 
     def OnCreate(self,event):
         cfgParams = event.EventObject.Parent.pnl.lstBoxes[0].GetValues()
-        cfgParams['mpUserDB'] =  self.mpUserDB
         DB = xdb.DB(config=cfgParams,mute=True)
         DB.CreateBaseMySql(ifExist=False)
         DB.Close()
