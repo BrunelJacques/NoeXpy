@@ -286,10 +286,12 @@ class DLG_choixConfig(wx.Dialog):
         topbox.Add(piedbox, 0, wx.ALIGN_RIGHT, 0)
         self.SetSizerAndFit(topbox)
 
-    def OnTester(self,event):
+    def OnTester(self,event,mute=False):
         self.OnCtrlConfig(None)
         DB = xdb.DB()
-        DB.AfficheTestOuverture()
+        self.echec = DB.echec
+        if not mute:
+            DB.AfficheTestOuverture()
 
     def OnCtrlAction(self, event):
         # relais des actions sur les ctrls
@@ -416,7 +418,7 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
             self.InitDlGest()
 
     def InitDlGest(self):
-        # pose les relais pour révupérer les actions
+        # pose les relais pour récupérer les actions
         self.dlgGest.OnNameDB = self.OnNameDB
         #self.dlgGest.OnBtnNameDB = self.OnBtnNameDB
         self.dlgGest.OnTypeDB = self.OnTypeDB

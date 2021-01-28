@@ -49,7 +49,7 @@ class MyFrame(xAppli.MainFrame):
         #self.SetForegroundColour(self.couleur_fond)
 
         # Activer le menu décrit dans  PATH_SOURCES/menu.py
-        test = os.getcwd()
+        #test = os.getcwd()
         self.MakeMenuBar()
         self.Show()
 
@@ -57,7 +57,9 @@ class MyFrame(xAppli.MainFrame):
 
     def ConnectBase(self, etat= False):
         dlg = xGestionConfig.DLG_choixConfig(self)
-        dlg.OnTester(None)
+        dlg.OnTester(None,mute=True)
+        if dlg.echec == 0:
+            etat = True
         dlg.Destroy()
         self.GestMenu(etat)
         if not etat:
@@ -66,10 +68,15 @@ class MyFrame(xAppli.MainFrame):
         return
 
     def GestMenu(self, etat):
-        # grise ou dégrise les options du menu selon l'identification
-        for numMenu in range(1, 3):
-            self.menu.EnableTop(numMenu, etat)
+        # grise les boutons si pas d'accès à la base
         self.panelAccueil.EnableBoutons(etat)
+
+        # grise ou dégrise les options du menu selon l'identification
+        if self.dictUser :
+            etat = True
+        else: etat = False
+        for numMenu in range(2,4):
+            self.menu.EnableTop(numMenu, etat)
 
 
 class MyApp(wx.App):

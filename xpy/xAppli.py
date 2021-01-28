@@ -108,6 +108,7 @@ class MainFrame(wx.Frame):
 
         if hasattr(self,'dictUser') and self.dictUser:
             self.messageStatus += ",  Utilisateur: %s" % (self.dictUser['utilisateur'])
+        else: self.messageStatus += ",  Utilisateur non identifié"
         if hasattr(self,'infoStatus'):
             self.messageStatus += " | %s" % (self.infoStatus)
 

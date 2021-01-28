@@ -26,36 +26,18 @@ class MENU():
                 "infobulle": ("Reconfigurer l'accès à la base de données principale"),
                 "image": "Images/16x16/Utilisateur_reseau.png",
                 "action": "On_config", "genre": wx.ITEM_NORMAL},
-            {"code": "synchro", "label": ("Synchroniser deux bases de données"),
-                "infobulle": ("La synchronisation met à jour les bases de données dans les deux sens"),
-                "image": "Images/16x16/Actualiser2.png",
-                "action": "On_synchro"},
             "-",
             {"code": "identification", "label": ("S'identifier"),
                 "infobulle": ("Appel de l'écran d'identification"),
                 "image": "Images/16x16/Homme.png",
                 "action": "On_identification"},
             "-",
-            {"code": "sauve", "label": ("Sauvegarder"),
-                "infobulle": ("Sauvegarde la base de données"),
-                "image": "Images/16x16/Conversion.png", "action": "On_sauve"},
             {"code": "quitter", "label": ("Quitter"),
                 "infobulle": ("Fin de travail Noelite"),
                 "image": "Images/16x16/Quitter.png",
                 "action": "xQuitter"},
             ]},
         # deuxième colonne
-        {"code": "&params\tCtrl-S", "label": ("Système"),
-         "items": [
-            {"code": "gesbases", "label": ("Gestion des bases"),
-                "infobulle": ("Création, copie de bases de données"),
-                "image": "Images/16x16/Utilisateur_reseau.png", "action": "On_gesBases"},
-            {"code": "gestables", "label": ("Ajout de tables"),
-                "infobulle": ("Outil permettant de créer les tables manquantes dans la base"),
-                "image": "Images/16x16/Actualiser2.png", 
-                "action": "On_gesTables"},
-        ]},
-        # troisième colonne
         {"code": "&princip\tCtrl-P", "label": ("Principal"),
          "items": [
             {"code": "inStock", "label": ("&Entrée en stock"),
@@ -82,7 +64,30 @@ class MENU():
               "infobulle": ("Calcul du prix de journée après saisie des sorties et de l'effectif"),
               "image": "Images/80x80/Loupe.png",
               "action": "On_prixJournee", "genre": wx.ITEM_NORMAL},
-         ]}
+         ]},
+        # troisième colonne
+        {"code": "&synchro\tCtrl-S", "label": ("Synchroniser"),
+        "items": [
+            {"code": "synchro", "label": ("Synchroniser deux bases de données"),
+             "infobulle": ("La synchronisation met à jour les bases de données dans les deux sens"),
+             "image": "Images/16x16/Actualiser2.png",
+             "action": "On_synchro"},
+            {"code": "sauve", "label": ("Sauvegarder"),
+             "infobulle": ("Sauvegarde la base de données"),
+             "image": "Images/16x16/Conversion.png", "action": "On_sauve"},
+        ]},
+
+        # quatrième colonne
+            {"code": "&params\tCtrl-S", "label": ("Système"),
+             "items": [
+                 {"code": "gesbases", "label": ("Gestion des bases"),
+                  "infobulle": ("Création, copie de bases de données"),
+                  "image": "Images/16x16/Utilisateur_reseau.png", "action": "On_gesBases"},
+                 {"code": "gestables", "label": ("Ajout de tables"),
+                  "infobulle": ("Outil permettant de créer les tables manquantes dans la base"),
+                  "image": "Images/16x16/Actualiser2.png",
+                  "action": "On_gesTables"},
+             ]}
         ]
         return menu
 
@@ -134,7 +139,8 @@ class MENU():
         ret = dlg.ShowModal()
         if ret == wx.ID_OK:
             self.parent.dictUser = dlg.GetDictUtilisateur()
-            self.parent.MakeStatusText()
+        self.parent.MakeStatusText()
+        self.parent.GestMenu(True)
 
     def On_gesBases(self,event):
         dlg = xGestionConfig.DLG_saisieUneConfig(self.parent, modeBase='creation')
