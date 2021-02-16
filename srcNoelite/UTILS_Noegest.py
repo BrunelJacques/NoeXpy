@@ -253,10 +253,15 @@ class Noegest(object):
         # un item unique n'a pas été trouvé on affiche les choix possibles
         getDonnees = getAnalytiques
         dicOlv = self.GetMatriceAnalytiques(axe,lstChamps,lstNomsCol,lstTypes,getDonnees)
-        dicOlv['size'] = (400,200)
+        dicOlv['size'] = (500,600)
         dlg = xgtr.DLG_tableau(self,dicOlv=dicOlv, db=self.db)
-        if filtre and len(filtre)>0:
-            dlg.ctrlOlv.Parent.barreRecherche.SetValue(filtre)
+        barreRecherche = None
+        if dlg.ctrlOlv.Parent.ctrlOutils:
+            barreRecherche = dlg.ctrlOlv.Parent.ctrlOutils.barreRecherche
+        else:
+            barreRecherche = dlg.ctrlOlv.Parent.barreRecherche
+        if filtre and len(filtre)>0 and barreRecherche:
+            barreRecherche.SetValue(filtre)
             dlg.ctrlOlv.Filtrer(filtre)
         ret = dlg.ShowModal()
         if ret == wx.OK:

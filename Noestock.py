@@ -79,7 +79,6 @@ class MyFrame(xAppli.MainFrame):
         for numMenu in range(2,4):
             self.menu.EnableTop(numMenu, etat)
 
-
 class MyApp(wx.App):
     def OnInit(self):
         xAppli.CrashReport(dictAPPLI)

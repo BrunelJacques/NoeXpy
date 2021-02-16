@@ -9,7 +9,7 @@
 #------------------------------------------------------------------------
 
 import wx
-from xpy import xUTILS_Identification, xGestionConfig
+from xpy import xUTILS_Identification, xGestionConfig, xUTILS_DB
 
 """ Paramétrage de la construction de la barre de menus """
 class MENU():
@@ -83,10 +83,14 @@ class MENU():
                  {"code": "gesbases", "label": ("Gestion des bases"),
                   "infobulle": ("Création, copie de bases de données"),
                   "image": "Images/16x16/Utilisateur_reseau.png", "action": "On_gesBases"},
-                 {"code": "gestables", "label": ("Ajout de tables"),
+                 {"code": "gestables", "label": ("Ajout tables manquantes"),
                   "infobulle": ("Outil permettant de créer les tables manquantes dans la base"),
                   "image": "Images/16x16/Actualiser2.png",
                   "action": "On_gesTables"},
+                 {"code": "ctrltables", "label": ("Ctrl des champs de chaque table"),
+                  "infobulle": ("Outil permettant de créer les tables manquantes ou les champs manquants dans la base"),
+                  "image": "Images/16x16/Actualiser2.png",
+                  "action": "On_ctrlTables"},
              ]}
         ]
         return menu
@@ -147,7 +151,11 @@ class MENU():
         ret = dlg.ShowModal()
 
     def On_gesTables(self,event):
-        pass
+        xUTILS_DB.Init_tables(parent=self.parent,mode="crea")
+
+    def On_ctrlTables(self,event):
+        xUTILS_DB.Init_tables(parent=self.parent,mode="ctrl")
+
     def On_sauve(self,event):
         pass
     def On_inStock(self,event):

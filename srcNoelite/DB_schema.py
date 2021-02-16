@@ -79,7 +79,7 @@ DB_TABLES = {
                 ("IDtarif", "INTEGER", "ID du tarif"),
                 ("IDfacture", "INTEGER", "ID de la facture"),
                 ("IDfamille", "INTEGER", "ID de la famille concernée"),
-                ("IDindivid", "INTEGER", "ID de l'individu concerné"),
+                ("IDindividu", "INTEGER", "ID de l'individu concerné"),
                 ("forfait", "INTEGER", "Type de forfait : 0 : Aucun | 1 : Suppr possible | 2 : Suppr impossible"),
                 ("temps_facture", "DATE", "Temps facturé format 00:00"),
                 ("IDcategorie_tarif", "INTEGER", "ID de la catégorie de tarif"),
@@ -256,11 +256,60 @@ DB_TABLES = {
                 ('compta','DATE',"Date de transert en compta"),
                 ('dtMaj','DATE',"Date de dernière modif"),
                 ('user','INTEGER',"ID de l'utilisateur"),],# affectation des consommations internes par section
+
+    'stArticles':[
+                ('article', 'VARCHAR(32)', "PK Désignation du produit"),
+                ('rations', 'FLOAT', "Nombre de ration pour une unité"),
+                ('fournisseur', 'VARCHAR(32)', "Fournisseur habituel"),
+                ('qteStock', 'INTEGER', "Stock en live"),
+                ('qteMini', 'INTEGER', "Seuil déclenchant une alerte rouge"),
+                ('qteSaison', 'INTEGER', "Seuil souhaitable en haute saison"),
+                ('txTva', 'FLOAT', "tx de TVA en %"),
+                ('prixActuel', 'FLOAT', "Dernier prix TTC unitaire livré ou de réappro"),
+                ('prixMoyen', 'FLOAT', "Prix unitaire moyen historique du stock"),
+                ('magasin', 'VARCHAR(32)', "Grande famille de produit"),
+                ('rayon', 'VARCHAR(32)', "Sous famille niveau rayon, dans magasin"),
+                ('dernierAchat', 'DATE', "Date de dernière entrée avec prix saisi"),],# stocks: articles en stock
+
+    'stEffectifs':[
+                ('date', 'DATE', "PK Date de la situation de l'effectif"),
+                ('matinClients', 'INTEGER', "Nbre de repas facturés (facultatif)"),
+                ('matinStaff', 'INTEGER', "Nbre de repas pour le staff (facultatif)"),
+                ('midiClients', 'INTEGER', "Nbre de repas facturés "),
+                ('midiStaff', 'INTEGER', "Nbre de repas pour le staff"),
+                ('soirClients', 'INTEGER', "Nbre de repas facturés  (facultatif)"),
+                ('soirStaff', 'INTEGER', "Nbre de repas pour le staff (facultatif)"),
+                ('modifiable', 'BOOL', "0/1 Marque un transfert export  réussi ou import"),],# stocks: repas servis
+
+    'stMouvements':[
+                ('IDmouvement', 'INTEGER PRIMARY KEY AUTOINCREMENT', "Clé primaire"),
+                ('date', 'DATE', "date du mouvement de stock"),
+                ('origine', 'VARCHAR(8)', "repas', 'achat','od','campext','retour'"),
+                ('article', 'VARCHAR(32)', "clé dans gstArticles"),
+                ('qte', 'INTEGER', "Quantitée mouvementée signée"),
+                ('prixUnit', 'FLOAT', "Prix moyen pour sorties et retour, actuel pour achats"),
+                ('analytique', 'VARCHAR(8)', "Section analytique du camp à facturer"),
+                ('ordi', 'VARCHAR(16)', "Nom de l'ordi utilisé pour l'entrée ou la modif"),
+                ('dateSaisie', 'DATE', "Date de l'entrée ou la modif"),
+                ('modifiable', 'INTEGER', "0/1 Marque un transfert export  réussi ou import"),],# stocks: entrées sorties
+
+    'stInventaires':[
+                ('date', 'DATE', "PK Date de l'inventaire copie des stocks"),
+                ('article', 'VARCHAR(32)', "PK Désignation du produit"),
+                ('qteStock', 'INTEGER', "Qté reportée"),
+                ('qteConstat', 'INTEGER', "Qté constatée"),
+                ('prixActuel', 'FLOAT', "Dernier prix unitaire livré ou de réappro"),
+                ('prixMoyen', 'FLOAT', "Prix unitaire moyen historique du stock"),
+                ('modifiable', 'INTEGER', "0/1 Marque un transfert export  réussi ou import"),], # stocks: inventaire à une date
     }
 
 # index clé unique
 DB_PK = {
-        "PK_vehiculesCouts_IDanalytique_cloture": {"table": "vehiculesCouts", "champ": "IDanalytique, cloture"},}
+        "PK_vehiculesCouts_IDanalytique_cloture": {"table": "vehiculesCouts", "champ": "IDanalytique, cloture"},
+        "PK_stArticles_article": {"table": "stArticles", "champ": "article"},
+        "PK_stEffectifs_date": {"table": "stEffectifs", "champ": "date"},
+        "PK_stInventaires_date_article": {"table": "stInventaires", "champ": "date,article"},
+        }
 
 # index sans contrainte
 DB_IX = {
@@ -268,7 +317,12 @@ DB_IX = {
         "IX_immobilisations_compteImmo_IDanalytique": {"table": "immobilisations", "champ": "compteImmo,IDanalytique"},
         "IX_immosComposants_IDimmo": {"table": "immosComposants", "champ": "IDimmo"},
         "IX_vehiculesConsos_IDanalytique_cloture": {"table": "vehiculesConsos",
-                                                    "champ": "IDanalytique, cloture, typeTiers, IDtiers"},}
+                                                    "champ": "IDanalytique, cloture, typeTiers, IDtiers"},
+        "IX_stArticles_fournisseur": {"table": "stArticles", "champ": "fournisseur"},
+        "IX_stArticles_magasin_rayon": {"table": "stArticles", "champ": "magasin,rayon"},
+        "IX_stMouvements_date_origine": {"table": "stMouvements", "champ": "date,origine"},
+        "IX_stMouvements_date_analytique": {"table": "stMouvements", "champ": "date,analytique"}
+        }
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 

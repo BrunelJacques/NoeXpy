@@ -241,7 +241,7 @@ class PNL_corpsReglements(xgte.PNL_corps):
     def OnNewRow(self,row,track):
         pass
 
-    def OnEditStarted(self,code,track,editor=None):
+    def OnEditStarted(self,code,track=None,editor=None):
         # affichage de l'aide
         if code in DIC_INFOS.keys():
             self.parent.pnlPied.SetItemsInfos( DIC_INFOS[code],

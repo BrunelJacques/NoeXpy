@@ -336,7 +336,7 @@ class Compta(object):
                     'dicBandeau': dicBandeau,
                     'sortColumnIndex': 2,
                     'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
-                    'size' : (500,200),
+                    'size' : (800,600),
                     'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                     }
 

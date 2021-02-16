@@ -203,7 +203,7 @@ class PNL_corps(xgte.PNL_corps):
         self.flagSkipEdit = False
         self.oldRow = None
 
-    def OnEditStarted(self,code,editor=None):
+    def OnEditStarted(self,code,track=None,editor=None):
         # affichage de l'aide
         if code in DIC_INFOS.keys():
             self.parent.pnlPied.SetItemsInfos( DIC_INFOS[code],
@@ -338,7 +338,7 @@ class Dialog(xusp.DLG_vide):
         sizer_base.Add(self.pnlOlv, 1, wx.TOP | wx.EXPAND, 3)
         sizer_base.Add(self.pnlPied, 0, wx.ALL | wx.EXPAND, 3)
         sizer_base.AddGrowableCol(0)
-        sizer_base.AddGrowableRow(1)
+        sizer_base.AddGrowableRow(2)
         self.SetSizerAndFit(sizer_base)
         self.CenterOnScreen()
 

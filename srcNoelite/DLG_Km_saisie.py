@@ -230,7 +230,7 @@ class PNL_corps(xgte.PNL_corps):
         self.flagSkipEdit = False
         self.oldRow = None
 
-    def OnEditStarted(self,code,editor=None):
+    def OnEditStarted(self,code,track=None,editor=None):
         # affichage de l'aide
         if code in DIC_INFOS.keys():
             self.parent.pnlPied.SetItemsInfos( DIC_INFOS[code],
@@ -313,7 +313,8 @@ class PNL_corps(xgte.PNL_corps):
             else:
                 self.ctrlOlv.lstColonnes[ixtiers].isEditable = True
                 self.ctrlOlv.lstColonnes[ixnomtiers].isEditable = False
-            parent.valeur = value[0]
+            if parent:
+                parent.valeur = value[0]
 
         if code in ['kmdeb','kmfin']:
             kmdeb,kmfin = 9999999,0

@@ -613,8 +613,7 @@ class DB():
     def SupprChamp(self, nomTable="", nomChamp = ""):
         """ Suppression d'une colonne dans une table """
         if self.isNetwork == False :
-            lstChamps = self.GetListeChamps2(nomTable)
-
+            lstChamps = self.GetListeChamps(nomTable)
             index = 0
             varChamps = ""
             varNomsChamps = ""
@@ -651,14 +650,15 @@ class DB():
         if not self.IsChampExists(nomTable,nomChamp):
             if dicTables:
                 for champ,typeChamp,comment in dicTables[nomTable]:
-                    if nomChamp.lower().strip() != champ.strip(): continue
+                    if nomChamp.lower().strip() != champ.lower().strip(): continue
                     comment = comment.replace("'","''")
                     req = "ALTER TABLE %s ADD %s %s COMMENT '%s';" % (nomTable, champ, typeChamp, comment)
             if req:
                 ret = self.ExecuterReq(req)
-                self.Commit()
+                if ret == 'ok': self.Commit()
                 print(req , "----- ", ret)
-            else: print("ECHEC Ajout table.champ: %s.%s"%(nomTable,nomChamp))
+            else:
+                print("ECHEC Ajout table.champ: %s.%s"%(nomTable,nomChamp))
 
     def IsChampExists(self, nomTable="",nomChamp=""):
         """ Vérifie si le champ d'une table existe dans la base """
@@ -694,6 +694,26 @@ class DB():
             indexExists = True
         return indexExists
 
+    def CtrlTables(self, dicTables={}, parent=None):
+        # création de table ou ajout des champs manquants
+        for nomTable in dicTables.keys():
+            mess = None
+            if not self.IsTableExists(nomTable):
+                ret = self.CreationUneTable(dicTables=dicTables,nomTable=nomTable)
+                mess = "Création de la table de données %s: %s" %(nomTable,ret)
+            else:
+                table = dicTables[nomTable]
+                lstChamps = [ x[0] for x in table]
+                for champ in lstChamps:
+                    if not self.IsChampExists(nomTable,champ):
+                        ret = self.AjoutChamp(nomTable,champ,dicTables)
+            if mess:
+                print(mess)
+            # Affichage dans la StatusBar
+            if parent and mess:
+                parent.mess += u"%s %s, "%(nomTable,ret)
+                parent.SetStatusText(parent.mess)
+
     def CreationUneTable(self, dicTables={},nomTable=None):
         #dicTables = DB_schema.DB_TABLES
         retour = None
@@ -723,17 +743,17 @@ class DB():
         return retour
         #fin CreationUneTable
 
-    def CreationTables(self, dicTables={}, fenetreParente=None):
+    def CreationTables(self, dicTables={}, parent=None):
         for nomTable in dicTables.keys():
             if self.IsTableExists(nomTable):
                 continue
             ret = self.CreationUneTable(dicTables=dicTables,nomTable=nomTable)
             mess = "Création de la table de données %s: %s" %(nomTable,ret)
+            print(mess)
             # Affichage dans la StatusBar
-            if fenetreParente == None:
-                print(mess)
-            else:
-                fenetreParente.SetStatusText(mess)
+            if parent:
+                parent.mess += u"%s %s, "%(nomTable,ret)
+                parent.SetStatusText(parent.mess)
 
     def CreationIndex(self,nomIndex=None,dicIndex=None):
         try:
@@ -755,17 +775,17 @@ class DB():
                     self.Commit()
         return retour
 
-    def CreationTousIndex(self,dicIndex,fenetreParente=None):
+    def CreationTousIndex(self,dicIndex,parent=None):
         """ Création de tous les index """
         for nomIndex, temp in dicIndex.items() :
             if not self.IsIndexExists(nomIndex) :
                 ret = self.CreationIndex(nomIndex,dicIndex)
                 mess = "Création de l'index %s: %s" %(nomIndex,ret)
+                print(mess)
                 # Affichage dans la StatusBar
-                if fenetreParente == None:
-                    print(mess)
-                else:
-                    fenetreParente.SetStatusText(mess)
+                if parent:
+                    parent.mess += u"%s %s, " % (nomIndex, ret)
+                    parent.SetStatusText(parent.mess)
 
     def GetDataBases(self):
         self.cursor.execute("SHOW DATABASES;")
@@ -791,7 +811,7 @@ class DB():
             else: lstTables.append(record[0])
         return lstTables
 
-    def GetListeChamps2(self, nomTable=""):
+    def GetListeChamps(self, nomTable=""):
         """ Affiche la liste des champs de la table donnée """
         lstChamps = []
         if self.typeDB == 'sqlite':
@@ -901,14 +921,23 @@ class DB():
         finally:
             connection.close()
 
-def Init_tables():
-    os.chdir("..")
+def Init_tables(parent=None, mode="creat"):
     db = DB()
-    print("echec ouverture: ",db.echec)
+    del db.cursor
+    db.cursor = db.connexion.cursor(buffered=False)
+
     from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
-    db.CreationTables(dicTables=DB_TABLES)
-    db.CreationTousIndex(DB_IX)
-    db.CreationTousIndex(DB_PK)
+    if parent:
+        parent.mess = u"Lancement créations: "
+        parent.SetStatusText(parent.mess)
+    if mode == "creat":
+        db.CreationTables(dicTables=DB_TABLES,parent=parent)
+    elif mode == "ctrl":
+        db.CtrlTables(dicTables=DB_TABLES, parent=parent)
+    db.Close() # fermeture pour prise en compte de la création
+    db = DB()
+    db.CreationTousIndex(DB_IX,parent=parent)
+    db.CreationTousIndex(DB_PK,parent=parent)
 
 if __name__ == "__main__":
     app = wx.App()
