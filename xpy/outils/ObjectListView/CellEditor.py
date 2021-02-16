@@ -188,7 +188,7 @@ def OnChar(editor, event):
             return
 
     if type(editor).__name__ in ('DateEditor','ChoiceEditor','ComboEditor','BoleanEditor','CheckEditor'):
-        # Gestion du comportement de tab pour adv.DatePickerCtrl
+        # pour ces editor particuliers on traite les comportements spécifiques :tab(surtout pour date)
         if event.GetKeyCode() == wx.WXK_TAB:
             if event.GetModifiers() == wx.MOD_SHIFT:
                 ShiftTabAction(event)
@@ -198,6 +198,11 @@ def OnChar(editor, event):
         if event.GetKeyCode() in (wx.WXK_UP, wx.WXK_DOWN):
             event.Skip()
             return
+
+    if event.GetKeyCode() == wx.WXK_TAB and event.GetModifiers() == 0:
+        # pour gérer le tab en fin de ligne on le ramène à Enter
+        EnterAction(event)
+        return
 
     if event.GetKeyCode() in [wx.WXK_CANCEL, wx.WXK_TAB, wx.WXK_BACK, wx.WXK_DELETE, wx.WXK_HOME,
                               wx.WXK_END,wx.WXK_LEFT, wx.WXK_RIGHT,]:
@@ -337,7 +342,8 @@ class BooleanEditor(wx.Choice):
         wx.Choice.__init__(self, olv, **kwargs)
         olv.editor = {col: self}
         self.Bind(wx.EVT_CHAR_HOOK, self._OnChar)
-
+        self.row = row
+        self.col = col
     def _OnChar(self, event):
         OnChar(self, event)
 
@@ -358,7 +364,8 @@ class CheckEditor(wx.CheckBox):
         self.SetValue(False)
         self.Bind(wx.EVT_CHAR_HOOK, self._OnChar)
         olv.editor = {col: self}
-
+        self.row = row
+        self.col = col
     def _OnChar(self, event):
         OnChar(self,event)
 
@@ -370,6 +377,8 @@ class ChoiceEditor(wx.Choice):
         wx.Choice.__init__(self,olv, **kwargs)
         self.SetSelection(0)
         olv.editor = {col:self}
+        self.row = row
+        self.col = col
         self.Bind(wx.EVT_CHAR_HOOK, self._OnChar)
 
     def _OnChar(self, event):
@@ -396,6 +405,8 @@ class ComboEditor(wx.ComboBox):
                 kwargs['choices']=olv.dicChoices[col]
         wx.ComboBox.__init__(self, olv,style = wx.TE_PROCESS_ENTER| wx.TE_PROCESS_TAB, **kwargs)
         olv.editor = {col:self}
+        self.row = row
+        self.col = col
         self.Bind(wx.EVT_CHAR_HOOK, self._OnChar)
 
     def _OnChar(self, event):
@@ -422,6 +433,8 @@ class DateEditor(wx.adv.DatePickerCtrl):
         self.SetValue(None)
         olv.editor = {col:self}
         self.Bind(wx.EVT_CHAR_HOOK, self._OnChar)
+        self.row = row
+        self.col = col
 
     def _OnChar(self, event):
         OnChar(self,event)
@@ -448,6 +461,8 @@ class BaseCellTextEditor(wx.TextCtrl):
     def __init__(self, olv, row, subItemIndex, **kwargs):
         style = wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB
         self.error = None
+        self.row = row
+        self.col = subItemIndex
         # Allow for odd case where parent isn't an ObjectListView
         if hasattr(olv, "columns"):
             if olv.HasFlag(wx.LC_ICON):
