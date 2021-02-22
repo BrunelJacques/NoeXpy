@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: iso-8859-15 -*-
+# -*- coding: utf-8 -*-
 #-----------------------------------------------------------
-# Application :    Noethys, Matthania ajout des tables spécifiques
+# Application :    Noethys, Matthania ajout des tables spÃ©cifiques
 # Site internet :  www.noethys.com
 # Auteur:           Ivan LUCAS, Jacques Brunel
 # Copyright:       (c) 2010-11 Ivan LUCAS
@@ -12,127 +12,127 @@
 DB_TABLES = {
     "v_clients":[
                 ("IDclient", "INTEGER PRIMARY KEY AUTOINCREMENT", "ID de la famille"),
-                ("libelle", "VARCHAR(40)", "libellé de la famille pour les adresses"),
+                ("libelle", "VARCHAR(40)", "libellÃ© de la famille pour les adresses"),
                 ("rue", "VARCHAR(255)", "Adresse de la personne"),
                 ("cp", "VARCHAR(10)", "Code postal de la personne"),
                 ("ville", "VARCHAR(100)", "Ville de la personne"),
                 ("fixe", "VARCHAR(50)", "Tel domicile de la personne"),
                 ("mobile", "VARCHAR(50)", "Tel mobile perso de la personne"),
                 ("mail", "VARCHAR(50)", "Email perso de la personne"),
-                ("refus_pub", "INTEGER", "Refus de publicités papier"),
-                ("refus_mel", "INTEGER", "Refus de publicités demat"),
-                ], #Coordonnées clients, remplacé par une vue dans Noethys
+                ("refus_pub", "INTEGER", "Refus de publicitÃ©s papier"),
+                ("refus_mel", "INTEGER", "Refus de publicitÃ©s demat"),
+                ], #CoordonnÃ©es clients, remplacÃ© par une vue dans Noethys
 
     "modes_reglements":[
-                ("IDmode", "INTEGER PRIMARY KEY AUTOINCREMENT", "ID mode de règlement"),
+                ("IDmode", "INTEGER PRIMARY KEY AUTOINCREMENT", "ID mode de rÃ¨glement"),
                 ("label", "VARCHAR(100)", "Label du mode"),
                 ("image", "LONGBLOB", "Image du mode"),
-                ("numero_piece", "VARCHAR(10)", "Numéro de pièce (None|ALPHA|NUM)"),
-                ("nbre_chiffres", "INTEGER", "Nbre de chiffres du numéro"),
+                ("numero_piece", "VARCHAR(10)", "NumÃ©ro de piÃ¨ce (None|ALPHA|NUM)"),
+                ("nbre_chiffres", "INTEGER", "Nbre de chiffres du numÃ©ro"),
                 ("frais_gestion", "VARCHAR(10)", "Frais de gestion None|LIBRE|FIXE|PRORATA"),
                 ("frais_montant", "FLOAT", "Montant fixe des frais"),
                 ("frais_pourcentage", "FLOAT", "Prorata des frais"),
-                ("frais_arrondi", "VARCHAR(20)", "Méthode d'arrondi"),
+                ("frais_arrondi", "VARCHAR(20)", "MÃ©thode d'arrondi"),
                 ("frais_label", "VARCHAR(200)", "Label de la prestation"),
                 ("type_comptable", "VARCHAR(200)", "Type comptable (banque ou caisse)"),
                 ("code_compta", "VARCHAR(200)", "Code comptable pour export vers logiciels de compta"),
-                        ], # Modes de règlements
+                        ], # Modes de rÃ¨glements
 
     "emetteurs":[
                 ("IDemetteur", "INTEGER PRIMARY KEY AUTOINCREMENT", "ID Emetteur"),
-                ("IDmode", "INTEGER", "ID du mode concerné"),
-                ("nom", "VARCHAR(200)", "Nom de l'émetteur"),
+                ("IDmode", "INTEGER", "ID du mode concernÃ©"),
+                ("nom", "VARCHAR(200)", "Nom de l'Ã©metteur"),
                 ("image", "LONGBLOB", "Image de l'emetteur"),
-                ], # Emetteurs bancaires pour les modes de règlements
+                ], # Emetteurs bancaires pour les modes de rÃ¨glements
 
     "payeurs":[
                 ("IDpayeur", "INTEGER PRIMARY KEY AUTOINCREMENT", "ID Payeur"),
-                ("IDcompte_payeur", "INTEGER", "ID du compte payeur concerné"),
+                ("IDcompte_payeur", "INTEGER", "ID du compte payeur concernÃ©"),
                 ("nom", "VARCHAR(100)", "Nom du payeur"),
-                ], # Payeurs apparaissant sur les règlements reçus pour un compte payeur-client
+                ], # Payeurs apparaissant sur les rÃ¨glements reÃ§us pour un compte payeur-client
 
     "comptes_bancaires":[
                 ("IDcompte", "INTEGER PRIMARY KEY AUTOINCREMENT", "ID Compte"),
-                ("nom", "VARCHAR(100)", "Intitulé du compte"),
-                ("numero", "VARCHAR(50)", "Numéro du compte"),
-                ("defaut", "INTEGER", "(0/1) Compte sélectionné par défaut"),
+                ("nom", "VARCHAR(100)", "IntitulÃ© du compte"),
+                ("numero", "VARCHAR(50)", "NumÃ©ro du compte"),
+                ("defaut", "INTEGER", "(0/1) Compte sÃ©lectionnÃ© par dÃ©faut"),
                 ("raison", "VARCHAR(400)", "Raison sociale"),
-                ("code_etab", "VARCHAR(400)", "Code établissement"),
+                ("code_etab", "VARCHAR(400)", "Code Ã©tablissement"),
                 ("code_guichet", "VARCHAR(400)", "Code guichet"),
-                ("code_nne", "VARCHAR(400)", "Code NNE pour prélèvements auto."),
-                ("cle_rib", "VARCHAR(400)", "Clé RIB pour prélèvements auto."),
-                ("cle_iban", "VARCHAR(400)", "Clé IBAN pour prélèvements auto."),
-                ("iban", "VARCHAR(400)", "Numéro IBAN pour prélèvements auto."),
-                ("bic", "VARCHAR(400)", "Numéro BIC pour prélèvements auto."),
-                ("code_ics", "VARCHAR(400)", "Code NNE pour prélèvements auto."),
+                ("code_nne", "VARCHAR(400)", "Code NNE pour prÃ©lÃ¨vements auto."),
+                ("cle_rib", "VARCHAR(400)", "ClÃ© RIB pour prÃ©lÃ¨vements auto."),
+                ("cle_iban", "VARCHAR(400)", "ClÃ© IBAN pour prÃ©lÃ¨vements auto."),
+                ("iban", "VARCHAR(400)", "NumÃ©ro IBAN pour prÃ©lÃ¨vements auto."),
+                ("bic", "VARCHAR(400)", "NumÃ©ro BIC pour prÃ©lÃ¨vements auto."),
+                ("code_ics", "VARCHAR(400)", "Code NNE pour prÃ©lÃ¨vements auto."),
             ], # Comptes bancaires de l'organisateur
 
     "prestations": [
                 ("IDprestation", "INTEGER PRIMARY KEY AUTOINCREMENT", "ID prestation"),
                 ("IDcompte_payeur", "INTEGER", "ID du compte payeur"),
                 ("date", "DATE", "Date de la prestation"),
-                ("categorie", "VARCHAR(50)", "Catégorie de la prestation"),
+                ("categorie", "VARCHAR(50)", "CatÃ©gorie de la prestation"),
                 ("label", "VARCHAR(200)", "Label de la prestation"),
-                ("montant_initial", "FLOAT", "Montant de la prestation AVANT déductions"),
+                ("montant_initial", "FLOAT", "Montant de la prestation AVANT dÃ©ductions"),
                 ("montant", "FLOAT", "Montant de la prestation"),
-                ("IDactivite", "INTEGER", "ID de l'activité"),
+                ("IDactivite", "INTEGER", "ID de l'activitÃ©"),
                 ("IDtarif", "INTEGER", "ID du tarif"),
                 ("IDfacture", "INTEGER", "ID de la facture"),
-                ("IDfamille", "INTEGER", "ID de la famille concernée"),
-                ("IDindividu", "INTEGER", "ID de l'individu concerné"),
+                ("IDfamille", "INTEGER", "ID de la famille concernÃ©e"),
+                ("IDindividu", "INTEGER", "ID de l'individu concernÃ©"),
                 ("forfait", "INTEGER", "Type de forfait : 0 : Aucun | 1 : Suppr possible | 2 : Suppr impossible"),
-                ("temps_facture", "DATE", "Temps facturé format 00:00"),
-                ("IDcategorie_tarif", "INTEGER", "ID de la catégorie de tarif"),
-                ("forfait_date_debut", "DATE", "Date de début de forfait"),
+                ("temps_facture", "DATE", "Temps facturÃ© format 00:00"),
+                ("IDcategorie_tarif", "INTEGER", "ID de la catÃ©gorie de tarif"),
+                ("forfait_date_debut", "DATE", "Date de dÃ©but de forfait"),
                 ("forfait_date_fin", "DATE", "Date de fin de forfait"),
-                ("reglement_frais", "INTEGER", "ID du règlement"),
+                ("reglement_frais", "INTEGER", "ID du rÃ¨glement"),
                 ("tva", "FLOAT", "Taux TVA"),
                 ("code_compta", "VARCHAR(16)", "Code comptable pour export vers logiciels de compta"),
-                ("IDcontrat", "INTEGER", "ID du contrat associé"),
+                ("IDcontrat", "INTEGER", "ID du contrat associÃ©"),
                 ("compta", "INTEGER", "Pointeur de transfert en compta"),
                 ],  # Prestations
 
     "reglements":[
-                ("IDreglement", "INTEGER PRIMARY KEY AUTOINCREMENT", "ID Règlement"),
+                ("IDreglement", "INTEGER PRIMARY KEY AUTOINCREMENT", "ID RÃ¨glement"),
                 ("IDcompte_payeur", "INTEGER", "ID compte du payeur(client par simplification, Noethys les distingue"),
-                ("date", "DATE", "Date d'émission du règlement"),
-                ("IDmode", "INTEGER", "ID du mode de règlement"),
-                ("IDemetteur", "INTEGER", "ID de l'émetteur du règlement"),
-                ("numero_piece", "VARCHAR(30)", "Numéro de pièce"),
-                ("montant", "FLOAT", "Montant du règlement"),
+                ("date", "DATE", "Date d'Ã©mission du rÃ¨glement"),
+                ("IDmode", "INTEGER", "ID du mode de rÃ¨glement"),
+                ("IDemetteur", "INTEGER", "ID de l'Ã©metteur du rÃ¨glement"),
+                ("numero_piece", "VARCHAR(30)", "NumÃ©ro de piÃ¨ce"),
+                ("montant", "FLOAT", "Montant du rÃ¨glement"),
                 ("IDpayeur", "INTEGER", "ID du payeur"),
                 ("observations", "VARCHAR(200)", "Observations"),
-                ("numero_quittancier", "VARCHAR(30)", "Numéro de quittancier"),
+                ("numero_quittancier", "VARCHAR(30)", "NumÃ©ro de quittancier"),
                 ("IDprestation_frais", "INTEGER", "ID de la prestation de frais de gestion"),
                 ("IDcompte", "INTEGER", "ID du compte bancaire pour l'encaissement"),
-                ("date_differe", "DATE", "Date de l'encaissement différé"),
+                ("date_differe", "DATE", "Date de l'encaissement diffÃ©rÃ©"),
                 ("encaissement_attente", "INTEGER", "(0/1) Encaissement en attente"),
-                ("IDdepot", "INTEGER", "ID du dépôt"),
-                ("date_saisie", "DATE", "Date de saisie du règlement"),
+                ("IDdepot", "INTEGER", "ID du dÃ©pÃ´t"),
+                ("date_saisie", "DATE", "Date de saisie du rÃ¨glement"),
                 ("IDutilisateur", "INTEGER", "Utilisateur qui a fait la saisie"),
-                ("IDprelevement", "INTEGER", "ID du prélèvement"),
-                ("avis_depot", "DATE", "Date de l'envoi de l'avis de dépôt"),
+                ("IDprelevement", "INTEGER", "ID du prÃ©lÃ¨vement"),
+                ("avis_depot", "DATE", "Date de l'envoi de l'avis de dÃ©pÃ´t"),
                 ("IDpiece", "INTEGER", "IDpiece pour PES V2 ORMC"),
                 ("compta", "INTEGER", "Pointeur de transfert en compta"),
-                ], # Règlements
+                ], # RÃ¨glements
 
     "parametres":[
                 ("IDparametre", "INTEGER PRIMARY KEY AUTOINCREMENT", "ID parametre"),
-                ("categorie", "VARCHAR(200)", "Catégorie"),
+                ("categorie", "VARCHAR(200)", "CatÃ©gorie"),
                 ("nom", "VARCHAR(200)", "Nom"),
-                ("parametre", "VARCHAR(30000)", "Parametre"),
-                ], # Paramètres du contexte ou options choisies
+                ("parametre", "MEDIUMTEXT", "Parametre en forme de texte"),
+                ], # ParamÃ¨tres du contexte ou options choisies
 
     "secteurs":[
                 ("IDsecteur", "INTEGER PRIMARY KEY AUTOINCREMENT", "ID pays postal"),
                 ("nom", "VARCHAR(255)", "Nom du pays postal"),
-                                    ], # pays postaux inclus à la suite de la ville (après une fin de ligne)
+                                    ], # pays postaux inclus Ã  la suite de la ville (aprÃ¨s une fin de ligne)
 
     "utilisateurs":[
                 ("IDutilisateur", "INTEGER PRIMARY KEY AUTOINCREMENT", "IDutilisateur"),
                 ("sexe", "VARCHAR(5)", "Sexe de l'utilisateur"),
                 ("nom", "VARCHAR(200)", "Nom de l'utilisateur"),
-                ("prenom", "VARCHAR(200)", "Prénom de l'utilisateur"),
+                ("prenom", "VARCHAR(200)", "PrÃ©nom de l'utilisateur"),
                 ("mdp", "VARCHAR(100)", "Mot de passe"),
                 ("profil", "VARCHAR(100)", "Profil (Administrateur ou utilisateur)"),
                 ("actif", "INTEGER", "Utilisateur actif"),
@@ -140,170 +140,171 @@ DB_TABLES = {
                                     ], # Utilisateurs identifiables
 
     "sauvegardes_auto":[ ("IDsauvegarde", "INTEGER PRIMARY KEY AUTOINCREMENT", "IDsauvegarde"),
-                ("nom", "VARCHAR(455)", "Nom de la procédure de sauvegarde auto"),
+                ("nom", "VARCHAR(455)", "Nom de la procÃ©dure de sauvegarde auto"),
                 ("observations", "VARCHAR(455)", "Observations"),
-                ("date_derniere", "DATE", "Date de la dernière sauvegarde"),
+                ("date_derniere", "DATE", "Date de la derniÃ¨re sauvegarde"),
                 ("sauvegarde_nom", "VARCHAR(455)", "Sauvegarde Nom"),
                 ("sauvegarde_motdepasse", "VARCHAR(455)", "Sauvegarde mot de passe"),
-                ("sauvegarde_repertoire", "VARCHAR(455)", "sauvegarde Répertoire"),
+                ("sauvegarde_repertoire", "VARCHAR(455)", "sauvegarde RÃ©pertoire"),
                 ("sauvegarde_emails", "VARCHAR(455)", "Sauvegarde Emails"),
                 ("sauvegarde_fichiers_locaux", "VARCHAR(455)", "Sauvegarde fichiers locaux"),
-                ("sauvegarde_fichiers_resea", "VARCHAR(455)", "Sauvegarde fichiers résea"),
+                ("sauvegarde_fichiers_resea", "VARCHAR(455)", "Sauvegarde fichiers rÃ©sea"),
                 ("condition_jours_scolaires", "VARCHAR(455)", "Condition Jours scolaires"),
                 ("condition_jours_vacances", "VARCHAR(455)", "Condition Jours vacances"),
                 ("condition_heure", "VARCHAR(455)", "Condition Heure"),
                 ("condition_poste", "VARCHAR(455)", "Condition Poste"),
-                ("condition_derniere", "VARCHAR(455)", "Condition Date dernière sauvegarde"),
+                ("condition_derniere", "VARCHAR(455)", "Condition Date derniÃ¨re sauvegarde"),
                 ("condition_utilisateur", "VARCHAR(455)", "Condition Utilisateur"),
                 ("option_afficher_interface", "VARCHAR(455)", "Option Afficher interface (0/1)"),
                 ("option_demander", "VARCHAR(455)", "Option Demander (0/1)"),
                 ("option_confirmation", "VARCHAR(455)", "Option Confirmation (0/1)"),
-                ("option_suppression", "VARCHAR(455)", "Option Suppression sauvegardes obsolètes"),
-                                    ], # procédures de sauvegardes automatiques
+                ("option_suppression", "VARCHAR(455)", "Option Suppression sauvegardes obsolÃ¨tes"),
+                                    ], # procÃ©dures de sauvegardes automatiques
 
     "droits":[                   ("IDdroit", "INTEGER PRIMARY KEY AUTOINCREMENT", "IDdroit"),
                 ("IDutilisateur", "INTEGER", "IDutilisateur"),
                 ("IDmodele", "INTEGER", "IDmodele"),
-                ("categorie", "VARCHAR(200)", "Catégorie de droits"),
+                ("categorie", "VARCHAR(200)", "CatÃ©gorie de droits"),
                 ("action", "VARCHAR(200)", "Type d'action"),
                 ("etat", "VARCHAR(455)", "Etat"),
                                     ], # Droits des utilisateurs
 
     "modeles_droits":[     ("IDmodele", "INTEGER PRIMARY KEY AUTOINCREMENT", "IDmodele"),
-                ("nom", "VARCHAR(455)", "Nom du modèle"),
+                ("nom", "VARCHAR(455)", "Nom du modÃ¨le"),
                 ("observations", "VARCHAR(455)", "Observations"),
-                ("defaut", "INTEGER", "Modèle par défaut (0/1)"),
-                                    ], # Modèles de droits
+                ("defaut", "INTEGER", "ModÃ¨le par dÃ©faut (0/1)"),
+                                    ], # ModÃ¨les de droits
 
     "cpta_exercices":[("IDexercice", "INTEGER PRIMARY KEY AUTOINCREMENT", "ID Exercice"),
                 ("nom", "VARCHAR(400)", "Nom de l'exercice"),
-                ("date_debut", "DATE", "Date de début"),
+                ("date_debut", "DATE", "Date de dÃ©but"),
                 ("date_fin", "DATE", "Date de fin"),
-                ("defaut", "INTEGER", "Proposé par défaut (0/1)"),
-                ("actif", "INTEGER", "Actif pour écritures nouvelles (0/1)"),
-                ("cloture", "INTEGER", "Clôturé, l'exercice ne peut plus être actif(0/1)"),
+                ("defaut", "INTEGER", "ProposÃ© par dÃ©faut (0/1)"),
+                ("actif", "INTEGER", "Actif pour Ã©critures nouvelles (0/1)"),
+                ("cloture", "INTEGER", "ClÃ´turÃ©, l'exercice ne peut plus Ãªtre actif(0/1)"),
                                     ], # Compta : Exercices
 
     'cpta_analytiques': [
-        ('IDanalytique', 'VARCHAR(8)', "Clé Unique alphanumérique"),
+        ('IDanalytique', 'VARCHAR(8)', "ClÃ© Unique alphanumÃ©rique"),
         ('abrege', 'VARCHAR(16)', "cle d'appel ou libelle court du code analytique"),
-        ('nom', 'VARCHAR(200)', "Libellé long du code analytique"),
-        ('params', 'VARCHAR(400)', "liste texte de paramétrages constructeurs, pour le calcul coût"),
+        ('nom', 'VARCHAR(200)', "LibellÃ© long du code analytique"),
+        ('params', 'VARCHAR(400)', "liste texte de paramÃ©trages constructeurs, pour le calcul coÃ»t"),
         ('axe', 'VARCHAR(24)', "axe analytique 'VEHICULES' 'CONVOIS' 'PRIXJOUR', defaut = vide")
     ],
 
     'immobilisations':[
-                ('IDimmo','INTEGER PRIMARY KEY AUTOINCREMENT',"Clé Unique"),
+                ('IDimmo','INTEGER PRIMARY KEY AUTOINCREMENT',"ClÃ© Unique"),
                 ('compteImmo','VARCHAR(10)',"compte comptable de l'immobilisation"),
                 ('IDanalytique','VARCHAR(8)',"Section analytique"),
                 ('compteDotation','VARCHAR(10)',"compte comptable de la dotation aux immos"),
-                ('libelle','VARCHAR(200)',"texte pour les édition ou choix de ligne "),
-                ('nbrePlaces','INTEGER',"capacité d'accueil pour véhicules,tentes, batiment "),
+                ('libelle','VARCHAR(200)',"texte pour les Ã©dition ou choix de ligne "),
+                ('nbrePlaces','INTEGER',"capacitÃ© d'accueil pour vÃ©hicules,tentes, batiment "),
                 ('noSerie','VARCHAR(32)',"Immatriculation ou no identifiant"),
                 ],# fiches immobilisations
 
     'immosComposants':[
-                ('IDcomposant', 'INTEGER PRIMARY KEY AUTOINCREMENT',"Clé Unique"),
-                ('IDimmo', 'INTEGER', "reprise de l'entête immo"),
-                ('dteAcquisition','DATE',"date de l'acquisition de l'élément"),
-                ('libComposant','VARCHAR(200)',"texte pour les édition en ligne"),
-                ('quantite','FLOAT',"quantités fractionnables à la cession"),
+                ('IDcomposant', 'INTEGER PRIMARY KEY AUTOINCREMENT',"ClÃ© Unique"),
+                ('IDimmo', 'INTEGER', "reprise de l'entÃªte immo"),
+                ('dteAcquisition','DATE',"date de l'acquisition de l'Ã©lÃ©ment"),
+                ('libComposant','VARCHAR(200)',"texte pour les Ã©dition en ligne"),
+                ('quantite','FLOAT',"quantitÃ©s fractionnables Ã  la cession"),
                 ('valeur','FLOAT',"valeur d'acquisition"),
-                ('dteMiseEnService','DATE',"date de mise en service pour début amort"),
-                ('compteFrn','VARCHAR(10)',"contrepartie de l'écriture d'acquisition"),
-                ('libelleFrn','VARCHAR(200)',"libellé modifiable"),
-                ('type','VARCHAR(1)',"Dégressif Linéaire Nonamort"),
-                ('tauxAmort','FLOAT',"taux d'amortissement à appliquer chaque année"),
-                ('amortAnterieur','FLOAT',"cumul des amortissements à l'ouverture"),
+                ('dteMiseEnService','DATE',"date de mise en service pour dÃ©but amort"),
+                ('compteFrn','VARCHAR(10)',"contrepartie de l'Ã©criture d'acquisition"),
+                ('libelleFrn','VARCHAR(200)',"libellÃ© modifiable"),
+                ('type','VARCHAR(1)',"DÃ©gressif LinÃ©aire Nonamort"),
+                ('tauxAmort','FLOAT',"taux d'amortissement Ã  appliquer chaque annÃ©e"),
+                ('amortAnterieur','FLOAT',"cumul des amortissements Ã  l'ouverture"),
                 ('dotation','FLOAT',"dotation de l'exercice"),
-                ('etat', 'VARCHAR(5)', "'E'n cours, 'A'mortie, 'C'édée, 'R'ebut,"),
-                ('cessionType','VARCHAR(5)',"type de cession (cession partielle crée un nouvel élément)"),
+                ('etat', 'VARCHAR(5)', "'E'n cours, 'A'mortie, 'C'Ã©dÃ©e, 'R'ebut,"),
+                ('cessionType','VARCHAR(5)',"type de cession (cession partielle crÃ©e un nouvel Ã©lÃ©ment)"),
                 ('cessionDate','DATE',"date de la cession"),
-                ('cessionQte','FLOAT',"qté cédée"),
+                ('cessionQte','FLOAT',"qtÃ© cÃ©dÃ©e"),
                 ('cessionValeur','FLOAT',"valeur de la cession"),
-                ('descriptif','TEXT',"déscriptif libre"),
-                ('dtMaj','DATE',"Date de dernière modif"),
+                ('descriptif','TEXT',"dÃ©scriptif libre"),
+                ('dtMaj','DATE',"Date de derniÃ¨re modif"),
                 ('user','INTEGER',"ID de l'utilisateur"),],# subdivisions des fiches immobilisations
     
     'vehiculesCouts':[
-                ('IDcout','INTEGER PRIMARY KEY AUTOINCREMENT',"Clé Unique"),
-                ('IDanalytique','VARCHAR(8)',"clé usuelle d'appel, identifie l'composant principal 0 par son libelle"),
-                ('cloture','DATE',"Date de clôture de l'exercice"),
-                ('prixKmVte','FLOAT',"Prix de base du km facturé avant remise"),
-                ('carburants','FLOAT',"Coût des carburants pour l'exercice"),
-                ('entretien','FLOAT',"Coût de l'entretien (charges variables selon km)"),
-                ('servicesFixes','FLOAT',"Autres coûts fixes à l'année"),
+                ('IDcout','INTEGER PRIMARY KEY AUTOINCREMENT',"ClÃ© Unique"),
+                ('IDanalytique','VARCHAR(8)',"clÃ© usuelle d'appel, identifie l'composant principal 0 par son libelle"),
+                ('cloture','DATE',"Date de clÃ´ture de l'exercice"),
+                ('prixKmVte','FLOAT',"Prix de base du km facturÃ© avant remise"),
+                ('carburants','FLOAT',"CoÃ»t des carburants pour l'exercice"),
+                ('entretien','FLOAT',"CoÃ»t de l'entretien (charges variables selon km)"),
+                ('servicesFixes','FLOAT',"Autres coÃ»ts fixes Ã  l'annÃ©e"),
                 ('dotation','FLOAT',"Dotation aux amortissments"),
-                ('grossesRep','FLOAT',"Grosses réparations immobilisées (détaillées dans la fiche immo)"),
-                ('plusValue','FLOAT',"Résultat du calcul sur la cession dans fiche immo"),
-                ('kmDebut','INTEGER',"Kilométrage en début d'exercice"),
-                ('kmFin','INTEGER',"Kilométrage en fin d'exercice"),
-                ('dtMaj','DATE',"Date de dernière modif"),
-                ('user','INTEGER',"ID de l'utilisateur"),],# Eléments de coûts annuels
+                ('grossesRep','FLOAT',"Grosses rÃ©parations immobilisÃ©es (dÃ©taillÃ©es dans la fiche immo)"),
+                ('plusValue','FLOAT',"RÃ©sultat du calcul sur la cession dans fiche immo"),
+                ('kmDebut','INTEGER',"KilomÃ©trage en dÃ©but d'exercice"),
+                ('kmFin','INTEGER',"KilomÃ©trage en fin d'exercice"),
+                ('dtMaj','DATE',"Date de derniÃ¨re modif"),
+                ('user','INTEGER',"ID de l'utilisateur"),],# ElÃ©ments de coÃ»ts annuels
     
     'vehiculesConsos':[
-                ('IDconso','INTEGER PRIMARY KEY AUTOINCREMENT',"Clé Unique"),
-                ('IDanalytique','VARCHAR(8)',"Id du véhicule"),
-                ('cloture','DATE',"Date de clôture de l'exercice"),
-                ('typeTiers','VARCHAR(1)',"'C'lient, 'A'analytique,'P'partenaires,'E'mployés"),
+                ('IDconso','INTEGER PRIMARY KEY AUTOINCREMENT',"ClÃ© Unique"),
+                ('IDanalytique','VARCHAR(8)',"Id du vÃ©hicule"),
+                ('cloture','DATE',"Date de clÃ´ture de l'exercice"),
+                ('typeTiers','VARCHAR(1)',"'C'lient, 'A'analytique,'P'partenaires,'E'mployÃ©s"),
                 ('IDtiers','VARCHAR(8)',"Section analytique consommatrice ou no client"),
-                ('dteKmDeb','DATE',"Date du relevé km début"),
-                ('kmDeb','INTEGER',"kilométrage de départ"),
-                ('dteKmFin','DATE',"Date du relevé km fin"),
-                ('kmFin','INTEGER',"kilométrage de fin"),
-                ('observation','VARCHAR(80)', "Décrit les cas particuliers"),
+                ('dteKmDeb','DATE',"Date du relevÃ© km dÃ©but"),
+                ('kmDeb','INTEGER',"kilomÃ©trage de dÃ©part"),
+                ('dteKmFin','DATE',"Date du relevÃ© km fin"),
+                ('kmFin','INTEGER',"kilomÃ©trage de fin"),
+                ('observation','VARCHAR(80)', "DÃ©crit les cas particuliers"),
                 ('dtFact','DATE',"Date de facturation"),
                 ('compta','DATE',"Date de transert en compta"),
-                ('dtMaj','DATE',"Date de dernière modif"),
+                ('dtMaj','DATE',"Date de derniÃ¨re modif"),
                 ('user','INTEGER',"ID de l'utilisateur"),],# affectation des consommations internes par section
 
     'stArticles':[
-                ('article', 'VARCHAR(32)', "PK Désignation du produit"),
-                ('rations', 'FLOAT', "Nombre de ration pour une unité"),
+                ('article', 'VARCHAR(32)', "PK DÃ©signation du produit"),
+                ('rations', 'FLOAT', "Nombre de ration pour une unitÃ©"),
                 ('fournisseur', 'VARCHAR(32)', "Fournisseur habituel"),
                 ('qteStock', 'INTEGER', "Stock en live"),
-                ('qteMini', 'INTEGER', "Seuil déclenchant une alerte rouge"),
+                ('qteMini', 'INTEGER', "Seuil dÃ©clenchant une alerte rouge"),
                 ('qteSaison', 'INTEGER', "Seuil souhaitable en haute saison"),
                 ('txTva', 'FLOAT', "tx de TVA en %"),
-                ('prixActuel', 'FLOAT', "Dernier prix TTC unitaire livré ou de réappro"),
+                ('prixActuel', 'FLOAT', "Dernier prix TTC unitaire livrÃ© ou de rÃ©appro"),
                 ('prixMoyen', 'FLOAT', "Prix unitaire moyen historique du stock"),
                 ('magasin', 'VARCHAR(32)', "Grande famille de produit"),
                 ('rayon', 'VARCHAR(32)', "Sous famille niveau rayon, dans magasin"),
-                ('dernierAchat', 'DATE', "Date de dernière entrée avec prix saisi"),],# stocks: articles en stock
+                ('dernierAchat', 'DATE', "Date de derniÃ¨re entrÃ©e avec prix saisi"),],# stocks: articles en stock
 
     'stEffectifs':[
                 ('date', 'DATE', "PK Date de la situation de l'effectif"),
-                ('matinClients', 'INTEGER', "Nbre de repas facturés (facultatif)"),
+                ('matinClients', 'INTEGER', "Nbre de repas facturÃ©s (facultatif)"),
                 ('matinStaff', 'INTEGER', "Nbre de repas pour le staff (facultatif)"),
-                ('midiClients', 'INTEGER', "Nbre de repas facturés "),
+                ('midiClients', 'INTEGER', "Nbre de repas facturÃ©s "),
                 ('midiStaff', 'INTEGER', "Nbre de repas pour le staff"),
-                ('soirClients', 'INTEGER', "Nbre de repas facturés  (facultatif)"),
+                ('soirClients', 'INTEGER', "Nbre de repas facturÃ©s  (facultatif)"),
                 ('soirStaff', 'INTEGER', "Nbre de repas pour le staff (facultatif)"),
-                ('modifiable', 'BOOL', "0/1 Marque un transfert export  réussi ou import"),],# stocks: repas servis
+                ('modifiable', 'TINYINT', "0/1 Marque un transfert export  rÃ©ussi ou import"),],# stocks: repas servis
 
     'stMouvements':[
-                ('IDmouvement', 'INTEGER PRIMARY KEY AUTOINCREMENT', "Clé primaire"),
+                ('IDmouvement', 'INTEGER PRIMARY KEY AUTOINCREMENT', "ClÃ© primaire"),
                 ('date', 'DATE', "date du mouvement de stock"),
-                ('origine', 'VARCHAR(8)', "repas', 'achat','od','campext','retour'"),
-                ('article', 'VARCHAR(32)', "clé dans gstArticles"),
-                ('qte', 'INTEGER', "Quantitée mouvementée signée"),
+                ('fournisseur', 'VARCHAR(32)', "Fournisseur de l'entrÃ©e"),
+                ('origine', 'VARCHAR(8)', "repas; achat; od; campExt; retour"),
+                ('article', 'VARCHAR(32)', "clÃ© dans gstArticles"),
+                ('qte', 'INTEGER', "QuantitÃ©e mouvementÃ©e signÃ©e"),
                 ('prixUnit', 'FLOAT', "Prix moyen pour sorties et retour, actuel pour achats"),
-                ('analytique', 'VARCHAR(8)', "Section analytique du camp à facturer"),
-                ('ordi', 'VARCHAR(16)', "Nom de l'ordi utilisé pour l'entrée ou la modif"),
-                ('dateSaisie', 'DATE', "Date de l'entrée ou la modif"),
-                ('modifiable', 'INTEGER', "0/1 Marque un transfert export  réussi ou import"),],# stocks: entrées sorties
+                ('analytique', 'VARCHAR(8)', "Section analytique du camp Ã  facturer"),
+                ('ordi', 'VARCHAR(16)', "Nom de l'ordi utilisÃ© pour l'entrÃ©e ou la modif"),
+                ('dateSaisie', 'DATE', "Date de l'entrÃ©e ou la modif"),
+                ('modifiable', 'INTEGER', "0/1 Marque un transfert export  rÃ©ussi ou import"),],# stocks: entrÃ©es sorties
 
     'stInventaires':[
                 ('date', 'DATE', "PK Date de l'inventaire copie des stocks"),
-                ('article', 'VARCHAR(32)', "PK Désignation du produit"),
-                ('qteStock', 'INTEGER', "Qté reportée"),
-                ('qteConstat', 'INTEGER', "Qté constatée"),
-                ('prixActuel', 'FLOAT', "Dernier prix unitaire livré ou de réappro"),
+                ('article', 'VARCHAR(32)', "PK DÃ©signation du produit"),
+                ('qteStock', 'INTEGER', "QtÃ© reportÃ©e"),
+                ('qteConstat', 'INTEGER', "QtÃ© constatÃ©e"),
+                ('prixActuel', 'FLOAT', "Dernier prix unitaire livrÃ© ou de rÃ©appro"),
                 ('prixMoyen', 'FLOAT', "Prix unitaire moyen historique du stock"),
-                ('modifiable', 'INTEGER', "0/1 Marque un transfert export  réussi ou import"),], # stocks: inventaire à une date
+                ('modifiable', 'INTEGER', "0/1 Marque un transfert export  rÃ©ussi ou import"),], # stocks: inventaire Ã  une date
     }
 
-# index clé unique
+# index clÃ© unique
 DB_PK = {
         "PK_vehiculesCouts_IDanalytique_cloture": {"table": "vehiculesCouts", "champ": "IDanalytique, cloture"},
         "PK_stArticles_article": {"table": "stArticles", "champ": "article"},

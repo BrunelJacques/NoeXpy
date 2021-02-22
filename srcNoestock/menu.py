@@ -151,7 +151,7 @@ class MENU():
         ret = dlg.ShowModal()
 
     def On_gesTables(self,event):
-        xUTILS_DB.Init_tables(parent=self.parent,mode="crea")
+        xUTILS_DB.Init_tables(parent=self.parent,mode="creation")
 
     def On_ctrlTables(self,event):
         xUTILS_DB.Init_tables(parent=self.parent,mode="ctrl")

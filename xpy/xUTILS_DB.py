@@ -23,12 +23,12 @@ DICT_CONNEXIONS = {}
 
 def NoPunctuation(txt = ''):
     import re
-    punctuation = u"'!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'"
+    punctuation = "'!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'"
     regex = re.compile('[%s]' % re.escape(punctuation))
     return regex.sub(' ', txt)
 
 def Supprime_accent(texte):
-    liste = [ (u"é", u"e"), (u"è", u"e"), (u"ê", u"e"), (u"ë", u"e"), (u"à", u"a"), (u"û", u"u"), (u"ô", u"o"), (u"ç", u"c"), (u"î", u"i"), (u"ï", u"i"),]
+    liste = [ ("é", "e"), ("è", "e"), ("ê", "e"), ("ë", "e"), ("à", "a"), ("û", ""), ("ô", "o"), ("ç", "c"), ("î", "i"), ("ï", "i"),]
     for a, b in liste :
         texte = texte.replace(a, b)
         texte = texte.replace(a.upper(), b.upper())
@@ -251,7 +251,7 @@ class DB():
             passwd = config['mpUserDB']
             if len(userdb)>0 and len(config['mpUserDB'])==0:
                 if not mute:
-                    mess = "Pas de mot de passe saisi, veuillez configurer les accès réseau"
+                    mess = "Pas de mot de passe saisi, veuillez configurer les accès résea"
                     wx.MessageBox(mess, caption="xUTILS_DB.ConnexionFichierReseau ")
                 self.erreur = "%s\n\nEtape: %s"%("Config incompète",mess)
                 self.echec = 1
@@ -647,32 +647,41 @@ class DB():
 
     def AjoutChamp(self, nomTable = "", nomChamp = "", dicTables = None):
         req = None
-        if not self.IsChampExists(nomTable,nomChamp):
-            if dicTables:
-                for champ,typeChamp,comment in dicTables[nomTable]:
-                    if nomChamp.lower().strip() != champ.lower().strip(): continue
-                    comment = comment.replace("'","''")
-                    req = "ALTER TABLE %s ADD %s %s COMMENT '%s';" % (nomTable, champ, typeChamp, comment)
-            if req:
-                ret = self.ExecuterReq(req)
-                if ret == 'ok': self.Commit()
-                print(req , "----- ", ret)
-            else:
-                print("ECHEC Ajout table.champ: %s.%s"%(nomTable,nomChamp))
+        if dicTables:
+            for champ,typeChamp,comment in dicTables[nomTable]:
+                if nomChamp.lower().strip() != champ.lower().strip(): continue
+                comment = comment.replace("'","''")
+                req = "ALTER TABLE %s ADD %s %s COMMENT '%s';" % (nomTable, champ, typeChamp, comment)
+        if req:
+            ret = self.ExecuterReq(req)
+            if ret == 'ok': self.Commit()
+        else:
+            ret = "ECHEC Ajout table.champ: %s.%s"%(nomTable,nomChamp)
+        return ret
 
-    def IsChampExists(self, nomTable="",nomChamp=""):
-        """ Vérifie si le champ d'une table existe dans la base """
-        champExists = False
-        req = """SELECT *
-                FROM INFORMATION_SCHEMA.COLUMNS
-                WHERE TABLE_NAME = '%s'
-                AND COLUMN_NAME = '%s'"""%(nomTable,nomChamp)
-        ret = self.ExecuterReq(req)
-        if ret == 'ok':
-            recordset = self.ResultatReq()
-            if len(recordset) >0:
-                champExists = True
-        return champExists
+    def ModifNomChamp(self, nomTable="", nomChampOld="", nomChampNew=""):
+        """ Pour renommer un champ - Ne fonctionne qu'avec MySQL """
+
+        ret = "Champ %s non trouvé dans table %s"%(nomChampOld,nomTable)
+        typeChamp = None
+        for champ,tip in self.GetListeChamps(nomTable):
+            if champ == nomChampOld:
+                typeChamp = tip
+
+        if self.isNetwork == True and typeChamp:
+            req = "ALTER TABLE %s CHANGE %s %s %s;" % (nomTable, nomChampOld, nomChampNew, typeChamp)
+            ret = self.ExecuterReq(req)
+        if ret == 'ok': self.Commit()
+        return ret
+
+    def ModifTypeChamp(self, nomTable="", nomChamp="", typeChamp=""):
+        """ Pour convertir le type d'un champ """
+        ret = """ Ne fonctionne qu'avec MySQL """
+        if self.isNetwork == True :
+            req = "ALTER TABLE %s CHANGE %s %s %s;" % (nomTable, nomChamp, nomChamp, typeChamp)
+            ret = self.ExecuterReq(req)
+            if ret == 'ok': self.Commit()
+            return ret
 
     def IsTableExists(self, nomTable=""):
         """ Vérifie si une table donnée existe dans la base """
@@ -695,24 +704,48 @@ class DB():
         return indexExists
 
     def CtrlTables(self, dicTables={}, parent=None):
-        # création de table ou ajout des champs manquants
+        # création de table ou ajout|modif des champs selon description fournie
         for nomTable in dicTables.keys():
+            # les possibles vues sont préfixées v_ donc ignorées
+            if nomTable[:2] == "v_":
+                continue
             mess = None
             if not self.IsTableExists(nomTable):
                 ret = self.CreationUneTable(dicTables=dicTables,nomTable=nomTable)
                 mess = "Création de la table de données %s: %s" %(nomTable,ret)
             else:
-                table = dicTables[nomTable]
-                lstChamps = [ x[0] for x in table]
-                for champ in lstChamps:
-                    if not self.IsChampExists(nomTable,champ):
-                        ret = self.AjoutChamp(nomTable,champ,dicTables)
-            if mess:
+                # controle des champs
+                tableModel = dicTables[nomTable]
+                lstChamps = self.GetListeChamps(nomTable)
+                lstNomsChamps = [ x[0] for x in lstChamps]
+                lstTypesChamps = [ x[1] for x in lstChamps]
+                mess = "Champs: "
+                for (nomChampModel, typeChampModel, info) in tableModel:
+                    ret = None
+                    # ajout du champ manquant
+                    if not nomChampModel.lower() in lstNomsChamps:
+                        ret = self.AjoutChamp(nomTable,nomChampModel,dicTables)
+                    else:
+                        # modif du type de champ
+                        typeChamp = lstTypesChamps[lstNomsChamps.index(nomChampModel.lower())]
+                        if not typeChampModel.lower()[:3] == typeChamp[:3]:
+                            ret  = self.ModifTypeChamp(nomTable,nomChampModel,typeChampModel)
+                        # modif de la longueur varchar
+                        elif typeChamp[:3] == "var":
+                            lgModel = typeChampModel.split("(")[1].split(")")[0]
+                            lg = typeChamp.split("(")[1].split(")")[0]
+                            if not lgModel == lg:
+                                ret  = self.ModifTypeChamp(nomTable,nomChampModel,typeChampModel)
+                    if ret:
+                        mess += "; %s.%s: %s"%(nomTable,nomChampModel,ret)
+            if mess and mess != "Champs: ":
                 print(mess)
-            # Affichage dans la StatusBar
-            if parent and mess:
-                parent.mess += u"%s %s, "%(nomTable,ret)
-                parent.SetStatusText(parent.mess)
+                # Affichage dans la StatusBar
+                if parent and mess:
+                    parent.mess += "%s %s, "%(nomTable,ret)
+                    parent.SetStatusText(parent.mess[-200:])
+        parent.mess += "- CtrlTables Terminé"
+        parent.SetStatusText(parent.mess[-200:])
 
     def CreationUneTable(self, dicTables={},nomTable=None):
         #dicTables = DB_schema.DB_TABLES
@@ -752,8 +785,10 @@ class DB():
             print(mess)
             # Affichage dans la StatusBar
             if parent:
-                parent.mess += u"%s %s, "%(nomTable,ret)
-                parent.SetStatusText(parent.mess)
+                parent.mess += "%s %s, "%(nomTable,ret)
+                parent.SetStatusText(parent.mess[-200:])
+        parent.mess += "- CreaTables Termine"
+        parent.SetStatusText(parent.mess[-200:])
 
     def CreationIndex(self,nomIndex=None,dicIndex=None):
         try:
@@ -784,8 +819,10 @@ class DB():
                 print(mess)
                 # Affichage dans la StatusBar
                 if parent:
-                    parent.mess += u"%s %s, " % (nomIndex, ret)
+                    parent.mess += "%s %s, " % (nomIndex, ret)
                     parent.SetStatusText(parent.mess)
+        parent.mess += "- Index Terminés"
+        parent.SetStatusText(parent.mess[-200:])
 
     def GetDataBases(self):
         self.cursor.execute("SHOW DATABASES;")
@@ -812,22 +849,30 @@ class DB():
         return lstTables
 
     def GetListeChamps(self, nomTable=""):
-        """ Affiche la liste des champs de la table donnée """
+        """ retrourne la liste des tuples(nom,type) des champs de la table donnée """
         lstChamps = []
-        if self.typeDB == 'sqlite':
-            # Version Sqlite
-            req = "PRAGMA table_info('%s');" % nomTable
-            self.ExecuterReq(req)
-            listeTmpChamps = self.ResultatReq()
-            for valeurs in listeTmpChamps:
-                lstChamps.append((valeurs[1], valeurs[2]))
-        else:
-            # Version MySQL
-            req = "SHOW COLUMNS FROM %s;" % nomTable
-            self.ExecuterReq(req)
-            listeTmpChamps = self.ResultatReq()
-            for valeurs in listeTmpChamps:
-                lstChamps.append((valeurs[0], valeurs[1]))
+        # dict de tables de liste
+        if not hasattr(self,"ddTablesChamps"):
+            self.dlTablesChamps = {}
+        # un seul appel par table
+        if not nomTable in self.dlTablesChamps.keys():
+            if self.typeDB == 'sqlite':
+                # Version Sqlite
+                req = "PRAGMA table_info('%s');" % nomTable
+                self.ExecuterReq(req)
+                listeTmpChamps = self.ResultatReq()
+                for valeurs in listeTmpChamps:
+                    lstChamps.append((valeurs[1], valeurs[2]))
+            else:
+                # Version MySQL
+                req = "SHOW COLUMNS FROM %s;" % nomTable
+                self.ExecuterReq(req)
+                listeTmpChamps = self.ResultatReq()
+                for valeurs in listeTmpChamps:
+                    lstChamps.append((valeurs[0].lower(), valeurs[1].lower()))
+            self.dlTablesChamps[nomTable] = lstChamps
+        # la table a déjà été appellée
+        else: lstChamps = self.dlTablesChamps[nomTable]
         return lstChamps
 
     def GetListeIndex(self):
@@ -928,16 +973,15 @@ def Init_tables(parent=None, mode="creat"):
 
     from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
     if parent:
-        parent.mess = u"Lancement créations: "
+        parent.mess = "Lancement créations: "
         parent.SetStatusText(parent.mess)
-    if mode == "creat":
+    if mode == "creation":
         db.CreationTables(dicTables=DB_TABLES,parent=parent)
+        db.CreationTousIndex(DB_IX, parent=parent)
+        db.CreationTousIndex(DB_PK, parent=parent)
     elif mode == "ctrl":
         db.CtrlTables(dicTables=DB_TABLES, parent=parent)
     db.Close() # fermeture pour prise en compte de la création
-    db = DB()
-    db.CreationTousIndex(DB_IX,parent=parent)
-    db.CreationTousIndex(DB_PK,parent=parent)
 
 if __name__ == "__main__":
     app = wx.App()
