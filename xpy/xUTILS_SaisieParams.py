@@ -16,7 +16,7 @@ from copy                      import deepcopy
 from xpy.outils                import xformat,xboutons
 
 OPTIONS_CTRL = ('name', 'label', 'ctrlAction', 'btnLabel', 'btnImage','btnAction', 'value', 'labels', 'values', 'enable',
-                'genre', 'help','ctrlSize','txtSize', 'btnHelp','boxMaxSize','boxMinSize','boxSize','ctrl')
+                'genre', 'help','ctrlSize','ctrlMinSize','ctrlMaxSize','txtSize', 'btnHelp','boxMaxSize','boxMinSize','boxSize','ctrl')
 # les Binds de ctrl se posent dans le pannel
 OPTIONS_PANEL = ('pos','style','name', 'size')
 
@@ -93,7 +93,7 @@ def Transpose(matrice,dlColonnes,lddDonnees):
 
 def Normalise(genre, name, label, value):
     #gestion des approximations de cohérence
-    genre = genre.lower()
+    if genre: genre = genre.lower()
     if not name : name = 'noname'
     if not isinstance(name,str): name = str(name)
     if not label: label = name
@@ -389,20 +389,30 @@ class PNL_ctrl(wx.Panel):
             kwds['size'] = kwds['ctrlSize']
         kw = DicFiltre(kwds,OPTIONS_PANEL )
         wx.Panel.__init__(self,parent,*args, **kw)
-        genre = genre.lower()
+        if genre: genre = genre.lower()
         self.value = value
         self.name = name
         self.SetOneSet = self.Set
+        if hasattr(parent,'lanceur'):
+            self.lanceur = parent.lanceur
+        else: self.lanceur = parent
 
         if btnLabel or btnImage :
             self.avecBouton = True
         else: self.avecBouton = False
         lg = max(txtSize,int(len(label)*5.5))
-        if label and len(label)>0:
+        if label and len(label.strip())>0:
             self.txt = wx.StaticText(self, wx.ID_ANY, label + " :")
-            self.txt.MinSize = (lg, 25)
-        else: self.txt = wx.StaticText(self, wx.ID_ANY,  "")
-        self.SetMaxSize((400,35))
+        else:
+            self.txt = wx.StaticText(self, wx.ID_ANY, label)
+        self.txt.SetMinSize((lg, 25))
+        maxSize = kwds.pop('ctrlMaxSize',(300,50))
+        self.SetMaxSize(maxSize)
+        """
+        minSize = (-1,-1)
+        if 'ctrlMinSize' in kwds:
+            minSize = kwds.pop('ctrlMinSize',(-1,-1))
+        self.SetMinSize(minSize)"""
 
         # seul le PropertyGrid gère le multichoices, pas le comboBox
         if genre == 'multichoice': genre = 'combo'
@@ -423,17 +433,26 @@ class PNL_ctrl(wx.Panel):
                 self.ctrl = wx.ComboBox(self, wx.ID_ANY,style = style)
                 if labels:
                     commande = 'Set in combo'
+                    for label in labels:
+                        if not isinstance(label,str):
+                            ix = labels.index(label)
+                            labels[ix] = str(label)
                     self.ctrl.Set(labels)
                     if isinstance(lvalue,list): lvalue=lvalue[0]
                     if isinstance(lvalue,int): lvalue=labels[lvalue]
                     self.ctrl.SetValue(lvalue)
                 else: lvalue = None
-
             elif lgenre in ['bool', 'check']:
                 self.ctrl = wx.CheckBox(self, wx.ID_ANY)
                 self.UseCheckbox = 1
             elif lgenre == 'anyctrl':
-                self.ctrl = ctrl(self)
+                if isinstance(ctrl,str):
+                    action = "self.lanceur.%s()"%ctrl
+                    self.ctrl = eval(action)
+                else:
+                    self.ctrl = ctrl(self)
+            elif not lgenre:
+                self.ctrl = (10,10)
             else:
                 style = wx.TE_PROCESS_ENTER
                 if lname:
@@ -463,16 +482,14 @@ class PNL_ctrl(wx.Panel):
                 self.btn = xboutons.Bouton(self,label=btnLabel, image=wx.ART_GO_DIR_UP,onBtn=onBtn)
             elif self.avecBouton:
                 self.btn = xboutons.Bouton(self,label=btnLabel, image=btnImage,help=btnHelp)
-            self.BoxSizer()
+            self.PnlSizer()
         except Exception as err:
-            wx.MessageBox(
-                "Echec sur PNL_ctrl de:\ngenre: %s\nname: %s\nvalue: %s (%s)\n\n"
-                +"Le retour d'erreur est : \n%s\n\nSur commande : %s"
-                % (lgenre, name, value, type(value), err, commande),
-                'PNL_ctrl.__init__() : Paramètre de ligne indigeste !', wx.OK | wx.ICON_STOP
+            mess = "Echec sur PNL_ctrl de:\ngenre: %s\nname: %s\nvalue: %s (%s)\n\n"%(lgenre, name, value, type(value))
+            mess += "Le retour d'erreur est : \n%s\n\nSur commande : %s"%(err, commande)
+            wx.MessageBox( mess, 'PNL_ctrl.__init__() : Paramètre de ligne indigeste !', wx.OK | wx.ICON_STOP
             )
 
-    def BoxSizer(self):
+    def PnlSizer(self):
         topbox = wx.BoxSizer(wx.HORIZONTAL)
         topbox.Add(self.txt,0, wx.LEFT|wx.TOP|wx.ALIGN_TOP, 5)
         topbox.Add(self.ctrl, 1, wx.ALL|wx.EXPAND , 4)
@@ -668,6 +685,9 @@ class BoxPanel(wx.Panel):
         if minSize: self.SetMinSize(minSize)
         self.kwds = kwds
         self.parent = parent
+        if hasattr(parent,'lanceur'):
+            self.lanceur = parent.lanceur
+        else: self.lanceur = parent
         self.code = code
         self.lstPanels=[]
         self.dictDonnees = dictDonnees
@@ -686,11 +706,11 @@ class BoxPanel(wx.Panel):
                     kwdLigne[nom] = valeur
                 else:
                     possibles = "Liste des possibles: %s"%str(OPTIONS_CTRL)
-                    wx.MessageBox("BoxPanel: L'options '%s' de la ligne %s n'est pas reconnue!\n\n%s"%(nom,
+                    wx.MessageBox("BoxPanel: L'option '%s' de la ligne '%s' n'est pas reconnue!\n\n%s"%(nom,
                                                                                         ligne['name'],possibles))
-            if 'genre' in ligne:
+            if ('genre' in ligne):
                 panel = PNL_ctrl(self, **kwdLigne)
-                if ligne['genre'].lower() in ['bool', 'check']:
+                if ligne['genre'] and ligne['genre'].lower() in ['bool', 'check']:
                     self.UseCheckbox = 1
                 if panel:
                     for cle in ('name', 'label', 'ctrlAction', 'btnLabel', 'btnAction',
@@ -699,28 +719,31 @@ class BoxPanel(wx.Panel):
                             ligne[cle]=None
                     self.ssbox.Add(panel,1,wx.EXPAND, wx.ALL,0)
                     codename = self.code + '.' + ligne['name']
-                    panel.ctrl.genreCtrl = ligne['genre'].lower()
-                    panel.ctrl.nameCtrl = codename
-                    panel.ctrl.labelCtrl = ligne['label']
-                    panel.ctrl.actionCtrl = ligne['ctrlAction']
-                    panel.ctrl.valueCtrl = ligne['value']
-                    panel.ctrl.valOrigine = ligne['value']
-                    panel.ctrl.valuesCtrl = ligne['values']
-                    panel.ctrl.labelsCtrl = ligne['labels']
-                    if ligne['enable'] == False:
-                        panel.ctrl.Enable(False)
-                        panel.txt.Enable(False)
-                    if panel.avecBouton and ligne['genre'].lower()[:3] != 'dir' :
-                        panel.btn.nameBtn = codename
-                        panel.btn.labelBtn = ligne['btnLabel']
-                        panel.btn.actionBtn = ligne['btnAction']
-                        panel.btn.Bind(wx.EVT_BUTTON,self.parent.OnBtnAction)
-                    if panel.ctrl.actionCtrl:
-                        panel.ctrl.Bind(wx.EVT_TEXT_ENTER, self.parent.OnCtrlAction)
-                        panel.ctrl.Bind(wx.EVT_KILL_FOCUS, self.parent.OnCtrlAction)
-                        if panel.ctrl.genreCtrl in ['enum','combo','multichoice','choice']:
-                            panel.ctrl.Bind(wx.EVT_COMBOBOX,self.parent.OnCtrlAction)
-                            panel.ctrl.Bind(wx.EVT_CHECKBOX, self.parent.OnCtrlAction)
+                    if ligne['genre']:
+                        panel.ctrl.genreCtrl = ligne['genre'].lower()
+                        panel.ctrl.nameCtrl = codename
+                        panel.ctrl.labelCtrl = ligne['label']
+                        panel.ctrl.actionCtrl = ligne['ctrlAction']
+                        panel.ctrl.valueCtrl = ligne['value']
+                        panel.ctrl.valOrigine = ligne['value']
+                        panel.ctrl.valuesCtrl = ligne['values']
+                        panel.ctrl.labelsCtrl = ligne['labels']
+                        if ligne['enable'] == False:
+                            panel.ctrl.Enable(False)
+                            panel.txt.Enable(False)
+                        if panel.avecBouton and ligne['genre'].lower()[:3] != 'dir' :
+                            panel.btn.nameBtn = codename
+                            panel.btn.labelBtn = ligne['btnLabel']
+                            panel.btn.actionBtn = ligne['btnAction']
+                            panel.btn.Bind(wx.EVT_BUTTON,self.parent.OnBtnAction)
+                        if panel.ctrl.actionCtrl:
+                            panel.ctrl.Bind(wx.EVT_TEXT_ENTER, self.parent.OnCtrlAction)
+                            panel.ctrl.Bind(wx.EVT_KILL_FOCUS, self.parent.OnCtrlAction)
+                            if panel.ctrl.genreCtrl in ['anyctrl']:
+                                panel.ctrl.Bind(wx.EVT_BUTTON,self.parent.OnCtrlAction)
+                            if panel.ctrl.genreCtrl in ['enum','combo','multichoice','choice']:
+                                panel.ctrl.Bind(wx.EVT_COMBOBOX,self.parent.OnCtrlAction)
+                                panel.ctrl.Bind(wx.EVT_CHECKBOX, self.parent.OnCtrlAction)
 
                     self.lstPanels.append(panel)
         self.SetSizer(self.ssbox)
@@ -795,8 +818,12 @@ class TopBoxPanel(wx.Panel):
         wx.Panel.__init__(self,parent,*args, **kw)
 
         lblTopBox = kwds.pop('lblTopBox',None)
-
+        lblBox = kwds.pop('lblBox',True)
+        boxesSizes = kwds.pop('boxesSizes',None)
         self.parent = parent
+        if hasattr(parent,'lanceur'):
+            self.lanceur = parent.lanceur
+        else: self.lanceur = parent
         self.matrice = matrice.copy()
 
         # cas ou on limite les champs à éditer la matrice est réduite
@@ -823,18 +850,27 @@ class TopBoxPanel(wx.Panel):
                 possibles = "Liste des possibles: %s" % str(OPTIONS_CTRL + OPTIONS_PANEL)
                 wx.MessageBox("TopBox: L'option '%s' pour la topbox n'est pas reconnue!\n\n%s" % (nom, possibles))
 
+        # Composition des box verticales dans le top box
         self.lstBoxes = []
+        ixBox = 0
+        width = 1
         for code, label in self.matrice:
             if isinstance(code,str):
                 if not code in self.ddDonnees:
                      self.ddDonnees[code] = {}
-                box = BoxPanel(self, wx.ID_ANY, lblBox=label,
+                titre = label
+                if not lblBox: titre = False
+                if boxesSizes and len(boxesSizes) > ixBox:
+                    kwdBox['boxSize'] = boxesSizes[ixBox]
+                    width = boxesSizes[ixBox][0]
+                box = BoxPanel(self, wx.ID_ANY, lblBox= titre,
                                code = code,
                                lignes=self.matrice[(code,label)],
                                dictDonnees=self.ddDonnees[code],
                                **kwdBox)
                 self.lstBoxes.append(box)
-                self.topbox.Add(box, 1, wx.EXPAND|wx.ALL,3)
+                self.topbox.Add(box, width, wx.EXPAND|wx.ALL,3)
+                ixBox +=1
 
         self.SetSizer(self.topbox)
 
@@ -1195,7 +1231,9 @@ class DLG_vide(wx.Dialog):
         if self.parent and hasattr(self.parent, 'OnChildCtrlAction'):
             self.parent.OnChildCtrlAction(event)
         else:
-            action = 'self.%s(event)' % event.EventObject.actionCtrl
+            if hasattr(event.EventObject,'actionCtrl'):
+                action = 'self.%s(event)' % event.EventObject.actionCtrl
+            else: action = 'self.%s(event)' % event.EventObject.Parent.actionCtrl
             eval(action)
 
 #************************   Pour Test ou modèle  *********************************

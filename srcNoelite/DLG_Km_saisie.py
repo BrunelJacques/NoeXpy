@@ -217,7 +217,7 @@ class PNL_params(xgc.PNL_paramsLocaux):
                 'nomfichier':"params",
                 'nomgroupe':"saisieKM"
                 }
-        kwds['matrice'][("filtres","Filtre des données")][0]['values'] = nunoegest.GetClotures()
+        kwds['matrice'][("filtres","Filtre des données")][0]['values'] = nunoegest.GetClotures(tip="ansi")
         kwds['matrice'][("filtres","Filtre des données")][1]['values'] = nunoegest.GetDatesFactKm()
         super().__init__(parent, **kwds)
         self.Init()

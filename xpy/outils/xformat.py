@@ -225,15 +225,35 @@ def DateSqlToDatetime(dateiso):
         return datetime.date(int(dateiso[:4]),int(dateiso[5:7]),int(dateiso[8:10]))
 
 def DateToDatetime(date):
-    # FmtDate normalise en Iso puis retourne en datetime
-    return DateSqlToDatetime(FmtDate(date))
+    # FmtDate normalise en FR puis retourne en datetime
+    return DateFrToDatetime(FmtDate(date))
 
-def DateSqlToFr(dateiso):
-    # Conversion de date récupérée de requête SQL aaaa-mm-jj en jj/mm/aaaa
-    if not isinstance(dateiso, str) : dateiso = str(dateiso)
-    if len(dateiso) < 10: return None
-    dateiso = dateiso.strip()
-    return '%s/%s/%s'%(dateiso[8:10],dateiso[5:7],dateiso[:4])
+def DateSqlToFr(date):
+    # Conversion de date récupérée de requête SQL  en jj/mm/aaaa
+    date = DateSqlToIso(date)
+    if len(date) < 10: return ""
+    return '%s/%s/%s'%(date[8:10],date[5:7],date[:4])
+
+def DateSqlToIso(date):
+    # Conversion de date récupérée de requête SQL en aaaa-mm-jj
+    if date == None : return ""
+    if not isinstance(date, str) : date = str(date)
+    date = date.strip()
+    if date == "" : return ""
+    if len(date) == 8:
+        an,mois,jour = date[:4],date[4:6],date[6:8]
+        return '%s-%s-%s'%(an,mois,jour)
+    lsplit = date.split('-')
+    if len(lsplit) == 3 :
+        an,mois,jour = lsplit[0],lsplit[1],lsplit[2]
+    lsplit = date.split('/')
+    if len(lsplit) == 3 :
+        jour,mois,an = lsplit[0],lsplit[1],lsplit[2]
+    if len(an) == 2:
+        mil = 20
+        if int(an)>50: mil = 19
+        an = mil + an
+    return '%s-%s-%s'%(an,mois,jour)
 
 def DateFrToSql(datefr):
     if not datefr: return ''
@@ -267,7 +287,7 @@ def DateFrToDatetime(datefr):
     elif isinstance(datefr,datetime.date):
         return datefr
     elif isinstance(datefr,str) and len(datefr) >= 10:
-        return datetime.date(int(datefr[:4]),int(datefr[5:7]),int(datefr[8:10]))
+        return datetime.date(int(datefr[6:10]),int(datefr[3:5]),int(datefr[:2]))
 
 def WxDateToStr(dte,iso=False):
     # Conversion wx.datetime en chaîne

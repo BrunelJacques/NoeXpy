@@ -288,7 +288,7 @@ DB_TABLES = {
                 ('origine', 'VARCHAR(8)', "repas; achat; od; campExt; retour"),
                 ('article', 'VARCHAR(32)', "clé dans gstArticles"),
                 ('qte', 'INTEGER', "Quantitée mouvementée signée"),
-                ('prixUnit', 'FLOAT', "Prix moyen pour sorties et retour, actuel pour achats"),
+                ('prixUnit', 'FLOAT', "Prix moyen pour sorties et retour, Prix revient pour achats"),
                 ('analytique', 'VARCHAR(8)', "Section analytique du camp à facturer"),
                 ('ordi', 'VARCHAR(16)', "Nom de l'ordi utilisé pour l'entrée ou la modif"),
                 ('dateSaisie', 'DATE', "Date de l'entrée ou la modif"),
@@ -296,6 +296,7 @@ DB_TABLES = {
 
     'stInventaires':[
                 ('date', 'DATE', "PK Date de l'inventaire copie des stocks"),
+                ('stock', ' VARCHAR(8)', "PK Date de l'inventaire copie des stocks"),
                 ('article', 'VARCHAR(32)', "PK Désignation du produit"),
                 ('qteStock', 'INTEGER', "Qté reportée"),
                 ('qteConstat', 'INTEGER', "Qté constatée"),

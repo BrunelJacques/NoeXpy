@@ -3,8 +3,7 @@
 #------------------------------------------------------------------------
 # Application :    NoeLITE, gestion des Reglements en lot
 # Usage : Ensemble de fonctions acompagnant DLG_Reglements_gestion
-# Auteur:          Jacques BRUNEL
-# Copyright:       (c) 2020-04   Matthania
+# Auteur:          Jacques BRUNEL 2020-04 Matthania
 # Licence:         Licence GNU GPL
 #------------------------------------------------------------------------
 

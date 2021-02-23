@@ -637,7 +637,7 @@ class DLG_saisieUneConfig(xusp.DLG_vide):
 class PNL_paramsLocaux(xusp.TopBoxPanel):
     def __init__(self, parent, *args, **kwds):
         kwdsTopBox = {}
-        for key in ('pos','size','style','name','matrice','donnees','lblTopBox'):
+        for key in ('pos','size','style','name','matrice','donnees','lblTopBox','lblBox'):
             if key in kwds.keys(): kwdsTopBox[key] = kwds[key]
         super().__init__(parent, *args, **kwdsTopBox)
         self.pathData = kwds.pop('pathdata',"")

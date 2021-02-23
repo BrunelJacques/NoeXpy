@@ -10,6 +10,7 @@
 
 import wx
 from xpy import xUTILS_Identification, xGestionConfig, xUTILS_DB
+from srcNoestock import DLG_Entrees
 
 """ Paramétrage de la construction de la barre de menus """
 class MENU():
@@ -159,7 +160,9 @@ class MENU():
     def On_sauve(self,event):
         pass
     def On_inStock(self,event):
-        pass
+        dlg = DLG_Entrees.Dialog()
+        ret = dlg.ShowModal()
+
     def On_outStock(self,event):
         pass
     def On_effectifs(self,event):

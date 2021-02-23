@@ -16,9 +16,9 @@ import xpy.xUTILS_DB                    as xdb
 from xpy.outils             import xformat, xchoixListe
 from srcNoelite.DB_schema   import DB_TABLES
 
-def GetClotures():
+def GetClotures(tip='date'):
     noegest = Noegest()
-    lClotures = [x for y,x in noegest.GetExercices()]
+    lClotures = [x for y,x in noegest.GetExercices(tip=tip)]
     del noegest
     return lClotures
 
@@ -543,7 +543,7 @@ class Noegest(object):
 
     # ------------------ fonctions diverses
 
-    def GetExercices(self, where='WHERE  actif = 1'):
+    def GetExercices(self, where='WHERE  actif = 1',tip='date'):
         if self.ltExercices: return self.ltExercices
         self.ltExercices = []
         lstChamps = ['date_debut', 'date_fin']
@@ -557,7 +557,14 @@ class Noegest(object):
             if len(recordset) == 0:
                 wx.MessageBox("Aucun exercice n'est paramétré")
             for debut, fin in recordset:
+                if tip.lower() in ('date', 'datetime'): debut, fin = xformat.DateSqlToDatetime(debut), \
+                                                                     xformat.DateSqlToDatetime(fin)
+                elif tip.lower() in ('str','iso','ansi'): debut,fin = xformat.DateSqlToIso(debut),\
+                                                                xformat.DateSqlToIso(fin)
+                elif tip.lower() == 'fr': debut,fin = xformat.DateSqlToFr(debut),\
+                                                      xformat.DateSqlToFr(fin)
                 self.ltExercices.append((debut, fin))
+
         return self.ltExercices
 
     def ChoixExercice(self):
