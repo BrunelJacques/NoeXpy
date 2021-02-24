@@ -12,7 +12,6 @@ import datetime
 import xpy.xGestion_TableauRecherche as xgtr
 from xpy.outils import xformat
 
-
 def ValideLigne(db,track):
     track.valide = True
     track.messageRefus = "Saisie incomplète\n\n"
@@ -56,4 +55,23 @@ def ValideLigne(db,track):
     return
 
 def GetFournisseurs(db):
+    # appel des composants d'une immo particulière
+    dlg = self.parent
+    req = """   
+            SELECT %s
+            FROM immosComposants
+            WHERE IDimmo = %s
+            ORDER BY dteAcquisition;
+            """ % (",".join(lstChamps), IDimmo)
+    lstDonnees = []
+    retour = self.db.ExecuterReq(req, mess='UTILS_Noegest.GetComposants')
+    if retour == "ok":
+        recordset = self.db.ResultatReq()
+        lstDonnees = [list(x) for x in recordset]
+    dlg.ctrlOlv.lstDonnees = lstDonnees
+    dlg.ctrlOlv.MAJ()
+    dlg.ctrlOlv._FormatAllRows()
+    return []
+
+def GetAnalytiques(db):
     return []

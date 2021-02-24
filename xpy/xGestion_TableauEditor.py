@@ -572,23 +572,13 @@ class PanelListView(wx.Panel):
             self.parent.InitTrackVierge(track,modelObject)
 
 # ----------- Composition de l'écran -------------------------------------------------------
-class PNL_params(wx.Panel):
-    #panel de paramètres de l'application
-    def __init__(self, parent, dicParams, **kwds):
-        self.lanceur = dicParams.pop('lanceur', None)
-        self.lstActions = dicParams.pop('lstActions', None)
-        self.lstInfos = dicParams.pop('lstInfos', None)
-        self.dicOnClick = dicParams.pop('dicOnClick', None)
-        wx.Panel.__init__(self, parent, **kwds)
+class PNL_params(xusp.TopBoxPanel):
+    def __init__(self, parent, *args, **kwds):
+        kwdsTopBox = {}
+        for key in ('pos','size','style','name','matrice','donnees','lblTopBox','lblBox'):
+            if key in kwds.keys(): kwdsTopBox[key] = kwds[key]
+        super().__init__(parent, *args, **kwdsTopBox)
         self.parent = parent
-        self.ctrl = xusp.CTRL_property(self, matrice=dicParams, enable=True)
-        self.Sizer()
-
-    def Sizer(self):
-        #composition de l'écran selon les composants
-        sizerparams = wx.BoxSizer(wx.HORIZONTAL)
-        sizerparams.Add(self.ctrl,1,wx.BOTTOM|wx.LEFT,3)
-        self.SetSizerAndFit(sizerparams)
 
 class PNL_corps(wx.Panel):
     #panel olv avec habillage optionnel pour recherche (en bas), boutons actions (à droite)
@@ -733,7 +723,7 @@ class DLG_tableau(xusp.DLG_vide):
     # minimum fonctionnel dans dialog tout est dans les trois pnl
     def __init__(self,parent,dicParams={},dicOlv={},dicPied={}, **kwds):
         super().__init__(parent,**kwds)
-        self.pnlParams = PNL_params(self, dicParams)
+        self.pnlParams = PNL_params(self, matrice=dicParams)
         self.pnlOlv = PNL_corps(self, dicOlv,  **kwds )
         self.ctrlOlv = self.pnlOlv.ctrlOlv
         self.pnlPied = PNL_pied(self, dicPied,  **kwds )
@@ -747,11 +737,10 @@ class DLG_tableau(xusp.DLG_vide):
         sizer_base.AddGrowableCol(0)
         sizer_base.AddGrowableRow(1)
         self.CenterOnScreen()
-        self.Layout()
+        #self.Layout()
         self.SetSizerAndFit(sizer_base)
 
 # ------------ Pour tests ------------------------------------------------------------------
-
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir('..')

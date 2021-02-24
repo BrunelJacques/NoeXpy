@@ -751,6 +751,7 @@ class BoxPanel(wx.Panel):
     # Get de tous les ctrl, mis dans un dictionnaire de données
     def GetValues(self):
         for panel in self.lstPanels:
+            if isinstance(panel.ctrl,(tuple,list)): continue
             [code, champ] = panel.ctrl.nameCtrl.split('.')
             self.dictDonnees[champ] = panel.GetValue()
         return self.dictDonnees
@@ -880,8 +881,8 @@ class TopBoxPanel(wx.Panel):
     def OnBtnAction(self,event):
         self.parent.OnChildBtnAction(event)
 
-    def GetLstValeurs(self,):
-        # récupère une liste à partir du ddDonnees
+    def GetLstValues(self,):
+        # récupère deux listes champs et données
         lstChamps, lstDonnees = [], []
         ddDonnees = self.GetValues()
         for code, label in self.matrice.keys():
@@ -891,13 +892,14 @@ class TopBoxPanel(wx.Panel):
         return lstChamps,lstDonnees
 
     def GetValues(self):
+        # récupère les données sous forme de dictionnaire
         ddDonnees = {}
         for box in self.lstBoxes:
             dic = box.GetValues()
             ddDonnees[box.code] = deepcopy(dic)
         return ddDonnees
 
-    def GetValeur(self,name=None,codeBox=None):
+    def GetOneValue(self,name=None,codeBox=None):
         valeur = None
         if codeBox :
             box = self.GetBox(codeBox)
@@ -909,7 +911,7 @@ class TopBoxPanel(wx.Panel):
                     valeur = ret
         return valeur
 
-    def SetLstValeurs(self,lstChamps,lstDonnees):
+    def SetLstValues(self,lstChamps,lstDonnees):
         # compose un dict pour SetValues
         ddDonnees = {}
         champs = [x.lower() for x in lstChamps]
@@ -1213,8 +1215,9 @@ class DLG_vide(wx.Dialog):
         else:
             self.Close()
 
-    def GetPnlCtrl(self,name,codebox=None):
-        return self.pnl.GetPnlCtrl(name,codebox)
+    def GetPnlCtrl(self,name,codebox=None,pnl=None):
+        if (not pnl): pnl = self.pnl
+        return pnl.GetPnlCtrl(name,codebox)
 
     # ------------------- Lancement des actions sur Bind -----------------------
 

@@ -296,7 +296,6 @@ DB_TABLES = {
 
     'stInventaires':[
                 ('date', 'DATE', "PK Date de l'inventaire copie des stocks"),
-                ('stock', ' VARCHAR(8)', "PK Date de l'inventaire copie des stocks"),
                 ('article', 'VARCHAR(32)', "PK Désignation du produit"),
                 ('qteStock', 'INTEGER', "Qté reportée"),
                 ('qteConstat', 'INTEGER', "Qté constatée"),

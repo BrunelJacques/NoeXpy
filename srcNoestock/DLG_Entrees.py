@@ -71,7 +71,7 @@ MATRICE_PARAMS = {
                     'txtSize': 90},
     {'name': 'date', 'genre': 'Texte', 'label': "Date d'entrée",
                     'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
-                                          "Les séparateurs ne sont pas obligatoires.",
+                                          "Les séparateurs ne sont pas obligatoires en saisie.",
                                           "Saisissez la date de l'entrée en stock sans séparateurs, "),
                     'value':xformat.DatetimeToStr(datetime.date.today()),
                     'ctrlAction': 'OnDate',
@@ -88,21 +88,22 @@ MATRICE_PARAMS = {
                     'size':(250,30),
                     'txtSize': 70,
      },
-    {'name': 'destinataire', 'genre': 'Choice', 'label': 'Activité',
-                    'ctrlAction':'OnDestinataire',
+    {'name': 'analytique', 'genre': 'Choice', 'label': 'Activité',
+                    'ctrlAction':'OnAnalytique',
                     'help': "Il s'agit de la destination de la marchandise imputé à son débit",
                     'value':'','values':[''],
                     'btnLabel': "...", 'btnHelp': "Cliquez pour choisi un compte de destination",
-                    'btnAction': 'OnBtnDestinataire',
+                    'btnAction': 'OnBtnAnalytique',
                     'size':(250,30),
                     'txtSize': 70,}
 ],
 ("param3", "saisie"): [
     {'name': 'ht_ttc', 'genre': 'Choice', 'label': 'Saisie',
-                     'help': "Choix du mode de saisie HT ou TTC selon le plus facile pour vous",
-                     'value': 0, 'values': ['TTC', 'HT'],
-                     'txtSize': 40,
-                     'ctrlMaxSize': (130,30),
+                    'help': "Choix du mode de saisie HT ou TTC selon le plus facile pour vous",
+                    'value': 0, 'values': ['TTC', 'HT'],
+                    'ctrlAction': 'OnHt_ttc',
+                    'txtSize': 40,
+                    'ctrlMaxSize': (130,30),
                      },
     {'name': 'vide','genre':None,}
     ],
@@ -145,15 +146,15 @@ def GetOlvColonnes(dlg):
             ColumnDefn("Article", 'left', 200, 'article', valueSetter="",isSpaceFilling=True),
             ColumnDefn("Quantité", 'right', 110, 'qte', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal),
-            ColumnDefn("Pr.Unit.", 'right', 110, 'prixUnit', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Prix Unit.", 'right', 110, 'prixUnit', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal),
-            ColumnDefn("MttHT", 'right', 110, 'mttHT', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Mtt HT", 'right', 110, 'mttHT', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("MttTTC", 'right', 110, 'mttTTC', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Mtt TTC", 'right', 110, 'mttTTC', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Qté stock", 'right', 110, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Rations", 'right', 110, 'rations', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Nbre Rations", 'right', 110, 'rations', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
             ]
 
@@ -184,7 +185,7 @@ def GetDlgOptions(dlg):
 
     #----------------------- Parties de l'écrans -----------------------------------------
 
-class PNL_params(xgc.PNL_paramsLocaux):
+class PNL_params(xgte.PNL_params):
     #panel de paramètres de l'application
     def __init__(self, parent, **kwds):
         self.parent = parent
@@ -194,8 +195,6 @@ class PNL_params(xgc.PNL_paramsLocaux):
         if hasattr(parent,'lanceur'):
             self.lanceur = parent.lanceur
         else: self.lanceur = parent
-
-        self.Init()
 
 class PNL_corpsReglements(xgte.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
@@ -305,45 +304,14 @@ class DLG(xusp.DLG_vide):
     def Init(self):
         self.db = xdb.DB()
         # définition de l'OLV
-        self.choicesDiffere = self.dicOlv.pop('choicesDiffere',[])
-        #self.SetSize(size)
-        self.depotOrigine = []
         self.ctrlOlv = None
-        self.withDepot = True
         # récup des modesReglements nécessaires pour passer du texte à un ID d'un mode ayant un mot en commun
         choicesMode = []
-        self.libelleDefaut = ''
         for colonne in self.dicOlv['lstColonnes']:
             if 'mode' in colonne.valueGetter:
                 choicesMode = colonne.choices
             if 'libelle' in colonne.valueGetter:
                 self.libelleDefaut = colonne.valueSetter
-
-                
-        # appel de modes des fournisseurs
-        self.ddModesRegl = nus.GetFournisseurs(self.db)
-        if self.ddModesRegl == wx.ID_ABORT:
-            return wx.ID_ABORT
-
-        # constitution d'un dictionnaire de modes de règlements possibles par choices de mode (vrt chq esp)
-        self.dicModesChoices = {}
-        for item in choicesMode + self.choicesDiffere:
-            # les descriptifs de modes de règlements ne doivent pas avoir des mots en commun
-            lstMots = item.split(' ')
-            self.dicModesChoices[item]={'lstMots':lstMots}
-            ok = False
-            for IDmode, dicMode in self.ddModesRegl.items():
-                # pour un mot dans les choices
-                for mot in lstMots:
-                    # présent dans le label d'un mode de règlement
-                    if mot.lower() in dicMode['label'].lower():
-                        self.dicModesChoices[item].update(dicMode)
-                        dicMode['choice'] = item
-                        ok = True
-                        break
-                if ok: break
-            if not ok:
-                wx.MessageBox("Problème mode de règlement\n\n'%s' n'a aucun mot commun avec un mode de règlement paramétré!"%item)
 
 
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
@@ -358,7 +326,10 @@ class DLG(xusp.DLG_vide):
         self.pnlPied = PNL_pied(self, dicPied)
         self.ctrlOlv = self.pnlOlv.ctrlOlv
 
-        # la grille est modifiée selon la coche sans dépôt
+        # charger les bons params
+        self.OnOrigine(None)
+        self.OnHt_ttc(None)
+
         self.Bind(wx.EVT_CLOSE,self.OnClose)
         self.Sizer()
 
@@ -391,35 +362,52 @@ class DLG(xusp.DLG_vide):
         self.Refresh()
 
     def OnOrigine(self,event):
-        origine = self.GetPnlCtrl('origine')
+        pnl = self.pnlParams
+        pnlOrigine = pnl.GetPnlCtrl('origine',codebox='param1')
+        origine = pnlOrigine.GetValue()
+
+        def setEnable(namePnlCtrl,flag):
+            pnlCtrl =  pnl.GetPnlCtrl(namePnlCtrl,codebox='param2')
+            pnlCtrl.txt.Enable(flag)
+            pnlCtrl.ctrl.Enable(flag)
+            pnlCtrl.btn.Enable(flag)
+
         #'achat livraison', 'retour camp', 'od autre'
-        dicLib = {'acha':'Fournisseur', 'reto':'Code Camp', 'od a':'Code Comptable'}
-        if origine[:4] == "acha":
-            pass
-
-
+        if origine[:5] == 'achat':
+            setEnable('fournisseur',True)
+            setEnable('analytique',False)
+        elif origine[:5] == 'retou':
+            setEnable('fournisseur',False)
+            setEnable('analytique',True)
+        elif origine[:5] == 'od au':
+            setEnable('fournisseur',False)
+            setEnable('analytique',False)
+        pnl.Refresh()
+        if event: event.Skip()
 
     def OnDate(self,event):
-        self.InitOlv()
+        saisie = self.pnlParams.GetOneValue('date',codeBox='param1')
+        saisie = xformat.FmtDate(saisie)
+        self.pnlParams.SetOneValue('date',valeur=saisie,codeBox='param1')
+        self.date = xformat.DateFrToSql(saisie)
+        if event: event.Skip()
+
+    def OnHt_ttc(self,event):
+        self.ht_ttc = self.pnlParams.GetOneValue('ht_ttc',codeBox='param3')
+        if event: event.Skip()
+
     def OnFournisseur(self,event):
-        self.InitOlv()
+        if event: event.Skip()
     def OnBtnFournisseur(self,event):
+        if event: event.Skip()
+    def OnAnalytique(self,event):
         self.InitOlv()
-    def OnDestinataire(self,event):
+    def OnBtnAnalytique(self,event):
         self.InitOlv()
-    def OnBtnDestinataire(self,event):
-        self.InitOlv()
+
     def OnBtnRappel(self,event):
         print(wx.Bell())
         self.InitOlv()
-
-    def OnRaz(self,event):
-        # effacement des lignes sur l'écran
-        self.pnlParams.ctrlRef.SetValue('')
-        self.ctrlOlv.lstDonnees = []
-        self.ctrlOlv.MAJ()
-        self.pnlPied.SetItemsInfos(INFO_OLV, wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
-        self.pnlOlv.Refresh()
 
     def OnImprimer(self,event):
         # test de présence d'écritures non valides

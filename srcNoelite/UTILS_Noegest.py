@@ -100,7 +100,7 @@ class Noegest(object):
 
     def SetEnsemble(self,IDimmo,pnlParams):
         # Enregistrement dans la base de l'ensemble
-        lstChampsP, lstDonneesP = pnlParams.GetLstValeurs()
+        lstChampsP, lstDonneesP = pnlParams.GetLstValues()
         lstDonnees = [(lstChampsP[x],lstDonneesP[x]) for x in range(len(lstChampsP))]
         if IDimmo:
             ret = self.db.ReqMAJ('immobilisations',lstDonnees[:-1],'IDimmo',IDimmo,mess='UTILS_Noegest.SetEnsemble_maj')
@@ -147,7 +147,7 @@ class Noegest(object):
             recordset = self.db.ResultatReq()
             if len(recordset) > 0:
                 lstDonnees = list(recordset[0])
-                pnlParams.SetLstValeurs(lstChamps,lstDonnees)
+                pnlParams.SetLstValues(lstChamps,lstDonnees)
         return
 
     def GetComposants(self,IDimmo, lstChamps):
