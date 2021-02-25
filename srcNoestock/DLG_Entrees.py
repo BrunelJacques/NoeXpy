@@ -90,9 +90,9 @@ MATRICE_PARAMS = {
      },
     {'name': 'analytique', 'genre': 'Choice', 'label': 'Activité',
                     'ctrlAction':'OnAnalytique',
-                    'help': "Il s'agit de la destination de la marchandise imputé à son débit",
+                    'help': "Il s'agit de l'activité qui a endossé la charge de la sortie",
                     'value':'','values':[''],
-                    'btnLabel': "...", 'btnHelp': "Cliquez pour choisi un compte de destination",
+                    'btnLabel': "...", 'btnHelp': "Cliquez pour choisir l'activité de destination des mouvements",
                     'btnAction': 'OnBtnAnalytique',
                     'size':(250,30),
                     'txtSize': 70,}
@@ -306,7 +306,6 @@ class DLG(xusp.DLG_vide):
         # définition de l'OLV
         self.ctrlOlv = None
         # récup des modesReglements nécessaires pour passer du texte à un ID d'un mode ayant un mot en commun
-        choicesMode = []
         for colonne in self.dicOlv['lstColonnes']:
             if 'mode' in colonne.valueGetter:
                 choicesMode = colonne.choices
@@ -326,7 +325,11 @@ class DLG(xusp.DLG_vide):
         self.pnlPied = PNL_pied(self, dicPied)
         self.ctrlOlv = self.pnlOlv.ctrlOlv
 
-        # charger les bons params
+        # charger les valeurs de pnl_params
+        self.pnlParams.SetOneSet('fournisseur',values=nus.GetFournisseurs(self.db),codeBox='param2')
+        self.lstAnalytiques = nus.GetAnalytiques(self.db,'ACTIVITES')
+        valuesAnalytique = ["%s %s"%(x[0],x[1]) for x in self.lstAnalytiques]
+        self.pnlParams.SetOneSet('analytique',values=valuesAnalytique,codeBox='param2')
         self.OnOrigine(None)
         self.OnHt_ttc(None)
 

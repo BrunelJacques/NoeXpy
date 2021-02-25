@@ -55,23 +55,32 @@ def ValideLigne(db,track):
     return
 
 def GetFournisseurs(db):
-    # appel des composants d'une immo particulière
-    dlg = self.parent
+    # appel des noms de fournisseurs déjà utilisés par le passé
     req = """   
-            SELECT %s
-            FROM immosComposants
-            WHERE IDimmo = %s
-            ORDER BY dteAcquisition;
-            """ % (",".join(lstChamps), IDimmo)
+            SELECT stMouvements.fournisseur
+            FROM stMouvements
+            GROUP BY stMouvements.fournisseur
+            ORDER BY stMouvements.fournisseur;
+            """
     lstDonnees = []
-    retour = self.db.ExecuterReq(req, mess='UTILS_Noegest.GetComposants')
+    retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetFournisseurs')
     if retour == "ok":
-        recordset = self.db.ResultatReq()
+        recordset = db.ResultatReq()
         lstDonnees = [list(x) for x in recordset]
-    dlg.ctrlOlv.lstDonnees = lstDonnees
-    dlg.ctrlOlv.MAJ()
-    dlg.ctrlOlv._FormatAllRows()
-    return []
+    return lstDonnees
 
-def GetAnalytiques(db):
-    return []
+def GetAnalytiques(db,axe="%%"):
+    # appel des items Analytiques de l'axe précisé
+    req = """   
+            SELECT cpta_analytiques.IDanalytique, cpta_analytiques.abrege, cpta_analytiques.nom
+            FROM cpta_analytiques
+            WHERE (((cpta_analytiques.axe) Like '%s'))
+            GROUP BY cpta_analytiques.IDanalytique, cpta_analytiques.abrege, cpta_analytiques.nom
+            ORDER BY cpta_analytiques.abrege;
+            """%axe
+    lstDonnees = []
+    retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetFournisseurs')
+    if retour == "ok":
+        recordset = db.ResultatReq()
+        lstDonnees = [list(x) for x in recordset]
+    return lstDonnees

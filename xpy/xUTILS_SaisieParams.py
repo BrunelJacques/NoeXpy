@@ -940,7 +940,20 @@ class TopBoxPanel(wx.Panel):
                 ret = box.GetOneValue(name)
                 if ret != 'ko':
                     box.SetOneValue(name,valeur)
-        return valeur
+        return
+
+    def SetOneSet(self,name = '', values=None,codeBox=None):
+        if codeBox :
+            box = self.GetBox(codeBox)
+            box.SetOneSet(name,values)
+        else:
+            # balayage des boxes
+            for box in self.lstBoxes:
+                # test la présence du ctrl dans la box
+                ret = box.GetOneValue(name)
+                if ret != 'ko':
+                    box.SetOneSet(name,values)
+        return
 
     def GetBox(self,codeBox):
         # utile pour lui adresser les méthodes ex: box.SetOneValue()
