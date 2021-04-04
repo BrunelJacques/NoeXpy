@@ -590,8 +590,8 @@ class PNL_corps(wx.Panel):
         self.parent = parent
         # récupére les éventuels boutons d'actions
         if getActions:
-            self.lstActions = getActions(self)
-        else: self.lstActions = None
+            self.lstBtnActions = getActions(self)
+        else: self.lstBtnActions = None
 
         # init du super()
         wx.Panel.__init__(self, parent, *args,  **kwds)
@@ -656,9 +656,9 @@ class PNL_corps(wx.Panel):
             sizercorps.Add(self.ctrlOutils, 0, wx.EXPAND, 10)
         sizerbase.Add(sizercorps, 10, wx.EXPAND, 10)
         # ajout des boutons d'actions
-        if self.lstActions:
+        if self.lstBtnActions:
             sizeractions = wx.BoxSizer(wx.VERTICAL)
-            sizeractions.AddMany(xboutons.GetAddManyBtns(self,self.lstActions))
+            sizeractions.AddMany(xboutons.GetAddManyBtns(self,self.lstBtnActions))
             sizerbase.Add(sizeractions, 0, wx.TOP, 10)
         self.SetSizerAndFit(sizerbase)
 

@@ -54,7 +54,7 @@ def ValideLigne(db,track):
     else: track.messageRefus = ""
     return
 
-def GetFournisseurs(db):
+def GetFournisseurs(db=None,**kwd):
     # appel des noms de fournisseurs déjà utilisés par le passé
     req = """   
             SELECT stMouvements.fournisseur

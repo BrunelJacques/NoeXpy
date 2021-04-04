@@ -192,6 +192,7 @@ class Noegest(object):
     # ---------------- appels des codes analytiques
 
     def GetMatriceAnalytiques(self,axe,lstChamps,lstNomsCol,lstTypes,getDonnees):
+        # Composition d'un dic matrice permettant de gérer un écran de saisie analytique
         dicBandeau = {'titre': "Choix d'un code analytique: %s"%str(axe),
                       'texte': "les mots clés du champ en bas permettent de filtrer les lignes et d'affiner la recherche",
                       'hauteur': 15, 'nomImage': "xpy/Images/32x32/Matth.png"}
@@ -248,14 +249,16 @@ class Noegest(object):
         if (mode.lower() in ('auto')): return dicAnalytique
         if dicAnalytique and mode.lower() == 'normal':  return dicAnalytique
 
-        # le filtre semble trop sélectif pour un f4 on le supprime
+        # le filtre semble trop peu sélectif pour un f4 on le supprime
         if nb < 2: filtre = None
         # un item unique n'a pas été trouvé on affiche les choix possibles
         getDonnees = getAnalytiques
         dicOlv = self.GetMatriceAnalytiques(axe,lstChamps,lstNomsCol,lstTypes,getDonnees)
         dicOlv['size'] = (500,600)
+
+        # appel dee l'écran de saisie
         dlg = xgtr.DLG_tableau(self,dicOlv=dicOlv, db=self.db)
-        barreRecherche = None
+
         if dlg.ctrlOlv.Parent.ctrlOutils:
             barreRecherche = dlg.ctrlOlv.Parent.ctrlOutils.barreRecherche
         else:

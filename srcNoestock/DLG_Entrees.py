@@ -10,7 +10,8 @@
 import wx
 import os
 import datetime
-import srcNoestock.UTILS_Stocks        as nus
+import srcNoestock.UTILS_Stocks        as nustocks
+import srcNoelite.UTILS_Noegest        as nunoegest
 import xpy.xGestion_TableauEditor      as xgte
 import xpy.xUTILS_DB                   as xdb
 from srcNoelite.DB_schema       import DB_TABLES
@@ -107,7 +108,6 @@ MATRICE_PARAMS = {
                      },
     {'name': 'vide','genre':None,}
     ],
-
 ("param4", "Compléments"): [
     {'name': 'rappel', 'genre': 'anyctrl','label': ' ',
                      'txtSize': 20,
@@ -134,14 +134,14 @@ def GetBoutons(dlg):
                 {'name': 'btnImp', 'label': "Imprimer\npour contrôle",
                     'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
                     'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
-                {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour fermer la fenêtre",
-                    'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnClose}
+                {'name':'btnOK','ID':wx.ID_ANY,'label':"Validez",'help':"Cliquez ici pour enregistrer et sortir",
+                    'size':(120,35),'image':"xpy/Images/32x32/Valider.png",'onBtn':dlg.OnClose}
             ]
 
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal
     return [
-            ColumnDefn("ID", 'centre', 0, 'IDmouvementt',
+            ColumnDefn("ID", 'centre', 0, 'IDmouvement',
                        isEditable=False),
             ColumnDefn("Article", 'left', 200, 'article', valueSetter="",isSpaceFilling=True),
             ColumnDefn("Quantité", 'right', 110, 'qte', isSpaceFilling=False, valueSetter=0.0,
@@ -196,7 +196,7 @@ class PNL_params(xgte.PNL_params):
             self.lanceur = parent.lanceur
         else: self.lanceur = parent
 
-class PNL_corpsReglements(xgte.PNL_corps):
+class PNL_corps(xgte.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
     def __init__(self, parent, dicOlv,*args, **kwds):
         xgte.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
@@ -213,7 +213,6 @@ class PNL_corpsReglements(xgte.PNL_corps):
             track.date = trackN1.date
         track.creer = True
 
-
     def OnCtrlV(self,track):
         # raz de certains champs à recomposer
         (track.IDreglement, track.date, track.IDprestation, track.IDpiece,track.compta) = (None,)*5
@@ -228,7 +227,6 @@ class PNL_corpsReglements(xgte.PNL_corps):
                                                wx.ArtProvider.GetBitmap(wx.ART_FIND, wx.ART_OTHER, (16, 16)))
         else:
             self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
-
 
     def OnEditFinishing(self,code=None,value=None,editor=None):
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
@@ -267,14 +265,14 @@ class PNL_corpsReglements(xgte.PNL_corps):
         self.flagSkipEdit = False
 
     def ValideLigne(self,code,track):
-        nus.ValideLigne(self.Parent.db,track)
+        nustocks.ValideLigne(self.Parent.db,track)
 
     def OnEditFunctionKeys(self,event):
         row, col = self.ctrlOlv.cellBeingEdited
         code = self.ctrlOlv.lstCodesColonnes[col]
         if event.GetKeyCode() == wx.WXK_F4 and code == 'IDfamille':
             # Choix famille
-            IDfamille = nus.GetFamille(self.parent.db)
+            IDfamille = nustocks.GetFamille(self.parent.db)
             self.OnEditFinishing('IDfamille',IDfamille)
             self.ctrlOlv.GetObjectAt(row).IDfamille = IDfamille
 
@@ -321,15 +319,15 @@ class DLG(xusp.DLG_vide):
         # lancement de l'écran en blocs principaux
         self.pnlBandeau = xbandeau.Bandeau(self,TITRE,INTRO,nomImage="xpy/Images/32x32/Matth.png")
         self.pnlParams = PNL_params(self)
-        self.pnlOlv = PNL_corpsReglements(self, self.dicOlv)
+        self.pnlOlv = PNL_corps(self, self.dicOlv)
         self.pnlPied = PNL_pied(self, dicPied)
         self.ctrlOlv = self.pnlOlv.ctrlOlv
 
         # charger les valeurs de pnl_params
-        self.pnlParams.SetOneSet('fournisseur',values=nus.GetFournisseurs(self.db),codeBox='param2')
-        self.lstAnalytiques = nus.GetAnalytiques(self.db,'ACTIVITES')
-        valuesAnalytique = ["%s %s"%(x[0],x[1]) for x in self.lstAnalytiques]
-        self.pnlParams.SetOneSet('analytique',values=valuesAnalytique,codeBox='param2')
+        self.pnlParams.SetOneSet('fournisseur',values=nustocks.GetFournisseurs(self.db),codeBox='param2')
+        self.lstAnalytiques = nustocks.GetAnalytiques(self.db,'ACTIVITES')
+        self.valuesAnalytique = ["%s %s"%(x[0],x[1]) for x in self.lstAnalytiques]
+        self.pnlParams.SetOneSet('analytique',values=self.valuesAnalytique,codeBox='param2')
         self.OnOrigine(None)
         self.OnHt_ttc(None)
 
@@ -400,13 +398,38 @@ class DLG(xusp.DLG_vide):
         if event: event.Skip()
 
     def OnFournisseur(self,event):
+        self.fournisseur = self.pnlParams.GetOneValue('fournisseur',codeBox='param2')
         if event: event.Skip()
+
     def OnBtnFournisseur(self,event):
+        # choix d'une activité et retour de son dict, mute sert pour automatisme d'affectation
+        kwd = {
+            'axe': 'ACTIVITES',
+            'mode': 'normal',
+            'getAnalytiques': nustocks.GetFournisseurs}
+        noegest = nunoegest.Noegest(self)
+        dicFournisseur = noegest.GetAnalytique(**kwd)
+        if dicFournisseur:
+            valeur = dicFournisseur['idanalytique']
+            self.pnlParams.SetOneValue('fournisseur',valeur=valeur,codeBox='param2')
+            self.OnAnalytique(None)
         if event: event.Skip()
+
     def OnAnalytique(self,event):
-        self.InitOlv()
+        choixAnalytique = self.pnlParams.GetOneValue('analytique',codeBox='param2')
+        if len(choixAnalytique) > 0:
+            ix = self.valuesAnalytique.index(choixAnalytique)
+            self.analytique = self.lstAnalytiques[ix][0]
+        if event: event.Skip()
+
     def OnBtnAnalytique(self,event):
-        self.InitOlv()
+        noegest = nunoegest.Noegest(self)
+        dicActivite = noegest.GetActivite()
+        if dicActivite:
+            valeur = "%s %s"%(dicActivite['idanalytique'],dicActivite['abrege'])
+            self.pnlParams.SetOneValue('analytique',valeur=valeur,codeBox='param2')
+            self.OnAnalytique(None)
+        if event: event.Skip()
 
     def OnBtnRappel(self,event):
         print(wx.Bell())

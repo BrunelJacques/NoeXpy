@@ -536,7 +536,7 @@ class PNL_ctrl(wx.Panel):
 #*****************  GESTION des COMPOSITIONS DE CONTROLES **********************************
 
 class PNL_listCtrl(wx.Panel):
-    #affichage d'une listeCtrl avec les boutons classiques pour gérer les lignes
+    #affichage d'une listeCtrl avec les boutons classiques pour gérer les lignes. Ne gère pas un ObjectListView
     def __init__(self, parent, *args, ltColonnes=[], llItems=[], **kwds):
         self.lblList = kwds.pop('lblList',"Liste des éléments")
         self.styleLstCtrl = kwds.pop('styleLstCtrl',wx.LC_REPORT|wx.LC_SINGLE_SEL)
@@ -551,7 +551,6 @@ class PNL_listCtrl(wx.Panel):
 
         #********************** Objet principal pouvant être substitué ************************
         self.ctrl = wx.ListCtrl(self, wx.ID_ANY, style=self.styleLstCtrl)
-        #**********************************************************************
 
         # Remplissage de la matrice
         ret = self.InitMatrice(ltColonnes)
@@ -773,7 +772,6 @@ class BoxPanel(wx.Panel):
         if len(lrad) == 2:
             [code,champ] = lrad
             name = champ
-        value = None
         self.dictDonnees = self.GetValues()
         if name in self.dictDonnees:
             value = self.dictDonnees[name]
@@ -882,7 +880,7 @@ class TopBoxPanel(wx.Panel):
         self.parent.OnChildBtnAction(event)
 
     def GetLstValues(self,):
-        # récupère deux listes champs et données
+        # récupère deux listes nomsCtrl et données de tous les controles
         lstChamps, lstDonnees = [], []
         ddDonnees = self.GetValues()
         for code, label in self.matrice.keys():
@@ -892,7 +890,7 @@ class TopBoxPanel(wx.Panel):
         return lstChamps,lstDonnees
 
     def GetValues(self):
-        # récupère les données sous forme de dictionnaire
+        # récupère les données de tous les controles sous forme de dictionnaire
         ddDonnees = {}
         for box in self.lstBoxes:
             dic = box.GetValues()
@@ -901,14 +899,18 @@ class TopBoxPanel(wx.Panel):
 
     def GetOneValue(self,name=None,codeBox=None):
         valeur = None
+        mess = None
         if codeBox :
             box = self.GetBox(codeBox)
             valeur = box.GetOneValue(name)
+            if valeur == 'ko': mess = "Le pnlCtrl '%s' n'est pas présent dans box '%s'" %(name,codeBox)
         else:
             for box in self.lstBoxes:
                 ret = box.GetOneValue(name)
                 if ret != 'ko':
                     valeur = ret
+            if not valeur: mess = "Le pnlCtrl '%s' n'est pas présent dans aucune box" %(name)
+        if mess: wx.MessageBox(mess,"xusp.TopBoxPanel.GetOneValue")
         return valeur
 
     def SetLstValues(self,lstChamps,lstDonnees):
@@ -983,9 +985,9 @@ class TopBoxPanel(wx.Panel):
         return panel
 
 class DLG_listCtrl(wx.Dialog):
-    #Dialog contenant le PNL_listCtrl qui intégre la gestion ajout,
+    #Dialog contenant le PNL_listCtrl qui intégre la gestion des lignes,
     """
-    modif par PorpertyGrid ou PanelsCtrl (cf propriété  gestionProperty )...
+    gestion par PorpertyGrid ou PanelsCtrl (cf propriété  gestionProperty )...
     dldMatrice contient les lignes de descriptif des champs gérés :
             dict{(code,label): groupe} de liste[champ1, ] de dict{attrib:valeur,}
     dlColonnes contient les listes des champs affichés dans les colonnes de la grille de type ListCtrl:
@@ -1405,7 +1407,7 @@ if __name__ == '__main__':
     dictColonnesSimple = {}
 
     # Lancement des tests
-    """
+
     dlg_4 = DLG_listCtrl(None,dldMatrice=dictMatrice,
                                 dlColonnes=dictColonnes,
                                 lddDonnees=[dictDonnees])
@@ -1420,7 +1422,7 @@ if __name__ == '__main__':
     dlg_3.Sizer(pnl)
     app.SetTopWindow(dlg_3)
     dlg_3.Show()
-
+    """
     """
     frame_2 = FramePanels(None, )
     frame_2.Position = (500,300)
