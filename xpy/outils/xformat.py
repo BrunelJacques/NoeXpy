@@ -7,8 +7,7 @@ import unicodedata
 
 # fonctions pour OLV
 def AppelLignesMatrice(categ=None, possibles={}):
-    # retourne les lignes de la  matrice de l'argument categ
-    # ou la première catégorie si not categ
+    # retourne les lignes de la  matrice de l'argument categ ou la première catégorie si not categ
     code = None
     label = ''
     lignes = {}
@@ -24,6 +23,30 @@ def AppelLignesMatrice(categ=None, possibles={}):
                     lignes = possibles[(code, labelCategorie)]
                     break
     return code, label, lignes
+
+def OlvToMatrice(key,olv):
+    ld = []
+    for col in olv.lstColonnes:
+        genre = col.valueSetter.__class__.__name__
+        info = "Saisir une valeur dans le format %s"%genre
+        param = {'name': col.valueGetter,
+                 'label': col.title,
+                 'value': col.valueSetter,
+                 'genre': genre,
+                 'help': info}
+        if hasattr(col.valueSetter,'choices'):
+            param['genre'] = 'combo'
+            param['choices'] = col.choices
+        ld.append(param)
+    matrice = {key: ld}
+    return matrice
+
+def TrackToDdonnees(track,olv):
+    # retourne les dict de donnees d'une track
+    dDonnees = {}
+    for col in olv.lstColonnes:
+        dDonnees[col.valueGetter] = eval('track.%s'%col.valueGetter)
+    return dDonnees
 
 def SupprimeAccents(texte,lower=True):
     # met en minuscule sans accents et sans caractères spéciaux
@@ -481,12 +504,19 @@ def ListToDict(lstCles,lstValeurs):
     return dict
 
 def DictToList(dic):
+    # sépare les clés et les valeurs d'un dictionnaire
     lstCles = []
     lstValeurs = []
     if isinstance(dic,dict):
         for cle,valeur in dic.items():
-            lstCles.append(cle)
-            lstValeurs.append(valeur)
+            # cas des dictionnaires dans dictionnaires, le premier niveau est ignoré
+            if isinstance(valeur,dict):
+                sscles, ssval = DictToList(valeur)
+                lstCles += sscles
+                lstValeurs += ssval
+            else:
+                lstCles.append(cle)
+                lstValeurs.append(valeur)
     return lstCles,lstValeurs
 
 def PrefixeNbre(param):

@@ -668,7 +668,6 @@ class PNL_pied(wx.Panel):
         self.lanceur = dicPied.pop('lanceur',None)
         self.lstInfos = dicPied.pop('lstInfos',None)
         self.lstBtns = dicPied.pop('lstBtns',None)
-        self.dicOnClick = dicPied.pop('dicOnClick',None)
         if (not self.lstBtns) and (not self.lstInfos):
             #force la présence d'un pied d'écran par défaut
             self.lstBtns = [('BtnOK', wx.ID_OK, wx.Bitmap('xpy/Images/100x30/Bouton_ok.png', wx.BITMAP_TYPE_ANY),
@@ -786,13 +785,8 @@ if __name__ == '__main__':
                 wx.Bitmap('xpy/Images/16x16/Magique.png', wx.BITMAP_TYPE_PNG),
                 "Autre\nInfo"]
 
-    def modifLstInfos(self):
-        self.SetItemsInfos('C est nouveau',wx.ArtProvider.GetBitmap(wx.ART_FIND, wx.ART_OTHER, (16, 16)))
-        self.Refresh()
-        return
-    dicOnClick = {'BtnPrec': lambda evt: modifLstInfos(evt.EventObject.Parent)}
     # l'info se compmose d'une imgae et d'un texte
-    dicPied = {'lstBtns': lstBtns, 'dicOnClick': dicOnClick, 'lstInfos': lstInfos}
+    dicPied = {'lstBtns': lstBtns, 'lstInfos': lstInfos}
 
     # cadre des paramètres
     import datetime

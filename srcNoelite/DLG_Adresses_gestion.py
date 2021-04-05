@@ -72,7 +72,7 @@ def dicOlvFamilles():
                 'lstChamps': lstChamps,
                 'checkColonne': False,
                 'sortColumnIndex': 4,
-                'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
+                'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES|wx.LC_REPORT,
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 'dictColFooter': {"nom": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},}
                 }
@@ -111,7 +111,7 @@ class Pnl_tableau(xgtr.PNL_tableau):
         bouton_fermer = wx.Button(self, id = wx.ID_CANCEL,label=(u"Quitter"))
         bouton_fermer.SetBitmap(bmpabort)
         bouton_fermer.SetToolTip(u"Cliquez ici pour fermer")
-        self.bouton_fermer = bouton_fermer
+        #self.bouton_fermer = bouton_fermer
         self.lstBtns = [bouton_coords,bouton_ok,bouton_fermer]
 
         # Binds

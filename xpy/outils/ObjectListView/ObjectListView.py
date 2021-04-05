@@ -853,6 +853,8 @@ class ObjectListView(wx.ListCtrl):
 
             # Auto-resize once all the data has been added
             self.AutoSizeColumns()
+        except Exception as err:
+            print(err)
         finally:
             self.Thaw()
 
@@ -864,6 +866,8 @@ class ObjectListView(wx.ListCtrl):
         self._InsertUpdateItem(self.GetItem(index), index, modelObject, False)
 
     def _InsertUpdateItem(self, listItem, index, modelObject, isInsert):
+        if self.IsVirtual():
+            wx.MessageBox("Style LC_vitual impossible pour un InsertItem: changer le style du OLV")
         if isInsert:
             listItem.SetId(index)
             listItem.SetData(index)

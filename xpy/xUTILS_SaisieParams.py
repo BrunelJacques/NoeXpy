@@ -504,12 +504,14 @@ class PNL_ctrl(wx.Panel):
         if self.genre in ('int','float'):
             if not value: value = 0
             value = str(value)
-        if self.genre in ('bool','check'):
+        elif self.genre in ('bool','check'):
             try:
                 value = int(value)
             except Exception as err:
                 value = 0
-        if value == None:
+        elif self.genre in ('datetime','date'):
+            value = xformat.DatetimeToStr(value)
+        elif value == None:
             value = ''
         self.ctrl.SetValue(value)
 
@@ -926,11 +928,18 @@ class TopBoxPanel(wx.Panel):
                     ddDonnees[code][name]=valeur
         self.SetValues(ddDonnees)
 
-    def SetValues(self, ddDonnees):
+    def SetValues(self, donnees):
+        ok = False
         for box in self.lstBoxes:
-            if box.code in ddDonnees:
-                dic = ddDonnees[box.code]
+            # cas de ddDonnees
+            if box.code in donnees:
+                dic = donnees[box.code]
                 box.SetValues(dic)
+                ok = True
+        if not ok:
+            # cas de simple dDonnees on teste dans toutes les boxes
+            for box in self.lstBoxes:
+                box.SetValues(donnees)
         return
 
     def SetOneValue(self,name=None,valeur=None,codeBox=None):
@@ -978,10 +987,12 @@ class TopBoxPanel(wx.Panel):
                     if pnlctrl.name == lrad[-1]:
                         panel = pnlctrl
                         break
+        # deuxième passage moins sélectif
         if not panel:
             for pnlctrl in box.lstPanels:
-                if pnlctrl.name == name:
+                if name in pnlctrl.name:
                     panel = pnlctrl
+                    break
         return panel
 
 class DLG_listCtrl(wx.Dialog):

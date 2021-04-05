@@ -8,7 +8,7 @@
 #------------------------------------------------------------------------
 
 import wx, copy
-from xpy.outils.ObjectListView import ObjectListView, FastObjectListView, ColumnDefn, Filter, CTRL_Outils
+from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn, Filter, CTRL_Outils
 import xpy.xUTILS_DB           as xdb
 import xpy.outils.xbandeau      as xbd
 from xpy.outils import xformat
