@@ -401,7 +401,6 @@ class PNL_tableau(wx.Panel):
                         'lstChamps',
                         'sortColumnIndex',
                         'getDonnees',
-                        'getDonneesObj',
                         'msgIfEmpty',
                         'sensTri',
                         'exportExcel',
@@ -530,7 +529,6 @@ class DLG_tableau(wx.Dialog):
         self.parent = parent
         # inutile si SetSizerAndFit qui ajuste
         size = dicOlv.pop('size', (600,300))
-        self.db = kwds.pop('db',xdb.DB())
         pnlTableau = dicOlv.pop('pnlTableau',PNL_tableau )
         listArbo=os.path.abspath(__file__).split("\\")
         titre = listArbo[-1:][0] + "/" + self.__class__.__name__
@@ -559,7 +557,6 @@ class DLG_gestion(wx.Dialog):
         self.parent = parent
         # inutile si SetSizerAndFit qui ajuste
         size = dicOlv.pop('size', (700,400))
-        self.db = kwds.pop('db',xdb.DB())
         pnlTableau = dicOlv.pop('pnlTableau',PNL_tableau )
         listArbo=os.path.abspath(__file__).split("\\")
         titre = listArbo[-1:][0] + "/" + self.__class__.__name__
@@ -567,6 +564,10 @@ class DLG_gestion(wx.Dialog):
         self.SetBackgroundColour(wx.WHITE)
         self.marge = 10
         self.estAdmin = None
+        self.donnees = None
+        #relais local pour pouvoir intercepter le getDonnees
+        self.getDonnees = dicOlv.pop('getDonnees',None)
+        dicOlv['getDonnees'] = self.GetDonnees
 
         self.lblList = kwds.pop('lblList', None )
 
@@ -594,10 +595,6 @@ class DLG_gestion(wx.Dialog):
                            image=wx.Bitmap("xpy/Images/16x16/Modifier.png"),
                            help="Modifier la ligne selectionnée",
                            onBtn=self.OnModifier ),
-                xboutons.BTN_action(pnl,name='dupliquer',
-                           image=wx.Bitmap("xpy/Images/16x16/Dupliquer.png"),
-                           help="Dupliquer la ligne selectionée",
-                           onBtn=self.OnDupliquer ),
                 xboutons.BTN_action(pnl,name='supprimer',
                            image=wx.Bitmap("xpy/Images/16x16/Supprimer.png"),
                            help="Supprimer les lignes selectionées",
@@ -626,18 +623,38 @@ class DLG_gestion(wx.Dialog):
             wx.MessageBox(mess,"Verif droits d'accès")
         return self.estAdmin
 
+    def GetDonnees(self,**kwds):
+        # fonctionne en tandem avec GereDonnees
+        if not self.donnees:
+            self.donnees = [x for x in self.getDonnees(**kwds)]
+        return  self.donnees
+
+    def GereDonnees(self, mode=None, ixligne=0, values=[]):
+        # à vocation a être substitué par des accès base de données
+        if mode == 'ajout':
+            self.donnees = self.donnees[:ixligne] + [values,] + self.donnees[ixligne:]
+        elif mode == 'modif':
+            self.donnees[ixligne] = values
+        elif mode == 'suppr':
+            del self.donnees[ixligne]
+
     def OnAjouter(self, event):
         if not self.EstAdmin(): return
         # l'ajout d'une ligne nécessite d'appeler un écran avec les champs en lignes
         olv = self.ctrlOlv
+        ligne = olv.GetSelectedObject()
+        if ligne:
+            ixLigne = olv.modelObjects.index(ligne)
+        else: ixLigne = len(self.donnees)
         dlgSaisie = DLG_saisie(self,olv)
         ret = dlgSaisie.ShowModal()
         if ret == wx.OK:
             #récupération des valeurs saisies
             lstChamps,ligneDonnees = xformat.DictToList(dlgSaisie.pnl.GetValues())
-
             track = TrackGeneral(ligneDonnees, olv.lstCodesColonnes, olv.lstNomsColonnes, olv.lstSetterValues)
             olv.AddObject(track)
+            self.GereDonnees(mode='ajout', ixligne=ixLigne, values=ligneDonnees)
+            olv.RepopulateList()
 
     def OnModifier(self, event):
         if not self.EstAdmin(): return
@@ -661,6 +678,7 @@ class DLG_gestion(wx.Dialog):
             lstChamps,ligneDonnees = xformat.DictToList(dlgSaisie.pnl.GetValues())
             track = TrackGeneral(ligneDonnees, olv.lstCodesColonnes, olv.lstNomsColonnes, olv.lstSetterValues)
             olv.modelObjects[ixLigne] = track
+            self.GereDonnees(mode='modif', ixligne=ixLigne, values=ligneDonnees)
             olv.RepopulateList()
 
     def OnSupprimer(self, event):
@@ -670,21 +688,11 @@ class DLG_gestion(wx.Dialog):
             wx.MessageBox("Pas de sélection faite, pas de suppression possible !",
                       'La vie est faite de choix', wx.OK | wx.ICON_INFORMATION)
             return
-        olv.modelObjects.remove(olv.GetSelectedObject())
+        ligne = olv.GetSelectedObject()
+        ixLigne = olv.modelObjects.index(ligne)
+        olv.modelObjects.remove(ligne)
+        self.GereDonnees(mode='suppr', ixligne=ixLigne, values=None)
         olv.RepopulateList()
-
-    def OnDupliquer(self, event):
-        if not self.EstAdmin(): return
-        olv = self.ctrlOlv
-        if olv.GetSelectedItemCount() == 0:
-            wx.MessageBox("Pas de sélection faite, pas de duplication possible !",
-                      'La vie est faite de choix', wx.OK | wx.ICON_INFORMATION)
-            return
-        # Action du clic sur l'icone sauvegarde renvoie au parent
-        self.parent.OnDupliquer(event,olv.GetFirstSelected())
-
-    def GetSelection(self):
-        return self.pnl.ctrlOlv.GetSelectedObject()
 
     def OnFermer(self, end=None):
         if self.IsModal():
@@ -701,7 +709,7 @@ class DLG_gestion(wx.Dialog):
 
 # -- pour tests -----------------------------------------------------------------------------------------------------
 
-def GetDonnees(db=None,**kwds):
+def GetDonnees(**kwds):
     filtre = kwds.pop('filtre',"")
     donnees = [[1,False, 'Bonjour', -1230.05939, -1230.05939, None,'deux'],
                      [2,None, 'Bonsoir', 57.5, 208.99,datetime.date.today(),None],

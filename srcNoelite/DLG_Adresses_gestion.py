@@ -213,7 +213,8 @@ class Dialog(wx.Dialog):
             self.getDonnees = self.GetFamilles
         else:
             dicOlv = dicOlvIndividus()
-            self.getDonnees = self.GetIndividus
+            self.\
+                getDonnees = self.GetIndividus
 
         dicOlv['getDonnees'] = self.getDonnees
         pnlOlv = Pnl_tableau(self, dicOlv)
