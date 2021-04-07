@@ -6,7 +6,6 @@
 # Licence:         Licence GNU GPL
 #--------------------------------------------------------------------------
 
-import sys
 import wx
 import os
 import xpy.xUTILS_DB as xdb
@@ -67,6 +66,9 @@ def GetListeUsers(db=None):
 
     DB.Close()
     return listeUtilisateurs
+
+def GetNomOrdi():
+    return os.environ['USERDOMAIN']
 
 def AfficheUsers(parent):
     # affiche les utilisateur puis sollicite le mot de passe pour le valider

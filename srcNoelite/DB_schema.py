@@ -258,7 +258,7 @@ DB_TABLES = {
                 ('user','INTEGER',"ID de l'utilisateur"),],# affectation des consommations internes par section
 
     'stArticles':[
-                ('article', 'VARCHAR(32)', "PK Désignation du produit"),
+                ('IDarticle', 'VARCHAR(32)', "PK Désignation du produit"),
                 ('rations', 'FLOAT', "Nombre de ration pour une unité"),
                 ('fournisseur', 'VARCHAR(32)', "Fournisseur habituel"),
                 ('qteStock', 'INTEGER', "Stock en live"),
@@ -272,7 +272,7 @@ DB_TABLES = {
                 ('dernierAchat', 'DATE', "Date de dernière entrée avec prix saisi"),],# stocks: articles en stock
 
     'stEffectifs':[
-                ('date', 'DATE', "PK Date de la situation de l'effectif"),
+                ('IDdate', 'DATE', "PK Date de la situation de l'effectif"),
                 ('matinClients', 'INTEGER', "Nbre de repas facturés (facultatif)"),
                 ('matinStaff', 'INTEGER', "Nbre de repas pour le staff (facultatif)"),
                 ('midiClients', 'INTEGER', "Nbre de repas facturés "),
@@ -285,7 +285,7 @@ DB_TABLES = {
                 ('IDmouvement', 'INTEGER PRIMARY KEY AUTOINCREMENT', "Clé primaire"),
                 ('date', 'DATE', "date du mouvement de stock"),
                 ('fournisseur', 'VARCHAR(32)', "Fournisseur de l'entrée"),
-                ('origine', 'VARCHAR(8)', "repas; achat; od; campExt; retour"),
+                ('origine', 'VARCHAR(8)', "repas; achat; od_in; campExt; retour"),
                 ('article', 'VARCHAR(32)', "clé dans gstArticles"),
                 ('qte', 'INTEGER', "Quantitée mouvementée signée"),
                 ('prixUnit', 'FLOAT', "Prix moyen pour sorties et retour, Prix revient pour achats"),
@@ -295,8 +295,8 @@ DB_TABLES = {
                 ('modifiable', 'INTEGER', "0/1 Marque un transfert export  réussi ou import"),],# stocks: entrées sorties
 
     'stInventaires':[
-                ('date', 'DATE', "PK Date de l'inventaire copie des stocks"),
-                ('article', 'VARCHAR(32)', "PK Désignation du produit"),
+                ('IDdate', 'DATE', "PK Date de l'inventaire copie des stocks"),
+                ('IDarticle', 'VARCHAR(32)', "PK Désignation du produit"),
                 ('qteStock', 'INTEGER', "Qté reportée"),
                 ('qteConstat', 'INTEGER', "Qté constatée"),
                 ('prixActuel', 'FLOAT', "Dernier prix unitaire livré ou de réappro"),
@@ -306,23 +306,23 @@ DB_TABLES = {
 
 # index clé unique
 DB_PK = {
-        "PK_vehiculesCouts_IDanalytique_cloture": {"table": "vehiculesCouts", "champ": "IDanalytique, cloture"},
-        "PK_stArticles_article": {"table": "stArticles", "champ": "article"},
-        "PK_stEffectifs_date": {"table": "stEffectifs", "champ": "date"},
-        "PK_stInventaires_date_article": {"table": "stInventaires", "champ": "date,article"},
+        'PK_vehiculesCouts_IDanalytique_cloture': {'table': 'vehiculesCouts', 'champ': 'IDanalytique, cloture'},
+        'PK_stArticles_article': {'table': 'stArticles', 'champ': 'IDarticle'},
+        'PK_stEffectifs_date': {'table': 'stEffectifs', 'champ': 'IDdate'},
+        'PK_stInventaires_date_article': {'table': 'stInventaires', 'champ': 'IDdate,IDarticle'},
         }
 
 # index sans contrainte
 DB_IX = {
-        "index_reglements_IDcompte_payeur": {"table": "reglements", "champ": "IDcompte_payeur"},#index de Noethys
-        "IX_immobilisations_compteImmo_IDanalytique": {"table": "immobilisations", "champ": "compteImmo,IDanalytique"},
-        "IX_immosComposants_IDimmo": {"table": "immosComposants", "champ": "IDimmo"},
-        "IX_vehiculesConsos_IDanalytique_cloture": {"table": "vehiculesConsos",
-                                                    "champ": "IDanalytique, cloture, typeTiers, IDtiers"},
-        "IX_stArticles_fournisseur": {"table": "stArticles", "champ": "fournisseur"},
-        "IX_stArticles_magasin_rayon": {"table": "stArticles", "champ": "magasin,rayon"},
-        "IX_stMouvements_date_origine": {"table": "stMouvements", "champ": "date,origine"},
-        "IX_stMouvements_date_analytique": {"table": "stMouvements", "champ": "date,analytique"}
+        'index_reglements_IDcompte_payeur': {'table': 'reglements', 'champ': 'IDcompte_payeur'},#index de Noethys
+        'IX_immobilisations_compteImmo_IDanalytique': {'table': 'immobilisations', 'champ': 'compteImmo,IDanalytique'},
+        'IX_immosComposants_IDimmo': {'table': 'immosComposants', 'champ': 'IDimmo'},
+        'IX_vehiculesConsos_IDanalytique_cloture': {'table': 'vehiculesConsos',
+                                                    'champ': 'IDanalytique, cloture, typeTiers, IDtiers'},
+        'IX_stArticles_fournisseur': {'table': 'stArticles', 'champ': 'fournisseur'},
+        'IX_stArticles_magasin_rayon': {'table': 'stArticles', 'champ': 'magasin,rayon'},
+        'IX_stMouvements_date_origine': {'table': 'stMouvements', 'champ': 'date,origine'},
+        'IX_stMouvements_date_analytique': {'table': 'stMouvements', 'champ': 'date,analytique'}
         }
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------

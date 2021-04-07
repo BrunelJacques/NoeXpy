@@ -458,6 +458,7 @@ class DB():
         """ Permet d'insérer les lstChamps ['ch1','ch2',..] et lstlstDonnees [[val11,val12...],[val21],[val22]...]
             self.newID peut être appelé ensuite pour récupérer le dernier'D """
         if lstDonnees:
+            if len(lstDonnees[0]) != 2: raise("lstDonnees doit être une liste de tuples (champ,donnee)")
             lsttemp=[]
             lstChamps=[]
             lstlstDonnees = []

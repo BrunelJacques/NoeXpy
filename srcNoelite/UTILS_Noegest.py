@@ -257,7 +257,7 @@ class Noegest(object):
         dicOlv['size'] = (500,600)
 
         # appel dee l'écran de saisie
-        dlg = xgtr.DLG_tableau(self,dicOlv=dicOlv, db=self.db)
+        dlg = xgtr.DLG_tableau(self,dicOlv=dicOlv)
 
         if dlg.ctrlOlv.Parent.ctrlOutils:
             barreRecherche = dlg.ctrlOlv.Parent.ctrlOutils.barreRecherche

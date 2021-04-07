@@ -10,22 +10,22 @@
 import wx
 import os
 import datetime
-import srcNoestock.UTILS_Stocks        as nustocks
+import srcNoestock.UTILS_Stocks        as nust
 import srcNoelite.UTILS_Noegest        as nunoegest
 import xpy.xGestion_TableauEditor      as xgte
+import xpy.xUTILS_Identification       as xuid
+import xpy.xUTILS_SaisieParams         as xusp
 import xpy.xUTILS_DB                   as xdb
 from srcNoelite.DB_schema       import DB_TABLES
 from xpy.outils.ObjectListView  import ColumnDefn, CellEditor
 from xpy.outils                 import xformat,xbandeau,xboutons
-import xpy.xGestionConfig               as xgc
-import xpy.xUTILS_SaisieParams          as xusp
 
 #---------------------- Matrices de paramétres -------------------------------------
 
 TITRE = "Entrées en stock"
 INTRO = "Gestion des entrées dans le stock, par livraison, retour ou autre "
 DIC_INFOS = {
-            'article': "<F4> Choix d'un article, ou saisie directe de son code",
+            'IDarticle': "<F4> Choix d'un article, ou saisie directe de son code",
             'qte': "L'unité est précisée dans le nom de l'article",
             'montant': "Prix remisé en €",
              }
@@ -66,7 +66,7 @@ MATRICE_PARAMS = {
 ("param1", "Paramètres"): [
     {'name': 'origine', 'genre': 'Choice', 'label': "Nature d'entrée",
                     'help': "Le choix de la nature modifie certains contrôles",
-                    'value':0, 'values':['achat livraison', 'retour camp', 'od autre'],
+                    'value':0, 'values':['achat livraison', 'retour camp', 'od_in'],
                     'ctrlAction': 'OnOrigine',
                     'size':(200,30),
                     'txtSize': 90},
@@ -143,10 +143,10 @@ def GetOlvColonnes(dlg):
     return [
             ColumnDefn("ID", 'centre', 0, 'IDmouvement',
                        isEditable=False),
-            ColumnDefn("Article", 'left', 200, 'article', valueSetter="",isSpaceFilling=True),
+            ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",isSpaceFilling=True),
             ColumnDefn("Quantité", 'right', 110, 'qte', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal),
-            ColumnDefn("Prix Unit.", 'right', 110, 'prixUnit', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Prix Unit.", 'right', 110, 'pxUn', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal),
             ColumnDefn("Mtt HT", 'right', 110, 'mttHT', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
@@ -206,12 +206,10 @@ class PNL_corps(xgte.PNL_corps):
         self.oldRow = None
 
     def InitTrackVierge(self,track,modelObject):
-        # reprise de la valeur 'mode' et date de la ligne précédente
-        if len(modelObject)>0:
-            trackN1 = modelObject[-1]
-            track.mode = trackN1.mode
-            track.date = trackN1.date
         track.creer = True
+
+    def ValideParams(self):
+        nust.ValideParams(self.parent.pnlParams)
 
     def OnCtrlV(self,track):
         # raz de certains champs à recomposer
@@ -238,46 +236,32 @@ class PNL_corps(xgte.PNL_corps):
         track = self.ctrlOlv.GetObjectAt(row)
 
         # Traitement des spécificités selon les zones
-        if code == 'IDfamille':
-            try:
-                value = int(value)
-            except:
-                self.flagSkipEdit = False
-                return
-            track.IDfamille = value
-
-        if code == 'mode':
-            # rend non éditable les champs suivants si pas d'option possible
-            IDmode = self.parent.dicModesChoices[value]['IDmode']
-            emetteurs = sorted(self.parent.dlEmetteurs[IDmode])
-            if len(emetteurs) == 0:
-                isedit = False
-                track.emetteur = None
-                track.numero = None
-            else: isedit = True
-            self.ctrlOlv.columns[self.ctrlOlv.lstCodesColonnes.index('emetteur')].isEditable = isedit
-            self.ctrlOlv.columns[self.ctrlOlv.lstCodesColonnes.index('numero')].isEditable = isedit
-
-
+        if code == 'IDarticle':
+            track.IDarticle = nust.GetArticle(self.Parent.db,value)
 
         # enlève l'info de bas d'écran
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
         self.flagSkipEdit = False
 
     def ValideLigne(self,code,track):
-        nustocks.ValideLigne(self.Parent.db,track)
+        # Appelé par cellEditor en sortie
+        nust.ValideLigne(self.Parent.db,track)
+        nust.CalculeLigne(self.Parent,track)
+
+    def SauveLigne(self,track):
+        nust.SauveLigne(self.Parent.db,self.Parent,track)
 
     def OnEditFunctionKeys(self,event):
         row, col = self.ctrlOlv.cellBeingEdited
         code = self.ctrlOlv.lstCodesColonnes[col]
         if event.GetKeyCode() == wx.WXK_F4 and code == 'IDfamille':
             # Choix famille
-            IDfamille = nustocks.GetFamille(self.parent.db)
+            IDfamille = nust.GetFamille(self.parent.db)
             self.OnEditFinishing('IDfamille',IDfamille)
             self.ctrlOlv.GetObjectAt(row).IDfamille = IDfamille
 
     def OnDelete(self,noligne,track,parent=None):
-        pass
+        nust.DeleteLigne(self.parent.db,track)
 
 class PNL_pied(xgte.PNL_pied):
     #panel infos (gauche) et boutons sorties(droite)
@@ -296,6 +280,8 @@ class DLG(xusp.DLG_vide):
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup(self)})
         self.dicOlv.update(GetOlvOptions(self))
+        self.ordi = xuid.GetNomOrdi()
+        self.today = datetime.date.today()
         ret = self.Init()
         if ret == wx.ID_ABORT: self.Destroy()
 
@@ -324,8 +310,8 @@ class DLG(xusp.DLG_vide):
         self.ctrlOlv = self.pnlOlv.ctrlOlv
 
         # charger les valeurs de pnl_params
-        self.pnlParams.SetOneSet('fournisseur',values=nustocks.GetFournisseurs(self.db),codeBox='param2')
-        self.lstAnalytiques = nustocks.GetAnalytiques(self.db,'ACTIVITES')
+        self.pnlParams.SetOneSet('fournisseur',values=nust.GetFournisseurs(self.db),codeBox='param2')
+        self.lstAnalytiques = nust.GetAnalytiques(self.db,'ACTIVITES')
         self.valuesAnalytique = ["%s %s"%(x[0],x[1]) for x in self.lstAnalytiques]
         self.pnlParams.SetOneSet('analytique',values=self.valuesAnalytique,codeBox='param2')
         self.OnOrigine(None)
@@ -373,17 +359,18 @@ class DLG(xusp.DLG_vide):
             pnlCtrl.ctrl.Enable(flag)
             pnlCtrl.btn.Enable(flag)
 
-        #'achat livraison', 'retour camp', 'od autre'
+        #'achat livraison', 'retour camp', 'od_in'
         if origine[:5] == 'achat':
             setEnable('fournisseur',True)
             setEnable('analytique',False)
         elif origine[:5] == 'retou':
             setEnable('fournisseur',False)
             setEnable('analytique',True)
-        elif origine[:5] == 'od au':
+        elif origine[:5] == 'od_in':
             setEnable('fournisseur',False)
             setEnable('analytique',False)
         pnl.Refresh()
+        self.origine = origine.split(' ')[0]
         if event: event.Skip()
 
     def OnDate(self,event):
@@ -402,17 +389,11 @@ class DLG(xusp.DLG_vide):
         if event: event.Skip()
 
     def OnBtnFournisseur(self,event):
-        # choix d'une activité et retour de son dict, mute sert pour automatisme d'affectation
-        kwd = {
-            'axe': 'ACTIVITES',
-            'mode': 'normal',
-            'getAnalytiques': nustocks.GetFournisseurs}
-        noegest = nunoegest.Noegest(self)
-        dicFournisseur = noegest.GetAnalytique(**kwd)
-        if dicFournisseur:
-            valeur = dicFournisseur['idanalytique']
-            self.pnlParams.SetOneValue('fournisseur',valeur=valeur,codeBox='param2')
-            self.OnAnalytique(None)
+        # Simple message explication
+        mess = "Choix FOURNISSEURS\n\n"
+        mess += "Les fournisseurs proposés sont cherchés dans les utilisations précédentes,\n"
+        mess += "Il vous suffit de saisir un nouveau nom pour qu'il vous soit proposé la prochaine fois"
+        ret = wx.MessageBox(mess,"Information",style=wx.ICON_INFORMATION)
         if event: event.Skip()
 
     def OnAnalytique(self,event):

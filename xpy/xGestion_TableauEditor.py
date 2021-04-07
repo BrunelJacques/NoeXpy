@@ -130,17 +130,30 @@ class ListView(FastObjectListView):
         if not 'sortable' in kwds: kwds['sortable']=True
         FastObjectListView.__init__(self, *args,**kwds)
         # Binds perso
-        self.Bind(OLVEvent.EVT_ITEM_CHECKED, self.MAJ_footer())
+        self.Bind(OLVEvent.EVT_ITEM_CHECKED, self.MAJ_footer)
         self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
         if self.editMode:
             self.cellEditMode = ObjectListView.CELLEDIT_SINGLECLICK
+        self.Bind(wx.EVT_SET_FOCUS,self.OnSetFocus)
+        self.flagSkipEdit = False
+
+    def OnSetFocus(self,evt):
+        if self.flagSkipEdit : return
+        self.flagSkipEdit = True
+        # SetFocus sur le corps d'écran pour récupérer le KillFocus sur les params
+        if hasattr(self.parent,'ValideParams'):
+            self.parent.ValideParams()
+        elif hasattr(self.parent.parent,'ValideParams'):
+            self.parent.parent.ValideParams()
+        self.flagSkipEdit = False
+        evt.Skip()
 
     def SetFooter(self, ctrl=None, dictColFooter={}):
         self.ctrl_footer = ctrl
         self.ctrl_footer.listview = self
         self.ctrl_footer.dictColFooter = dictColFooter
 
-    def MAJ_footer(self):
+    def MAJ_footer(self,evt):
         if self.ctrl_footer and self.pnlFooter:
             self.ctrl_footer.MAJ_totaux()
             self.ctrl_footer.MAJ_affichage()
@@ -213,7 +226,7 @@ class ListView(FastObjectListView):
         self.selectionID = ID
         self.InitObjectListView()
         if self.pnlFooter:
-            self.MAJ_footer()
+            self.MAJ_footer(None)
         # Rappel de la sélection d'un item
         if self.selectionID != None and len(self.innerList) > 0:
             self.SelectObject(self.innerList[ID], deselectOthers=True, ensureVisible=True)
@@ -339,22 +352,6 @@ class ListView(FastObjectListView):
     def ExportExcel(self, event):
         import xpy.outils.xexport
         xpy.outils.xexport.ExportExcel(self, titre=self.titreImpression, autoriseSelections=False)
-
-    def zzCocheInvJusqua(self, event=None):
-        if self.GetFilter() is not None:
-            listeObjets = self.GetFilteredObjects()
-        else:
-            listeObjets = self.GetObjects()
-
-        if self.GetSelectedObject() is not None:
-            for track in listeObjets:
-                if self.IsChecked(track):
-                    self.Uncheck(track)
-                else:
-                    self.Check(track)
-                self.RefreshObject(track)
-                if track == self.GetSelectedObject():
-                    return
 
     def GetTracksCoches(self):
         return self.GetCheckedObjects()

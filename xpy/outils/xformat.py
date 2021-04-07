@@ -48,6 +48,47 @@ def TrackToDdonnees(track,olv):
         dDonnees[col.valueGetter] = eval('track.%s'%col.valueGetter)
     return dDonnees
 
+def CompareModels(original,actuel):
+    # retourne les données modifiées dans le modelobject original % actuel
+    lstNews, lstCancels, lstModifs = [], [], []
+    # l'id doit être en première position des données
+    lstIdActuels = [x.donnees[0] for x in actuel]
+    lstIdOriginaux = [x.donnees[0] for x in original]
+    # retrouver l'original dans l'actuel
+    for track in original:
+        if track.donnees[0] in lstIdActuels:
+            ix = lstIdActuels.index(track.donnees[0])
+            if track.donnees == actuel[ix].donnees:
+                continue
+            if not actuel[ix].valide:
+                continue
+            else:
+                lstModifs.append(actuel[ix].donnees)
+        else: lstCancels.append(track.donnees)
+    #repérer les nouveaux
+    for track in actuel:
+        if track.donnees[0] in lstIdOriginaux:
+            continue
+        elif not track.vierge: lstNews.append(track.donnees)
+    return lstNews,lstCancels,lstModifs
+
+def ComposeWhereFiltre(filtre,lstChamps,lstColonnes=None, lien='WHERE'):
+        if lstColonnes:
+            lstNames = [x.valueGetter for x in lstColonnes]
+            lstChamps = [lstChamps[x] for x in range(len(lstChamps)) if lstNames[x] in lstChamps[x]]
+        whereFiltre = ''
+        if filtre and len(filtre) > 0 and len(lstChamps)>0:
+            texte = ''
+            ordeb = """
+                    ("""
+            for ix in range(len(lstChamps)):
+                texte += "%s %s LIKE '%%%s%%' )"%(ordeb,lstChamps[ix],filtre)
+                ordeb = """
+                    OR ("""
+            whereFiltre = """
+                %s ( %s )"""%(lien,texte)
+        return whereFiltre
+
 def SupprimeAccents(texte,lower=True):
     # met en minuscule sans accents et sans caractères spéciaux
     code = ''.join(c for c in unicodedata.normalize('NFD', texte) if unicodedata.category(c) != 'Mn')
@@ -56,70 +97,17 @@ def SupprimeAccents(texte,lower=True):
     code = ''.join(car for car in code if car not in " %)(.[]',;/\n")
     return code
 
+# Automatismes de gestion des ColumnDef
+
 def GetLstChamps(table=None,cutend=None):
-    if cutend: cutend = -cutend
+    if cutend == 0 or cutend == None: cutend = None
+    else: cutend = -cutend
     return [x for x,y,z in table[:cutend] ]
 
-def GetLstColonnes(table=None,cutend=None,IDcache=True,wxDates=True):
-    # Compose ColumnsDefn selon schéma table, sans champs cutend, format dates et masquer ou pas ID
-    lstNomsColonnes = [x for x, y, z in table[:-cutend]]
-    lstTypes = [y for x, y, z in table[:-cutend]]
-    lstCodesColonnes = [SupprimeAccents(x,lower=False) for x in lstNomsColonnes]
-    lstValDefColonnes = ValeursDefaut(lstNomsColonnes, lstTypes,wxDates=wxDates)
-    lstLargeurColonnes = LargeursDefaut(lstNomsColonnes, lstTypes,IDcache=IDcache)
-    return DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
-
-def DefColonnes(lstNoms,lstCodes,lstValDef,lstLargeur):
-    from xpy.outils.ObjectListView import ColumnDefn
-    # Composition d'une liste de définition de colonnes d'un OLV; remarque faux ami: 'nom, code' == 'label, name'
-    ix=0
-    for lst in (lstCodes,lstValDef,lstLargeur):
-        # complète les listes entrées si nécessaire
-        if lst == None : lst = []
-        if len(lst)< len(lstNoms):
-            lst.extend(['']*(len(lstNoms)-len(lst)))
-    lstColonnes = []
-    for colonne in lstNoms:
-        if isinstance(lstValDef[ix],(str,wx.DateTime,datetime.date)):
-            posit = 'left'
-        elif isinstance(lstValDef[ix],bool):
-            #posit = 'centre'
-            posit = 'left'
-        else: posit = 'right'
-        # ajoute un converter à partir de la valeur par défaut
-        if isinstance(lstValDef[ix], (float,)):
-            if '%' in colonne:
-                stringConverter = FmtPercent
-            else:
-                stringConverter = FmtDecimal
-        elif isinstance(lstValDef[ix], bool):
-            if lstValDef[ix] == False:
-                # le false est à blanc True:'X'
-                stringConverter = FmtBoolX
-            else:
-                # le false est 'N' le True 'O'
-                stringConverter = FmtBool
-        elif isinstance(lstValDef[ix], int):
-            if '%' in colonne:
-                stringConverter = FmtPercent
-            else:
-                stringConverter = FmtIntNoSpce
-        elif isinstance(lstValDef[ix], (datetime.date,wx.DateTime)):
-            stringConverter = FmtDate
-        elif lstCodes[ix][:3] == 'tel' and isinstance(lstValDef[ix],(str)):
-            # téléphone repéré par tel dans le début du code
-            stringConverter = FmtTelephone
-        else: stringConverter = None
-        if lstLargeur[ix] in ('',None,'None',-1):
-            lstLargeur[ix] = -1
-            isSpaceFilling = True
-        else: isSpaceFilling = False
-        code = lstCodes[ix]
-        lstColonnes.append(ColumnDefn(title=colonne,align=posit,width=lstLargeur[ix],valueGetter=code,
-                                      valueSetter=lstValDef[ix],isSpaceFilling=isSpaceFilling,
-                                      stringConverter=stringConverter))
-        ix += 1
-    return lstColonnes
+def GetLstNomsColonnes(table=None,cutend=None):
+    if cutend == 0 or cutend == None: cutend = None
+    else: cutend = -cutend
+    return [x for x, y, z in table[:cutend]]
 
 def ValeursDefaut(lstNomsColonnes,lstTypes,wxDates=False):
     # Détermine des valeurs par défaut selon le type des variables, précision pour les dates wx ou datetime
@@ -154,7 +142,7 @@ def LargeursDefaut(lstNomsColonnes,lstTypes,IDcache=True):
         elif tip[:5] == 'float': lstLargDef.append(max(lgtitle,60))
         elif tip[:4] == 'date': lstLargDef.append(max(lgtitle,80))
         elif tip[:7] == 'varchar':
-            lgdef = int(tip[8:-1])*6
+            lgdef = int(tip[8:-1])*4
             lg = max(lgtitle,lgdef)
             if lg <= 24: lg=24
             if lg > 200:
@@ -164,47 +152,87 @@ def LargeursDefaut(lstNomsColonnes,lstTypes,IDcache=True):
             lstLargDef.append(-1)
     return lstLargDef
 
-def CompareModels(original,actuel):
-    # retourne les données modifiées dans le modelobject original % actuel
-    lstNews, lstCancels, lstModifs = [], [], []
-    # l'id doit être en première position des données
-    lstIdActuels = [x.donnees[0] for x in actuel]
-    lstIdOriginaux = [x.donnees[0] for x in original]
-    # retrouver l'original dans l'actuel
-    for track in original:
-        if track.donnees[0] in lstIdActuels:
-            ix = lstIdActuels.index(track.donnees[0])
-            if track.donnees == actuel[ix].donnees:
-                continue
-            if not actuel[ix].valide:
-                continue
-            else:
-                lstModifs.append(actuel[ix].donnees)
-        else: lstCancels.append(track.donnees)
-    #repérer les nouveaux
-    for track in actuel:
-        if track.donnees[0] in lstIdOriginaux:
-            continue
-        elif not track.vierge: lstNews.append(track.donnees)
-    return lstNews,lstCancels,lstModifs
+def DefColonnes(lstNoms,lstCodes,lstValDef,lstLargeur):
+    from xpy.outils.ObjectListView import ColumnDefn
+    # Composition d'une liste de définition de colonnes d'un OLV; remarque faux ami: 'nom, code' == 'label, name'
+    ix=0
+    # normalise les len() des listes en ajoutant des items
+    for lst in (lstCodes,lstValDef,lstLargeur):
+        if lst == None : lst = []
+        if len(lst)< len(lstNoms):
+            lst.extend(['']*(len(lstNoms)-len(lst)))
 
-def ComposeWhereFiltre(filtre,lstChamps,lstColonnes=None, lien='WHERE'):
-        if lstColonnes:
-            lstNames = [x.valueGetter for x in lstColonnes]
-            #lstColStr =  [x.valueGetter for x in lstColonnes if isinstance(x.valueSetter,str)]
-            lstChamps = [lstChamps[x] for x in range(len(lstChamps)) if lstNames[x] in lstNames]
-        whereFiltre = ''
-        if filtre and len(filtre) > 0 and len(lstChamps)>0:
-            texte = ''
-            ordeb = """
-                    ("""
-            for ix in range(len(lstChamps)):
-                texte += "%s %s LIKE '%%%s%%' )"%(ordeb,lstChamps[ix],filtre)
-                ordeb = """
-                    OR ("""
-            whereFiltre = """
-                %s ( %s )"""%(lien,texte)
-        return whereFiltre
+    lstColonnes = []
+    yaSpaceFil = False
+
+    for colonne in lstNoms:
+        if isinstance(lstValDef[ix],(str,wx.DateTime,datetime.date)):
+            posit = 'left'
+        elif isinstance(lstValDef[ix],bool):
+            #posit = 'centre'
+            posit = 'left'
+        else: posit = 'right'
+        # ajoute un converter à partir de la valeur par défaut
+        if isinstance(lstValDef[ix], (float,)):
+            if '%' in colonne:
+                stringConverter = FmtPercent
+            else:
+                stringConverter = FmtDecimal
+        elif isinstance(lstValDef[ix], bool):
+            if lstValDef[ix] == False:
+                # le false est à blanc True:'X'
+                stringConverter = FmtBoolX
+            else:
+                # le false est 'N' le True 'O'
+                stringConverter = FmtBool
+        elif isinstance(lstValDef[ix], int):
+            if '%' in colonne:
+                stringConverter = FmtPercent
+            else:
+                stringConverter = FmtIntNoSpce
+        elif isinstance(lstValDef[ix], (datetime.date,wx.DateTime)):
+            stringConverter = FmtDate
+        elif lstCodes[ix][:3] == 'tel' and isinstance(lstValDef[ix],(str)):
+            # téléphone repéré par tel dans le début du code
+            stringConverter = FmtTelephone
+        else: stringConverter = None
+        if lstLargeur[ix] in ('',None,'None',-1):
+            lstLargeur[ix] = -1
+            isSpaceFilling = True
+            yaSpaceFil = True
+        else: isSpaceFilling = False
+        code = lstCodes[ix]
+        lstColonnes.append(ColumnDefn(title=colonne,align=posit,width=lstLargeur[ix],valueGetter=code,
+                                      valueSetter=lstValDef[ix],isSpaceFilling=isSpaceFilling,
+                                      stringConverter=stringConverter))
+        ix += 1
+    if not yaSpaceFil:
+        maxW = 0
+        ixMax = None
+        # si aucun space Filling, on active sur la plus large
+        for col in lstColonnes:
+            if col.width > maxW:
+                maxW = col.width
+                ixMax = lstColonnes.index(col)
+        if not ixMax == None:
+                lstColonnes[ixMax].isSpaceFilling = True
+    return lstColonnes
+
+def GetLstColonnes(**kwd):
+    # Compose ColumnsDefn selon schéma table, sans champs cutend, format dates et masquer ou pas ID
+    table = kwd.pop('table',None)
+    cutend = kwd.pop('cutend',None)
+    IDcache = kwd.pop('IDcache',True)
+    wxDates = kwd.pop('wxDates',True)
+    # si les listes sont fournies, les param précédents sont inutiles
+    lstNoms = kwd.pop('lstNoms',GetLstNomsColonnes(table,cutend))
+    if cutend == 0 or cutend == None: cutend = None
+    else: cutend = -cutend
+    lstTypes = kwd.pop('lstTypes',[y for x, y, z in table[:cutend]])
+    lstCodes = kwd.pop('lstCodes',[SupprimeAccents(x,lower=False) for x in lstNoms])
+    lstValDef = kwd.pop('lstValDef',ValeursDefaut(lstNoms, lstTypes,wxDates=wxDates))
+    lstLargeur = kwd.pop('lstLargeur',LargeursDefaut(lstNoms, lstTypes,IDcache=IDcache))
+    return DefColonnes(lstNoms, lstCodes, lstValDef, lstLargeur)
 
 # Conversion wx.Datetime % datetime.date
 

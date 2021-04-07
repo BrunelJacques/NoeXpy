@@ -192,6 +192,8 @@ class ListView(ObjectListView):
         #kwd peut contenir  filtretxt et lstfiltres
         if hasattr(self.Parent.Parent,'db'):
             kwd['db'] = self.Parent.Parent.db
+        else:
+            kwd['db'] = xdb.DB()
         self.SetObjects(self.formerTracks(**kwd))
         if len(self.innerList) >0:
             self.SelectObject(self.innerList[0])
@@ -372,6 +374,9 @@ class DLG_saisie(xusp.DLG_vide):
         boxBoutons.Add(btnEsc, 0,  wx.RIGHT,5)
         boxBoutons.Add(btnOK, 0,  wx.RIGHT,5)
         return boxBoutons
+
+    def Final(self):
+        wx.MessageBox("Voilà le xgtr.DLG_saisie")
 
 # ------------------------------------------------------------------------------------------------------------------
 
@@ -653,8 +658,9 @@ class DLG_gestion(wx.Dialog):
             lstChamps,ligneDonnees = xformat.DictToList(dlgSaisie.pnl.GetValues())
             track = TrackGeneral(ligneDonnees, olv.lstCodesColonnes, olv.lstNomsColonnes, olv.lstSetterValues)
             olv.AddObject(track)
+            olv.Refresh()
             self.GereDonnees(mode='ajout', ixligne=ixLigne, values=ligneDonnees)
-            olv.RepopulateList()
+            #olv.RepopulateList()
 
     def OnModifier(self, event):
         if not self.EstAdmin(): return
@@ -705,6 +711,10 @@ class DLG_gestion(wx.Dialog):
             self.EndModal(wx.ID_ABORT)
         else:
             self.Close()
+
+    def GetSelection(self):
+        # appellé depuis parent
+        return self.ctrlOlv.GetSelectedObject()
 
 
 # -- pour tests -----------------------------------------------------------------------------------------------------
