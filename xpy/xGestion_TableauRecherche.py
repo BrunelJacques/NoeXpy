@@ -338,15 +338,20 @@ class ListView(ObjectListView):
 
 # Saisie d'une ligne de l'olv
 class DLG_saisie(xusp.DLG_vide):
-    def __init__(self,parent,olv,mode='creation',**kwds):
-        lblBox =    kwds.pop('lblBox',"Gestion d'une ligne")
-        codeBox =    kwds.pop('codeBox',"ligne")
-        kwds['size']=(350,430)
-        super().__init__(parent, **kwds)
-
+    def __init__(self,parent,dicOlv,mode='creation',**kwds):
         # récup de la matrice servant à la gestion des données
-        key = (codeBox,lblBox)
-        matrice = xformat.OlvToMatrice(key,olv)
+        matrice = dicOlv.pop('matriceSaisie',None)
+        if not matrice:
+            key = ("saisie","")
+            matrice = xformat.DicOlvToMatrice(key,dicOlv)
+        sizeSaisie = dicOlv.pop('sizeSaisie',None)
+        if not sizeSaisie:
+            nblignes = 0
+            for key, lst in matrice.items():
+                nblignes += len(lst)
+            sizeSaisie = (200,max(nblignes * 50,400))
+        kwds['size'] = sizeSaisie
+        super().__init__(parent, **kwds)
 
         # construction de l'écran de saisie
         self.pnl = xusp.TopBoxPanel(self, matrice=matrice, lblTopBox=None)
@@ -376,7 +381,9 @@ class DLG_saisie(xusp.DLG_vide):
         return boxBoutons
 
     def Final(self):
-        wx.MessageBox("Voilà le xgtr.DLG_saisie")
+        # à substituer pour effectuer une validation finalisation de l'enregistrement
+        wx.MessageBox("Voilà le final de xGestion_TableauRecherche.DLG_saisie")
+        return wx.OK
 
 # ------------------------------------------------------------------------------------------------------------------
 
@@ -560,6 +567,7 @@ class DLG_gestion(wx.Dialog):
             - lstBtns qui défini les boutons d'application de bas d'écran"""
     def __init__(self,parent,dicOlv={}, **kwds):
         self.parent = parent
+        self.dicOlv = dicOlv
         # inutile si SetSizerAndFit qui ajuste
         size = dicOlv.pop('size', (700,400))
         pnlTableau = dicOlv.pop('pnlTableau',PNL_tableau )
@@ -651,7 +659,7 @@ class DLG_gestion(wx.Dialog):
         if ligne:
             ixLigne = olv.modelObjects.index(ligne)
         else: ixLigne = len(self.donnees)
-        dlgSaisie = DLG_saisie(self,olv)
+        dlgSaisie = DLG_saisie(self,self.dicOlv)
         ret = dlgSaisie.ShowModal()
         if ret == wx.OK:
             #récupération des valeurs saisies

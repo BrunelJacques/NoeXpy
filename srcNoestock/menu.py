@@ -10,7 +10,7 @@
 
 import wx
 from xpy import xUTILS_Identification, xGestionConfig, xUTILS_DB
-from srcNoestock import DLG_Entrees
+from srcNoestock import DLG_Entrees,UTILS_Stocks
 
 """ Paramétrage de la construction de la barre de menus """
 class MENU():
@@ -76,6 +76,10 @@ class MENU():
             {"code": "sauve", "label": ("Sauvegarder"),
              "infobulle": ("Sauvegarde la base de données"),
              "image": "Images/16x16/Conversion.png", "action": "On_sauve"},
+            {"code": "articles", "label": ("Gestion des articles"),
+             "infobulle": ("La gestion des articles permet de compléter ou corriger toutes les données de la table"),
+             "image": "Images/16x16/Depannage.png",
+             "action": "On_articles"},
         ]},
 
         # quatrième colonne
@@ -139,6 +143,12 @@ class MENU():
         pass
         #CTRL_Identification.AfficheUsers()
 
+    def On_articles(self,event):
+        dicOlv = UTILS_Stocks.GetMatriceArticles()
+        db = xUTILS_DB.DB()
+        dlg = UTILS_Stocks.DLG_articles(db=db, dicOlv=dicOlv)
+        ret = dlg.ShowModal()
+
     def On_identification(self,event):
         dlg = xUTILS_Identification.Dialog(self.parent)
         ret = dlg.ShowModal()
@@ -159,8 +169,9 @@ class MENU():
 
     def On_sauve(self,event):
         pass
+
     def On_inStock(self,event):
-        dlg = DLG_Entrees.Dialog()
+        dlg = DLG_Entrees.DLG()
         ret = dlg.ShowModal()
 
     def On_outStock(self,event):

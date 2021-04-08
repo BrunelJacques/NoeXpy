@@ -30,7 +30,7 @@ def ValideParams(pnl):
         if (not analytique) or (len(analytique) == 0):
             wx.MessageBox("Veuillez saisir un camp pour le retour de marchandise!")
 
-def GetMatriceArticles():
+def GetMatriceArticles(cutend=None):
     dicBandeau = {'titre':"Recherche d'un article",
                   'texte':"les mots clés du champ en bas permettent de filtrer d'autres lignes et d'affiner la recherche",
                   'hauteur':15, 'nomImage':"xpy/Images/32x32/Matth.png"}
@@ -42,6 +42,7 @@ def GetMatriceArticles():
     lstNomsColonnes = xformat.GetLstNomsColonnes(table)
     lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes,IDcache=False)
     lstColonnes = xformat.GetLstColonnes(table=table,lstLargeur=lstLargeurColonnes,lstNoms=lstNomsColonnes)
+    matriceSaisie =  xformat.DicOlvToMatrice(('ligne',""),{'lstColonnes':lstColonnes})
     lgSize = 60
     for lg in lstLargeurColonnes: lgSize += lg
     return   {
@@ -49,6 +50,8 @@ def GetMatriceArticles():
                 'lstChamps':lstChamps,
                 'getDonnees': GetArticles,
                 'size':(lgSize,400),
+                'sizeSaisie': (200,600),
+                'matriceSaisie': matriceSaisie,
                 'dicBandeau': dicBandeau,
                 'sortColumnIndex': 0,
                 'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
@@ -105,9 +108,9 @@ def GetArticles(**kwd):
         lstDonnees.append(ligne)
     return lstDonnees
 
-def GetArticle(db,value):
+def GetArticle(db,value,):
     dicOlv = GetMatriceArticles()
-    dlg = DLG_article(db=db,value=value,dicOlv=dicOlv)
+    dlg = DLG_articles(db=db,value=value,dicOlv=dicOlv)
     ret = dlg.ShowModal()
     if ret == wx.ID_OK:
         track = dlg.GetSelection()
@@ -236,7 +239,7 @@ def GetAnalytiques(db,axe="%%"):
         lstDonnees = [list(x) for x in recordset]
     return lstDonnees
 
-class DLG_article(xgtr.DLG_gestion):
+class DLG_articles(xgtr.DLG_gestion):
     # gestion des articles via tableau de recherche
     def __init__(self,*args,**kwds):
         db = kwds.pop('db',None)
@@ -254,7 +257,7 @@ class DLG_article(xgtr.DLG_gestion):
         # à vocation a être substitué par des accès base de données
         if mode == 'ajout':
             self.donnees = self.donnees[:ixligne] + [values,] + self.donnees[ixligne:]
-            mess="DLG_article.GereDonnees Ajout"
+            mess="DLG_articles.GereDonnees Ajout"
             self.db.ReqInsert('stArticles',lstChamps=self.dicOlv['lstChamps'],lstlstDonnees=[values,],mess=mess)
 
         elif mode == 'modif':

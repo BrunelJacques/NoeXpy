@@ -261,14 +261,14 @@ DB_TABLES = {
                 ('IDarticle', 'VARCHAR(32)', "PK Désignation du produit"),
                 ('rations', 'FLOAT', "Nombre de ration pour une unité"),
                 ('fournisseur', 'VARCHAR(32)', "Fournisseur habituel"),
+                ('txTva', 'FLOAT', "tx de TVA en %"),
+                ('magasin', 'VARCHAR(32)', "Grande famille de produit"),
+                ('rayon', 'VARCHAR(32)', "Sous famille niveau rayon, dans magasin"),
                 ('qteStock', 'INTEGER', "Stock en live"),
                 ('qteMini', 'INTEGER', "Seuil déclenchant une alerte rouge"),
                 ('qteSaison', 'INTEGER', "Seuil souhaitable en haute saison"),
-                ('txTva', 'FLOAT', "tx de TVA en %"),
-                ('prixActuel', 'FLOAT', "Dernier prix TTC unitaire livré ou de réappro"),
                 ('prixMoyen', 'FLOAT', "Prix unitaire moyen historique du stock"),
-                ('magasin', 'VARCHAR(32)', "Grande famille de produit"),
-                ('rayon', 'VARCHAR(32)', "Sous famille niveau rayon, dans magasin"),
+                ('prixActuel', 'FLOAT', "Dernier prix TTC unitaire livré ou de réappro"),
                 ('dernierAchat', 'DATE', "Date de dernière entrée avec prix saisi"),],# stocks: articles en stock
 
     'stEffectifs':[

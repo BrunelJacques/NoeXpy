@@ -1228,7 +1228,9 @@ class DLG_vide(wx.Dialog):
     def OnFermer(self, event):
         # si présence d'un Final et pas de sortie par fermeture de la fenêtre
         if event and not event.EventObject.ClassName == 'wxDialog' and hasattr(self,'Final'):
-            self.Final()
+            if self.Final() != wx.OK:
+                event.Skip()
+                return
 
         if self.IsModal():
             self.EndModal(wx.OK)

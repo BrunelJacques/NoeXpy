@@ -24,9 +24,9 @@ def AppelLignesMatrice(categ=None, possibles={}):
                     break
     return code, label, lignes
 
-def OlvToMatrice(key,olv):
+def DicOlvToMatrice(key,dicOlv):
     ld = []
-    for col in olv.lstColonnes:
+    for col in dicOlv['lstColonnes']:
         genre = col.valueSetter.__class__.__name__
         info = "Saisir une valeur dans le format %s"%genre
         param = {'name': col.valueGetter,
