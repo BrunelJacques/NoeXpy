@@ -383,7 +383,7 @@ class ListView(FastObjectListView):
             DB = xdb.DB()
             # Si c'est une ville par défaut
             if IDville < 100000 :
-                IDcorrection = DB.ReqInsert("corrections_villes", [("mode", "suppr"), ("IDville", IDville)])
+                IDcorrection = DB.ReqInsert("corrections_villes", lstDonnees=[("mode", "suppr"), ("IDville", IDville)])
             else :
                 # Si la ville est un ajout ou une modif
                 IDcorrection = IDville-100000

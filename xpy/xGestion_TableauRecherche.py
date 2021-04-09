@@ -20,13 +20,13 @@ from xpy.outils.xconst import *
 
 class TrackGeneral(object):
     #    Cette classe va transformer une ligne en objet selon les listes de colonnes et valeurs par défaut(setter)
-    def __init__(self, donnees,codesColonnes, nomsColonnes, setterValues,codesSup=[]):
+    def __init__(self, donnees,codesColonnes, setterValues,codesSup=[]):
         # il peut y avoir plus de données que le nombre de colonnes, elles sont non gérées par le tableau
-        if not (len(donnees)-len(codesSup) == len(codesColonnes) == len(nomsColonnes) == len(setterValues) ):
-            lst = [str(codesColonnes),str(nomsColonnes),str(setterValues),str(donnees)]
+        if not (len(donnees)-len(codesSup) == len(codesColonnes) == len(setterValues) ):
+            lst = [str(codesColonnes),str(setterValues),str(donnees)]
             mess = "Problème de nombre d'occurences!\n\n"
             mess += "%d - %d donnees, %d codes, %d colonnes et %d valeurs défaut"%(len(donnees),len(codesSup),
-                                                        len(codesColonnes), len(nomsColonnes), len(setterValues))
+                                                        len(codesColonnes), len(setterValues))
             mess += '\n\n'+'\n\n'.join(lst)
             wx.MessageBox(mess,caption="xGestion_TableauEditor.TrackGeneral")
         self.donnees = donnees
@@ -162,7 +162,7 @@ class ListView(ObjectListView):
         if self.lstDonnees is None:
             return tracks
         for ligneDonnees in self.lstDonnees:
-            tracks.append(TrackGeneral(ligneDonnees,self.lstCodesColonnes,self.lstNomsColonnes,self.lstSetterValues,
+            tracks.append(TrackGeneral(ligneDonnees,self.lstCodesColonnes,self.lstSetterValues,
                                         codesSup=self.lstCodesSup))
         return tracks
 
@@ -349,7 +349,7 @@ class DLG_saisie(xusp.DLG_vide):
             nblignes = 0
             for key, lst in matrice.items():
                 nblignes += len(lst)
-            sizeSaisie = (200,max(nblignes * 50,400))
+            sizeSaisie = (200,max(60 + nblignes * 50,400))
         kwds['size'] = sizeSaisie
         super().__init__(parent, **kwds)
 
@@ -379,11 +379,6 @@ class DLG_saisie(xusp.DLG_vide):
         boxBoutons.Add(btnEsc, 0,  wx.RIGHT,5)
         boxBoutons.Add(btnOK, 0,  wx.RIGHT,5)
         return boxBoutons
-
-    def Final(self):
-        # à substituer pour effectuer une validation finalisation de l'enregistrement
-        wx.MessageBox("Voilà le final de xGestion_TableauRecherche.DLG_saisie")
-        return wx.OK
 
 # ------------------------------------------------------------------------------------------------------------------
 
@@ -642,12 +637,27 @@ class DLG_gestion(wx.Dialog):
             self.donnees = [x for x in self.getDonnees(**kwds)]
         return  self.donnees
 
-    def GereDonnees(self, mode=None, ixligne=0, values=[]):
-        # à vocation a être substitué par des accès base de données
+    def ValideSaisie(self,dlgSaisie):
+        # Appelé lors de fermeture de saisie finalisation de l'enregistrement
+        ddDonnees = dlgSaisie.pnl.GetValues()
+
+        # vérifie la saisie du premier champ de la première box (censé être l'ID)
+        donneesBox = ddDonnees[next(iter(ddDonnees.keys()))]
+        firstcle = next(iter(donneesBox.keys()))
+        txtId = donneesBox[firstcle]
+        if len(txtId) > 0 and txtId != '0':
+            return wx.OK
+        else:
+            dlgSaisie.pnl.SetOneValue(firstcle,txtId)
+            wx.MessageBox("Le premier champ doit être non null et dans le format souhaité!","Rejet saisie",style=wx.ICON_WARNING)
+            return wx.ID_ABORT
+
+    def GereDonnees(self, mode=None, nomsCol=[], donnees=[], ixligne=0):
+        # Appelé en retour de saisie, à vocation a être substitué par des accès base de données
         if mode == 'ajout':
-            self.donnees = self.donnees[:ixligne] + [values,] + self.donnees[ixligne:]
+            self.donnees = self.donnees[:ixligne] + [donnees,] + self.donnees[ixligne:]
         elif mode == 'modif':
-            self.donnees[ixligne] = values
+            self.donnees[ixligne] = donnees
         elif mode == 'suppr':
             del self.donnees[ixligne]
 
@@ -662,13 +672,12 @@ class DLG_gestion(wx.Dialog):
         dlgSaisie = DLG_saisie(self,self.dicOlv)
         ret = dlgSaisie.ShowModal()
         if ret == wx.OK:
-            #récupération des valeurs saisies
-            lstChamps,ligneDonnees = xformat.DictToList(dlgSaisie.pnl.GetValues())
-            track = TrackGeneral(ligneDonnees, olv.lstCodesColonnes, olv.lstNomsColonnes, olv.lstSetterValues)
-            olv.AddObject(track)
-            olv.Refresh()
-            self.GereDonnees(mode='ajout', ixligne=ixLigne, values=ligneDonnees)
-            #olv.RepopulateList()
+            #récupération des valeurs saisies puis ajout dans les données avant reinit olv
+            ddDonnees = dlgSaisie.pnl.GetValues()
+            nomsCol, donnees = xformat.DictToList(ddDonnees)
+            self.GereDonnees('ajout',nomsCol, donnees, ixLigne)
+            self.pnl.ctrlOutils.barreRecherche.SetValue('')
+            olv.Filtrer('')
 
     def OnModifier(self, event):
         if not self.EstAdmin(): return
@@ -683,17 +692,16 @@ class DLG_gestion(wx.Dialog):
         ixLigne = olv.modelObjects.index(ligne)
 
         dDonnees = xformat.TrackToDdonnees(ligne,olv)
-        dlgSaisie = DLG_saisie(self,olv)
+        dlgSaisie = DLG_saisie(self,self.dicOlv)
         dlgSaisie.pnl.SetValues(dDonnees,)
         self.EnableID(dlgSaisie.pnl, enable=False)
         ret = dlgSaisie.ShowModal()
         if ret == wx.OK:
-            #récupération des valeurs saisies
-            lstChamps,ligneDonnees = xformat.DictToList(dlgSaisie.pnl.GetValues())
-            track = TrackGeneral(ligneDonnees, olv.lstCodesColonnes, olv.lstNomsColonnes, olv.lstSetterValues)
-            olv.modelObjects[ixLigne] = track
-            self.GereDonnees(mode='modif', ixligne=ixLigne, values=ligneDonnees)
-            olv.RepopulateList()
+            #récupération des valeurs saisies puis ajout dans les données avant reinit olv
+            ddDonnees = dlgSaisie.pnl.GetValues()
+            nomsCol, donnees = xformat.DictToList(ddDonnees)
+            self.GereDonnees('modif',nomsCol, donnees, ixLigne)
+            olv.Filtrer()
 
     def OnSupprimer(self, event):
         if not self.EstAdmin(): return
@@ -705,7 +713,7 @@ class DLG_gestion(wx.Dialog):
         ligne = olv.GetSelectedObject()
         ixLigne = olv.modelObjects.index(ligne)
         olv.modelObjects.remove(ligne)
-        self.GereDonnees(mode='suppr', ixligne=ixLigne, values=None)
+        self.GereDonnees(mode='suppr', ixligne=ixLigne)
         olv.RepopulateList()
 
     def OnFermer(self, end=None):
@@ -731,12 +739,12 @@ def GetDonnees(**kwds):
     filtre = kwds.pop('filtre',"")
     donnees = [[1,False, 'Bonjour', -1230.05939, -1230.05939, None,'deux'],
                      [2,None, 'Bonsoir', 57.5, 208.99,datetime.date.today(),None],
-                     [3,'', 'Jonbour', 0, 'remisé', datetime.date(2018, 11, 20), 'mon item'],
-                     [4,29, 'Salut', 57.082, 209, wx.DateTime.FromDMY(28, 1, 2019),"Gérer l'entrée dans la cellule"],
-                     [None,None, 'Salutation', 57.08, 0, wx.DateTime.FromDMY(1, 7, 1997), '2019-10-24'],
-                     [None,2, 'Python', 1557.08, 29, wx.DateTime.FromDMY(7, 1, 1997), '2000-12-25'],
-                     [None,3, 'Java', 57.08, 219, wx.DateTime.FromDMY(1, 0, 1900), None],
-                     [None,98, 'langage C', 10000, 209, wx.DateTime.FromDMY(1, 0, 1900), ''],
+                     [9,'', 'Jonbour', 0, 'remisé', datetime.date(2018, 11, 20), 'mon item'],
+                     [14,29, 'Salut', 57.082, 209, wx.DateTime.FromDMY(28, 1, 2019),"Gérer l'entrée dans la cellule"],
+                     [5,None, 'Salutation', 57.08, 0, wx.DateTime.FromDMY(1, 7, 1997), '2019-10-24'],
+                     [6,2, 'Python', 1557.08, 29, wx.DateTime.FromDMY(7, 1, 1997), '2000-12-25'],
+                     [12,3, 'Java', 57.08, 219, wx.DateTime.FromDMY(1, 0, 1900), None],
+                     [13,98, 'langage C', 10000, 209, wx.DateTime.FromDMY(1, 0, 1900), ''],
                      ]
     donneesFiltrees = [x for x in donnees if filtre in x[2] ]
     return donneesFiltrees

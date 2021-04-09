@@ -12,8 +12,10 @@ import wx
 import datetime
 import os
 import wx.propgrid as wxpg
+import xpy.xUTILS_DB as xdb
 from copy                      import deepcopy
 from xpy.outils                import xformat,xboutons
+
 
 OPTIONS_CTRL = ('name', 'label', 'ctrlAction', 'btnLabel', 'btnImage','btnAction', 'value', 'labels', 'values', 'enable',
                 'genre', 'help','ctrlSize','ctrlMinSize','ctrlMaxSize','txtSize', 'btnHelp','boxMaxSize','boxMinSize','boxSize','ctrl')
@@ -454,7 +456,7 @@ class PNL_ctrl(wx.Panel):
             elif not lgenre:
                 self.ctrl = (10,10)
             else:
-                style = wx.TE_PROCESS_ENTER
+                style = wx.TE_PROCESS_ENTER | wx.TE_CENTRE
                 if lname:
                     if 'pass' in lgenre:
                         lgenre = 'str'
@@ -498,16 +500,37 @@ class PNL_ctrl(wx.Panel):
         self.SetSizer(topbox)
 
     def GetValue(self):
-            return self.ctrl.GetValue()
+        value = self.ctrl.GetValue()
+        if self.genre in ('int','float'):
+            if not value: value = 0
+            value = xdb.NoLettre(str(value))
+            if self.genre == 'float':
+                value = float(value)
+            if self.genre == 'int':
+                value = int(value)
+        elif self.genre in ('bool','check'):
+            try:
+                if value in ('x','X','true',True): value = 1
+                value = int(value)
+            except Exception:
+                value = 0
+        elif self.genre in ('datetime','date'):
+            value = xformat.DateFrToSql(value)
+        elif value == None:
+            value = ''
+        return value
 
     def SetValue(self,value):
         if self.genre in ('int','float'):
             if not value: value = 0
-            value = str(value)
+            if isinstance(value,float):
+                value = xformat.FmtDecimal(value)
+            else:
+                value = xformat.FmtInt(value)
         elif self.genre in ('bool','check'):
             try:
                 value = int(value)
-            except Exception as err:
+            except Exception:
                 value = 0
         elif self.genre in ('datetime','date'):
             value = xformat.DatetimeToStr(value)
@@ -1226,9 +1249,9 @@ class DLG_vide(wx.Dialog):
         self.SetSizer(sizer)
 
     def OnFermer(self, event):
-        # si présence d'un Final et pas de sortie par fermeture de la fenêtre
-        if event and not event.EventObject.ClassName == 'wxDialog' and hasattr(self,'Final'):
-            if self.Final() != wx.OK:
+        # si présence d'un ValideSaisie chez le parent et pas de sortie par fermeture de la fenêtre
+        if event and not event.EventObject.ClassName == 'wxDialog' and hasattr(self.parent,'ValideSaisie'):
+            if self.parent.ValideSaisie(self) != wx.OK:
                 event.Skip()
                 return
 

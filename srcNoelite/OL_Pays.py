@@ -192,8 +192,7 @@ class ListView(FastObjectListView):
                 return
             else:
                 DB = xdb.DB()
-                lstDonnees = [ ("nom", nom ), ]
-                IDsecteur = DB.ReqInsert("secteurs", lstDonnees)
+                IDsecteur = DB.ReqInsert("secteurs", lstDonnees=[ ("nom", nom ), ])
                 DB.Close()
                 self.MAJ(IDsecteur)
         dlg.Destroy()

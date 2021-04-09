@@ -27,6 +27,17 @@ def NoPunctuation(txt = ''):
     regex = re.compile('[%s]' % re.escape(punctuation))
     return regex.sub(' ', txt)
 
+def NoLettre(txt = ''):
+    if isinstance(txt,str):
+        chiffres = "0123456789.,-+"
+        newtxt = ''
+        for a in txt:
+            if a in chiffres:
+                newtxt += a
+        txt = newtxt
+        txt = txt.replace(',','.')
+    return txt
+
 def Supprime_accent(texte):
     liste = [ ("é", "e"), ("è", "e"), ("ê", "e"), ("ë", "e"), ("à", "a"), ("û", ""), ("ô", "o"), ("ç", "c"), ("î", "i"), ("ï", "i"),]
     for a, b in liste :
@@ -468,7 +479,8 @@ class DB():
             lstlstDonnees.append(lsttemp)
         if len(lstChamps)* len(lstlstDonnees) == 0:
             if affichError:
-                wx.MessageBox('%s\n\nChamps ou données absents'%mess)
+                wx.MessageBox('%s\n\nChamps ou données absents'%mess,
+                              'Echec ReqInsert', style= wx.ICON_STOP)
             return '%s\n\nChamps ou données absents'%mess
         valeurs = self.DonneesInsert(lstlstDonnees)
         champs = '( ' + str(lstChamps)[1:-1].replace('\'','') +' )'
@@ -987,9 +999,10 @@ def Init_tables(parent=None, mode="creat"):
 if __name__ == "__main__":
     app = wx.App()
     os.chdir("..")
+    """
     db = DB()
     print("test echec ouverture: ",db.echec)
     from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
     db.CreationTables(dicTables=DB_TABLES)
     db.CreationTousIndex(DB_IX)
-    db.CreationTousIndex(DB_PK)
+    db.CreationTousIndex(DB_PK)"""

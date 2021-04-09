@@ -175,7 +175,7 @@ def lGetBoutons(dlg):
 # paramètre les options de l'OLV
 lcutend = 2
 lDICOLV = {
-    'lstColonnes': xformat.GetLstColonnes(DB_schema.DB_TABLES['immosComposants'],cutend=lcutend,wxDates=False),
+    'lstColonnes': xformat.GetLstColonnes(DB_schema.DB_TABLES['immosComposants'][:-lcutend],wxDates=False),
     'dictColFooter': {'libComposant': {"mode": "nombre", "alignement": wx.ALIGN_CENTER,'pluriel':"lignes"},
                       'valeur': {"mode": "total","alignement": wx.ALIGN_RIGHT},
                       'amortAnterieur': {"mode": "total","alignement": wx.ALIGN_RIGHT},

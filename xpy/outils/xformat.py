@@ -26,9 +26,15 @@ def AppelLignesMatrice(categ=None, possibles={}):
 
 def DicOlvToMatrice(key,dicOlv):
     ld = []
+    dicTrans = {'str':"de texte",
+                'float':"d'un nombre avec décimales",
+                'int':"d'un nombre entier",
+                'DateTime':"date avec ou sans '/'",
+                }
     for col in dicOlv['lstColonnes']:
         genre = col.valueSetter.__class__.__name__
-        info = "Saisir une valeur dans le format %s"%genre
+        txtGenre = dicTrans.get(genre,genre)
+        info = "Saisir une valeur dans le format %s"%txtGenre
         param = {'name': col.valueGetter,
                  'label': col.title,
                  'value': col.valueSetter,
@@ -99,21 +105,19 @@ def SupprimeAccents(texte,lower=True):
 
 # Automatismes de gestion des ColumnDef
 
-def GetLstChamps(table=None,cutend=None):
-    if cutend == 0 or cutend == None: cutend = None
-    else: cutend = -cutend
-    return [x for x,y,z in table[:cutend] ]
+def GetLstChamps(table=None):
+    return [x for x,y,z in table]
 
-def GetLstNomsColonnes(table=None,cutend=None):
-    if cutend == 0 or cutend == None: cutend = None
-    else: cutend = -cutend
-    return [x for x, y, z in table[:cutend]]
+def GetLstTypes(table=None):
+    return [y for x, y, z in table]
+def GetLstNomsColonnes(table=None):
+    return [x for x, y, z in table]
 
 def ValeursDefaut(lstNomsColonnes,lstTypes,wxDates=False):
     # Détermine des valeurs par défaut selon le type des variables, précision pour les dates wx ou datetime
     # la valeur par défaut détermine le cellEditor
-    lstValDef = [0,]
-    for ix in range(1,len(lstNomsColonnes)):
+    lstValDef = []
+    for ix in range(0,len(lstNomsColonnes)):
         tip = lstTypes[ix].lower()
         if tip[:3] == 'int': lstValDef.append(0)
         elif tip[:10] == 'tinyint(1)': lstValDef.append(False)
@@ -219,16 +223,13 @@ def DefColonnes(lstNoms,lstCodes,lstValDef,lstLargeur):
     return lstColonnes
 
 def GetLstColonnes(**kwd):
-    # Compose ColumnsDefn selon schéma table, sans champs cutend, format dates et masquer ou pas ID
+    # Compose ColumnsDefn selon schéma table, format dates et masquer ou pas ID
     table = kwd.pop('table',None)
-    cutend = kwd.pop('cutend',None)
     IDcache = kwd.pop('IDcache',True)
     wxDates = kwd.pop('wxDates',True)
     # si les listes sont fournies, les param précédents sont inutiles
-    lstNoms = kwd.pop('lstNoms',GetLstNomsColonnes(table,cutend))
-    if cutend == 0 or cutend == None: cutend = None
-    else: cutend = -cutend
-    lstTypes = kwd.pop('lstTypes',[y for x, y, z in table[:cutend]])
+    lstNoms = kwd.pop('lstNoms',GetLstNomsColonnes(table))
+    lstTypes = kwd.pop('lstTypes',[y for x, y, z in table])
     lstCodes = kwd.pop('lstCodes',[SupprimeAccents(x,lower=False) for x in lstNoms])
     lstValDef = kwd.pop('lstValDef',ValeursDefaut(lstNoms, lstTypes,wxDates=wxDates))
     lstLargeur = kwd.pop('lstLargeur',LargeursDefaut(lstNoms, lstTypes,IDcache=IDcache))
@@ -372,6 +373,7 @@ def SetBgColour(self,montant):
 
 def FmtDecimal(montant):
     if isinstance(montant,str): montant = montant.replace(',','.')
+    if isinstance(montant,str): montant = montant.replace(' ','')
     if montant == None or montant == '' or float(montant) == 0:
         return ""
     strMtt = '{:,.2f} '.format(float(montant))
@@ -546,6 +548,25 @@ def DictToList(dic):
                 lstCles.append(cle)
                 lstValeurs.append(valeur)
     return lstCles,lstValeurs
+
+def CopyDic(dic):
+    #deepcopy d'un dictionnaire
+    dic2 = {}
+    for key in dic.keys():
+        if isinstance(key,(list,tuple)):
+            key2 = [x for x in key]
+            if isinstance(key,tuple):
+                key2 = tuple(key2)
+        else: key2 = key
+        if isinstance(dic[key], (list,tuple)):
+            donnee2 = [x for x in dic[key2]]
+            if isinstance(dic[key],tuple):
+                donnee2 = tuple(donnee2)
+        elif isinstance(dic[key], dict):
+            donnee2 = CopyDic(dic[key2])
+        else: donnee2 = dic[key]
+        dic2[key2] = donnee2
+    return dic2
 
 def PrefixeNbre(param):
     if not isinstance(param,str):

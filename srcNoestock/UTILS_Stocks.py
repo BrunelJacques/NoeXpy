@@ -36,21 +36,25 @@ def GetMatriceArticles(cutend=None):
                   'hauteur':15, 'nomImage':"xpy/Images/32x32/Matth.png"}
 
     # Composition de la matrice de l'OLV articles, retourne un dictionnaire
-    table = DB_schema.DB_TABLES['stArticles']
+    if cutend:
+        table = DB_schema.DB_TABLES['stArticles'][:-cutend]
+    else:
+        table = DB_schema.DB_TABLES['stArticles']
     lstChamps = xformat.GetLstChamps(table)
-    lstTypes = [y for x, y, z in table]
+    lstTypes = xformat.GetLstTypes(table)
     lstNomsColonnes = xformat.GetLstNomsColonnes(table)
     lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes,IDcache=False)
     lstColonnes = xformat.GetLstColonnes(table=table,lstLargeur=lstLargeurColonnes,lstNoms=lstNomsColonnes)
     matriceSaisie =  xformat.DicOlvToMatrice(('ligne',""),{'lstColonnes':lstColonnes})
     lgSize = 60
     for lg in lstLargeurColonnes: lgSize += lg
+    sizeSaisie = (200, max(len(lstColonnes) * 50, 400))
     return   {
                 'lstColonnes': lstColonnes,
                 'lstChamps':lstChamps,
                 'getDonnees': GetArticles,
                 'size':(lgSize,400),
-                'sizeSaisie': (200,600),
+                'sizeSaisie': sizeSaisie,
                 'matriceSaisie': matriceSaisie,
                 'dicBandeau': dicBandeau,
                 'sortColumnIndex': 0,
@@ -108,8 +112,10 @@ def GetArticles(**kwd):
         lstDonnees.append(ligne)
     return lstDonnees
 
-def GetArticle(db,value,):
-    dicOlv = GetMatriceArticles()
+def GetArticle(db,value,**kwds):
+    # lanceur de la gestion des articles pour un choix filtré sur value
+    cutend = kwds.pop('cutend',6)
+    dicOlv = GetMatriceArticles(cutend=cutend)
     dlg = DLG_articles(db=db,value=value,dicOlv=dicOlv)
     ret = dlg.ShowModal()
     if ret == wx.ID_OK:
@@ -246,28 +252,56 @@ class DLG_articles(xgtr.DLG_gestion):
         value = kwds.pop('value',None)
         super().__init__(None, **kwds)
         self.db = db
-        self.dicOlv = kwds.get('dicOlv',None)
+        dicOlv = kwds.get('dicOlv',None)
+        self.dicOlvTbl = xformat.CopyDic(dicOlv)
+
+
         if  isinstance(value,str):
             self.pnl.ctrlOutils.barreRecherche.SetValue(value)
         # enlève le filtre si pas de réponse
         if len(self.ctrlOlv.innerList) == 0:
             self.pnl.ctrlOutils.barreRecherche.SetValue('')
 
-    def GereDonnees(self, mode=None, ixligne=0, values=[]):
+    def FmtDonneesDB(self,nomsCol,donnees,complete = True):
+        table = DB_schema.DB_TABLES['stArticles']
+        lstNomsColonnes = xformat.GetLstNomsColonnes(table)
+        lstChamps = xformat.GetLstChamps(table)
+        lstDonnees = []
+        # alimente les données saisies
+        for col in nomsCol:
+            lstDonnees.append((lstChamps[lstNomsColonnes.index(col)],donnees[nomsCol.index(col)]))
+        if len(donnees) < len(lstNomsColonnes) and complete:
+            # tous les champs n'ont pas été saisis, complementation avec des valeurs par défaut
+            altDonnees = []
+            lstTypes = xformat.GetLstTypes(table)
+            lstValDef = xformat.ValeursDefaut(lstNomsColonnes,lstTypes)
+            champsNonSaisis = [ lstChamps[lstNomsColonnes.index(x)] for x in lstNomsColonnes if x not in nomsCol]
+            for champ in champsNonSaisis:
+                lstDonnees.append((champ,lstValDef[lstChamps.index(champ)]))
+        return lstDonnees
+
+    def GereDonnees(self, mode=None, nomsCol=[], donnees=[], ixligne=0):
         # à vocation a être substitué par des accès base de données
         if mode == 'ajout':
-            self.donnees = self.donnees[:ixligne] + [values,] + self.donnees[ixligne:]
+            self.donnees = self.donnees[:ixligne] + [donnees, ] + self.donnees[ixligne:]
+            lstDonnees = self.FmtDonneesDB(nomsCol,donnees,complete=True)
             mess="DLG_articles.GereDonnees Ajout"
-            self.db.ReqInsert('stArticles',lstChamps=self.dicOlv['lstChamps'],lstlstDonnees=[values,],mess=mess)
+            self.db.ReqInsert('stArticles',lstDonnees=lstDonnees,mess=mess)
 
         elif mode == 'modif':
-            self.donnees[ixligne] = values
+            self.donnees[ixligne] = donnees
+            lstDonnees = self.FmtDonneesDB(nomsCol,donnees,complete=False)
+            mess="DLG_articles.GereDonnees Modif"
+            self.db.ReqMAJ('stArticles',lstDonnees[:-1],nomChampID=lstDonnees[0][0],ID=lstDonnees[0][1],mess=mess)
+
         elif mode == 'suppr':
             del self.donnees[ixligne]
+            mess="DLG_articles.GereDonnees Suppr"
+            self.db.ReqDel()
 
 if __name__ == '__main__':
     import os
     os.chdir("..")
     from xpy import xUTILS_DB as xdb
     app = wx.App(0)
-    ret = GetArticle(xdb.DB(),'')
+    ret = GetArticle(xdb.DB(),'',cutend=6)
