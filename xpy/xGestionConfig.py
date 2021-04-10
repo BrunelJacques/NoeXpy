@@ -364,7 +364,7 @@ class DLG_choixConfig(wx.Dialog):
         self.SauveConfig()
         dic = self.ctrlID.GetValues()
         if self.IsModal():
-            self.EndModal(wx.ID_OK)
+            self.EndModal(wx.OK)
         else: self.Destroy()
 
 # Visu-Choix d'une Liste pour gestion des configs d'accès aux bases de données

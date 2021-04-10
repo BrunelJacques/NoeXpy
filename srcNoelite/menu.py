@@ -97,7 +97,7 @@ class MENU():
     def On_config(self,event):
         #lance la configuration initiale à la base de donnée pincipale
         ret = self.parent.SaisieConfig()
-        if ret == wx.ID_OK:
+        if ret == wx.OK:
             xUTILS_Identification.SaisieMotPasse(self.parent)
 
     def On_utilisateurs(self,event):

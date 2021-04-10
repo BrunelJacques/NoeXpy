@@ -81,7 +81,7 @@ def AfficheUsers(parent):
                                         lstColonnes=lstColonnes )
         ret = dlgListe.ShowModal()
         dlgListe.Destroy()
-        if ret == wx.ID_OK:
+        if ret == wx.OK:
             SaisieMotPasse(parent)
         return ret
 
@@ -181,7 +181,7 @@ class Dialog(wx.Dialog):
         if DB.echec:
             dlg = xGestionConfig.DLG_choixConfig(self)
             ret = dlg.ShowModal()
-            if ret == wx.ID_OK:
+            if ret == wx.OK:
                 DB = xdb.DB()
                 self.dictAppli = DB.dictAppli
                 self.grpConfigs = DB.grpConfigs
@@ -273,7 +273,7 @@ class Dialog(wx.Dialog):
             wx.MessageBox("Utilisateur %s\n\nAvec droits: %s"%(dictUtilisateur["utilisateur"],
                                                            dictUtilisateur["profil"]))
         # Fermeture de la fenêtre
-        self.EndModal(wx.ID_OK)
+        self.EndModal(wx.OK)
 
     def GetDictUtilisateur(self):
         return self.dictUtilisateur
@@ -287,7 +287,7 @@ if __name__ == '__main__':
     dlg = Dialog(None)
     app.SetTopWindow(dlg)
     ret = dlg.ShowModal()
-    if ret == wx.ID_OK:
+    if ret == wx.OK:
         print(dlg.GetDictUtilisateur()['nom'])
 
     app.MainLoop()

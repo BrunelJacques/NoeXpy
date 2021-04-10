@@ -386,6 +386,7 @@ class PNL_tableau(wx.Panel):
     #panel olv avec habillage optionnel pour des infos (bas gauche) et boutons sorties
     def __init__(self, parent, dicOlv,*args, **kwds):
         self.parent = parent
+        self.db = kwds.pop('db',None)
         self.avecRecherche = dicOlv.pop('recherche',True)
         dicBandeau = dicOlv.pop('dicBandeau',None)
         autoSizer = dicOlv.pop('autoSizer',True)
@@ -448,7 +449,7 @@ class PNL_tableau(wx.Panel):
             self.lstBtns =  [
                 ('BtnPrec', wx.ID_CANCEL, wx.ArtProvider.GetBitmap(wx.ART_DELETE, wx.ART_OTHER, (32, 32)),
                 "Abandon, Cliquez ici pour retourner à l'écran précédent"),
-               ('BtnOK', wx.ID_OK, wx.Bitmap('xpy/Images/32x32/Valider.png', wx.BITMAP_TYPE_ANY),
+               ('BtnOK', wx.OK, wx.Bitmap('xpy/Images/32x32/Valider.png', wx.BITMAP_TYPE_ANY),
                 "Cliquez ici pour Choisir l'item sélectionné"),
             ]
         #composition de l'écran selon les composants
@@ -521,7 +522,7 @@ class PNL_tableau(wx.Panel):
         if not self.ctrlOlv.GetSelectedObject():
             wx.MessageBox("Aucun choix n'a été fait\n\nIl vous faut sélectionner une ligne ou abandonner!")
             return
-        self.parent.OnFermer(wx.ID_OK)
+        self.parent.OnFermer()
 
     def OnRechercheChar(self,evt):
         if evt.GetKeyCode() in (wx.WXK_UP,wx.WXK_DOWN,wx.WXK_PAGEDOWN,wx.WXK_PAGEUP):
@@ -549,7 +550,7 @@ class DLG_tableau(wx.Dialog):
     def GetSelection(self):
         return self.pnl.ctrlOlv.GetSelectedObject()
 
-    def OnFermer(self, end=None):
+    def OnFermer(self, end=wx.OK):
         if self.IsModal():
             self.EndModal(end)
         else:
@@ -777,7 +778,7 @@ if __name__ == '__main__':
     app.SetTopWindow(exempleframe)
     ret = exempleframe.ShowModal()
     print("retour: ",ret)
-    if ret == wx.ID_OK :
+    if ret == wx.OK :
         print(exempleframe.GetSelection().donnees)
     else: print(None)
     app.MainLoop()

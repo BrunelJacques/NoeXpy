@@ -214,7 +214,7 @@ class ObjectListViewPrinter(object):
             "orientation": self.orientation,
         }
         dlg = OptionsImpression.Dialog(None, dictOptions=dictOptions)
-        if dlg.ShowModal() == wx.ID_OK:
+        if dlg.ShowModal() == wx.OK:
             dictOptions = dlg.GetOptions()
             dlg.Destroy()
         else:

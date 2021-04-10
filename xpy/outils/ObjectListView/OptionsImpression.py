@@ -801,7 +801,7 @@ class Dialog(wx.Dialog):
             return
 
             # Fermeture
-        self.EndModal(wx.ID_OK)
+        self.EndModal(wx.OK)
 
     def GetOptions(self):
         return self.ctrl_parametres.GetOptions()

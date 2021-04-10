@@ -324,11 +324,11 @@ class DlgAdrMelTel(xusp.DLG_vide):
             for ix in lstIdx:
                 donnees.append(ligne[ix])
             DB.ReqMAJ('individus',nomChampID='IDindividu',ID=IDindividu,lstChamps=lstChamps,
-                      lstDonnees=donnees,mess="MAJ DLG_AdrMel")
+                      lstValues=donnees,mess="MAJ DLG_AdrMel")
         if self.mode == 'familles':
             donnees = [self.famNoPub,self.famNoMel]
             DB.ReqMAJ('familles',nomChampID='IDfamille',ID=self.IDref,lstChamps=['refus_pub','refus_mel'],
-                      lstDonnees=donnees,mess="MAJ DLG_AdrMel refus")
+                      lstValues=donnees,mess="MAJ DLG_AdrMel refus")
         ligne = self.ctrl.lstDonnees[0]
         self.nele = ligne[self.ctrl.lstCodesColonnes.index('nele')]
         self.teldomicile = ligne[self.ctrl.lstCodesColonnes.index('teldomicile')]

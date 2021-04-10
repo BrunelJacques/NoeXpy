@@ -132,7 +132,7 @@ class Noegest(object):
         for donnees in lstModifs:
             donnees += donUser
             self.db.ReqMAJ('immosComposants',nomChampID='IDcomposant',ID=donnees[0],lstChamps=champs[1:],
-                           lstDonnees=donnees[1:], mess="U_Noegest.SetComposants_maj")
+                           lstValues=donnees[1:], mess="U_Noegest.SetComposants_maj")
         return
 
     def GetEnsemble(self,IDimmo, lstChamps,pnlParams):
@@ -578,7 +578,7 @@ class Noegest(object):
                  lstColonnes=["Début","Fin"],
                  lstWcol=[150,150],
                  size=(300,500))
-        if dlg.ShowModal() == wx.ID_OK:
+        if dlg.ShowModal() == wx.OK:
             return dlg.choix
         else: return None
 

@@ -136,7 +136,7 @@ class MENU():
     def On_config(self,event):
         #lance la configuration initiale à la base de donnée pincipale
         ret = self.parent.SaisieConfig()
-        if ret == wx.ID_OK:
+        if ret == wx.OK:
             self.parent.ConnectBase()
 
     def On_synchro(self,event):
@@ -152,7 +152,7 @@ class MENU():
     def On_identification(self,event):
         dlg = xUTILS_Identification.Dialog(self.parent)
         ret = dlg.ShowModal()
-        if ret == wx.ID_OK:
+        if ret == wx.OK:
             self.parent.dictUser = dlg.GetDictUtilisateur()
         self.parent.MakeStatusText()
         self.parent.GestMenu(True)

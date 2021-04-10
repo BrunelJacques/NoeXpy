@@ -152,7 +152,7 @@ class Dialog(wx.Dialog):
         selectionListe = self.ctrl_villes.Selection()
         if not event:
             # renvoyé par le double clic dans l'OLV, priorité à la selection
-            self.EndModal(wx.ID_OK)
+            self.EndModal(wx.OK)
         saisie_cp = self.ctrl_cp.GetValue()
         saisie_ville = self.ctrl_ville.GetValue()
         if saisie_ville == "" and saisie_cp == "" and len(selectionListe) == 0 :
@@ -170,7 +170,7 @@ class Dialog(wx.Dialog):
             dlg.ShowModal()
             dlg.Destroy()
             return
-        self.EndModal(wx.ID_OK)
+        self.EndModal(wx.OK)
 
     def OnBoutonAnnuler(self, event): 
         self.EndModal(wx.ID_CANCEL)   

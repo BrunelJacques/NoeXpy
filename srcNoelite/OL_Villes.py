@@ -97,7 +97,7 @@ class DLG_Saisie(wx.Dialog):
 
     def OnChoixPays(self,event):
         dlg = DLG_Pays.Dialog(self)
-        if dlg.ShowModal() == wx.ID_OK:
+        if dlg.ShowModal() == wx.OK:
             pays = dlg.saisie_pays
             self.ctrl_pays.SetValue(pays)
         dlg.Destroy()
@@ -124,7 +124,7 @@ class DLG_Saisie(wx.Dialog):
                 getPays = usa.GetOnePays(pays)
                 self.ctrl_pays.SetValue(getPays)
                 self.ctrl_pays.SetFocus()
-        self.EndModal(wx.ID_OK)
+        self.EndModal(wx.OK)
 
 # -----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -316,7 +316,7 @@ class ListView(FastObjectListView):
         if nuu.VerificationDroitsUtilisateurActuel("parametrage_villes", "creer") == False : return
         # Demande le nom et le code postal
         dlg = DLG_Saisie(self)
-        if dlg.ShowModal() == wx.ID_OK:
+        if dlg.ShowModal() == wx.OK:
             nom = dlg.GetNom()
             cp = dlg.GetCp()
             pays = dlg.GetPays()
@@ -343,7 +343,7 @@ class ListView(FastObjectListView):
         mode = self.Selection()[0].mode
         
         dlg = DLG_Saisie(self, nom, cp, pays)
-        if dlg.ShowModal() == wx.ID_OK:
+        if dlg.ShowModal() == wx.OK:
             nom = dlg.GetNom()
             cp = dlg.GetCp()
             pays = dlg.GetPays()

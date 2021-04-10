@@ -109,7 +109,7 @@ class Dialog(wx.Dialog):
             dlg.Destroy()
             return
         self.saisie_pays = selection[0].nom
-        self.EndModal(wx.ID_OK)
+        self.EndModal(wx.OK)
 
 
 if __name__ == "__main__":

@@ -667,7 +667,7 @@ class PNL_pied(wx.Panel):
         self.lstBtns = dicPied.pop('lstBtns',None)
         if (not self.lstBtns) and (not self.lstInfos):
             #force la présence d'un pied d'écran par défaut
-            self.lstBtns = [('BtnOK', wx.ID_OK, wx.Bitmap('xpy/Images/100x30/Bouton_ok.png', wx.BITMAP_TYPE_ANY),
+            self.lstBtns = [('BtnOK', wx.OK, wx.Bitmap('xpy/Images/100x30/Bouton_ok.png', wx.BITMAP_TYPE_ANY),
                            "Cliquez ici pour fermer la fenêtre et quitter")]
         wx.Panel.__init__(self, parent,  **kwds)
         self.parent = parent

@@ -179,7 +179,7 @@ class Pnl_tableau(xgtr.PNL_tableau):
                 prenom = self.choix.prenom
             dlg2 = nsa.DlgAdresses_saisie(ID,mode=self.parent.mode, titre=u"Adresse de %d - %s %s"%(ID,nom,prenom))
             ret = dlg2.ShowModal()
-            if ret == wx.ID_OK:
+            if ret == wx.OK:
                 lstAdresse = dlg2.lstAdresse
                 rue, cp, ville = nua.LstAdresseToChamps(lstAdresse)
                 self.choix.rue = rue

@@ -235,7 +235,7 @@ def ExportTexte(listview=None, grid=None, titre=u"", lstColonnes=None, listeVale
     # Selection des lignes
     if autoriseSelections == True:
         dlg = xchoixListe.DialogAffiche(None, lstColonnes=lstColonnes, lstDonnees=listeValeurs)
-        if dlg.ShowModal() == wx.ID_OK:
+        if dlg.ShowModal() == wx.OK:
             listeSelections = dlg.GetChoix()
             dlg.Destroy()
         else:
@@ -337,7 +337,7 @@ def ExportExcel(listview=None, grid=None, titre="Liste", lstColonnes=None, liste
     # Selection des lignes
     if autoriseSelections == True:
         dlg = xchoixListe.DialogAffiche(None, lstColonnes=lstColonnes, lstDonnees=listeValeurs, )
-        if dlg.ShowModal() == wx.ID_OK:
+        if dlg.ShowModal() == wx.OK:
             listeSelections = dlg.GetChoix()
             dlg.Destroy()
         else:

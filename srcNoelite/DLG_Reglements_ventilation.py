@@ -1157,7 +1157,7 @@ class Dialog(wx.Dialog):
             txt += "\nConfirmez-vous la validation?"
             if wx.YES != wx.MessageBox(txt,style=wx.YES_NO):
                 return
-        self.EndModal(wx.ID_OK)
+        self.EndModal(wx.OK)
 
     def OnAbort(self,event):
         self.EndModal(wx.ID_CANCEL)

@@ -323,7 +323,7 @@ class DialogLettrage(wx.Dialog):
         self.EndModal(wx.ID_CANCEL)
 
     def OnClicOk(self, event):
-        self.EndModal(wx.ID_OK)
+        self.EndModal(wx.OK)
 
     def GetLettresSuppr(self):
         return [x for x in self.lstLettresOriginal if not x in self.lstLettres]
@@ -432,7 +432,7 @@ class DialogCoches(wx.Dialog):
         else:
             if self.nbColonnes == 1:
                 self.choix = [x[0] for x in self.choix]
-            self.EndModal(wx.ID_OK)
+            self.EndModal(wx.OK)
 
     def OnDblClic(self, event):
         state = self.listview.GetCheckState(self.listview.GetSelectedObject())
@@ -555,7 +555,7 @@ class DialogAffiche(wx.Dialog):
         else:
             self.choix = self.GetChoix()
             event.Skip()
-            self.EndModal(wx.ID_OK)
+            self.EndModal(wx.OK)
 
     def GetChoix(self):
         selection = self.listview.GetSelectedObject()

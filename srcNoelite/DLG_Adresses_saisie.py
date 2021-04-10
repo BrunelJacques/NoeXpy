@@ -161,7 +161,7 @@ class PnlAdresse(wx.Panel):
                                         lstDonnees=lstChoix,lstColonnes=self.lstColonnes)
             ret = dlg.ShowModal()
             choix = dlg.GetChoix()
-            if ret == wx.ID_OK and dlg.GetChoix():
+            if ret == wx.OK and choix:
                 ix = lstChoix.index(dlg.GetChoix())
                 ville = self.lstVilles[ix]
                 pays = self.lstPays[ix]
@@ -200,7 +200,7 @@ class PnlAdresse(wx.Panel):
             dlg = xcl.DialogAffiche(lstDonnees=lstChoix,titre=u"Précisez la ville",
                                           intro=u"Sinon allez choisir la ville par '...'")
             ret = dlg.ShowModal()
-            if ret == wx.ID_OK and dlg.GetChoix():
+            if ret == wx.OK and dlg.GetChoix():
                 ix = lstChoix.index(dlg.GetChoix())
                 ville = self.lstVilles[ix]
                 pays = self.lstPays[ix]
@@ -297,7 +297,7 @@ class PnlAdresse(wx.Panel):
         event.Skip()
         dlg = ndv.Dialog(None, modeImportation=True)
         ret = dlg.ShowModal()
-        if  ret == wx.ID_OK:
+        if  ret == wx.OK:
             cp, ville, pays = dlg.GetVille()
             self.SetValue("cp",cp)
             self.SetValue("ville",ville)
@@ -463,7 +463,7 @@ class DlgAdresses_saisie(wx.Dialog):
             exadresse = nua.GetDBoldAdresse(self.IDindividu)
             if not exadresse:
                 ret = nua.SetDBoldAdresse(None,self.IDindividu, self.lstAdresse)
-            self.EndModal(wx.ID_OK)
+            self.EndModal(wx.OK)
         if self.mode == 'familles':
             ret = nua.SetDBcorrespondant(self.dicCorrespondant)
             if ret != "ok":
@@ -487,7 +487,7 @@ class DlgAdresses_saisie(wx.Dialog):
         validee = False
         if not forcer:
             mess = nua.Validation(self.lstAdresse)
-            if mess == wx.ID_OK:
+            if mess == wx.OK:
                 validee = True
         self.lstCtrl[self.lstNomsChamps.index("forcer")].ctrl.Enable(True)
         self.lstCtrl[self.lstNomsChamps.index("pays")].ctrl.Enable(True)

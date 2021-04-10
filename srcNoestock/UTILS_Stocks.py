@@ -118,7 +118,7 @@ def GetArticle(db,value,**kwds):
     dicOlv = GetMatriceArticles(cutend=cutend)
     dlg = DLG_articles(db=db,value=value,dicOlv=dicOlv)
     ret = dlg.ShowModal()
-    if ret == wx.ID_OK:
+    if ret == wx.OK:
         track = dlg.GetSelection()
         IDarticle = dlg.GetSelection().IDarticle
     else: IDarticle = None

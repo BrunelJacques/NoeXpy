@@ -247,7 +247,7 @@ def GetOnePays(filtre=""):
         dlg = xcl.DialogAffiche(lstDonnees=lstDonnees, titre="Précisez le pays",
                                       intro="Si le pays n'existe pas passer par la gestion des pays postaux")
         ret = dlg.ShowModal()
-        if ret == wx.ID_OK:
+        if ret == wx.OK:
             pays = dlg.GetChoix()[0]
         dlg.Destroy()
     db.Close()
@@ -288,7 +288,7 @@ def GetDBCorrespondant(IDfamille):
     dlg = xcl.DialogAffiche(titre=u"Choisissez un membre ayant une adresse", intro=u"Sinon allez gérer les individus",
                             lstDonnees=lstMembres, lstColonnes=lstColonnes,lstWcol=lstWcol)
     ret = dlg.ShowModal()
-    if ret == wx.ID_OK and dlg.GetChoix():
+    if ret == wx.OK and dlg.GetChoix():
         ix = lstMembres.index(dlg.GetChoix())
         IDindividu = lstMembres[ix][lstChamps.index('IDindividu')]
         prenom = lstMembres[ix][lstChamps.index('prenom')]
@@ -492,7 +492,7 @@ def Validation(adresse):
         mess = ""
     if mess != "":
         return "ANOMALIES:\n" + mess
-    return wx.ID_OK
+    return wx.OK
 
 def TransposeAdresse(adresse=[]):
     # eclate l'adresse fournie en segments contenant un mot clé identifié, puis recompose selon l'ordre normé

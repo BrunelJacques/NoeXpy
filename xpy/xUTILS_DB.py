@@ -551,14 +551,14 @@ class DB():
         donneesCouples = donneesCouples[:-2]+' '
         return donneesCouples
 
-    def ReqMAJ(self, nomTable='',couples=None,nomChampID=None,ID=None,condition=None,lstDonnees=[],lstChamps=[],
+    def ReqMAJ(self, nomTable='',lstDonnees=None,nomChampID=None,ID=None,condition=None,lstValues=[],lstChamps=[],
                mess=None, affichError=True, IDestChaine = False):
-        """ Permet de mettre à jour des couples présentées en dic ou liste de tuples"""
-        # si couple est None, on en crée à partir de lstChamps et lstDonnees
-        if couples :
-            update = self.DonneesMAJ(couples)
-        elif (len(lstChamps) > 0) and (len(lstChamps) == len(lstDonnees)):
-            update = self.ListesMAJ(lstChamps,lstDonnees)
+        """ Permet de mettre à jour des lstDonnees présentées en dic ou liste de tuples"""
+        # si couple est None, on en crée à partir de lstChamps et lstValues
+        if lstDonnees :
+            update = self.DonneesMAJ(lstDonnees)
+        elif (len(lstChamps) > 0) and (len(lstChamps) == len(lstValues)):
+            update = self.ListesMAJ(lstChamps,lstValues)
         if nomChampID and ID:
             # un nom de champ avec un ID vient s'ajouter à la condition
             if IDestChaine == False and (isinstance(ID, int )):

@@ -338,7 +338,7 @@ class PNL_corpsReglements(xgte.PNL_corps):
                 dlg = ndrv.Dialog(self,-1,None,track.IDfamille,track.IDreglement,track.montant)
                 if dlg.ok:
                     ret = dlg.ShowModal()
-                    if ret == wx.ID_OK:
+                    if ret == wx.OK:
                         # --- Sauvegarde de la ventilation ---
                         dlg.panel.Sauvegarde(track.IDreglement)
                 else:

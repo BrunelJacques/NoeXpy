@@ -269,7 +269,7 @@ class MainFrame(wx.Frame):
         import xpy.xGestionConfig as xgc
         cfg = xgc.DLG_choixConfig(self )
         ret = cfg.ShowModal()
-        if ret == wx.ID_OK:
+        if ret == wx.OK:
             self.MakeStatusText()
         return ret
 

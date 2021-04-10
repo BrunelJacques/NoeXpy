@@ -250,8 +250,8 @@ class Compta(object):
             if 'db_reseau' in config.keys():
                 if config['db_reseau']['ID'] == compta:
                     configCpta = config['db_reseau']
-        ret = wx.ID_OK
-        while (ret == wx.ID_OK) and (not configCpta):
+        ret = wx.OK
+        while (ret == wx.OK) and (not configCpta):
             # gestion d'une configuration nouvelle
             kwd={'nomConfig':'compta','lblBox':"Paramètres BD de l'accès à la compta"}
             dlgGest = xgc.DLG_saisieUneConfig(parent,**kwd)
