@@ -667,6 +667,7 @@ class DLG_gestion(wx.Dialog):
         # l'ajout d'une ligne nécessite d'appeler un écran avec les champs en lignes
         olv = self.ctrlOlv
         ligne = olv.GetSelectedObject()
+        ixLigne = 0
         if ligne:
             ixLigne = olv.modelObjects.index(ligne)
         else: ixLigne = len(self.donnees)
@@ -679,6 +680,8 @@ class DLG_gestion(wx.Dialog):
             self.GereDonnees('ajout',nomsCol, donnees, ixLigne)
             self.pnl.ctrlOutils.barreRecherche.SetValue('')
             olv.Filtrer('')
+        olv.Select(ixLigne)
+
 
     def OnModifier(self, event):
         if not self.EstAdmin(): return
@@ -703,6 +706,7 @@ class DLG_gestion(wx.Dialog):
             nomsCol, donnees = xformat.DictToList(ddDonnees)
             self.GereDonnees('modif',nomsCol, donnees, ixLigne)
             olv.Filtrer()
+        olv.Select(ixLigne)
 
     def OnSupprimer(self, event):
         if not self.EstAdmin(): return
@@ -717,7 +721,7 @@ class DLG_gestion(wx.Dialog):
         self.GereDonnees(mode='suppr', ixligne=ixLigne)
         olv.RepopulateList()
 
-    def OnFermer(self, end=None):
+    def OnFermer(self, end=wx.OK):
         if self.IsModal():
             self.EndModal(end)
         else:

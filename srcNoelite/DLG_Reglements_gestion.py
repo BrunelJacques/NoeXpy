@@ -306,6 +306,7 @@ class PNL_corpsReglements(xgte.PNL_corps):
             designation = nur.GetDesignationFamille(self.parent.db,value)
             track.designation = designation
             track.IDfamille = value
+
         if code == 'mode':
             # rend non éditable les champs suivants si pas d'option possible
             IDmode = self.parent.dicModesChoices[value]['IDmode']
@@ -317,6 +318,7 @@ class PNL_corpsReglements(xgte.PNL_corps):
             else: isedit = True
             self.ctrlOlv.columns[self.ctrlOlv.lstCodesColonnes.index('emetteur')].isEditable = isedit
             self.ctrlOlv.columns[self.ctrlOlv.lstCodesColonnes.index('numero')].isEditable = isedit
+
         if code == 'nature':
             # actualisation du flag créer
             if value.lower() in ('don','donsscerfa','debour') :
@@ -330,7 +332,6 @@ class PNL_corpsReglements(xgte.PNL_corps):
             else:
                 track.compte = ""
                 track.creer = False
-
 
         if code == 'montant':
             if track.nature in ('Règlement','Libre') and value != 0.0:

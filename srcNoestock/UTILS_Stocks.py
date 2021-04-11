@@ -73,7 +73,6 @@ def GetArticles(**kwd):
     lstCodesColonnes = [x.valueGetter for x in dicOlv['lstColonnes']]
 
     # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
-    # cf self.listeFiltresColonnes  à gérer avec champs au lieu de codes colonnes
     limit = ''
     if nbreFiltres == 0:
         limit = "LIMIT %d" %LIMITSQL
@@ -96,34 +95,57 @@ def GetArticles(**kwd):
     if retour == "ok":
         recordset = db.ResultatReq()
     # composition des données du tableau à partir du recordset, regroupement par article
-    dicArticles = {}
-
-    ixID = lstCodesColonnes.index('IDarticle')
-    for record in recordset:
-        if not record[ixID] in dicArticles.keys():
-            dicArticles[record[ixID]] = {}
-            for ix in range(len(lstCodesColonnes)):
-                dicArticles[record[ixID]][lstCodesColonnes[ix]] = record[ix]
     lstDonnees = []
-    for key, dic in dicArticles.items():
+    for record in recordset:
         ligne = []
-        for code in lstCodesColonnes:
-            ligne.append(dic[code])
+        for val in record:
+            ligne.append(val)
         lstDonnees.append(ligne)
     return lstDonnees
 
 def GetArticle(db,value,**kwds):
-    # lanceur de la gestion des articles pour un choix filtré sur value
+    # test de présence de l'article
+    if len(value)>0:
+        req = """   SELECT IDarticle
+                    FROM stArticles
+                    WHERE IDarticle LIKE '%%%s%%'
+                    ;""" % (value)
+        retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetArticle req1')
+        if retour == "ok":
+            recordset = db.ResultatReq()
+            if len(recordset) == 1:
+                return recordset[0][0]
+
+    # article non trouvé, on lance la gestion des articles pour un choix filtré sur value
     cutend = kwds.pop('cutend',6)
     dicOlv = GetMatriceArticles(cutend=cutend)
     dlg = DLG_articles(db=db,value=value,dicOlv=dicOlv)
     ret = dlg.ShowModal()
     if ret == wx.OK:
-        track = dlg.GetSelection()
         IDarticle = dlg.GetSelection().IDarticle
     else: IDarticle = None
     dlg.Destroy()
     return IDarticle
+
+def GetDicArticle(db,value):
+    # retourne les valeurs de l'article sous forme de dict
+    dicArticle = {}
+    if len(value)>0:
+        table = DB_schema.DB_TABLES['stArticles']
+        lstChamps = xformat.GetLstChamps(table)
+        lstNomsColonnes = xformat.GetLstNomsColonnes(table)
+        req = """   SELECT %s
+                        FROM stArticles
+                        WHERE IDarticle LIKE '%%%s%%'
+                        ;""" % (','.join(lstChamps),value)
+        retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetArticle req1')
+        if retour == "ok":
+            recordset = db.ResultatReq()
+            if len(recordset) > 0:
+                for key in  lstNomsColonnes:
+                    valeur = recordset[0][lstNomsColonnes.index(key)]
+                    dicArticle[key] = valeur
+    return dicArticle
 
 def CalculeLigne(dlg,track):
     try: qte = float(track.qte)
@@ -134,11 +156,11 @@ def CalculeLigne(dlg,track):
     except: txTva = 0.0
     if dlg.ht_ttc == 'HT':
         mttHT = qte * pxUn
-        mttTTC = round(mttHT * (1 + (txTva * 100)),2)
-        prixTTC = round(pxUn * (1 + (txTva * 100)),6)
+        mttTTC = round(mttHT * (1 + (txTva / 100)),2)
+        prixTTC = round(pxUn * (1 + (txTva / 100)),6)
     elif dlg.ht_ttc == 'TTC':
         mttTTC = qte * pxUn
-        mttHT = round(mttTTC / (1 + (txTva * 100)),2)
+        mttHT = round(mttTTC / (1 + (txTva / 100)),2)
         prixTTC = pxUn
     else: raise("Taux de tva non renseigné")
     track.mttHT = mttHT
@@ -184,7 +206,7 @@ def SauveLigne(db,dlg,track):
     if not track.valide:
         return False
 
-    lstDonnees = [  ('date',track.date),
+    lstDonnees = [  ('date',dlg.date),
                     ('fournisseur',dlg.fournisseur),
                     ('origine',dlg.ordi),
                     ('IDarticle', track.IDarticle),
@@ -199,7 +221,7 @@ def SauveLigne(db,dlg,track):
     except: IDmouvement = None
 
     if IDmouvement :
-        ret = db.ReqMAJ("mouvements", lstDonnees, "IDmouvement", IDmouvement,mess="UTILS_Stocks.SauveLigne Modif: %d"%IDmouvement)
+        ret = db.ReqMAJ("stMouvements", lstDonnees, "IDmouvement", IDmouvement,mess="UTILS_Stocks.SauveLigne Modif: %d"%IDmouvement)
     else:
         ret = db.ReqInsert("mouvements",lstDonnees= lstDonnees, mess="UTILS_Stocks.SauveLigne Insert")
         if ret == 'ok':
@@ -292,7 +314,9 @@ class DLG_articles(xgtr.DLG_gestion):
             self.donnees[ixligne] = donnees
             lstDonnees = self.FmtDonneesDB(nomsCol,donnees,complete=False)
             mess="DLG_articles.GereDonnees Modif"
-            self.db.ReqMAJ('stArticles',lstDonnees[:-1],nomChampID=lstDonnees[0][0],ID=lstDonnees[0][1],mess=mess)
+            ret = self.db.ReqMAJ('stArticles',lstDonnees,nomChampID=lstDonnees[0][0],ID=lstDonnees[0][1],mess=mess)
+            if ret != 'ok':
+                pass
 
         elif mode == 'suppr':
             del self.donnees[ixligne]

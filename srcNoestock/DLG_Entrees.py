@@ -200,10 +200,12 @@ class PNL_corps(xgte.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
     def __init__(self, parent, dicOlv,*args, **kwds):
         xgte.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
+        self.db = parent.db
         self.ctrlOlv.Choices={}
         self.lstNewReglements = []
         self.flagSkipEdit = False
         self.oldRow = None
+        self.dicArticle = None
 
     def InitTrackVierge(self,track,modelObject):
         track.creer = True
@@ -237,28 +239,34 @@ class PNL_corps(xgte.PNL_corps):
 
         # Traitement des spécificités selon les zones
         if code == 'IDarticle':
-            track.IDarticle = nust.GetArticle(self.Parent.db,value)
+            value = nust.GetArticle(self.db,value)
+            track.IDarticle = value
+            if value:
+                track.dicArticle = nust.GetDicArticle(self.db,value)
+                track.rations = track.dicArticle['rations']
+                track.qteStock = track.dicArticle['qteStock']
 
         # enlève l'info de bas d'écran
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
         self.flagSkipEdit = False
+        return value
 
     def ValideLigne(self,code,track):
         # Appelé par cellEditor en sortie
-        nust.ValideLigne(self.Parent.db,track)
+        nust.ValideLigne(self.db,track)
         nust.CalculeLigne(self.Parent,track)
 
     def SauveLigne(self,track):
-        nust.SauveLigne(self.Parent.db,self.Parent,track)
+        nust.SauveLigne(self.db,self.Parent,track)
 
     def OnEditFunctionKeys(self,event):
         row, col = self.ctrlOlv.cellBeingEdited
         code = self.ctrlOlv.lstCodesColonnes[col]
-        if event.GetKeyCode() == wx.WXK_F4 and code == 'IDfamille':
-            # Choix famille
-            IDfamille = nust.GetFamille(self.parent.db)
-            self.OnEditFinishing('IDfamille',IDfamille)
-            self.ctrlOlv.GetObjectAt(row).IDfamille = IDfamille
+        if event.GetKeyCode() == wx.WXK_F4 and code == 'IDarticle':
+            # Choix article
+            IDarticle = nust.GetArticle(self.db,self.ctrlOlv.GetObjectAt(row).IDarticle)
+            #self.ctrlOlv.GetObjectAt(row).IDarticle = IDarticle
+            ret = self.OnEditFinishing('IDarticle',IDarticle)
 
     def OnDelete(self,noligne,track,parent=None):
         nust.DeleteLigne(self.parent.db,track)
@@ -282,6 +290,9 @@ class DLG(xusp.DLG_vide):
         self.dicOlv.update(GetOlvOptions(self))
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
+        self.date = self.today
+        self.analytique = ''
+        self.fournisseur = ''
         ret = self.Init()
         if ret == wx.ID_ABORT: self.Destroy()
 
@@ -393,7 +404,7 @@ class DLG(xusp.DLG_vide):
         mess = "Choix FOURNISSEURS\n\n"
         mess += "Les fournisseurs proposés sont cherchés dans les utilisations précédentes,\n"
         mess += "Il vous suffit de saisir un nouveau nom pour qu'il vous soit proposé la prochaine fois"
-        ret = wx.MessageBox(mess,"Information",style=wx.ICON_INFORMATION)
+        wx.MessageBox(mess,"Information",style=wx.ICON_INFORMATION|wx.OK)
         if event: event.Skip()
 
     def OnAnalytique(self,event):

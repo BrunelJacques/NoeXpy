@@ -63,9 +63,10 @@ def GetFamilles(db,dicOlv={}, **kwd):
     where = ""
     if filtreTxt and len(filtreTxt) > 0:
         where = """WHERE familles.adresse_intitule LIKE '%%%s%%'
+                        OR familles.IDfamille LIKE '%%%s%%'
                         OR individus_1.ville_resid LIKE '%%%s%%'
                         OR individus.nom LIKE '%%%s%%'
-                        OR individus.prenom LIKE '%%%s%%' """%(filtreTxt,filtreTxt,filtreTxt,filtreTxt,)
+                        OR individus.prenom LIKE '%%%s%%' """%(filtreTxt,filtreTxt,filtreTxt,filtreTxt,filtreTxt,)
 
     lstChamps = dicOlv['lstChamps']
     lstCodesColonnes = [x.valueGetter for x in dicOlv['lstColonnes']]

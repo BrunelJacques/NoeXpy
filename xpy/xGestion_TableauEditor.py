@@ -515,7 +515,8 @@ class PanelListView(wx.Panel):
 
         # appel des éventuels spécifiques
         if hasattr(self.parent, 'OnEditFinishing'):
-            self.parent.OnEditFinishing(code,value)
+            ret = self.parent.OnEditFinishing(code,value)
+            if ret: value = ret
         # stockage de la nouvelle saisie
         track.__setattr__(code, value)
         track.donnees[col] = value
