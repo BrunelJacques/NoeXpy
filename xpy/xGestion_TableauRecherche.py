@@ -122,21 +122,21 @@ class ListView(ObjectListView):
         self.InitObjectListView()
         self.InitModel()
 
-    def formerCodeColonnes(self):
+    def GetLstCodesColonnes(self):
         codeColonnes = list()
         for colonne in self.lstColonnes:
             code = colonne.valueGetter
             codeColonnes.append(code)
         return codeColonnes
 
-    def formerNomsColonnes(self):
+    def GetLstNomsColonnes(self):
         nomColonnes = list()
         for colonne in self.lstColonnes:
             nom = colonne.title
             nomColonnes.append(nom)
         return nomColonnes
 
-    def formerSetterValues(self):
+    def GetLstSetterValues(self):
         setterValues = list()
         for colonne in self.lstColonnes:
             fmt = colonne.stringConverter
@@ -175,9 +175,9 @@ class ListView(ObjectListView):
         self.SetColumns(self.lstColonnes)
         if self.checkColonne:
             self.CreateCheckStateColumn(0)
-        self.lstCodesColonnes = self.formerCodeColonnes()
-        self.lstNomsColonnes = self.formerNomsColonnes()
-        self.lstSetterValues = self.formerSetterValues()
+        self.lstCodesColonnes = self.GetLstCodesColonnes()
+        self.lstNomsColonnes = self.GetLstNomsColonnes()
+        self.lstSetterValues = self.GetLstSetterValues()
         # On définit le message en cas de tableau vide
         self.SetEmptyListMsg(self.msgIfEmpty)
         self.SetEmptyListMsgFont(wx.FFont(11, wx.FONTFAMILY_DEFAULT))

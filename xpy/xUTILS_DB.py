@@ -990,6 +990,13 @@ def Init_tables(parent=None, mode="creat"):
         parent.SetStatusText(parent.mess)
     if mode == "creation":
         db.CreationTables(dicTables=DB_TABLES,parent=parent)
+
+        # réinit complet de db pour prendre en compte les nouvelles tables
+        del db.cursor
+        db.Close()
+        db = DB()
+        db.cursor = db.connexion.cursor(buffered=False)
+
         db.CreationTousIndex(DB_IX, parent=parent)
         db.CreationTousIndex(DB_PK, parent=parent)
     elif mode == "ctrl":

@@ -285,8 +285,8 @@ DB_TABLES = {
                 ('IDmouvement', 'INTEGER PRIMARY KEY AUTOINCREMENT', "Clé primaire"),
                 ('date', 'DATE', "date du mouvement de stock"),
                 ('fournisseur', 'VARCHAR(32)', "Fournisseur de l'entrée"),
-                ('origine', 'VARCHAR(8)', "repas; achat; od_in; campExt; retour"),
-                ('article', 'VARCHAR(32)', "clé dans gstArticles"),
+                ('origine', 'VARCHAR(8)', "achat; retour; od_in; repas; camp; od_out"),
+                ('IDarticle', 'VARCHAR(32)', "clé dans gstArticles"),
                 ('qte', 'INTEGER', "Quantitée mouvementée signée"),
                 ('prixUnit', 'FLOAT', "Prix moyen pour sorties et retour, Prix revient pour achats"),
                 ('analytique', 'VARCHAR(8)', "Section analytique du camp à facturer"),
@@ -307,9 +307,9 @@ DB_TABLES = {
 # index clé unique
 DB_PK = {
         'PK_vehiculesCouts_IDanalytique_cloture': {'table': 'vehiculesCouts', 'champ': 'IDanalytique, cloture'},
-        'PK_stArticles_article': {'table': 'stArticles', 'champ': 'IDarticle'},
+        'PK_stArticles_IDarticle': {'table': 'stArticles', 'champ': 'IDarticle'},
         'PK_stEffectifs_date': {'table': 'stEffectifs', 'champ': 'IDdate'},
-        'PK_stInventaires_date_article': {'table': 'stInventaires', 'champ': 'IDdate,IDarticle'},
+        'PK_stInventaires_date_IDarticle': {'table': 'stInventaires', 'champ': 'IDdate,IDarticle'},
         }
 
 # index sans contrainte

@@ -24,18 +24,25 @@ from xpy.outils                 import xformat,xbandeau,xboutons
 
 TITRE = "Entrées en stock"
 INTRO = "Gestion des entrées dans le stock, par livraison, retour ou autre "
+
+DICORIGINES = {
+                'entrees':{'codes':['achat','retour','od_in'],
+                          'labels':['achat livraison', 'retour camp', 'od entrée']},
+                'sorties': {'codes': ['repas', 'camp', 'od_out'],
+                           'labels': ['repas, encas', 'camp exterieur', 'od sortie']}}
+
 DIC_INFOS = {
             'IDarticle': "<F4> Choix d'un article, ou saisie directe de son code",
             'qte': "L'unité est précisée dans le nom de l'article",
-            'montant': "Prix remisé en €",
+            'pxUn': "HT ou TTC selon le choix en haut d'écran",
              }
 
 INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
 
 # Description des paramètres à choisir en haut d'écran
 
-class CtrlRappel(wx.Panel):
-    # Exemple d'un controle pour s'insérer dans une matrice 'genre':'anyctrl', 'ctrl':'MyAnyCtrl'
+class CtrlAnterieur(wx.Panel):
+    # controle inséré dans la matrice_params qui suit. De genre AnyCtrl pour n'utiliser que le bind bouton
     def __init__(self,parent):
         super().__init__(parent,wx.ID_ANY)
         kwd = {'label':"Rappeler\nl'antérieur",
@@ -44,7 +51,6 @@ class CtrlRappel(wx.Panel):
                'help':"Pour reprendre une saisie antérieurement validée",
                'size' : (130,40)}
         self.btn = xboutons.BTN_action(self,**kwd)
-        #self.SetMinSize((40,50))
         self.Sizer()
 
     def Sizer(self):
@@ -53,10 +59,10 @@ class CtrlRappel(wx.Panel):
         self.SetSizer(box)
 
     def SetValue(self,value):
-        self.value = value
+        return
 
     def GetValue(self):
-        return self.value
+        return None
 
     def Set(self,values):
         # valeurs multiples
@@ -66,9 +72,9 @@ MATRICE_PARAMS = {
 ("param1", "Paramètres"): [
     {'name': 'origine', 'genre': 'Choice', 'label': "Nature d'entrée",
                     'help': "Le choix de la nature modifie certains contrôles",
-                    'value':0, 'values':['achat livraison', 'retour camp', 'od_in'],
+                    'value':0, 'values':[],
                     'ctrlAction': 'OnOrigine',
-                    'size':(200,30),
+                    'size':(205,30),
                     'txtSize': 90},
     {'name': 'date', 'genre': 'Texte', 'label': "Date d'entrée",
                     'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
@@ -112,16 +118,19 @@ MATRICE_PARAMS = {
     {'name': 'rappel', 'genre': 'anyctrl','label': ' ',
                      'txtSize': 20,
                         'ctrlMaxSize':(150,50),
-                     'ctrl': CtrlRappel,
-                     'ctrlAction': 'OnBtnRappel',
+                     'ctrl': CtrlAnterieur,
+                     'ctrlAction': 'OnBtnAnterieur',
                      },
     ],
 }
 
 def GetParamsOptions(dlg):
+    matrice = MATRICE_PARAMS
+    lstChoices = xformat.GetValueInMatrice(matrice,'origine','values')
+    lstChoices += DICORIGINES[dlg.sens]['labels']
     return {
                 'name':"PNL_params",
-                'matrice':MATRICE_PARAMS,
+                'matrice':matrice,
                 'lblBox':None,
                 'boxesSizes': [(300, 90), (400, 90), (100, 90), (100, 90)],
                 'pathdata':"srcNoelite/Data",
@@ -138,8 +147,8 @@ def GetBoutons(dlg):
                     'size':(120,35),'image':"xpy/Images/32x32/Valider.png",'onBtn':dlg.OnClose}
             ]
 
-def GetOlvColonnes(dlg):
-    # retourne la liste des colonnes de l'écran principal
+def GetOlvColonnes():
+    # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
     return [
             ColumnDefn("ID", 'centre', 0, 'IDmouvement',
                        isEditable=False),
@@ -154,29 +163,30 @@ def GetOlvColonnes(dlg):
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Qté stock", 'right', 110, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Nbre Rations", 'right', 110, 'rations', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Nbre Rations", 'right', 110, 'nbRations', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
             ]
 
-def GetOlvCodesSup(dlg):
-    return ['origine','date','fournisseur','analytique','ht_ttc']
+def GetOlvCodesSup():
+    # codes dans les données olv, mais pas dans les colonnes, attributs des tracks non visibles en tableau
+    return ['prixTTC','IDmouvement','dicArticle']
 
 def GetOlvOptions(dlg):
-    # retourne les paramètres de l'OLV del'écran général
-    champOrigine = [x for x in DB_TABLES['stMouvements'] if x[0] == 'origine'][0]
-    choixOrigine = champOrigine[2].split(';')
+    # Options paramètres de l'OLV ds PNLcorps
+    choixOrigine = DICORIGINES[dlg.sens]['labels']
     return {
             'choicesorigine': choixOrigine,
             'checkColonne': False,
             'recherche': True,
             'minSize': (600, 100),
-            'dictColFooter': {"article": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
+            'dictColFooter': {"IDarticle": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
                                   "mttHT": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
                                   "mttTTC": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
                                   },
     }
 
 def GetDlgOptions(dlg):
+    # Options du Dlg de lancement
     return {
         'style': wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         'minSize': (700, 450),
@@ -190,7 +200,7 @@ class PNL_params(xgte.PNL_params):
     def __init__(self, parent, **kwds):
         self.parent = parent
         #('pos','size','style','name','matrice','donnees','lblBox')
-        kwds = GetParamsOptions(self)
+        kwds = GetParamsOptions(parent)
         super().__init__(parent, **kwds)
         if hasattr(parent,'lanceur'):
             self.lanceur = parent.lanceur
@@ -243,7 +253,7 @@ class PNL_corps(xgte.PNL_corps):
             track.IDarticle = value
             if value:
                 track.dicArticle = nust.GetDicArticle(self.db,value)
-                track.rations = track.dicArticle['rations']
+                track.nbRations = track.dicArticle['rations']
                 track.qteStock = track.dicArticle['qteStock']
 
         # enlève l'info de bas d'écran
@@ -278,15 +288,13 @@ class PNL_pied(xgte.PNL_pied):
 
 class DLG(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self):
-        #listArbo = os.path.abspath(__file__).split("\\")
-        #titre = listArbo[-1:][0] + "/" + self.__class__.__name__
+    def __init__(self,sens='entrees'):
+        self.sens = sens
         kwds = GetDlgOptions(self)
-        #super().__init__(None,title=titre, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
         super().__init__(None,**kwds)
         self.lanceur = self
-        self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
-        self.dicOlv.update({'lstCodesSup': GetOlvCodesSup(self)})
+        self.dicOlv = {'lstColonnes': GetOlvColonnes()}
+        self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
         self.dicOlv.update(GetOlvOptions(self))
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
@@ -354,15 +362,15 @@ class DLG(xusp.DLG_vide):
         self.ctrlOlv.titreImpression = "REGLEMENTS Dépot No %s, du %s, banque: %s "%(IDdepot,dte,banque)
 
     def InitOlv(self):
-        self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
-        self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.formerCodeColonnes()
+        self.ctrlOlv.lstColonnes = GetOlvColonnes()
+        self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
         self.ctrlOlv.InitObjectListView()
         self.Refresh()
 
     def OnOrigine(self,event):
         pnl = self.pnlParams
         pnlOrigine = pnl.GetPnlCtrl('origine',codebox='param1')
-        origine = pnlOrigine.GetValue()
+        lblOrigine = pnlOrigine.GetValue()
 
         def setEnable(namePnlCtrl,flag):
             pnlCtrl =  pnl.GetPnlCtrl(namePnlCtrl,codebox='param2')
@@ -371,17 +379,18 @@ class DLG(xusp.DLG_vide):
             pnlCtrl.btn.Enable(flag)
 
         #'achat livraison', 'retour camp', 'od_in'
-        if origine[:5] == 'achat':
+        if 'achat' in lblOrigine:
             setEnable('fournisseur',True)
             setEnable('analytique',False)
-        elif origine[:5] == 'retou':
+        elif 'retour' in lblOrigine:
             setEnable('fournisseur',False)
             setEnable('analytique',True)
-        elif origine[:5] == 'od_in':
+        elif 'od ' in lblOrigine:
             setEnable('fournisseur',False)
             setEnable('analytique',False)
         pnl.Refresh()
-        self.origine = origine.split(' ')[0]
+        ixo = DICORIGINES[self.sens]['labels'].index(lblOrigine)
+        self.origine = DICORIGINES[self.sens]['codes'][ixo]
         if event: event.Skip()
 
     def OnDate(self,event):
@@ -423,9 +432,55 @@ class DLG(xusp.DLG_vide):
             self.OnAnalytique(None)
         if event: event.Skip()
 
-    def OnBtnRappel(self,event):
-        print(wx.Bell())
+    def OnBtnAnterieur(self,event):
+        # lancement de la recherche d'un lot antérieur
+        self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
+
+        # choix du lot
+        obj = nust.Anterieur(xdb.DB,origines=DICORIGINES[self.sens]['codes'])
+        dicAnterieur = obj.GetDic()
+        self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK        # gestion du retour du choix dépot
+        if not 'date' in dicAnterieur.keys(): return
+
+        # appel de la partie stMouvements des lignes
+        lstDonnees = nust.GetDonneesEntrees(self,dicAnterieur)
+        lstNoModif = [1 for rec in  lstDonnees if not (rec[-1])]
+        # présence de lignes déjà transférées compta
+        if len(lstNoModif) >0:
+            self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
+            self.pnlPied.SetItemsInfos("NON MODIFIABLE: enregistrements transféré ",
+                                       wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
+        if len(lstDonnees) == 0:
+            wx.MessageBox("Aucune écriture:\n\nla sélection sur les '%s' est vide ou pb d'accès"%self.sens)
+
+        # traitement du lot importé
+
+        # set date du lot
+        self.pnlParams.SetOneValue('date',xformat.FmtDate(dicAnterieur['date']),'param1')
+        self.date = dicAnterieur['date']
+
+        # set origine
+        ixo = DICORIGINES[self.sens]['codes'].index(dicAnterieur['origine'])
+        self.pnlParams.SetOneValue(DICORIGINES[self.sens]['labels'][ixo])
+        self.OnOrigine(None)
+
+        # set Fournisseur et analytique
+        self.pnlParams.SetOneValue('fournisseur',dicAnterieur['fournisseur'],'param2')
+        self.fournisseur = dicAnterieur['fournisseur']
+        self.pnlParams.SetOneValue('analytique',dicAnterieur['analytique'],'param2')
+        self.analytique = dicAnterieur['analytique']
+
+        # place la partie stMouvements dans la grille, puis création de modelObejects pr init
+        self.ctrlOlv.lstDonnees = lstDonnees
         self.InitOlv()
+
+        # les écritures reprises sont censées être valides, mais pas complétées
+        for item in self.ctrlOlv.modelObjects[:-1]:
+            item.valide = True
+        self.ctrlOlv._FormatAllRows()
+
+        # stockage pour test de saisie
+        self.anterieurOrigine = self.ctrlOlv.innerList
 
     def OnImprimer(self,event):
         # test de présence d'écritures non valides

@@ -529,7 +529,7 @@ class FloatEditor(BaseCellTextEditor):
 
     def SetValue(self, value):
         "Put a new value into the editor"
-        if isinstance(value, float):
+        if isinstance(value, (float,int)):
             value = repr(value)
         wx.TextCtrl.SetValue(self, value)
 

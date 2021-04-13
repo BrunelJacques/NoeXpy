@@ -29,7 +29,7 @@ INFO_OLV = "Double clic pour modifier, ou gérer les lignes par les boutons à d
 
 # Fonctions de transposition entrée à gérer pour chaque item FORMAT_xxxx pour les spécificités
 def ComposeFuncImp(dlg,entete,donnees):
-    # cf modème dans DLG_Km_saisie
+    # cf modèle dans DLG_Km_saisie
     lst = None
     return lst
 

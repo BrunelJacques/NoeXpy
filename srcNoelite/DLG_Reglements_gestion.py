@@ -47,7 +47,7 @@ def GetBoutons(dlg):
                     'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnClose}
             ]
 
-def GetOlvColonnes(dlg):
+def GetOlvColonnes():
     # retourne la liste des colonnes de l'écran principal
     return [
             ColumnDefn("ID", 'centre', 0, 'IDreglement',
@@ -84,10 +84,11 @@ def GetOlvColonnes(dlg):
                         isEditable=False),
             ]
 
-def GetOlvCodesSup(dlg):
+def GetOlvCodesSup():
+    # codes dans les données olv, mais pas dans les colonnes, seront attributs des track mais non visibles en tableau
     return ['prestcateg','prestcpta','reglcompta','nbventil','idprest']
 
-def GetOlvOptions(dlg):
+def GetOlvOptions():
     # retourne les paramètres de l'OLV del'écran général
     return {
             'minSize': (600,200),
@@ -327,6 +328,7 @@ class PNL_corpsReglements(xgte.PNL_corps):
                 # Choix compte - code comptable appellé en sortie de nature le code compte n'est pas éditable
                 obj = nur.Compte(self.parent.db,value)
                 compte, libelle = obj.GetCompte()
+                del obj
                 track.compte = compte
                 track.libelle = libelle
             else:
@@ -401,9 +403,9 @@ class Dialog(wx.Dialog):
     def Init(self):
         self.db = xdb.DB()
         # définition de l'OLV
-        self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
-        self.dicOlv.update({'lstCodesSup': GetOlvCodesSup(self)})
-        self.dicOlv.update(GetOlvOptions(self))
+        self.dicOlv = {'lstColonnes': GetOlvColonnes()}
+        self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
+        self.dicOlv.update(GetOlvOptions())
         size = self.dicOlv.pop('size',None)
         self.choicesDiffere = self.dicOlv.pop('choicesDiffere',[])
         self.SetSize(size)
@@ -514,8 +516,8 @@ class Dialog(wx.Dialog):
         self.ctrlOlv.titreImpression = "REGLEMENTS Dépot No %s, du %s, banque: %s "%(IDdepot,dte,banque)
 
     def InitOlv(self,withDiffere=False):
-        self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
-        self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.formerCodeColonnes()
+        self.ctrlOlv.lstColonnes = GetOlvColonnes()
+        self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
         ixMode = self.ctrlOlv.lstCodesColonnes.index('mode')
         ixDiffere= self.ctrlOlv.lstCodesColonnes.index('differe')
         if not withDiffere:

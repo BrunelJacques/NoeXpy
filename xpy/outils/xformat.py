@@ -95,21 +95,32 @@ def ComposeWhereFiltre(filtre,lstChamps,lstColonnes=None, lien='WHERE'):
                 %s ( %s )"""%(lien,texte)
         return whereFiltre
 
-def SupprimeAccents(texte,lower=True):
-    # met en minuscule sans accents et sans caractères spéciaux
-    code = ''.join(c for c in unicodedata.normalize('NFD', texte) if unicodedata.category(c) != 'Mn')
-    #code = str(unicodedata.normalize('NFD', texte).encode('ascii', 'ignore'))
-    if lower: code = code.lower()
-    code = ''.join(car for car in code if car not in " %)(.[]',;/\n")
-    return code
+def GetValueInMatrice(dldMatrice,name,param):
+    # retourne la valeur d'un param de la ligne désignée par son name, dans une matrice
+    valueFound = None
+    for cle,ldMatrice in dldMatrice.items():
+        for dLigne in ldMatrice:
+            if not 'name' in dLigne.keys():
+                continue
+            if dLigne['name'] != name:
+                continue
+            for cle2,value in dLigne.items():
+                if param.lower() == cle2.lower():
+                    valueFound = value
+                    break
+            if valueFound != None: break
+        if valueFound != None: break
+    return valueFound
 
 # Automatismes de gestion des ColumnDef
 
 def GetLstChamps(table=None):
+    [x for x,y,z in table]
     return [x for x,y,z in table]
 
 def GetLstTypes(table=None):
     return [y for x, y, z in table]
+
 def GetLstNomsColonnes(table=None):
     return [x for x, y, z in table]
 
@@ -522,6 +533,14 @@ def Nz(param):
             valeur = float(param)
         except: valeur = 0.0
     return valeur
+
+def SupprimeAccents(texte,lower=True):
+    # met en minuscule sans accents et sans caractères spéciaux
+    code = ''.join(c for c in unicodedata.normalize('NFD', texte) if unicodedata.category(c) != 'Mn')
+    #code = str(unicodedata.normalize('NFD', texte).encode('ascii', 'ignore'))
+    if lower: code = code.lower()
+    code = ''.join(car for car in code if car not in " %)(.[]',;/\n")
+    return code
 
 def ListToDict(lstCles,lstValeurs):
     dict = {}

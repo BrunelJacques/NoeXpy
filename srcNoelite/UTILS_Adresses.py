@@ -129,7 +129,7 @@ def GetVilles(champFiltre="ville",filtre=""):
     listeVillesTmp = []
     DB.Close()
     if champFiltre == "cp":
-        filtre = "00000"[:tronque] + filtrecp
+        filtre = filtrecp
     for id,nom,cp,pays in ret:
         if len(cp) < 5:
             # Correction du fichier qui ne renvoit pas le zéro devant le code postal

@@ -372,7 +372,7 @@ class Dialog(xusp.DLG_vide):
     def InitOlv(self):
         self.pnlParams.GetValues()
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
-        self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.formerCodeColonnes()
+        self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
         self.ctrlOlv.InitObjectListView()
         self.Refresh()
 

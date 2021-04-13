@@ -21,12 +21,14 @@ from xpy.outils.xconst          import *
 class TrackGeneral(object):
     #    Cette classe va transformer une ligne en objet selon les listes de colonnes et valeurs par défaut(setter)
     def __init__(self, donnees,codesColonnes, nomsColonnes, setterValues,codesSup=[]):
-        # il peut y avoir plus de données que le nombre de colonnes, elles sont non gérées par le tableau
+        # les données suplémentaires au nbre de colonnes, sont présentes dans les tracks et définies par codesSup
         if not (len(donnees)-len(codesSup) == len(codesColonnes) == len(nomsColonnes) == len(setterValues) ):
             lst = [str(codesColonnes),str(nomsColonnes),str(setterValues),str(donnees)]
             mess = "Problème de nombre d'occurences!\n\n"
-            mess += "%d - %d donnees, %d codes, %d colonnes et %d valeurs défaut"%(len(donnees),len(codesSup),
-                                                        len(codesColonnes), len(nomsColonnes), len(setterValues))
+            mess += "%d codesCol, %d nomsCol, %d valDéfaut, (%d donnees - %d codes_sup) = %d"%(
+                                    len(codesColonnes),
+                                    len(nomsColonnes), len(setterValues),
+                                    len(donnees),len(codesSup),(len(donnees)-len(codesSup)))
             mess += '\n\n'+'\n\n'.join(lst)
             wx.MessageBox(mess,caption="xGestion_TableauEditor.TrackGeneral")
         # pour chaque donnée affichée, attribut et ctrl setter value
@@ -175,21 +177,21 @@ class ListView(FastObjectListView):
                                         codesSup=self.lstCodesSup))
         return tracks
 
-    def formerCodeColonnes(self):
-        codeColonnes = list()
+    def GetLstCodesColonnes(self):
+        lstCodes = list()
         for colonne in self.lstColonnes:
             code = colonne.valueGetter
-            codeColonnes.append(code)
-        return codeColonnes
+            lstCodes.append(code)
+        return lstCodes
 
-    def formerNomsColonnes(self):
+    def GetLstNomsColonnes(self):
         nomColonnes = list()
         for colonne in self.lstColonnes:
             nom = colonne.title
             nomColonnes.append(nom)
         return nomColonnes
 
-    def formerSetterValues(self):
+    def GetLstSetterValues(self):
         setterValues = list()
         for colonne in self.lstColonnes:
             fmt = colonne.stringConverter
@@ -214,9 +216,9 @@ class ListView(FastObjectListView):
         self.SetColumns(self.lstColonnes)
         if self.checkColonne:
             self.CreateCheckStateColumn(0)
-        self.lstCodesColonnes = self.formerCodeColonnes()
-        self.lstNomsColonnes = self.formerNomsColonnes()
-        self.lstSetterValues = self.formerSetterValues()
+        self.lstCodesColonnes = self.GetLstCodesColonnes()
+        self.lstNomsColonnes = self.GetLstNomsColonnes()
+        self.lstSetterValues = self.GetLstSetterValues()
         # On définit le message en cas de tableau vide
         self.SetEmptyListMsg(self.msgIfEmpty)
         self.SetEmptyListMsgFont(wx.FFont(11, wx.FONTFAMILY_DEFAULT))

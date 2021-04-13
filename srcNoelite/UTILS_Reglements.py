@@ -149,7 +149,7 @@ def GetMatriceDepots():
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 'size':(900, 400)                }
 
-def GetDepots(db=None,dicOlv={}, limit=100,**kwd):
+def GetDepots(db=None,dicOlv={}, **kwd):
     # ajoute les données à la matrice pour la recherche d'un depot
     filtre = kwd.pop('filtreTxt', '')
     nbreFiltres = kwd.pop('nbreFiltres', 0)
@@ -197,7 +197,6 @@ def GetDepots(db=None,dicOlv={}, limit=100,**kwd):
 
     # appel des compléments d'informations sur les règlements associés au dépôt
     lstIDdepot = [x for x in dicDepots.keys()]
-    recordset = ()
     if len(lstIDdepot)>0:
         where = "WHERE reglements.IDdepot IN (%s)"% str(lstIDdepot)[1:-1]
         req = """SELECT reglements.IDdepot, reglements.IDmode, modes_reglements.label,
@@ -235,7 +234,6 @@ def GetDepots(db=None,dicOlv={}, limit=100,**kwd):
         for code in lstCodesColonnes:
             ligne.append(dic[code])
         lstDonnees.append(ligne)
-    dicOlv =  dicOlv
     dicOlv['lstDonnees']=lstDonnees
     return lstDonnees
 
@@ -432,6 +430,7 @@ def GetReglements(dlg,IDdepot):
 
     lstCodesDonnees = dlg.ctrlOlv.lstCodesColonnes + dlg.ctrlOlv.lstCodesSup
 
+    # en sortie complémente et formate les données
     return TransposeDonnees(dlg,recordset,lstCodesChamps,lstCodesDonnees)
 
 def GetNewIDreglement(db,lstID,**kwd):
@@ -912,7 +911,7 @@ def SetDepot(dlg,db):
     dlg.pnlParams.ctrlRef.SetValue(str(IDdepot))
     return IDdepot
 
-def GetDepot(db=None,**kwd):
+def GetDepot(db=None):
     # lancement de l'appel des dépots existants pour reprise
     dicDepot = {}
     dicOlv = GetMatriceDepots()
