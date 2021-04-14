@@ -223,12 +223,10 @@ class ObjectListViewPrinter(object):
 
         # Remplacement des mots-clés
         lstChamps = ["pied_page_texte_gauche", "pied_page_texte_milieu", "pied_page_texte_droite"]
-        nomOrganisateur = self.GetNomOrganisateur()
         for key, valeur in dictOptions.items():
             if key in lstChamps:
                 valeur = valeur.replace("{DATE_JOUR}", xdates.DateDDEnFr(datetime.date.today()))
                 valeur = valeur.replace("{TITRE_DOCUMENT}", self.titre)
-                valeur = valeur.replace("{NOM_ORGANISATEUR}", nomOrganisateur)
                 valeur = valeur.replace("{NUM_PAGE}", "%(currentPage)d")
                 valeur = valeur.replace("{NBRE_PAGES}", "%(totalPages)d")
                 dictOptions[key] = valeur
@@ -454,23 +452,6 @@ class ObjectListViewPrinter(object):
         fmt.UseListCtrlTextFormat = True
 
         return fmt
-
-    def GetNomOrganisateur(self):
-        #  Je mets un commentaire pour le moment
-        # Utiliser la base de données pour une telle info ? Je propose de la mettre en dur.
-        # DB = GestionDB.DB()
-        # req = """SELECT nom, rue, cp, ville
-        # FROM organisateur WHERE IDorganisateur=1;"""  # Pourquoi récupérer tous les champs ?
-        # DB.ExecuterReq(req)
-        # lstDonnees = DB.ResultatReq()
-        # DB.Close()
-        # if len(lstDonnees) == 0: return ""
-        # nom = lstDonnees[0][0]
-        # if nom == None:
-        #    nom = ""
-        # return nom
-        # Je suppose que c'est le nom qui est dans la BDD
-        return "Matthania"
 
 
 class FramePreview(wx.Frame):

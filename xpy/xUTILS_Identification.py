@@ -14,7 +14,7 @@ import xpy.outils.xshelve as xu_shelve
 import xpy.xGestionConfig as xGestionConfig
 import xpy.xUTILS_SaisieParams as xusp
 
-def GetListeUsers(db=None):
+def SqlLstUsers(db=None):
     # Récupère la liste des utilisateurs et de leurs droits
     """ suppose l'accès à une base de donnée qui contient les tables génériques 'utilisateurs' et 'droits'"""
     if not db :
@@ -72,7 +72,7 @@ def GetNomOrdi():
 
 def AfficheUsers(parent):
     # affiche les utilisateur puis sollicite le mot de passe pour le valider
-    lstUsers = GetListeUsers()
+    lstUsers = SqlLstUsers()
     if lstUsers:
         lstAffiche = [[x['nom'],x['prenom'],x['profil']] for x in lstUsers]
         lstColonnes = ["Nom", "Prénom", "Profil"]
@@ -192,7 +192,7 @@ class Dialog(wx.Dialog):
         if not DB.isNetwork:
             self.echec = True
         if not self.echec:
-            self.listeUtilisateurs = GetListeUsers(db=DB)
+            self.listeUtilisateurs = SqlLstUsers(db=DB)
         self.dictUtilisateur = None
         DB.Close()
         lstIDconfigs,lstConfigs,lstConfigsKO = xGestionConfig.GetLstConfigs(self.grpConfigs)
@@ -262,7 +262,7 @@ class Dialog(wx.Dialog):
         config = event.EventObject.GetValue()
         DB = xdb.DB(config=config)
         if not DB.echec:
-            self.listeUtilisateurs = GetListeUsers(db=DB)
+            self.listeUtilisateurs = SqlLstUsers(db=DB)
         DB.Close()
 
     # Fermeture de la fenêtre sur utilisateur trouvé

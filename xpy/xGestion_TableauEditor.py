@@ -371,7 +371,7 @@ class ListView(FastObjectListView):
             ix = self.lastGetObjectIndex
             # appel des éventuels spécifiques sur OnDelete
             if hasattr(self.parent, 'OnDelete'):
-                self.parent.OnDelete(ix,obj,parent=self)
+                self.parent.OnDelete(obj)
             event.Skip()
             #Suppression dans l'OLV
             self.modelObjects.remove(obj)
@@ -451,6 +451,8 @@ class PanelListView(wx.Panel):
         for track in self.buffertracks:
             olv = event.EventObject
             ix = olv.lastGetObjectIndex
+            if hasattr(self.parent, 'OnDelete'):
+                self.parent.OnDelete(track)
             olv.modelObjects.remove(track)
             olv.RepopulateList()
             olv._SelectAndFocus(ix)

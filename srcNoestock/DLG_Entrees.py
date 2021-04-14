@@ -224,8 +224,13 @@ class PNL_corps(xgte.PNL_corps):
         nust.ValideParams(self.parent.pnlParams)
 
     def OnCtrlV(self,track):
-        # raz de certains champs à recomposer
-        (track.IDreglement, track.date, track.IDprestation, track.IDpiece,track.compta) = (None,)*5
+        # avant de coller une track, raz de certains champs et recalcul
+        track.IDmouvement = None
+        self.ValideLigne(None,track)
+        self.SauveLigne(track)
+
+    def OnDelete(self,track):
+        nust.DeleteLigne(self.parent.db,self.ctrlOlv,track)
 
     def OnNewRow(self,row,track):
         pass
@@ -238,6 +243,15 @@ class PNL_corps(xgte.PNL_corps):
         else:
             self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
 
+        # travaux avant saisie
+        if code == 'qte':
+            if not hasattr(track,'oldQte'):
+                track.oldQte = track.qte
+        if code == 'pxUn':
+            if not hasattr(track, 'oldPu'):
+                nust.CalculeLigne(self.ctrlOlv,track)
+                track.oldPu = track.prixTTC
+
     def OnEditFinishing(self,code=None,value=None,editor=None):
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
         # flagSkipEdit permet d'occulter les évènements redondants. True durant la durée du traitement
@@ -249,12 +263,15 @@ class PNL_corps(xgte.PNL_corps):
 
         # Traitement des spécificités selon les zones
         if code == 'IDarticle':
-            value = nust.GetArticle(self.db,value)
+            value = nust.SqlOneArticle(self.db,value)
             track.IDarticle = value
             if value:
-                track.dicArticle = nust.GetDicArticle(self.db,value)
+                track.dicArticle = nust.SqlDicArticle(self.db,self.ctrlOlv,value)
                 track.nbRations = track.dicArticle['rations']
                 track.qteStock = track.dicArticle['qteStock']
+        if code == 'qte' or code == 'pxUn':
+            # force la tentative d'enregistrement même en l'absece de saisie
+            track.noSaisie = False
 
         # enlève l'info de bas d'écran
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
@@ -274,12 +291,9 @@ class PNL_corps(xgte.PNL_corps):
         code = self.ctrlOlv.lstCodesColonnes[col]
         if event.GetKeyCode() == wx.WXK_F4 and code == 'IDarticle':
             # Choix article
-            IDarticle = nust.GetArticle(self.db,self.ctrlOlv.GetObjectAt(row).IDarticle)
+            IDarticle = nust.SqlOneArticle(self.db,self.ctrlOlv.GetObjectAt(row).IDarticle)
             #self.ctrlOlv.GetObjectAt(row).IDarticle = IDarticle
             ret = self.OnEditFinishing('IDarticle',IDarticle)
-
-    def OnDelete(self,noligne,track,parent=None):
-        nust.DeleteLigne(self.parent.db,track)
 
 class PNL_pied(xgte.PNL_pied):
     #panel infos (gauche) et boutons sorties(droite)
@@ -301,6 +315,7 @@ class DLG(xusp.DLG_vide):
         self.date = self.today
         self.analytique = ''
         self.fournisseur = ''
+        self.ht_ttc = 'TTC'
         ret = self.Init()
         if ret == wx.ID_ABORT: self.Destroy()
 
@@ -329,8 +344,8 @@ class DLG(xusp.DLG_vide):
         self.ctrlOlv = self.pnlOlv.ctrlOlv
 
         # charger les valeurs de pnl_params
-        self.pnlParams.SetOneSet('fournisseur',values=nust.GetFournisseurs(self.db),codeBox='param2')
-        self.lstAnalytiques = nust.GetAnalytiques(self.db,'ACTIVITES')
+        self.pnlParams.SetOneSet('fournisseur',values=nust.SqlFournisseurs(self.db),codeBox='param2')
+        self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
         self.valuesAnalytique = ["%s %s"%(x[0],x[1]) for x in self.lstAnalytiques]
         self.pnlParams.SetOneSet('analytique',values=self.valuesAnalytique,codeBox='param2')
         self.OnOrigine(None)
@@ -433,10 +448,9 @@ class DLG(xusp.DLG_vide):
         if event: event.Skip()
 
     def OnBtnAnterieur(self,event):
-        # lancement de la recherche d'un lot antérieur
+        # lancement de la recherche d'un lot antérieur, on enlève le cellEdit pour éviter l'écho des clics
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
-
-        # choix du lot
+        # choix d'un lot
         obj = nust.Anterieur(xdb.DB,origines=DICORIGINES[self.sens]['codes'])
         dicAnterieur = obj.GetDic()
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK        # gestion du retour du choix dépot
@@ -475,8 +489,9 @@ class DLG(xusp.DLG_vide):
         self.InitOlv()
 
         # les écritures reprises sont censées être valides, mais pas complétées
-        for item in self.ctrlOlv.modelObjects[:-1]:
-            item.valide = True
+        for track in self.ctrlOlv.modelObjects[:-1]:
+            nust.CalculeLigne(self,track)
+            track.valide = True
         self.ctrlOlv._FormatAllRows()
 
         # stockage pour test de saisie

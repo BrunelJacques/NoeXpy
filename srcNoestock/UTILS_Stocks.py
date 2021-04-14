@@ -30,7 +30,6 @@ def ValideParams(pnl):
         if (not analytique) or (len(analytique) == 0):
             wx.MessageBox("Veuillez saisir un camp pour le retour de marchandise!")
 
-
 def GetMatriceArticles(cutend=None):
     dicBandeau = {'titre':"Recherche d'un article",
                   'texte':"les mots clés du champ en bas permettent de filtrer d'autres lignes et d'affiner la recherche",
@@ -53,7 +52,7 @@ def GetMatriceArticles(cutend=None):
     return   {
                 'lstColonnes': lstColonnes,
                 'lstChamps':lstChamps,
-                'getDonnees': GetArticles,
+                'getDonnees': SqlArticles,
                 'size':(lgSize,400),
                 'sizeSaisie': sizeSaisie,
                 'matriceSaisie': matriceSaisie,
@@ -67,16 +66,15 @@ def GetDonneesEntrees(dlg, dParams):
     # retourne la liste des données de l'OLv de DlgEntree
     ctrlOlv = dlg.ctrlOlv
     # appel des données des mouvements selon les params
-    ldMouvements = GetLdMouvements(dlg.db,dParams)
+    ldMouvements = SqlLdMouvements(dlg.db,dParams)
     # appel des dicArticles des mouvements
     ddArticles = {}
     for dMvt in ldMouvements:
-        ddArticles[dMvt['IDarticle']] = GetDicArticle(dlg.db,dMvt['IDarticle'])
+        ddArticles[dMvt['IDarticle']] = SqlDicArticle(dlg.db,dlg.ctrlOlv,dMvt['IDarticle'])
 
     # composition des données
     lstDonnees = []
     lstCodesCol = ctrlOlv.GetLstCodesColonnes()
-    lstCodesSup = dlg.dicOlv['lstCodesSup']
 
     # autant de lignes dans l'olv que de mouvements remontés
     for dMvt in ldMouvements:
@@ -109,22 +107,24 @@ def GetDonneesEntrees(dlg, dParams):
                     raise("code: %s Erreur de programmation en UTILS_Stocks.GetDonneesEntrees"%code)
                 continue
 
-        # alimeente les codes supplémentaires 'prixTTC','IDmouvement','dicArticle'
+        # codes supplémentaires ('prixTTC','IDmouvement','dicArticle') dlg.dicOlv['lstCodesSup']
         donnees += [dMvt['prixUnit'],
                     dMvt['IDmouvement'],
                     dArticle]
         lstDonnees.append(donnees)
     return lstDonnees
 
-def GetLdMouvements(db,dParams=None):
+# Select sur données  ------------------------------------------------------------------
+
+def SqlLdMouvements(db,dParams=None):
     lstChamps = xformat.GetLstChamps(DB_schema.DB_TABLES['stMouvements'])
     # Appelle les mouvements associés à un dic de choix de param et retour d'une liste de dic
     req = """   SELECT %s
                 FROM stMouvements 
                 WHERE ((date = '%s' )
                         AND (origine = '%s' )
-                        AND (fournisseur = '%s' )
-                        AND (analytique = '%s' ))
+                        AND (fournisseur IS NULL  OR fournisseur = '%s' )
+                        AND (analytique IS NULL  OR analytique = '%s' ))
                 ;""" % (",".join(lstChamps),dParams['date'],dParams['origine'],dParams['fournisseur'],dParams['analytique'])
     retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetMouvements')
     ldMouvements = []
@@ -137,7 +137,7 @@ def GetLdMouvements(db,dParams=None):
             ldMouvements.append(dMouvement)            
     return ldMouvements
 
-def GetArticles(**kwd):
+def SqlArticles(**kwd):
     db = kwd.get('db',None)
     # appel des données d'un olv
     filtreTxt = kwd.pop('filtreTxt', '')
@@ -157,14 +157,14 @@ def GetArticles(**kwd):
             where = xformat.ComposeWhereFiltre(filtreTxt,lstChamps, lstColonnes = lstColonnes,lien='WHERE')
 
     req = """FLUSH TABLES stArticles;"""
-    retour = db.ExecuterReq(req, mess="UTILS_Stocks.GetArticles Flush")
+    retour = db.ExecuterReq(req, mess="UTILS_Stocks.SqlArticles Flush")
 
     req = """   SELECT %s 
                 FROM stArticles 
                 %s
                 %s ;""" % (",".join(lstChamps),where,limit)
 
-    retour = db.ExecuterReq(req, mess="UTILS_Stocks.GetArticles Select" )
+    retour = db.ExecuterReq(req, mess="UTILS_Stocks.SqlArticles Select" )
     recordset = ()
     if retour == "ok":
         recordset = db.ResultatReq()
@@ -177,14 +177,14 @@ def GetArticles(**kwd):
         lstDonnees.append(ligne)
     return lstDonnees
 
-def GetArticle(db,value,**kwds):
+def SqlOneArticle(db,value,**kwds):
     # test de présence de l'article
     if len(value)>0:
         req = """   SELECT IDarticle
                     FROM stArticles
                     WHERE IDarticle LIKE '%%%s%%'
                     ;""" % (value)
-        retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetArticle req1')
+        retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlOneArticle req1')
         if retour == "ok":
             recordset = db.ResultatReq()
             if len(recordset) == 1:
@@ -201,25 +201,71 @@ def GetArticle(db,value,**kwds):
     dlg.Destroy()
     return IDarticle
 
-def GetDicArticle(db,value):
-    # retourne les valeurs de l'article sous forme de dict
+def SqlDicArticle(db,olv,IDarticle):
+    # retourne les valeurs de l'article sous forme de dict à partir du buffer < fichier starticles
     dicArticle = {}
-    if len(value)>0:
-        table = DB_schema.DB_TABLES['stArticles']
-        lstChamps = xformat.GetLstChamps(table)
-        lstNomsColonnes = xformat.GetLstNomsColonnes(table)
-        req = """   SELECT %s
-                        FROM stArticles
-                        WHERE IDarticle LIKE '%%%s%%'
-                        ;""" % (','.join(lstChamps),value)
-        retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetArticle req1')
-        if retour == "ok":
-            recordset = db.ResultatReq()
-            if len(recordset) > 0:
-                for key in  lstNomsColonnes:
-                    valeur = recordset[0][lstNomsColonnes.index(key)]
-                    dicArticle[key] = valeur
+    if len(IDarticle)>0:
+        if not hasattr(olv, 'buffArticles'):
+            olv.buffArticles = {}
+        if IDarticle in olv.buffArticles.keys():
+            # renvoie l'article présent
+            dicArticle = olv.buffArticles[IDarticle]
+        else:
+            # charge l'article non encore présent
+            table = DB_schema.DB_TABLES['stArticles']
+            lstChamps = xformat.GetLstChamps(table)
+            lstNomsColonnes = xformat.GetLstNomsColonnes(table)
+            req = """   SELECT %s
+                            FROM stArticles
+                            WHERE IDarticle LIKE '%%%s%%'
+                            ;""" % (','.join(lstChamps),IDarticle)
+            retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlOneArticle req1')
+            if retour == "ok":
+                recordset = db.ResultatReq()
+                if len(recordset) > 0:
+                    for key in  lstNomsColonnes:
+                        valeur = recordset[0][lstNomsColonnes.index(key)]
+                        dicArticle[key] = valeur
+            # bufferisation avec tuple QstPmoy pour calcul des variations lors des entrées
+            #dicArticle['oldQstPmoy'] = (dicArticle['qteStock',dicArticle['prixMoyen']])
+            olv.buffArticles[IDarticle] =dicArticle
     return dicArticle
+
+def SqlFournisseurs(db=None, **kwd):
+    # appel des noms de fournisseurs déjà utilisés par le passé
+    req = """   
+            SELECT stMouvements.fournisseur
+            FROM stMouvements
+            GROUP BY stMouvements.fournisseur
+            ORDER BY stMouvements.fournisseur;
+            """
+    lstDonnees = []
+    retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlFournisseurs')
+    if retour == "ok":
+        recordset = db.ResultatReq()
+        lstDonnees = [x[0] for x in recordset]
+    for nom in ('Boulanger', 'NoName'):
+        if not nom in lstDonnees:
+            lstDonnees.append(nom)
+    return lstDonnees
+
+def SqlAnalytiques(db, axe="%%"):
+    # appel des items Analytiques de l'axe précisé
+    req = """   
+            SELECT cpta_analytiques.IDanalytique, cpta_analytiques.abrege, cpta_analytiques.nom
+            FROM cpta_analytiques
+            WHERE (((cpta_analytiques.axe) Like '%s'))
+            GROUP BY cpta_analytiques.IDanalytique, cpta_analytiques.abrege, cpta_analytiques.nom
+            ORDER BY cpta_analytiques.abrege;
+            """ % axe
+    lstDonnees = []
+    retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlFournisseurs')
+    if retour == "ok":
+        recordset = db.ResultatReq()
+        lstDonnees = [list(x) for x in recordset]
+    return lstDonnees
+
+# Gestion des lignes de l'olv -----------------------------------------------------------------------
 
 def CalculeLigne(dlg,track):
     try: qte = float(track.qte)
@@ -243,6 +289,7 @@ def CalculeLigne(dlg,track):
     track.mttTTC = mttTTC
     track.prixTTC = prixTTC
     track.nbRations = track.qte * rations
+    track.qteStock = track.dicArticle['qteStock']
 
 def ValideLigne(db,track):
     track.valide = True
@@ -253,7 +300,7 @@ def ValideLigne(db,track):
         track.messageRefus += "L'IDmouvement n'a pas été déterminé\n"
 
     # article manquant
-    if track.IDarticle in (None,0) :
+    if track.IDarticle in (None,0,'') :
         track.messageRefus += "L'article n'est pas saisi\n"
 
     # qte null
@@ -282,6 +329,8 @@ def SauveLigne(db,dlg,track):
     # --- Sauvegarde des différents éléments associés à la ligne ---
     if not track.valide:
         return False
+    if not dlg.analytique or len(dlg.analytique.strip()) == 0:
+        dlg.analytique = ''
 
     lstDonnees = [  ('date',dlg.date),
                     ('fournisseur',dlg.fournisseur),
@@ -296,6 +345,7 @@ def SauveLigne(db,dlg,track):
 
     try: IDmouvement = int(track.IDmouvement)
     except: IDmouvement = None
+    SauveArticle(db,dlg,track)
 
     if IDmouvement :
         ret = db.ReqMAJ("stMouvements", lstDonnees, "IDmouvement", IDmouvement,mess="UTILS_Stocks.SauveLigne Modif: %d"%IDmouvement)
@@ -303,46 +353,58 @@ def SauveLigne(db,dlg,track):
         ret = db.ReqInsert("stMouvements",lstDonnees= lstDonnees, mess="UTILS_Stocks.SauveLigne Insert")
         if ret == 'ok':
             track.IDmouvement = db.newID
-    
-def DeleteLigne(db,track):
-    # --- Supprime les différents éléments associés à la ligne ---
-    if not track.IDreglement in (0, ''):
+  
+def SauveArticle(db,dlg,track):
+    # sauve dicArticle bufférisé dans ctrlOlv.bffArticles, pointé par les track.dicArticle)
+    if not track.IDarticle or track.IDarticle in ('',0): return
+    if not track.valide: return
+    if track.qte in (0,None,''): return
+
+    IDarticle = track.IDarticle
+    dicArticle = track.dicArticle
+
+    # variation des quantités saisies % antérieur
+    if hasattr(track,'oldQte'):
+        deltaQte = track.qte - track.oldQte
+    else: deltaQte = 0.0
+    if dlg.sens == 'sorties':
+        deltaQte = -deltaQte
+
+    # variation du prix Unitaire saisies % antérieur
+    if not hasattr(track,'prixTTC'): CalculeLigne(dlg,track)
+    if not hasattr(track,'oldPu'):
+        track.oldPu = track.prixTTC
+
+    # Nouvelles valeurs en stock
+    oldValSt = dicArticle['qteStock'] * dicArticle['prixMoyen']
+    oldValMvt = track.oldQte * track.oldPu
+    newValMvt = track.qte * track.prixTTC
+    newValSt = oldValSt + newValMvt - oldValMvt
+    dicArticle['qteStock'] += deltaQte
+
+    # sauve dicArticle
+    lstDonnees = [('qteStock', dicArticle['qteStock']), ]
+
+    # prix moyen changé uniquement sur nouvelles entrées achetées avec prix actuel
+    if 'achat' in dlg.origine:
+        dicArticle['prixMoyen'] = round((newValSt / (dicArticle['qteStock'])),2)
+        dicArticle['prixActuel'] = track.prixTTC
+        lstDonnees += [
+                    ('dernierAchat', xformat.DateFrToSql(dlg.date)),
+                    ('prixMoyen', dicArticle['prixMoyen']),
+                    ('prixActuel', dicArticle['prixActuel']),]
+    ret = db.ReqMAJ("stArticles", lstDonnees, "IDarticle", IDarticle,mess="UTILS_Stocks.SauveArticle Modif: %s"%IDarticle)
+    if ret == 'ok':
+        track.oldQte = track.qte
+        track.qteStock = dicArticle['qteStock']
+        track.oldPu = track.prixTTC
+
+def DeleteLigne(db,olv,track):
+    # --- Supprime les différents éléments associés à la ligne --
+    if not track.IDmouvement in (None,0, ''):
+        SauveArticle(db, olv, track)
         ret = db.ReqDEL("stMouvements", "IDmouvement", track.IDmouvement,affichError=True)
     return
-    
-def GetFournisseurs(db=None,**kwd):
-    # appel des noms de fournisseurs déjà utilisés par le passé
-    req = """   
-            SELECT stMouvements.fournisseur
-            FROM stMouvements
-            GROUP BY stMouvements.fournisseur
-            ORDER BY stMouvements.fournisseur;
-            """
-    lstDonnees = []
-    retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetFournisseurs')
-    if retour == "ok":
-        recordset = db.ResultatReq()
-        lstDonnees = [x[0] for x in recordset]
-    for nom in ('Boulanger','NoName'):
-        if not nom in lstDonnees:
-            lstDonnees.append(nom)
-    return lstDonnees
-
-def GetAnalytiques(db,axe="%%"):
-    # appel des items Analytiques de l'axe précisé
-    req = """   
-            SELECT cpta_analytiques.IDanalytique, cpta_analytiques.abrege, cpta_analytiques.nom
-            FROM cpta_analytiques
-            WHERE (((cpta_analytiques.axe) Like '%s'))
-            GROUP BY cpta_analytiques.IDanalytique, cpta_analytiques.abrege, cpta_analytiques.nom
-            ORDER BY cpta_analytiques.abrege;
-            """%axe
-    lstDonnees = []
-    retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetFournisseurs')
-    if retour == "ok":
-        recordset = db.ResultatReq()
-        lstDonnees = [list(x) for x in recordset]
-    return lstDonnees
 
 class Anterieur(object):
     def __init__(self,db, origines=['achat',]):
@@ -370,7 +432,7 @@ class Anterieur(object):
             'lstChamps': lstChamps,
             'listeNomsColonnes': lstNomsColonnes,
             'listeCodesColonnes': lstCodesColonnes,
-            'getDonnees': self.GetAnterieurs,
+            'getDonnees': self.SqlAnterieurs,
             'dicBandeau': dicBandeau,
             'sortColumnIndex': 2,
             'sensTri': False,
@@ -378,7 +440,7 @@ class Anterieur(object):
             'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
             'size': (650, 400)}
 
-    def GetAnterieurs(self,db=None, dicOlv={}, **kwd):
+    def SqlAnterieurs(self,db=None, dicOlv={}, **kwd):
         # ajoute les données à la matrice pour la recherche d'un anterieur
         filtre = kwd.pop('filtreTxt', '')
         nbreFiltres = kwd.pop('nbreFiltres', 0)
@@ -395,7 +457,7 @@ class Anterieur(object):
             where += """
                     AND (date LIKE '%%%s%%'
                             OR fournisseur LIKE '%%%s%%'
-                            OR analystique LIKE '%%%s%% )'""" % (filtre, filtre, filtre,)
+                            OR analytique LIKE '%%%s%% )'""" % (filtre, filtre, filtre,)
 
         lstChamps = dicOlv['lstChamps']
 
@@ -405,7 +467,7 @@ class Anterieur(object):
                     GROUP BY origine, date, fournisseur, analytique
                     ORDER BY date DESC
                     %s ;""" % (",".join(lstChamps), where, limit)
-        retour = db.ExecuterReq(req, mess='GetAnterieurs')
+        retour = db.ExecuterReq(req, mess='SqlAnterieurs')
         lstDonnees = []
         if retour == 'ok':
             recordset = db.ResultatReq()
@@ -426,8 +488,9 @@ class Anterieur(object):
         dlg.Destroy()
         return dicAnterieur
 
+
+# gestion des articles via tableau de recherche
 class DLG_articles(xgtr.DLG_gestion):
-    # gestion des articles via tableau de recherche
     def __init__(self,*args,**kwds):
         db = kwds.pop('db',None)
         value = kwds.pop('value',None)

@@ -275,7 +275,7 @@ class Noegest(object):
         dlg.Destroy()
         return dicAnalytique
 
-    def GetAnalytiques(self,lstChamps=None,**kwd):
+    def SqlAnalytiques(self,lstChamps=None,**kwd):
         reqFrom = kwd.pop('reqFrom','')
         reqWhere = kwd.pop('reqWhere','')
 
@@ -287,7 +287,7 @@ class Noegest(object):
                 %s
                 GROUP BY %s;
                 """%(champs,reqFrom,reqWhere,champs)
-        retour = self.db.ExecuterReq(req, mess='UTILS_Noegest.GetAnalytiques')
+        retour = self.db.ExecuterReq(req, mess='UTILS_Noegest.SqlAnalytiques')
         if retour == "ok":
             ltAnalytiques = self.db.ResultatReq()
         return ltAnalytiques
@@ -411,7 +411,7 @@ class Noegest(object):
         kwd['reqFrom'] = """
                 FROM    cpta_analytiques   
                 LEFT JOIN vehiculesCouts ON cpta_analytiques.IDanalytique = vehiculesCouts.IDanalytique"""
-        return self.GetAnalytiques(lstChamps,**kwd)
+        return self.SqlAnalytiques(lstChamps,**kwd)
 
     def GetActivite(self,filtre='', mode=None):
         # choix d'une activité et retour de son dict, mute sert pour automatisme d'affectation
@@ -438,7 +438,7 @@ class Noegest(object):
             """%(whereFiltre)
         kwd['reqFrom'] = """
             FROM cpta_analytiques"""
-        return self.GetAnalytiques(lstChamps,**kwd)
+        return self.SqlAnalytiques(lstChamps,**kwd)
 
     def SetConsoKm(self,track):
         # --- Sauvegarde de la ligne consommation ---
