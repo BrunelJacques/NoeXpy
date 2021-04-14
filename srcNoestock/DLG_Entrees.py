@@ -173,9 +173,9 @@ def GetOlvCodesSup():
 
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
-    choixOrigine = DICORIGINES[dlg.sens]['labels']
+    origines = DICORIGINES[dlg.sens]['codes']
     return {
-            'choicesorigine': choixOrigine,
+            'codesOrigines': origines,
             'checkColonne': False,
             'recherche': True,
             'minSize': (600, 100),
@@ -211,7 +211,6 @@ class PNL_corps(xgte.PNL_corps):
     def __init__(self, parent, dicOlv,*args, **kwds):
         xgte.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
         self.db = parent.db
-        self.ctrlOlv.Choices={}
         self.lstNewReglements = []
         self.flagSkipEdit = False
         self.oldRow = None
@@ -221,7 +220,13 @@ class PNL_corps(xgte.PNL_corps):
         track.creer = True
 
     def ValideParams(self):
-        nust.ValideParams(self.parent.pnlParams)
+        pnl = self.parent.pnlParams
+        dicParams = {'origine': self.parent.GetOrigine(),
+                     'date': self.parent.GetDate(),
+                     'fournisseur': pnl.GetOneValue('fournisseur',codeBox='param2'),
+                     'analytique': pnl.GetOneValue('analytique',codeBox='param2'),
+                     'ht_ttc': pnl.GetOneValue('ht_ttc',codeBox='param3')}
+        ret = nust.ValideParams(pnl,dicParams)
 
     def OnCtrlV(self,track):
         # avant de coller une track, raz de certains champs et recalcul
@@ -310,6 +315,7 @@ class DLG(xusp.DLG_vide):
         self.dicOlv = {'lstColonnes': GetOlvColonnes()}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
         self.dicOlv.update(GetOlvOptions(self))
+        self.origines = self.dicOlv.pop("codesOrigines",[])
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
         self.date = self.today
@@ -329,7 +335,6 @@ class DLG(xusp.DLG_vide):
                 choicesMode = colonne.choices
             if 'libelle' in colonne.valueGetter:
                 self.libelleDefaut = colonne.valueSetter
-
 
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
         self.txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"
@@ -369,12 +374,12 @@ class DLG(xusp.DLG_vide):
     # ------------------- Gestion des actions -----------------------
 
     def SetTitreImpression(self):
-        IDdepot = self.pnlParams.ctrlRef.GetValue()
-        ctrl = self.pnlParams.ctrlBanque
-        banque = ctrl.GetString(ctrl.GetSelection())
-        dte = self.pnlParams.ctrlDate.GetValue()
-        if not IDdepot: IDdepot = "___"
-        self.ctrlOlv.titreImpression = "REGLEMENTS Dépot No %s, du %s, banque: %s "%(IDdepot,dte,banque)
+        tiers = ''
+        if self.fournisseur: tiers += ", Fournisseur: %s"%self.fournisseur.capitalize()
+        if self.analytique: tiers += ", Camp: %s"%self.analytique.capitalize()
+        date = xformat.DateSqlToFr(self.date)
+        titre = "Mouvements STOCKS %s du %s, %s%s"%(self.sens, date, self.origine,tiers)
+        self.ctrlOlv.titreImpression = titre
 
     def InitOlv(self):
         self.ctrlOlv.lstColonnes = GetOlvColonnes()
@@ -382,45 +387,56 @@ class DLG(xusp.DLG_vide):
         self.ctrlOlv.InitObjectListView()
         self.Refresh()
 
-    def OnOrigine(self,event):
-        pnl = self.pnlParams
-        pnlOrigine = pnl.GetPnlCtrl('origine',codebox='param1')
+    def GetOrigine(self):
+        pnlOrigine = self.pnlParams.GetPnlCtrl('origine',codebox='param1')
         lblOrigine = pnlOrigine.GetValue()
+        ixo = DICORIGINES[self.sens]['labels'].index(lblOrigine)
+        return DICORIGINES[self.sens]['codes'][ixo]
 
+    def OnOrigine(self,event):
+        self.origine = self.GetOrigine()
+
+        # grise les ctrl inutiles
         def setEnable(namePnlCtrl,flag):
-            pnlCtrl =  pnl.GetPnlCtrl(namePnlCtrl,codebox='param2')
+            pnlCtrl =  self.pnlParams.GetPnlCtrl(namePnlCtrl,codebox='param2')
             pnlCtrl.txt.Enable(flag)
             pnlCtrl.ctrl.Enable(flag)
             pnlCtrl.btn.Enable(flag)
-
         #'achat livraison', 'retour camp', 'od_in'
-        if 'achat' in lblOrigine:
+        if 'achat' in self.origine:
             setEnable('fournisseur',True)
             setEnable('analytique',False)
-        elif 'retour' in lblOrigine:
+        elif 'retour' in self.origine:
             setEnable('fournisseur',False)
             setEnable('analytique',True)
-        elif 'od ' in lblOrigine:
+        elif 'od' in self.origine:
             setEnable('fournisseur',False)
             setEnable('analytique',False)
-        pnl.Refresh()
-        ixo = DICORIGINES[self.sens]['labels'].index(lblOrigine)
-        self.origine = DICORIGINES[self.sens]['codes'][ixo]
+
+        self.pnlParams.Refresh()
         if event: event.Skip()
 
-    def OnDate(self,event):
+    def GetDate(self,fr=False):
         saisie = self.pnlParams.GetOneValue('date',codeBox='param1')
         saisie = xformat.FmtDate(saisie)
-        self.pnlParams.SetOneValue('date',valeur=saisie,codeBox='param1')
         self.date = xformat.DateFrToSql(saisie)
+        if fr: return saisie
+        else: return self.date
+
+    def OnDate(self,event):
+        saisie = self.GetDate(fr=True)
+        self.pnlParams.SetOneValue('date',valeur=saisie,codeBox='param1')
+        self.GetDonnees()
         if event: event.Skip()
 
     def OnHt_ttc(self,event):
         self.ht_ttc = self.pnlParams.GetOneValue('ht_ttc',codeBox='param3')
+        self.GetDonnees()
         if event: event.Skip()
 
     def OnFournisseur(self,event):
         self.fournisseur = self.pnlParams.GetOneValue('fournisseur',codeBox='param2')
+        self.GetDonnees()
         if event: event.Skip()
 
     def OnBtnFournisseur(self,event):
@@ -436,70 +452,67 @@ class DLG(xusp.DLG_vide):
         if len(choixAnalytique) > 0:
             ix = self.valuesAnalytique.index(choixAnalytique)
             self.analytique = self.lstAnalytiques[ix][0]
-        if event: event.Skip()
-
-    def OnBtnAnalytique(self,event):
-        noegest = nunoegest.Noegest(self)
-        dicActivite = noegest.GetActivite()
-        if dicActivite:
-            valeur = "%s %s"%(dicActivite['idanalytique'],dicActivite['abrege'])
-            self.pnlParams.SetOneValue('analytique',valeur=valeur,codeBox='param2')
-            self.OnAnalytique(None)
+        self.GetDonnees()
         if event: event.Skip()
 
     def OnBtnAnterieur(self,event):
         # lancement de la recherche d'un lot antérieur, on enlève le cellEdit pour éviter l'écho des clics
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
-        # choix d'un lot
-        obj = nust.Anterieur(xdb.DB,origines=DICORIGINES[self.sens]['codes'])
-        dicAnterieur = obj.GetDic()
+        # choix d'un lot de lignes définies par des params
+        dicParams = nust.GetAnterieur(self)
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK        # gestion du retour du choix dépot
-        if not 'date' in dicAnterieur.keys(): return
+        if not 'date' in dicParams.keys(): return
+        self.GetDonnees(dicParams)
+        if event: event.Skip()
 
-        # appel de la partie stMouvements des lignes
-        lstDonnees = nust.GetDonneesEntrees(self,dicAnterieur)
+    def GetDonnees(self,dicParams=None):
+        if not dicParams:
+            dicParams = {'origine':self.origine,
+                         'date':self.date,
+                         'fournisseur':self.fournisseur,
+                         'analytique':self.analytique,
+                         'ht_ttx':self.ht_ttc}
+        valide = nust.ValideParams(self.pnlParams,dicParams, mute=True)
+        if not valide: return
+
+        # appel des données de l'Olv principal à éditer
+        lstDonnees = nust.GetDonneesEntrees(self,dicParams)
         lstNoModif = [1 for rec in  lstDonnees if not (rec[-1])]
         # présence de lignes déjà transférées compta
         if len(lstNoModif) >0:
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
             self.pnlPied.SetItemsInfos("NON MODIFIABLE: enregistrements transféré ",
                                        wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
-        if len(lstDonnees) == 0:
-            wx.MessageBox("Aucune écriture:\n\nla sélection sur les '%s' est vide ou pb d'accès"%self.sens)
+        # l'appel des données peut avoir retourné d'autres paramètres, il faut mettre à jour l'écran
+        if len(lstDonnees) > 0:
+            # set date du lot importé
+            self.pnlParams.SetOneValue('date',xformat.FmtDate(dicParams['date']),'param1')
+            self.date = dicParams['date']
 
-        # traitement du lot importé
+            # set origine
+            ixo = DICORIGINES[self.sens]['codes'].index(dicParams['origine'])
+            self.pnlParams.SetOneValue(DICORIGINES[self.sens]['labels'][ixo])
+            self.OnOrigine(None)
 
-        # set date du lot
-        self.pnlParams.SetOneValue('date',xformat.FmtDate(dicAnterieur['date']),'param1')
-        self.date = dicAnterieur['date']
+            # set Fournisseur et analytique
+            self.pnlParams.SetOneValue('fournisseur',dicParams['fournisseur'],'param2')
+            self.fournisseur = dicParams['fournisseur']
+            self.pnlParams.SetOneValue('analytique',dicParams['analytique'],'param2')
+            self.analytique = dicParams['analytique']
 
-        # set origine
-        ixo = DICORIGINES[self.sens]['codes'].index(dicAnterieur['origine'])
-        self.pnlParams.SetOneValue(DICORIGINES[self.sens]['labels'][ixo])
-        self.OnOrigine(None)
-
-        # set Fournisseur et analytique
-        self.pnlParams.SetOneValue('fournisseur',dicAnterieur['fournisseur'],'param2')
-        self.fournisseur = dicAnterieur['fournisseur']
-        self.pnlParams.SetOneValue('analytique',dicAnterieur['analytique'],'param2')
-        self.analytique = dicAnterieur['analytique']
-
-        # place la partie stMouvements dans la grille, puis création de modelObejects pr init
+        # alimente la grille, puis création de modelObejects pr init
         self.ctrlOlv.lstDonnees = lstDonnees
         self.InitOlv()
 
-        # les écritures reprises sont censées être valides, mais pas complétées
+        # les écritures reprises sont censées être valides, mais il fatu les compléter
         for track in self.ctrlOlv.modelObjects[:-1]:
             nust.CalculeLigne(self,track)
             track.valide = True
         self.ctrlOlv._FormatAllRows()
 
-        # stockage pour test de saisie
-        self.anterieurOrigine = self.ctrlOlv.innerList
-
     def OnImprimer(self,event):
         # test de présence d'écritures non valides
-        lstNonValides = [x for x in self.ctrlOlv.modelObjects if not x.valide and x.IDreglement]
+        lstNonValides = [x for x in self.ctrlOlv.modelObjects if not x.valide and x.IDmouvement]
         if len(lstNonValides) > 0:
             ret = wx.MessageBox('Présence de lignes non valides!\n\nCes lignes seront détruites avant impression',
                                 'Confirmez pour continuer', style=wx.OK | wx.CANCEL)

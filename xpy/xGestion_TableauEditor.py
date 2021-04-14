@@ -142,13 +142,15 @@ class ListView(FastObjectListView):
     def OnSetFocus(self,evt):
         if self.flagSkipEdit : return
         self.flagSkipEdit = True
+        valide = True
         # SetFocus sur le corps d'écran pour récupérer le KillFocus sur les params
         if hasattr(self.parent,'ValideParams'):
-            self.parent.ValideParams()
+            valide = self.parent.ValideParams()
         elif hasattr(self.parent.parent,'ValideParams'):
-            self.parent.parent.ValideParams()
+            valide = self.parent.parent.ValideParams()
         self.flagSkipEdit = False
-        evt.Skip()
+        if valide:
+            evt.Skip()
 
     def SetFooter(self, ctrl=None, dictColFooter={}):
         self.ctrl_footer = ctrl

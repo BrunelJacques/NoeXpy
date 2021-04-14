@@ -82,7 +82,7 @@ class ListView(ObjectListView):
     def __init__(self, *args, **kwds):
         self.parent = args[0]
         self.filtre = ''
-        self.dicOlv = kwds.copy()
+        self.dicOlv = self.parent.dicOlv
         #self.pnlFooter = kwds.pop('pnlFooter', None) - pas implementé
         style = kwds.pop('style', wx.LC_SINGLE_SEL)| wx.LC_REPORT
         self.checkColonne = kwds.pop('checkColonne',False)
@@ -156,6 +156,7 @@ class ListView(ObjectListView):
 
     def formerTracks(self,**kwd):
         kwd['dicOlv'] = self.dicOlv
+        dlg = self.parent.parent
         self.lstDonnees = self.getDonnees(**kwd)
 
         tracks = list()
@@ -386,6 +387,7 @@ class PNL_tableau(wx.Panel):
     #panel olv avec habillage optionnel pour des infos (bas gauche) et boutons sorties
     def __init__(self, parent, dicOlv,*args, **kwds):
         self.parent = parent
+        self.dicOlv = dicOlv
         self.db = kwds.pop('db',None)
         self.avecRecherche = dicOlv.pop('recherche',True)
         dicBandeau = dicOlv.pop('dicBandeau',None)

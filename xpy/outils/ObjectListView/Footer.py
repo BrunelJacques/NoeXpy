@@ -33,7 +33,7 @@ class Footer(wx.Control):
         # Normalisation casse des noms de colonne
         dictColFooter = {}
         for nomColonne, dictColonne in self.dictColFooter.items():
-            dictColFooter[nomColonne.lower()]=dictColonne
+            dictColFooter[nomColonne]=dictColonne
         self.dictColFooter = dictColFooter
         objects = self.listview.GetCheckedObjects()
         if len(objects) == 0:
@@ -51,7 +51,7 @@ class Footer(wx.Control):
                                 total = float(total.replace(',','.'))
                             self.dictTotaux[nomColonne] += total
                 if dictColonne["mode"] == "nombre" :
-                    if hasattr(track, nomColonne) :
+                    if hasattr(track, nomColonne):
                         valeur = getattr(track, nomColonne)
                         if not nomColonne in self.dictTotaux:
                             self.dictTotaux[nomColonne] = 0

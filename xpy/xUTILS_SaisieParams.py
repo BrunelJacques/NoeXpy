@@ -914,13 +914,16 @@ class TopBoxPanel(wx.Panel):
                 lstDonnees.append(ddDonnees[code][dicCtrl['name']])
         return lstChamps,lstDonnees
 
-    def GetValues(self):
+    def GetValues(self,fmtDD=True):
         # récupère les données de tous les controles sous forme de dictionnaire
         ddDonnees = {}
+        dDonnees = {}
         for box in self.lstBoxes:
             dic = box.GetValues()
             ddDonnees[box.code] = deepcopy(dic)
-        return ddDonnees
+            dDonnees.update(dic)
+        if fmtDD: return ddDonnees
+        else: return dDonnees
 
     def GetOneValue(self,name=None,codeBox=None):
         valeur = None

@@ -11,24 +11,28 @@ import wx
 import xpy.xGestion_TableauRecherche as xgtr
 from srcNoelite     import DB_schema
 from xpy.outils     import xformat
+from srcNoestock import DLG_Entrees
 
 LIMITSQL =100
 
-def ValideParams(pnl):
-    pnlOrigine = pnl.GetPnlCtrl('origine', codebox='param1')
-    lblOrigine = pnlOrigine.GetValue()
+def ValideParams(pnl,dicParams,mute=False):
+    # vérifie la saisie des paramètres
     pnlFournisseur = pnl.GetPnlCtrl('fournisseur', codebox='param2')
-    fournisseur = pnlFournisseur.GetValue()
     pnlAnalytique = pnl.GetPnlCtrl('analytique', codebox='param2')
-    analytique = pnlAnalytique.GetValue()
-
-    if 'achat' in lblOrigine:
-        if (not fournisseur) or (len(fournisseur) == 0):
-            wx.MessageBox("Veuillez saisir un fournisseur!")
-            pnlFournisseur.SetFocus()
-    elif 'retour' in lblOrigine:
-        if (not analytique) or (len(analytique) == 0):
-            wx.MessageBox("Veuillez saisir un camp pour le retour de marchandise!")
+    valide = True
+    if 'achat' in dicParams['origine']:
+        if (not dicParams['fournisseur']) or (len(dicParams['fournisseur']) == 0):
+            if not mute:
+                wx.MessageBox("Veuillez saisir un fournisseur!")
+                pnlFournisseur.SetFocus()
+            valide = False
+    elif 'retour' in dicParams['origine']:
+        if (not dicParams['analytique']) or (len(dicParams['analytique']) == 0):
+            if not mute:
+                wx.MessageBox("Veuillez saisir un camp pour le retour de marchandise!")
+                pnlAnalytique.SetFocus()
+            valide = False
+    return valide
 
 def GetMatriceArticles(cutend=None):
     dicBandeau = {'titre':"Recherche d'un article",
@@ -66,7 +70,7 @@ def GetDonneesEntrees(dlg, dParams):
     # retourne la liste des données de l'OLv de DlgEntree
     ctrlOlv = dlg.ctrlOlv
     # appel des données des mouvements selon les params
-    ldMouvements = SqlLdMouvements(dlg.db,dParams)
+    ldMouvements = SqlMouvements(dlg.db,dParams)
     # appel des dicArticles des mouvements
     ddArticles = {}
     for dMvt in ldMouvements:
@@ -114,9 +118,9 @@ def GetDonneesEntrees(dlg, dParams):
         lstDonnees.append(donnees)
     return lstDonnees
 
-# Select sur données  ------------------------------------------------------------------
+# Select de données  ------------------------------------------------------------------
 
-def SqlLdMouvements(db,dParams=None):
+def SqlMouvements(db,dParams=None):
     lstChamps = xformat.GetLstChamps(DB_schema.DB_TABLES['stMouvements'])
     # Appelle les mouvements associés à un dic de choix de param et retour d'une liste de dic
     req = """   SELECT %s
@@ -265,7 +269,7 @@ def SqlAnalytiques(db, axe="%%"):
         lstDonnees = [list(x) for x in recordset]
     return lstDonnees
 
-# Gestion des lignes de l'olv -----------------------------------------------------------------------
+# Gestion des lignes de l'olv --------------------------------------------------------------------------
 
 def CalculeLigne(dlg,track):
     try: qte = float(track.qte)
@@ -406,90 +410,86 @@ def DeleteLigne(db,olv,track):
         ret = db.ReqDEL("stMouvements", "IDmouvement", track.IDmouvement,affichError=True)
     return
 
-class Anterieur(object):
-    def __init__(self,db, origines=['achat',]):
-        self.origines = origines
-        self.db = db
+# Choix des params  pour reprise de mouvements antérieurs------------------------------------------------
 
-    def GetMatriceAnterieurs(self):
-        dicBandeau = {'titre': "Rappel d'un anterieur existant",
-                      'texte': "les mots clés du champ en bas permettent de filtrer d'autres lignes et d'affiner la recherche",
-                      'hauteur': 15, 'nomImage': "xpy/Images/32x32/Zoom_plus.png"}
+def GetMatriceAnterieurs(dlg):
+    dicBandeau = {'titre': "Rappel d'un anterieur existant",
+                  'texte': "les mots clés du champ en bas permettent de filtrer d'autres lignes et d'affiner la recherche",
+                  'hauteur': 15, 'nomImage': "xpy/Images/32x32/Zoom_plus.png"}
 
-        # Composition de la matrice de l'OLV anterieurs, retourne un dictionnaire
+    # Composition de la matrice de l'OLV anterieurs, retourne un dictionnaire
 
-        lstChamps = ['origine', 'date', 'fournisseur', 'analytique', 'COUNT(IDmouvement)']
+    lstChamps = ['origine', 'date', 'fournisseur', 'analytique', 'COUNT(IDmouvement)']
 
-        lstNomsColonnes = ['origine', 'date', 'fournisseur', 'analytique', 'nbLignes']
+    lstNomsColonnes = ['origine', 'date', 'fournisseur', 'analytique', 'nbLignes']
 
-        lstTypes = ['VARCHAR(8)', 'DATE', 'VARCHAR(32)', 'VARCHAR(32)', 'INT']
-        lstCodesColonnes = [xformat.SupprimeAccents(x).lower() for x in lstNomsColonnes]
-        lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
-        lstLargeurColonnes = [100,100,180,180,200]
-        lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
-        return {
-            'lstColonnes': lstColonnes,
-            'lstChamps': lstChamps,
-            'listeNomsColonnes': lstNomsColonnes,
-            'listeCodesColonnes': lstCodesColonnes,
-            'getDonnees': self.SqlAnterieurs,
-            'dicBandeau': dicBandeau,
-            'sortColumnIndex': 2,
-            'sensTri': False,
-            'style': wx.LC_SINGLE_SEL | wx.LC_HRULES | wx.LC_VRULES,
-            'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
-            'size': (650, 400)}
+    lstTypes = ['VARCHAR(8)', 'DATE', 'VARCHAR(32)', 'VARCHAR(32)', 'INT']
+    lstCodesColonnes = [xformat.SupprimeAccents(x).lower() for x in lstNomsColonnes]
+    lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
+    lstLargeurColonnes = [100,100,180,180,200]
+    lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
+    return {
+        'codesOrigines': dlg.origines,
+        'lstColonnes': lstColonnes,
+        'lstChamps': lstChamps,
+        'listeNomsColonnes': lstNomsColonnes,
+        'listeCodesColonnes': lstCodesColonnes,
+        'getDonnees': SqlAnterieurs,
+        'dicBandeau': dicBandeau,
+        'sortColumnIndex': 2,
+        'sensTri': False,
+        'style': wx.LC_SINGLE_SEL | wx.LC_HRULES | wx.LC_VRULES,
+        'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
+        'size': (650, 400)}
 
-    def SqlAnterieurs(self,db=None, dicOlv={}, **kwd):
-        # ajoute les données à la matrice pour la recherche d'un anterieur
-        filtre = kwd.pop('filtreTxt', '')
-        nbreFiltres = kwd.pop('nbreFiltres', 0)
+def SqlAnterieurs(db=None, dicOlv={}, **kwd):
+    # ajoute les données à la matrice pour la recherche d'un anterieur
+    filtre = kwd.pop('filtreTxt', '')
+    nbreFiltres = kwd.pop('nbreFiltres', 0)
 
-        # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
-        # cf self.listeFiltresColonnes  à gérer avec champs au lieu de codes colonnes
-        limit = ''
-        if nbreFiltres == 0:
-            limit = """
-                    LIMIT %d""" % LIMITSQL
+    # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
+    limit = ''
+    if nbreFiltres == 0:
+        limit = """
+                LIMIT %d""" % LIMITSQL
+    origines = dicOlv['codesOrigines']
+    where = """                    WHERE origine in ( %s ) """ % str(origines)[1:-1]
+    if filtre:
+        where += """
+                AND (date LIKE '%%%s%%'
+                        OR fournisseur LIKE '%%%s%%'
+                        OR analytique LIKE '%%%s%% )'""" % (filtre, filtre, filtre,)
 
-        where = """                    WHERE origine in ( %s ) """ % str(self.origines)[1:-1]
-        if filtre:
-            where += """
-                    AND (date LIKE '%%%s%%'
-                            OR fournisseur LIKE '%%%s%%'
-                            OR analytique LIKE '%%%s%% )'""" % (filtre, filtre, filtre,)
+    lstChamps = dicOlv['lstChamps']
 
-        lstChamps = dicOlv['lstChamps']
+    req = """   SELECT %s
+                FROM stMouvements
+                %s 
+                GROUP BY origine, date, fournisseur, analytique
+                ORDER BY date DESC
+                %s ;""" % (",".join(lstChamps), where, limit)
+    retour = db.ExecuterReq(req, mess='SqlAnterieurs')
+    lstDonnees = []
+    if retour == 'ok':
+        recordset = db.ResultatReq()
+        for record in recordset:
+            lstDonnees.append([x for x in record])
+    return lstDonnees
 
-        req = """   SELECT %s
-                    FROM stMouvements
-                    %s 
-                    GROUP BY origine, date, fournisseur, analytique
-                    ORDER BY date DESC
-                    %s ;""" % (",".join(lstChamps), where, limit)
-        retour = db.ExecuterReq(req, mess='SqlAnterieurs')
-        lstDonnees = []
-        if retour == 'ok':
-            recordset = db.ResultatReq()
-            for record in recordset:
-                lstDonnees.append([x for x in record])
-        return lstDonnees
+def GetAnterieur(dlg,db=None):
+    # retourne un dict de params après lancement d'un tableau de choix de l'existants pour reprise
+    dicParams = {}
+    dicOlv = GetMatriceAnterieurs(dlg)
+    dlg = xgtr.DLG_tableau(None, dicOlv=dicOlv, db=db)
+    ret = dlg.ShowModal()
+    if ret == wx.OK:
+        donnees = dlg.GetSelection().donnees
+        for ix in range(len(donnees)):
+            dicParams[dicOlv['listeCodesColonnes'][ix]] = donnees[ix]
+    dlg.Destroy()
+    return dicParams
 
-    def GetDic(self,db=None):
-        # lancement de l'appel des mouvements antérieurs existants pour reprise
-        dicAnterieur = {}
-        dicOlv = self.GetMatriceAnterieurs()
-        dlg = xgtr.DLG_tableau(None, dicOlv=dicOlv, db=db)
-        ret = dlg.ShowModal()
-        if ret == wx.OK:
-            donnees = dlg.GetSelection().donnees
-            for ix in range(len(donnees)):
-                dicAnterieur[dicOlv['listeCodesColonnes'][ix]] = donnees[ix]
-        dlg.Destroy()
-        return dicAnterieur
-
-
-# gestion des articles via tableau de recherche
+# gestion des articles via tableau de recherche ---------------------------------------------------------
 class DLG_articles(xgtr.DLG_gestion):
     def __init__(self,*args,**kwds):
         db = kwds.pop('db',None)
@@ -545,11 +545,18 @@ class DLG_articles(xgtr.DLG_gestion):
             mess="DLG_articles.GereDonnees Suppr"
             self.db.ReqDel()
 
+
+# Pour tests ------------------------------------------------------------
+class MonObjet(object):
+    # permet la bufferisation des origines
+    def __init__(self,db, origines=['achat',]):
+        self.origines = origines
+        self.db = db
+
 if __name__ == '__main__':
     import os
     os.chdir("..")
-    from xpy import xUTILS_DB as xdb
     app = wx.App(0)
-    obj = Anterieur(xdb.DB)
-    ret = obj.GetDic()
+    obj = MonObjet(None)
+    ret = GetAnterieur(obj)
     print(ret)
