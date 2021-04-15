@@ -7,6 +7,7 @@
 # ------------------------------------------------------------------------
 
 import wx
+from xpy.outils import xformat
 
 def GetAddManyBtns(pnl,lstBtns,**kwds):
     # Trois possibles: déjàBouton, listeParams, dicParams.  Tous produisent une liste pour Sizer.AddMany
@@ -77,17 +78,17 @@ class Bouton(wx.Button):
         ID =        kwds.pop('id',ID)
         label =     kwds.pop('label','')
         name =      kwds.pop('name',None)
-        image =     kwds.pop('image',None)
         help =      kwds.pop('help',None)
         onBtn =     kwds.pop('onBtn',None)
+        image =     kwds.pop('image',None)
+        sizeBmp =   kwds.pop('sizeBmp',None)
+        sizeFont =  kwds.pop('sizeFont',None)
         # cas des boutons avec label
         if image and len(label) > 0: defsize = (110,35)
         # cas des '...' sans image ou image seule
         elif len(label) <= 3 : defsize = (24,24)
         else: defsize = (70,24)
         size =      kwds.pop('size',defsize)
-        sizeBmp =   kwds.pop('sizeBmp',None)
-        sizeFont =  kwds.pop('sizeFont',None)
 
         # ajout de l'image. Le code de wx.ART_xxxx est de type bytes et peut être mis en lieu de l'image
         if isinstance(image,bytes):
@@ -95,14 +96,19 @@ class Bouton(wx.Button):
             if not sizeBmp:
                 if size:
                     sizeBmp = (size[1] - 10, size[1] - 10)
-                else: sizeBmp = (16,16)
+                else:
+                    sizeBmp = (16, 16)
             imageBmp = wx.ArtProvider.GetBitmap(image,wx.ART_BUTTON,wx.Size(sizeBmp))
         elif isinstance(image,wx.Bitmap):
             # image déjà en format Bitmap
-            imageBmp = image
+            if sizeBmp:
+                imageBmp = xformat.ResizeBmp(image,sizeBmp)
+            else:
+                imageBmp = image
+
         elif isinstance(image,str):
             # image en bitmap pointée par son adresse
-            imageBmp = wx.Bitmap(image)
+            imageBmp = xformat.GetImage(image,sizeBmp)
         else: imageBmp = None
 
         # Ajustements de la taille
@@ -176,7 +182,7 @@ class xFrame(wx.Frame):
     # reçoit les controles à gérer sous la forme d'un ensemble de paramètres
     def __init__(self, *args):
         self.parent = None
-        wx.Frame.__init__(self,*args,size=(800,80))
+        wx.Frame.__init__(self,*args,size=(800,300))
         #topPnl = wx.Panel(self)
         lstParamsBtns = self.GetLstParamsBtns()
         lstBtns = GetAddManyBtns(self,lstParamsBtns)
@@ -195,7 +201,7 @@ class xFrame(wx.Frame):
     def OnFermer(self,event):
         self.Close()
 
-    # description des boutons en pied d'écran et de leurs actions
+    # description des diverses possibilités boutons en pied d'écran et de leurs actions
     def GetLstParamsBtns(self):
             return  [ BTN_fermer(self,image="../Images/32x32/Annuler.png"),
                     ('BtnPrec2',-1, "Ecran\nprécédent", "Retour à l'écran précédent next"),
@@ -203,12 +209,12 @@ class xFrame(wx.Frame):
 
                     {'name': 'btnImp', 'label': "Importer\nfichier",
                         'help': "Cliquez ici pour lancer l'importation du fichier de km consommés",
-                        'size': (120, 35), 'image': wx.ART_UNDO,'onBtn':self.OnAction1},
+                        'size': (120, 50), 'image': wx.ART_UNDO,'onBtn':self.OnAction1,'sizeBmp':(60,40)},
                     {'name': 'btnExp', 'label': "Exporter\nfichier",
                         'help': "Cliquez ici pour lancer l'exportation du fichier selon les paramètres que vous avez défini",
                         'size': (120, 35), 'image': wx.ART_REDO,'onBtn':self.OnAction2},
-                    {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour fermer la fenêtre",
-                        'size':(120,35),'image':"../Images/32x32/Quitter.png",'onBtn':self.OnFermer}
+                    {'name':'btnOK','ID':wx.ID_ANY,'label':"Img Resizée",'help':"Cliquez ici pour fermer la fenêtre",
+                        'size':(150,60),'image':"../Images/80x80/Famille.png",'onBtn':self.OnFermer,'sizeBmp':(50,50)}
                     ]
         
 

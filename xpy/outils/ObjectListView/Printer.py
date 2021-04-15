@@ -336,16 +336,6 @@ class ObjectListViewPrinter(object):
         self.printer.ReportFormat = fmt
         return True
 
-    ##        self.printer = ListCtrlPrinter.ListCtrlPrinter(self.listview, self.titre)
-    ##        self.printer.printout.margins = (wx.Point(5, 5), wx.Point(5, 5))
-    ##        self.printer.printout.printData.SetOrientation(orientation)
-    ##        self.printer.printout.printData.SetQuality(wx.PRINT_QUALITY_MEDIUM)
-    ##        dateJour = DateEngFr(str(datetime.date.today()))
-    ##        self.printer.PageFooter = (dateJour, u"%s - %s" % (self.titre, self.GetNomOrganisateur()), "%(currentPage)d / %(totalPages)d")
-    ##        ListCtrlPrinter.LISTINTRO = self.intro
-    ##        ListCtrlPrinter.LISTFOOTER = self.total
-    ##        if format == "A" : self.printer.ReportFormat = self.GetFormatA()
-
     def PreviewStandard(self):
         if self.InitParametres() == False:
             return

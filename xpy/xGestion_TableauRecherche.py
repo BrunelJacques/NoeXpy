@@ -69,9 +69,6 @@ class ListView(ObjectListView):
     toutDecocher : idem
     menuPersonnel : On peut avoir déjà créé un "pré" menu contextuel auquel viendra s'ajouter le tronc commun
 
-    titreImpression : Le titre qu'on veut donner à la page en cas d'impression par exemple "Titre")
-    orientationImpression : L'orientation de l'impression, True pour portrait et False pour paysage
-
     Pour cette surcouche de OLV j'ai décidé de ne pas laisser la fonction OnItemActivated car ça peut changer selon le tableau
     donc ce sera le role de la classe parent (qui appelle ListView) de définir une fonction OnItemActivated qui sera utilisée
     lors du double clic sur une ligne
@@ -109,8 +106,6 @@ class ListView(ObjectListView):
 
 
         # Choix du mode d'impression
-        self.titreImpression = kwds.pop('titreImpression', "Tableau récapitulatif")
-        self.orientationImpression = kwds.pop('orientationImpression', True)
         self.selectionID = None
         self.selectionTrack = None
         self.criteres = ""
@@ -121,6 +116,13 @@ class ListView(ObjectListView):
         ObjectListView.__init__(self, *args,style=style,**kwds)
         self.InitObjectListView()
         self.InitModel()
+
+        if hasattr(self.GrandParent,'parent'):
+            dlg = self.GrandParent.parent
+            if hasattr(dlg,'GetTitreImpression'):
+                self.GetTitreImpression = dlg.GetTitreImpression
+        elif hasattr(self.Parent,'GetTitreImpresssion'):
+            self.GetTitreImpression = self.Parent.GetTitreImpression
 
     def GetLstCodesColonnes(self):
         codeColonnes = list()
@@ -302,31 +304,26 @@ class ListView(ObjectListView):
     def MenuNonVide(self):  # Permet de vérifier si le menu créé est vide
         return self.exportExcel or self.exportTexte or self.apercuAvantImpression or self.imprimer or self.menuPersonnel
 
-    def GetOrientationImpression(self):
-        if self.orientationImpression:
-            return wx.PORTRAIT
-        return wx.LANDSCAPE
-
     def Apercu(self, event):
         import xpy.outils.ObjectListView.Printer as printer
         # Je viens de voir dans la fonction concernée, le format n'est pas utilisé et il vaut 'A' par défaut donc rien ne change
-        prt = printer.ObjectListViewPrinter(self, titre=self.titreImpression,
+        prt = printer.ObjectListViewPrinter(self, titre=self.GetTitreImpression(),
                                                         orientation=self.GetOrientationImpression())
         prt.Preview()
 
     def Imprimer(self, event):
         import xpy.outils.ObjectListView.Printer as printer
-        prt = printer.ObjectListViewPrinter(self, titre=self.titreImpression,
+        prt = printer.ObjectListViewPrinter(self, titre=self.GetTitreImpression(),
                                                         orientation=self.GetOrientationImpression())
         prt.Print()
 
     def ExportTexte(self, event):
         import xpy.outils.xexport
-        xpy.outils.xexport.ExportTexte(self, titre=self.titreImpression, autoriseSelections=False)
+        xpy.outils.xexport.ExportTexte(self, titre=self.GetTitreImpression, autoriseSelections=False)
 
     def ExportExcel(self, event):
         import xpy.outils.xexport
-        xpy.outils.xexport.ExportExcel(self, titre=self.titreImpression, autoriseSelections=False)
+        xpy.outils.xexport.ExportExcel(self, titre=self.GetTitreImpression, autoriseSelections=False)
 
     def GetTracksCoches(self):
         return self.GetCheckedObjects()
@@ -417,8 +414,6 @@ class PNL_tableau(wx.Panel):
                         'exportTexte',
                         'apercuAvantImpression',
                         'imprimer',
-                        'titreImpression',
-                        'orientationImpression',
                         'cellEditMode',
                         'useAlternateBackColors',
                         'menuPersonnel',

@@ -11,7 +11,7 @@ import wx
 import xpy.xGestion_TableauRecherche as xgtr
 from srcNoelite     import DB_schema
 from xpy.outils     import xformat
-from srcNoestock import DLG_Entrees
+from srcNoestock import DLG_Mouvements
 
 LIMITSQL =100
 
@@ -44,7 +44,7 @@ def GetMatriceArticles(cutend=None):
         table = DB_schema.DB_TABLES['stArticles'][:-cutend]
     else:
         table = DB_schema.DB_TABLES['stArticles']
-    lstChamps = xformat.GetLstChamps(DB_schema.DB_TABLES[table])
+    lstChamps = xformat.GetLstChamps(table)
     lstTypes = xformat.GetLstTypes(table)
     lstNomsColonnes = xformat.GetLstNomsColonnes(table)
     lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes,IDcache=False)
@@ -247,7 +247,7 @@ def SqlFournisseurs(db=None, **kwd):
     retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlFournisseurs')
     if retour == "ok":
         recordset = db.ResultatReq()
-        lstDonnees = [x[0] for x in recordset]
+        lstDonnees = [x[0] for x in recordset if x[0]]
     for nom in ('Boulanger', 'NoName'):
         if not nom in lstDonnees:
             lstDonnees.append(nom)
@@ -260,7 +260,7 @@ def SqlAnalytiques(db, axe="%%"):
             FROM cpta_analytiques
             WHERE (((cpta_analytiques.axe) Like '%s'))
             GROUP BY cpta_analytiques.IDanalytique, cpta_analytiques.abrege, cpta_analytiques.nom
-            ORDER BY cpta_analytiques.abrege;
+            ORDER BY cpta_analytiques.IDanalytique;
             """ % axe
     lstDonnees = []
     retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlFournisseurs')
@@ -370,7 +370,9 @@ def SauveArticle(db,dlg,track):
     # variation des quantités saisies % antérieur
     if hasattr(track,'oldQte'):
         deltaQte = track.qte - track.oldQte
-    else: deltaQte = 0.0
+    else:
+        track.oldQte = track.qte
+        deltaQte = 0.0
     if dlg.sens == 'sorties':
         deltaQte = -deltaQte
 

@@ -11,19 +11,18 @@ import wx
 import os
 import datetime
 import srcNoestock.UTILS_Stocks        as nust
-import srcNoelite.UTILS_Noegest        as nunoegest
 import xpy.xGestion_TableauEditor      as xgte
 import xpy.xUTILS_Identification       as xuid
 import xpy.xUTILS_SaisieParams         as xusp
 import xpy.xUTILS_DB                   as xdb
-from srcNoelite.DB_schema       import DB_TABLES
-from xpy.outils.ObjectListView  import ColumnDefn, CellEditor
+from xpy.outils.ObjectListView  import ColumnDefn
 from xpy.outils                 import xformat,xbandeau,xboutons
 
 #---------------------- Matrices de paramétres -------------------------------------
 
-TITRE = "Entrées en stock"
-INTRO = "Gestion des entrées dans le stock, par livraison, retour ou autre "
+TITRE = {'entrees':"Entrées en stock",'sorties':"Sorties de stock"}
+INTRO = {'entrees':"Gestion des entrées dans le stock, par livraison, retour ou autre ",
+        'sorties':"Gestion des sorties du stock, par repas multicamp, pour un camp ou autre ",}
 
 DICORIGINES = {
                 'entrees':{'codes':['achat','retour','od_in'],
@@ -34,7 +33,7 @@ DICORIGINES = {
 DIC_INFOS = {
             'IDarticle': "<F4> Choix d'un article, ou saisie directe de son code",
             'qte': "L'unité est précisée dans le nom de l'article",
-            'pxUn': "HT ou TTC selon le choix en haut d'écran",
+            'pxUn': "HT ou TTC selon le choix en haut d'écran\nEn sortie il sert au calcul du prix de journée, en entrée pour la valeur en stock",
              }
 
 INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
@@ -147,15 +146,18 @@ def GetBoutons(dlg):
                     'size':(120,35),'image':"xpy/Images/32x32/Valider.png",'onBtn':dlg.OnClose}
             ]
 
-def GetOlvColonnes():
+def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
+    if dlg.sens == 'entrees':
+        titlePrix = "Prix Unit."
+    else: titlePrix = "Prix Stock"
     return [
             ColumnDefn("ID", 'centre', 0, 'IDmouvement',
                        isEditable=False),
             ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",isSpaceFilling=True),
             ColumnDefn("Quantité", 'right', 110, 'qte', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal),
-            ColumnDefn("Prix Unit.", 'right', 110, 'pxUn', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn(titlePrix, 'right', 110, 'pxUn', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal),
             ColumnDefn("Mtt HT", 'right', 110, 'mttHT', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
@@ -254,7 +256,7 @@ class PNL_corps(xgte.PNL_corps):
                 track.oldQte = track.qte
         if code == 'pxUn':
             if not hasattr(track, 'oldPu'):
-                nust.CalculeLigne(self.ctrlOlv,track)
+                nust.CalculeLigne(self.parent,track)
                 track.oldPu = track.prixTTC
 
     def OnEditFinishing(self,code=None,value=None,editor=None):
@@ -274,6 +276,8 @@ class PNL_corps(xgte.PNL_corps):
                 track.dicArticle = nust.SqlDicArticle(self.db,self.ctrlOlv,value)
                 track.nbRations = track.dicArticle['rations']
                 track.qteStock = track.dicArticle['qteStock']
+                if self.parent.sens == 'sorties':
+                    track.pxUn = track.dicArticle['prixMoyen']
         if code == 'qte' or code == 'pxUn':
             # force la tentative d'enregistrement même en l'absece de saisie
             track.noSaisie = False
@@ -307,12 +311,11 @@ class PNL_pied(xgte.PNL_pied):
 
 class DLG(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,sens='entrees'):
+    def __init__(self,sens='sorties'):
         self.sens = sens
         kwds = GetDlgOptions(self)
         super().__init__(None,**kwds)
-        self.lanceur = self
-        self.dicOlv = {'lstColonnes': GetOlvColonnes()}
+        self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
         self.dicOlv.update(GetOlvOptions(self))
         self.origines = self.dicOlv.pop("codesOrigines",[])
@@ -342,7 +345,16 @@ class DLG(xusp.DLG_vide):
         dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
 
         # lancement de l'écran en blocs principaux
-        self.pnlBandeau = xbandeau.Bandeau(self,TITRE,INTRO,nomImage="xpy/Images/32x32/Matth.png")
+        if self.sens == 'entrees':
+            self.pnlBandeau = xbandeau.Bandeau(self,TITRE[self.sens],INTRO[self.sens], hauteur=20,
+                                               nomImage="xpy/Images/80x80/Entree.png",
+                                               sizeImage=(60,40))
+            self.pnlBandeau.SetBackgroundColour(wx.Colour(220, 250, 220))
+        else:
+            self.pnlBandeau = xbandeau.Bandeau(self,TITRE[self.sens],INTRO[self.sens], hauteur=20,
+                                                nomImage="xpy/Images/80x80/Sortie.png",
+                                                sizeImage=(60,40))
+            self.pnlBandeau.SetBackgroundColour(wx.Colour(250, 220, 220))
         self.pnlParams = PNL_params(self)
         self.pnlOlv = PNL_corps(self, self.dicOlv)
         self.pnlPied = PNL_pied(self, dicPied)
@@ -373,16 +385,8 @@ class DLG(xusp.DLG_vide):
 
     # ------------------- Gestion des actions -----------------------
 
-    def SetTitreImpression(self):
-        tiers = ''
-        if self.fournisseur: tiers += ", Fournisseur: %s"%self.fournisseur.capitalize()
-        if self.analytique: tiers += ", Camp: %s"%self.analytique.capitalize()
-        date = xformat.DateSqlToFr(self.date)
-        titre = "Mouvements STOCKS %s du %s, %s%s"%(self.sens, date, self.origine,tiers)
-        self.ctrlOlv.titreImpression = titre
-
     def InitOlv(self):
-        self.ctrlOlv.lstColonnes = GetOlvColonnes()
+        self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
         self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
         self.ctrlOlv.InitObjectListView()
         self.Refresh()
@@ -406,12 +410,15 @@ class DLG(xusp.DLG_vide):
         if 'achat' in self.origine:
             setEnable('fournisseur',True)
             setEnable('analytique',False)
-        elif 'retour' in self.origine:
+        elif ('retour' in self.origine) or ('camp' in self.origine)  :
             setEnable('fournisseur',False)
             setEnable('analytique',True)
-        elif 'od' in self.origine:
+        elif ('od' in self.origine) or ('repas' in self.origine) :
             setEnable('fournisseur',False)
             setEnable('analytique',False)
+        else:
+            setEnable('fournisseur',True)
+            setEnable('analytique',True)
 
         self.pnlParams.Refresh()
         if event: event.Skip()
@@ -510,6 +517,13 @@ class DLG(xusp.DLG_vide):
             track.valide = True
         self.ctrlOlv._FormatAllRows()
 
+    def GetTitreImpression(self):
+        tiers = ''
+        if self.fournisseur: tiers += ", Fournisseur: %s"%self.fournisseur.capitalize()
+        if self.analytique: tiers += ", Camp: %s"%self.analytique.capitalize()
+        date = xformat.DateSqlToFr(self.date)
+        return "Mouvements STOCKS %s du %s, %s%s"%(self.sens, date, self.origine,tiers)
+
     def OnImprimer(self,event):
         # test de présence d'écritures non valides
         lstNonValides = [x for x in self.ctrlOlv.modelObjects if not x.valide and x.IDmouvement]
@@ -527,7 +541,6 @@ class DLG(xusp.DLG_vide):
         # réaffichage
         self.ctrlOlv.RepopulateList()
         # impression
-        self.SetTitreImpression()
         self.ctrlOlv.Apercu(None)
         self.isImpress = True
 

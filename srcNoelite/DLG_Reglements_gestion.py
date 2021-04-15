@@ -507,13 +507,13 @@ class Dialog(wx.Dialog):
         ix = self.pnlParams.ctrlBanque.GetSelection()
         return self.pnlParams.lstIDbanques[ix]
 
-    def SetTitreImpression(self):
+    def GetTitreImpression(self):
         IDdepot = self.pnlParams.ctrlRef.GetValue()
         ctrl = self.pnlParams.ctrlBanque
         banque = ctrl.GetString(ctrl.GetSelection())
         dte = self.pnlParams.ctrlDate.GetValue()
         if not IDdepot: IDdepot = "___"
-        self.ctrlOlv.titreImpression = "REGLEMENTS Dépot No %s, du %s, banque: %s "%(IDdepot,dte,banque)
+        return "REGLEMENTS Dépot No %s, du %s, banque: %s "%(IDdepot,dte,banque)
 
     def InitOlv(self,withDiffere=False):
         self.ctrlOlv.lstColonnes = GetOlvColonnes()
@@ -614,7 +614,7 @@ class Dialog(wx.Dialog):
         # réaffichage
         self.ctrlOlv.RepopulateList()
         # impression
-        self.SetTitreImpression()
+        self.ctrlOlv.GetTitreImpression = self.GetTitreImpression
         self.ctrlOlv.Apercu(None)
         self.isImpress = True
 

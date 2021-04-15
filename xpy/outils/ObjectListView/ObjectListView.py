@@ -2509,6 +2509,19 @@ class ObjectListView(wx.ListCtrl):
                     break
         #self.OnCheck(None)
 
+    def GetOrientationImpression(self):
+        # fonction à substituer par implémentation ou gérer la variable
+        if hasattr(self, 'orientationImpression'):
+            return self.orientationImpression
+        return wx.LANDSCAPE
+
+    def GetTitreImpression(self):
+        # fonction à substituer par implémentation ou gérer variable olv.titreImresssion
+        if hasattr(self, 'titreImpression'):
+            return self.titreImpression
+        return "Tableau récapitulatif"
+
+
 #======================================================================
 
 class AbstractVirtualObjectListView(ObjectListView):

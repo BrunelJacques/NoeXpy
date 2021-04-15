@@ -10,7 +10,7 @@
 
 import wx
 from xpy import xUTILS_Identification, xGestionConfig, xUTILS_DB
-from srcNoestock import DLG_Entrees,UTILS_Stocks
+from srcNoestock import DLG_Mouvements,UTILS_Stocks
 
 """ Paramétrage de la construction de la barre de menus """
 class MENU():
@@ -171,11 +171,13 @@ class MENU():
         pass
 
     def On_inStock(self,event):
-        dlg = DLG_Entrees.DLG()
+        dlg = DLG_Mouvements.DLG(sens='entrees')
         ret = dlg.ShowModal()
 
     def On_outStock(self,event):
-        pass
+        dlg = DLG_Mouvements.DLG(sens='sorties')
+        ret = dlg.ShowModal()
+
     def On_effectifs(self,event):
         pass
     def On_inventaires(self,event):

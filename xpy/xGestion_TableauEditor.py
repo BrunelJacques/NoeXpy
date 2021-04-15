@@ -76,10 +76,6 @@ class ListView(FastObjectListView):
     toutDecocher : idem
     menuPersonnel : On peut avoir déjà créé un "pré" menu contextuel auquel
                     viendra s'ajouter le tronc commun
-    titreImpression : Le titre qu'on veut donner à la page en cas d'impression
-                    par exemple "Titre")
-    orientationImpression : L'orientation de l'impression, True pour portrait et
-                    False pour paysage
 
     Pour cette surcouche de OLV j'ai décidé de ne pas laisser la fonction
     OnItemActivated car ça peut changer selon le tableau
@@ -118,8 +114,6 @@ class ListView(FastObjectListView):
             self.inverserSelection = False
 
         # Choix du mode d'impression
-        self.titreImpression = kwds.pop('titreImpression', "Tableau récapitulatif")
-        self.orientationImpression = kwds.pop('orientationImpression', False)
         self.selectionID = None
         self.selectionTrack = None
         self.criteres = ""
@@ -131,6 +125,14 @@ class ListView(FastObjectListView):
         if not 'autoAddRow' in kwds: kwds['autoAddRow']=True
         if not 'sortable' in kwds: kwds['sortable']=True
         FastObjectListView.__init__(self, *args,**kwds)
+
+        if hasattr(self.GrandParent, 'parent'):
+            dlg = self.GrandParent.parent
+            if hasattr(dlg, 'GetTitreImpression'):
+                self.GetTitreImpression = dlg.GetTitreImpression
+        elif hasattr(self.Parent, 'GetTitreImpresssion'):
+            self.GetTitreImpression = self.Parent.GetTitreImpression
+
         # Binds perso
         self.Bind(OLVEvent.EVT_ITEM_CHECKED, self.MAJ_footer)
         self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
@@ -332,30 +334,25 @@ class ListView(FastObjectListView):
                or self.apercuAvantImpression or self.imprimer \
                or self.toutCocher or self.toutDecocher or self.menuPersonnel
 
-    def GetOrientationImpression(self):
-        if self.orientationImpression:
-            return wx.PORTRAIT
-        return wx.LANDSCAPE
-
     def Apercu(self, event):
         import xpy.outils.ObjectListView.Printer as printer
-        prt = printer.ObjectListViewPrinter(self, titre=self.titreImpression,
+        prt = printer.ObjectListViewPrinter(self, titre=self.GetTitreImpression(),
                                                         orientation=self.GetOrientationImpression())
         prt.Preview()
 
     def Imprimer(self, event):
         import xpy.outils.ObjectListView.Printer as printer
-        prt = printer.ObjectListViewPrinter(self, titre=self.titreImpression,
+        prt = printer.ObjectListViewPrinter(self, titre=self.GetTitreImpression(),
                                                         orientation=self.GetOrientationImpression())
         prt.Print()
 
     def ExportTexte(self, event):
         import xpy.outils.xexport
-        xpy.outils.xexport.ExportTexte(self, titre=self.titreImpression, autoriseSelections=False)
+        xpy.outils.xexport.ExportTexte(self, titre=self.GetTitreImpression(), autoriseSelections=False)
 
     def ExportExcel(self, event):
         import xpy.outils.xexport
-        xpy.outils.xexport.ExportExcel(self, titre=self.titreImpression, autoriseSelections=False)
+        xpy.outils.xexport.ExportExcel(self, titre=self.GetTitreImpression(), autoriseSelections=False)
 
     def GetTracksCoches(self):
         return self.GetCheckedObjects()
@@ -618,8 +615,6 @@ class PNL_corps(wx.Panel):
                         'toutCocher',
                         'toutDecocher',
                         'inverserSelection',
-                        'titreImpression',
-                        'orientationImpression',
                         'dictColFooter',
                         'editMode',
                         'autoAddRow',

@@ -587,6 +587,20 @@ def CopyDic(dic):
         dic2[key2] = donnee2
     return dic2
 
+def ResizeBmp(bitmap,size,qual=wx.IMAGE_QUALITY_HIGH):
+    # resize une image en format bitmap
+    arg = size + (qual,)
+    imageWx = bitmap.ConvertToImage()
+    imageWx = imageWx.Scale(*arg)
+    imageBmp = wx.Bitmap(imageWx)
+    return imageBmp
+
+def GetImage(image,size=None,qual=wx.IMAGE_QUALITY_HIGH):
+    # reçoit le cheminNom d'une image bitmap et la renvoie bitmap éventuellement scalée
+    imageBmp = wx.Bitmap(image)
+    if size: imageBmp = ResizeBmp(imageBmp,size,qual)
+    return imageBmp
+
 def PrefixeNbre(param):
     if not isinstance(param,str):
         return ''
