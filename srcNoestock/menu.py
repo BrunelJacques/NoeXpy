@@ -148,6 +148,7 @@ class MENU():
         db = xUTILS_DB.DB()
         dlg = UTILS_Stocks.DLG_articles(db=db, dicOlv=dicOlv)
         ret = dlg.ShowModal()
+        del dlg
 
     def On_identification(self,event):
         dlg = xUTILS_Identification.Dialog(self.parent)
@@ -156,10 +157,12 @@ class MENU():
             self.parent.dictUser = dlg.GetDictUtilisateur()
         self.parent.MakeStatusText()
         self.parent.GestMenu(True)
+        del dlg
 
     def On_gesBases(self,event):
         dlg = xGestionConfig.DLG_saisieUneConfig(self.parent, modeBase='creation')
         ret = dlg.ShowModal()
+        del dlg
 
     def On_gesTables(self,event):
         xUTILS_DB.Init_tables(parent=self.parent,mode="creation")
@@ -173,10 +176,14 @@ class MENU():
     def On_inStock(self,event):
         dlg = DLG_Mouvements.DLG(sens='entrees')
         ret = dlg.ShowModal()
+        dlg.Destroy()
+        del dlg
 
     def On_outStock(self,event):
         dlg = DLG_Mouvements.DLG(sens='sorties')
         ret = dlg.ShowModal()
+        dlg.Destroy()
+        del dlg
 
     def On_effectifs(self,event):
         pass

@@ -386,7 +386,7 @@ class PNL_ctrl(wx.Panel):
         GetValue retourne la valeur choisie dans le ctrl avec action possible par bouton à droite"""
     def __init__(self, parent, *args, genre='string', name=None, label='', value= None, labels=[], values=[],
                  help=None, btnLabel=None, btnImage=None, btnHelp=None,  txtSize=100, ctrl=None, **kwds):
-
+        if not label: label = ''
         if 'ctrlSize' in kwds:
             kwds['size'] = kwds['ctrlSize']
         kw = DicFiltre(kwds,OPTIONS_PANEL )

@@ -315,6 +315,7 @@ class DLG(xusp.DLG_vide):
         self.sens = sens
         kwds = GetDlgOptions(self)
         super().__init__(None,**kwds)
+        self.lanceur = self
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
         self.dicOlv.update(GetOlvOptions(self))
@@ -365,6 +366,7 @@ class DLG(xusp.DLG_vide):
         self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
         self.valuesAnalytique = ["%s %s"%(x[0],x[1]) for x in self.lstAnalytiques]
         self.pnlParams.SetOneSet('analytique',values=self.valuesAnalytique,codeBox='param2')
+        self.pnlParams.SetOneValue('origine',valeur=DICORIGINES[self.sens]['labels'][0],codeBox='param1')
         self.OnOrigine(None)
         self.OnHt_ttc(None)
 
