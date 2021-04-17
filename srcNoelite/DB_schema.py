@@ -273,12 +273,13 @@ DB_TABLES = {
 
     'stEffectifs':[
                 ('IDdate', 'DATE', "PK Date de la situation de l'effectif"),
-                ('matinClients', 'INTEGER', "Nbre de repas facturés (facultatif)"),
-                ('matinStaff', 'INTEGER', "Nbre de repas pour le staff (facultatif)"),
-                ('midiClients', 'INTEGER', "Nbre de repas facturés "),
-                ('midiStaff', 'INTEGER', "Nbre de repas pour le staff"),
-                ('soirClients', 'INTEGER', "Nbre de repas facturés  (facultatif)"),
-                ('soirStaff', 'INTEGER', "Nbre de repas pour le staff (facultatif)"),
+                ('IDanalytique', 'VARCHAR(8)', "PK Section analytique du camp à facturer, null pour Cuisine"),
+                ('midiClients', 'INTEGER', "Nbre de repas midi clients facturés "),
+                ('midiRepas', 'INTEGER', "Nbre de repas midi pour le staff et les clients"),
+                ('soirClients', 'INTEGER', "Nbre de repas aux clients présents le soir "),
+                ('soirRepas', 'INTEGER', "Nbre de repas pour le staff et les clients le soir"),
+                ('prevuClients', 'INTEGER', "Nbre d'inscrits payants "),
+                ('prevuRepas', 'INTEGER', "Nbre d'inscrits staff inclus"),
                 ('modifiable', 'TINYINT', "0/1 Marque un transfert export  réussi ou import"),],# stocks: repas servis
 
     'stMouvements':[
@@ -289,7 +290,7 @@ DB_TABLES = {
                 ('IDarticle', 'VARCHAR(32)', "clé dans gstArticles"),
                 ('qte', 'INTEGER', "Quantitée mouvementée signée"),
                 ('prixUnit', 'FLOAT', "Prix moyen pour sorties et retour, Prix revient pour achats"),
-                ('analytique', 'VARCHAR(8)', "Section analytique du camp à facturer"),
+                ('IDanalytique', 'VARCHAR(8)', "Section analytique du camp à facturer"),
                 ('ordi', 'VARCHAR(16)', "Nom de l'ordi utilisé pour l'entrée ou la modif"),
                 ('dateSaisie', 'DATE', "Date de l'entrée ou la modif"),
                 ('modifiable', 'INTEGER', "0/1 Marque un transfert export  réussi ou import"),],# stocks: entrées sorties
@@ -308,7 +309,7 @@ DB_TABLES = {
 DB_PK = {
         'PK_vehiculesCouts_IDanalytique_cloture': {'table': 'vehiculesCouts', 'champ': 'IDanalytique, cloture'},
         'PK_stArticles_IDarticle': {'table': 'stArticles', 'champ': 'IDarticle'},
-        'PK_stEffectifs_date': {'table': 'stEffectifs', 'champ': 'IDdate'},
+        'PK_stEffectifs_date': {'table': 'stEffectifs', 'champ': 'IDdate,IDanalytique'},
         'PK_stInventaires_date_IDarticle': {'table': 'stInventaires', 'champ': 'IDdate,IDarticle'},
         }
 
@@ -322,7 +323,7 @@ DB_IX = {
         'IX_stArticles_fournisseur': {'table': 'stArticles', 'champ': 'fournisseur'},
         'IX_stArticles_magasin_rayon': {'table': 'stArticles', 'champ': 'magasin,rayon'},
         'IX_stMouvements_date_origine': {'table': 'stMouvements', 'champ': 'date,origine'},
-        'IX_stMouvements_date_analytique': {'table': 'stMouvements', 'champ': 'date,analytique'}
+        'IX_stMouvements_IDanalytique_date': {'table': 'stMouvements', 'champ': 'IDanalytique,date'}
         }
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------

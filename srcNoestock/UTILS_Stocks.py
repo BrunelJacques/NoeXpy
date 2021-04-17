@@ -128,7 +128,7 @@ def SqlMouvements(db,dParams=None):
                 WHERE ((date = '%s' )
                         AND (origine = '%s' )
                         AND (fournisseur IS NULL  OR fournisseur = '%s' )
-                        AND (analytique IS NULL  OR analytique = '%s' ))
+                        AND (IDanalytique IS NULL  OR IDanalytique = '%s' ))
                 ;""" % (",".join(lstChamps),dParams['date'],dParams['origine'],dParams['fournisseur'],dParams['analytique'])
     retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetMouvements')
     ldMouvements = []
@@ -342,7 +342,7 @@ def SauveLigne(db,dlg,track):
                     ('IDarticle', track.IDarticle),
                     ('qte', track.qte),
                     ('prixUnit', track.prixTTC),
-                    ('analytique', dlg.analytique),
+                    ('IDanalytique', dlg.analytique),
                     ('ordi', dlg.ordi),
                     ('dateSaisie', dlg.today),
                     ('modifiable', 1),]
@@ -421,7 +421,7 @@ def GetMatriceAnterieurs(dlg):
 
     # Composition de la matrice de l'OLV anterieurs, retourne un dictionnaire
 
-    lstChamps = ['origine', 'date', 'fournisseur', 'analytique', 'COUNT(IDmouvement)']
+    lstChamps = ['origine', 'date', 'fournisseur', 'IDanalytique', 'COUNT(IDmouvement)']
 
     lstNomsColonnes = ['origine', 'date', 'fournisseur', 'analytique', 'nbLignes']
 
@@ -460,14 +460,14 @@ def SqlAnterieurs(db=None, dicOlv={}, **kwd):
         where += """
                 AND (date LIKE '%%%s%%'
                         OR fournisseur LIKE '%%%s%%'
-                        OR analytique LIKE '%%%s%% )'""" % (filtre, filtre, filtre,)
+                        OR IDanalytique LIKE '%%%s%% )'""" % (filtre, filtre, filtre,)
 
     lstChamps = dicOlv['lstChamps']
 
     req = """   SELECT %s
                 FROM stMouvements
                 %s 
-                GROUP BY origine, date, fournisseur, analytique
+                GROUP BY origine, date, fournisseur, IDanalytique
                 ORDER BY date DESC
                 %s ;""" % (",".join(lstChamps), where, limit)
     retour = db.ExecuterReq(req, mess='SqlAnterieurs')

@@ -16,8 +16,7 @@ import six
 import decimal
 import platform
 
-from xpy.outils import xdates
-from xpy.outils import xchoixListe
+from xpy.outils import xchoixListe,xformat
 from xpy.outils.xconst import *
 from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn
 
@@ -464,7 +463,7 @@ def ExportExcel(listview=None, grid=None, titre="Liste", lstColonnes=None, liste
             return (valeur, None)
 
         if type(valeur) == datetime.date:
-            valeur = xdates.DateDDEnFr(valeur)
+            valeur = xformat.DatetimeToStr(valeur)
             return (valeur, styleDate)
 
         if type(valeur) == datetime.timedelta:
@@ -493,7 +492,7 @@ def ExportExcel(listview=None, grid=None, titre="Liste", lstColonnes=None, liste
         if type(valeur) in (str, six.text_type):
             if len(valeur) == 10:
                 if valeur[2] == "/" and valeur[5] == "/": return (valeur, styleDate)
-                if valeur[4] == "-" and valeur[7] == "-": return (xdates.DateEngFr(valeur), styleDate)
+                if valeur[4] == "-" and valeur[7] == "-": return (xformat.DateSqlToIso(valeur), styleDate)
 
         return str(valeur), None
 
@@ -556,7 +555,7 @@ class ListView(FastObjectListView):
     def InitObjectListView(self):
 
         def FormateDate(dateDD):
-            return xdates.DateComplete(dateDD)
+            return xformat.DateComplete(dateDD)
 
         def FormateMontant(montant):
             if montant == None or montant == "": return ""

@@ -4,6 +4,7 @@ SYMBOLE = "€"
 import wx
 import datetime
 import unicodedata
+from xpy.outils.xconst import *
 
 # fonctions pour OLV
 def AppelLignesMatrice(categ=None, possibles={}):
@@ -287,10 +288,6 @@ def DateSqlToDatetime(dateiso):
     elif isinstance(dateiso,str) and len(dateiso) >= 10:
         return datetime.date(int(dateiso[:4]),int(dateiso[5:7]),int(dateiso[8:10]))
 
-def DateToDatetime(date):
-    # FmtDate normalise en FR puis retourne en datetime
-    return DateFrToDatetime(FmtDate(date))
-
 def DateSqlToFr(date):
     # Conversion de date récupérée de requête SQL  en jj/mm/aaaa
     date = DateSqlToIso(date)
@@ -317,6 +314,47 @@ def DateSqlToIso(date):
         if int(an)>50: mil = 19
         an = mil + an
     return '%s-%s-%s'%(an,mois,jour)
+
+def DateToDatetime(date):
+    # FmtDate normalise en FR puis retourne en datetime
+    return DateFrToDatetime(DateToFr(date))
+
+def DateToFr(date):
+    strdate = ''
+    # date multi origine, la retourne en format FR
+    if date == None or date in (wx.DateTime.FromDMY(1, 0, 1900), '', datetime.date(1900, 1, 1), "1899-12-30"):
+        strdate = ''
+    elif isinstance(date, str):
+        date = date.strip()
+        tplansi = date.split('-')
+        tpldate = date.split('/')
+        if date == '00:00:00':
+            strdate = ''
+        elif len(tplansi) == 3:
+            #format ansi classique
+            strdate = ('00' + tplansi[2])[-2:] + '/' + ('00' + tplansi[1])[-2:] + '/' + ('20' + tplansi[0])[-4:]
+        elif len(tpldate) == 3:
+            # format fr avec millenaire
+            if len(date) > 8:
+                strdate = ('00' + tpldate[0])[-2:] + '/' + ('00' + tpldate[1])[-2:] + '/' + (tpldate[2])[:4]
+            # format fr sans millenaire
+            else:
+                strdate =  ('00' + tpldate[0])[-2:]+ '/' + ('00' + tpldate[1])[-2:] + '/' + ('20' + tpldate[2])[:4]
+        elif len(date) == 6:
+            # sans séparateurs ni millenaire
+            strdate = date[:2] + '/' + date[2:4] + '/' + ('20' + date[-2:])
+        elif len(date) == 8:
+            # sans séparateur et avec millenaire jjmmaaaaa
+            strdate = date[:2]+ '/' + date[2:4] + '/' + date[-4:]
+    elif isinstance(date,(datetime.date,datetime.datetime)):
+        strdate = DatetimeToStr(date)
+    elif isinstance(date,wx.DateTime):
+        strdate = WxDateToStr(date)
+    elif isinstance(date,int):
+        # format nombre aaaammjj
+        date = str(date)
+        strdate =  date[-2:]+ '/' + date[4:6] + '/' + date[:4]
+    return strdate
 
 def DateFrToSql(datefr):
     if not datefr: return ''
@@ -345,12 +383,12 @@ def DateFrToWxdate(datefr):
 
 def DateFrToDatetime(datefr):
     # Conversion de date française jj/mm/aaaa (ou déjà en datetime) en datetime
-    if datefr == None :
+    if datefr == None or datefr == '':
         return None
+    elif isinstance(datefr, str) and len(datefr) >= 10:
+        return datetime.date(int(datefr[6:10]), int(datefr[3:5]), int(datefr[:2]))
     elif isinstance(datefr,datetime.date):
         return datefr
-    elif isinstance(datefr,str) and len(datefr) >= 10:
-        return datetime.date(int(datefr[6:10]),int(datefr[3:5]),int(datefr[:2]))
 
 def WxDateToStr(dte,iso=False):
     # Conversion wx.datetime en chaîne
@@ -371,6 +409,33 @@ def DatetimeToStr(dte,iso=False):
         if iso: return "%s-%s-%s"%(yyyy,mm,dd)
         else: return "%s/%s/%s"%(dd,mm,yyyy)
     else: return str(dte)
+
+def DateComplete(dateDD):
+    """ Transforme une date DD en date complète : Ex : Lundi 15 janvier 2008 """
+
+    listeJours = LISTE_JOURS
+
+    listeMois = LISTE_MOIS
+    dateComplete = listeJours[dateDD.weekday()] \
+                   + " " \
+                   + str(dateDD.day) \
+                   + " " \
+                   + listeMois[dateDD.month - 1].lower() \
+                   + " " \
+                   + str(dateDD.year)
+    return dateComplete
+
+def CalculeAge(dateReference=None, date_naiss=None):
+    """ Calcul de l'age de la personne """
+    if dateReference == None:
+        dateReference = datetime.date.today()
+    if date_naiss in (None, ""):
+        return None
+    age = (dateReference.year - date_naiss.year) - int(
+        (dateReference.month, dateReference.day) < (date_naiss.month, date_naiss.day))
+    return age
+
+
 
 # Formatages pour OLV -------------------------------------------------------------------------------------
 
@@ -422,32 +487,7 @@ def FmtPercent(montant):
     return strMtt
 
 def FmtDate(date):
-    strdate = ''
-    if date == None or date in (wx.DateTime.FromDMY(1,0,1900),'',datetime.date(1900,1,1),"1899-12-30"):
-        return ''
-    if isinstance(date,str):
-        date = date.strip()
-        tplansi = date.split('-')
-        tpldate = date.split('/')
-        if date == '00:00:00': strdate = ''
-        elif len(tplansi)==3:
-            strdate = ('20'+tplansi[0])[-4:]+'-'+('00'+tplansi[1])[-2:]+'-'+('00'+tplansi[2])[-2:]
-        elif len(tpldate) == 3:
-            if len(date)>8:
-                strdate = (tpldate[2])[:4] + '-' + ('00' + tpldate[1])[-2:] + '-' + ('00' + tpldate[0])[-2:]
-            else:
-                strdate = ('20' + tpldate[2])[:4] + '-' + ('00' + tpldate[1])[-2:] + '-' + ('00' + tpldate[0])[-2:]
-        elif len(date) == 6:
-            strdate = ('20'+date[4:] + '-' + date[2:4] + '-' + date[:2])
-        elif len(date) == 8:
-            strdate = (date[4:] + '-' + date[2:4] + '-' + date[:2])
-    else:
-        strdate = DatetimeToStr(date,iso=True)
-    if not strdate or strdate == '':
-        mess = "Date non reconnue: %s\n<esc> pour abandonner"%str(date)
-        wx.MessageBox(mess,"Resaisir une date correcte")
-        return ''
-    return DateSqlToFr(strdate)
+    return DateToFr(date)
 
 def FmtTelephone(texte):
     # formatage du numéro de téléphone
@@ -755,9 +795,9 @@ if __name__ == '__main__':
     print(FmtMontant(8520.547),FmtMontant(-8520.547),FmtMontant(0))
     print(FmtDate('01022019'))
     print(SupprimeAccents("ÊLève!"))
-    """
     ret = FmtTelephone('0494149367')
-
+    """
+    ret = DateToFr(None)
     print(ret +'|')
 
 

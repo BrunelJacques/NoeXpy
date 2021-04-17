@@ -1454,15 +1454,16 @@ if __name__ == '__main__':
     app.SetTopWindow(dlg_4)
     dlg_4.Show()
     """
-
+    """
+    """
+    """
     dlg_3 = DLG_vide(None)
     #pnl = PNL_property(dlg_3,dlg_3,matrice=dictMatrice,donnees=dictDonnees)
     pnl = TopBoxPanel(dlg_3,matrice=dictMatrice,donnees=dictDonnees)
     dlg_3.Sizer(pnl)
     app.SetTopWindow(dlg_3)
     dlg_3.Show()
-    """
-    """
+
     frame_2 = FramePanels(None, )
     frame_2.Position = (500,300)
     frame_2.Show()
@@ -1471,6 +1472,5 @@ if __name__ == '__main__':
     app.SetTopWindow(frame_1)
     frame_1.Position = (50,50)
     frame_1.Show()
-    """
 
     app.MainLoop()

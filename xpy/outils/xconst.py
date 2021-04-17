@@ -15,6 +15,15 @@ SYMBOLE = "€"
 
 PREFIXE_DOSSIER_IMG = "xpy/"
 
+
+LISTE_JOURS = ["Lundi", "Mardi", "Mercredi","Jeudi","Vendredi", "Samedi", "Dimanche"]
+
+LISTE_MOIS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet","Août",
+              "Septembre", "Octobre", "Novembre", "Décembre"]
+
+LISTE_MOIS_ABREGE =[("Janv."), ("Fév."), ("Mars"), ("Avril"), ("Mai"), ("Juin"), ("Juil."),
+                    ("Août"), ("Sept."), ("Oct."), ("Nov."), ("Déc.")]
+
 PREMIER_32X32_IMG = PREFIXE_DOSSIER_IMG + "Images/32x32/Premier.png"
 PRECEDENT_32X32_IMG = PREFIXE_DOSSIER_IMG + "Images/32x32/Precedent.png"
 SUIVANT_32X32_IMG = PREFIXE_DOSSIER_IMG + "Images/32x32/Suivant.png"
@@ -173,37 +182,3 @@ PREVIEW_FRAME_TITLE = "Aperçu avant impression"
 DEFAULT_FONT_NAME = "Arial"
 
 # -----------------------------------------------------------
-
-#  configuration.py
-FICHIER_CONFIG_NOM = "Data/xConfig.dat"
-
-# -----------------------------------------------------------
-
-#  outils/xdates.py
-
-LISTE_JOURS = ("Lundi",
-               "Mardi",
-               "Mercredi",
-               "Jeudi",
-               "Vendredi",
-               "Samedi",
-               "Dimanche")
-
-LISTE_MOIS = ("janvier",
-              "février",
-              "mars",
-              "avril",
-              "mai",
-              "juin",
-              "juillet",
-              "août",
-              "septembre",
-              "octobre",
-              "novembre",
-              "décembre")
-
-# -----------------------------------------------------------
-
-#  outils/xdates.py
-
-

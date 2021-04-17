@@ -14,7 +14,7 @@ import datetime
 import wx
 
 from xpy.outils.ObjectListView import ReportFormat, ListCtrlPrinter, OptionsImpression
-from xpy.outils                import xdates
+from xpy.outils                import xformat
 
 
 class PreviewControlBar(wx.PyPreviewControlBar):
@@ -225,7 +225,7 @@ class ObjectListViewPrinter(object):
         lstChamps = ["pied_page_texte_gauche", "pied_page_texte_milieu", "pied_page_texte_droite"]
         for key, valeur in dictOptions.items():
             if key in lstChamps:
-                valeur = valeur.replace("{DATE_JOUR}", xdates.DateDDEnFr(datetime.date.today()))
+                valeur = valeur.replace("{DATE_JOUR}", xformat.DatetimeToStr(datetime.date.today()))
                 valeur = valeur.replace("{TITRE_DOCUMENT}", self.titre)
                 valeur = valeur.replace("{NUM_PAGE}", "%(currentPage)d")
                 valeur = valeur.replace("{NBRE_PAGES}", "%(totalPages)d")
