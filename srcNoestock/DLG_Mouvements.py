@@ -142,8 +142,8 @@ def GetBoutons(dlg):
                 {'name': 'btnImp', 'label': "Imprimer\npour contrôle",
                     'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
                     'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
-                {'name':'btnOK','ID':wx.ID_ANY,'label':"Validez",'help':"Cliquez ici pour enregistrer et sortir",
-                    'size':(120,35),'image':"xpy/Images/32x32/Valider.png",'onBtn':dlg.OnClose}
+                {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour sortir",
+                    'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnClose}
             ]
 
 def GetOlvColonnes(dlg):

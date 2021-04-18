@@ -24,27 +24,16 @@ TITRE = "Suivi des effectifs quotidiens"
 INTRO = "La saisie des effectifs quotidiens réels permet de déterminer le prix de journée, il est rapprocché " \
         + "du nombre d'inscrits payants et non payants"
 
-DICORIGINES = {'codes':['achat','retour','od_in'],
-                          'labels':['achat livraison', 'retour camp', 'od entrée']},
-
-DIC_INFOS = {
-            'IDarticle': "<F4> Choix d'un article, ou saisie directe de son code",
-            'qte': "L'unité est précisée dans le nom de l'article",
-            'pxUn': "HT ou TTC selon le choix en haut d'écran\nEn sortie il sert au calcul du prix de journée, en entrée pour la valeur en stock",
-             }
-
-INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
-
 # Description des paramètres à choisir en haut d'écran
 
-class CtrlAnterieur(wx.Panel):
+class CtrlSynchro(wx.Panel):
     # controle inséré dans la matrice_params qui suit. De genre AnyCtrl pour n'utiliser que le bind bouton
     def __init__(self,parent):
         super().__init__(parent,wx.ID_ANY)
-        kwd = {'label':"Rappeler\nl'antérieur",
-               'name':'rappel',
+        kwd = {'label':"Synchroniser\nle prévu",
+               'name':'synchro',
                'image':wx.ArtProvider.GetBitmap(wx.ART_FIND,size=(24,24)),
-               'help':"Pour reprendre une saisie antérieurement validée",
+               'help':"Pour reprendre les effectifs prévus par synchronisation avec les incriptions",
                'size' : (130,40)}
         self.btn = xboutons.BTN_action(self,**kwd)
         self.Sizer()
@@ -65,29 +54,19 @@ class CtrlAnterieur(wx.Panel):
         return
 
 MATRICE_PARAMS = {
-("param1", "Paramètres"): [
-    {'name': 'origine', 'genre': 'Choice', 'label': "Nature d'entrée",
-                    'help': "Le choix de la nature modifie certains contrôles",
-                    'value':0, 'values':[],
-                    'ctrlAction': 'OnOrigine',
-                    'size':(205,30),
-                    'txtSize': 90},
-    {'name': 'date', 'genre': 'Texte', 'label': "Date d'entrée",
+("param1", "Paramètres période"): [
+    {'name': 'periode', 'genre': 'anyctrl', 'label': " Période ",
                     'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
                                           "Les séparateurs ne sont pas obligatoires en saisie.",
-                                          "Saisissez la date de l'entrée en stock sans séparateurs, "),
+                                          "Saisissez début et fin de la période, "),
                     'value':xformat.DatetimeToStr(datetime.date.today()),
-                    'ctrlAction': 'OnDate',
-                    'size':(200,30),
-                    'txtSize': 90},
+                    'size':(200,80),},
     ],
 ("param2", "Comptes"): [
-    {'name': 'fournisseur', 'genre': 'Combo', 'label': 'Fournisseur',
-                    'help': "Il s'agit de la provenance de la marchandise qui déterminera le compte crédité, ce peut être un camp",
-                    'value':0,'values':[''],
-                    'ctrlAction':'OnFournisseur',
-                     'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un compte pour l'origine",
-                     'btnAction': 'OnBtnFournisseur',
+    {'name': 'repas', 'genre': 'Check', 'label': 'Repas préparés en cuisine',
+                    'help': "Les repas préparés en cuisine ne sont pas différenciés par camp servi, seules les sorties identifiés sont affectées aux camps",
+                    'value':True,
+                    'ctrlAction':'OnRepas',
                     'size':(250,30),
                     'txtSize': 70,
      },
@@ -100,30 +79,21 @@ MATRICE_PARAMS = {
                     'size':(250,30),
                     'txtSize': 70,}
 ],
-("param3", "saisie"): [
-    {'name': 'ht_ttc', 'genre': 'Choice', 'label': 'Saisie',
-                    'help': "Choix du mode de saisie HT ou TTC selon le plus facile pour vous",
-                    'value': 0, 'values': ['TTC', 'HT'],
-                    'ctrlAction': 'OnHt_ttc',
-                    'txtSize': 40,
-                    'ctrlMaxSize': (130,30),
-                     },
+("param3", ""): [
     {'name': 'vide','genre':None,}
     ],
-("param4", "Compléments"): [
+("param4", "Boutons actions"): [
     {'name': 'rappel', 'genre': 'anyctrl','label': ' ',
                      'txtSize': 20,
                         'ctrlMaxSize':(150,50),
-                     'ctrl': CtrlAnterieur,
-                     'ctrlAction': 'OnBtnAnterieur',
+                     'ctrl': CtrlSynchro,
+                     'ctrlAction': 'OnBtnSynchro',
                      },
     ],
 }
 
 def GetParamsOptions(dlg):
     matrice = MATRICE_PARAMS
-    lstChoices = xformat.GetValueInMatrice(matrice,'origine','values')
-    lstChoices += DICORIGINES[dlg.sens]['labels']
     return {
                 'name':"PNL_params",
                 'matrice':matrice,
@@ -131,7 +101,7 @@ def GetParamsOptions(dlg):
                 'boxesSizes': [(300, 90), (400, 90), (100, 90), (100, 90)],
                 'pathdata':"srcNoelite/Data",
                 'nomfichier':"stparams",
-                'nomgroupe':"entrees",
+                'nomgroupe':"effectifs",
             }
 
 def GetBoutons(dlg):
@@ -139,15 +109,12 @@ def GetBoutons(dlg):
                 {'name': 'btnImp', 'label': "Imprimer\npour contrôle",
                     'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
                     'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
-                {'name':'btnOK','ID':wx.ID_ANY,'label':"Validez",'help':"Cliquez ici pour enregistrer et sortir",
-                    'size':(120,35),'image':"xpy/Images/32x32/Valider.png",'onBtn':dlg.OnClose}
+                {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour sortir",
+                    'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnClose}
             ]
 
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
-    if dlg.sens == 'entrees':
-        titlePrix = "Prix Unit."
-    else: titlePrix = "Prix Stock"
     return [
             ColumnDefn("ID", 'centre', 0, 'IDmouvement',
                        isEditable=False),
@@ -172,9 +139,7 @@ def GetOlvCodesSup():
 
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
-    origines = DICORIGINES[dlg.sens]['codes']
     return {
-            'codesOrigines': origines,
             'checkColonne': False,
             'recherche': True,
             'minSize': (600, 100),
@@ -220,8 +185,8 @@ class PNL_corps(xgte.PNL_corps):
 
     def ValideParams(self):
         pnl = self.parent.pnlParams
-        dicParams = {'origine': self.parent.GetOrigine(),
-                     'date': self.parent.GetDate(),
+        dicParams = {
+                     'periode': self.parent.GetDate(),
                      'fournisseur': pnl.GetOneValue('fournisseur',codeBox='param2'),
                      'analytique': pnl.GetOneValue('analytique',codeBox='param2'),
                      'ht_ttc': pnl.GetOneValue('ht_ttc',codeBox='param3')}
@@ -316,10 +281,8 @@ class DLG(xusp.DLG_vide):
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
         self.dicOlv.update(GetOlvOptions(self))
-        self.origines = self.dicOlv.pop("codesOrigines",[])
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
-        self.date = self.today
         self.analytique = ''
         self.fournisseur = ''
         self.ht_ttc = 'TTC'
@@ -363,8 +326,6 @@ class DLG(xusp.DLG_vide):
         self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
         self.valuesAnalytique = ["%s %s"%(x[0],x[1]) for x in self.lstAnalytiques]
         self.pnlParams.SetOneSet('analytique',values=self.valuesAnalytique,codeBox='param2')
-        self.pnlParams.SetOneValue('origine',valeur=DICORIGINES[self.sens]['labels'][0],codeBox='param1')
-        self.OnOrigine(None)
         self.OnHt_ttc(None)
 
         self.Bind(wx.EVT_CLOSE,self.OnClose)
@@ -390,48 +351,9 @@ class DLG(xusp.DLG_vide):
         self.ctrlOlv.InitObjectListView()
         self.Refresh()
 
-    def GetOrigine(self):
-        pnlOrigine = self.pnlParams.GetPnlCtrl('origine',codebox='param1')
-        lblOrigine = pnlOrigine.GetValue()
-        ixo = DICORIGINES[self.sens]['labels'].index(lblOrigine)
-        return DICORIGINES[self.sens]['codes'][ixo]
-
-    def OnOrigine(self,event):
-        self.origine = self.GetOrigine()
-
-        # grise les ctrl inutiles
-        def setEnable(namePnlCtrl,flag):
-            pnlCtrl =  self.pnlParams.GetPnlCtrl(namePnlCtrl,codebox='param2')
-            pnlCtrl.txt.Enable(flag)
-            pnlCtrl.ctrl.Enable(flag)
-            pnlCtrl.btn.Enable(flag)
-        #'achat livraison', 'retour camp', 'od_in'
-        if 'achat' in self.origine:
-            setEnable('fournisseur',True)
-            setEnable('analytique',False)
-        elif ('retour' in self.origine) or ('camp' in self.origine)  :
-            setEnable('fournisseur',False)
-            setEnable('analytique',True)
-        elif ('od' in self.origine) or ('repas' in self.origine) :
-            setEnable('fournisseur',False)
-            setEnable('analytique',False)
-        else:
-            setEnable('fournisseur',True)
-            setEnable('analytique',True)
-
-        self.pnlParams.Refresh()
-        if event: event.Skip()
-
-    def GetDate(self,fr=False):
-        saisie = self.pnlParams.GetOneValue('date',codeBox='param1')
-        saisie = xformat.FmtDate(saisie)
-        self.date = xformat.DateFrToSql(saisie)
-        if fr: return saisie
-        else: return self.date
-
     def OnDate(self,event):
         saisie = self.GetDate(fr=True)
-        self.pnlParams.SetOneValue('date',valeur=saisie,codeBox='param1')
+        self.pnlParams.SetOneValue('periode',valeur=saisie,codeBox='param1')
         self.GetDonnees()
         if event: event.Skip()
 
@@ -461,20 +383,20 @@ class DLG(xusp.DLG_vide):
         self.GetDonnees()
         if event: event.Skip()
 
-    def OnBtnAnterieur(self,event):
+    def OnBtnSynchro(self,event):
         # lancement de la recherche d'un lot antérieur, on enlève le cellEdit pour éviter l'écho des clics
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
         # choix d'un lot de lignes définies par des params
-        dicParams = nust.GetAnterieur(self)
+        dicParams = nust.GetSynchro(self)
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK        # gestion du retour du choix dépot
-        if not 'date' in dicParams.keys(): return
+        if not 'periode' in dicParams.keys(): return
         self.GetDonnees(dicParams)
         if event: event.Skip()
 
     def GetDonnees(self,dicParams=None):
         if not dicParams:
-            dicParams = {'origine':self.origine,
-                         'date':self.date,
+            dicParams = {
+                         'periode':self.periode,
                          'fournisseur':self.fournisseur,
                          'analytique':self.analytique,
                          'ht_ttx':self.ht_ttc}
@@ -492,13 +414,8 @@ class DLG(xusp.DLG_vide):
         # l'appel des données peut avoir retourné d'autres paramètres, il faut mettre à jour l'écran
         if len(lstDonnees) > 0:
             # set date du lot importé
-            self.pnlParams.SetOneValue('date',xformat.FmtDate(dicParams['date']),'param1')
-            self.date = dicParams['date']
-
-            # set origine
-            ixo = DICORIGINES[self.sens]['codes'].index(dicParams['origine'])
-            self.pnlParams.SetOneValue(DICORIGINES[self.sens]['labels'][ixo])
-            self.OnOrigine(None)
+            self.pnlParams.SetOneValue('periode',xformat.FmtDate(dicParams['periode']),'param1')
+            self.periode = dicParams['periode']
 
             # set Fournisseur et analytique
             self.pnlParams.SetOneValue('fournisseur',dicParams['fournisseur'],'param2')
@@ -520,8 +437,8 @@ class DLG(xusp.DLG_vide):
         tiers = ''
         if self.fournisseur: tiers += ", Fournisseur: %s"%self.fournisseur.capitalize()
         if self.analytique: tiers += ", Camp: %s"%self.analytique.capitalize()
-        date = xformat.DateSqlToFr(self.date)
-        return "Mouvements STOCKS %s du %s, %s%s"%(self.sens, date, self.origine,tiers)
+        date = xformat.DateSqlToFr(self.periode)
+        return "Mouvements STOCKS %s du %s, %s"%(self.sens, date, tiers)
 
     def OnImprimer(self,event):
         # test de présence d'écritures non valides
