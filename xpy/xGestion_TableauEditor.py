@@ -88,6 +88,7 @@ class ListView(FastObjectListView):
 
     def __init__(self, *args, **kwds):
         self.parent = args[0].parent
+        self.dicOlv = xformat.CopyDic(kwds)
         self.pnlFooter = kwds.pop('pnlFooter', None)
         self.checkColonne = kwds.pop('checkColonne',True)
         self.lstColonnes = kwds.pop('lstColonnes', [])
@@ -98,6 +99,7 @@ class ListView(FastObjectListView):
         self.sensTri = kwds.pop('sensTri', True)
         self.menuPersonnel = kwds.pop('menuPersonnel', False)
         self.lstDonnees = kwds.pop('lstDonnees', None)
+        self.getDonnees = kwds.pop('getDonnees', None)
         self.dictColFooter = kwds.pop('dictColFooter', {})
 
         # Choix des options du 'tronc commun' du menu contextuel
@@ -171,8 +173,10 @@ class ListView(FastObjectListView):
                                         codesSup=self.lstCodesSup))
         self.AddObjects(tracks)
 
-    def formerTracks(self):
+    def formerTracks(self,dicOlv = None):
         tracks = list()
+        if self.lstDonnees is None and self.getDonnees :
+            self.lstDonnees = self.getDonnees(**dicOlv)
         if self.lstDonnees is None:
             return tracks
 
@@ -226,7 +230,7 @@ class ListView(FastObjectListView):
         # On définit le message en cas de tableau vide
         self.SetEmptyListMsg(self.msgIfEmpty)
         self.SetEmptyListMsgFont(wx.FFont(11, wx.FONTFAMILY_DEFAULT))
-        self.SetObjects(self.formerTracks())
+        self.SetObjects(self.formerTracks(self.dicOlv))
 
     def MAJ(self, ID=None):
         self.selectionID = ID
@@ -380,31 +384,31 @@ class ListView(FastObjectListView):
 
 class PanelListView(wx.Panel):
     # Panel pour listView et le footer, attention il crée un niveau généalogique supplémentaire (parent.parent)
-    def __init__(self, parent, **kwargs):
+    def __init__(self, parent, **dicOlv):
         id = -1
         self.parent = parent
         self.oldRow = None
         stylePanel = wx.SUNKEN_BORDER | wx.TAB_TRAVERSAL
         wx.Panel.__init__(self, parent, id=id, style=stylePanel)
-        self.dictColFooter = kwargs.pop('dictColFooter', {})
-        if not 'id' in kwargs: kwargs['id'] = wx.ID_ANY
-        if not 'style' in kwargs: kwargs['style'] = wx.LC_REPORT|wx.NO_BORDER|wx.LC_HRULES|wx.LC_VRULES
+        self.dictColFooter = dicOlv.pop('dictColFooter', {})
+        if not 'id' in dicOlv: dicOlv['id'] = wx.ID_ANY
+        if not 'style' in dicOlv: dicOlv['style'] = wx.LC_REPORT|wx.NO_BORDER|wx.LC_HRULES|wx.LC_VRULES
         if self.dictColFooter and len(self.dictColFooter.keys())>0:
-            kwargs['pnlFooter']=True
+            dicOlv['pnlFooter']=True
 
         self.buffertracks = None
-        self.ctrl_listview = ListView(self,**kwargs)
+        self.ctrlOlv = ListView(self,**dicOlv)
         self.ctrl_footer = None
         self.SetFooter(reinit=False)
-        self.ctrl_listview.Bind(wx.EVT_CHAR,self.OnChar)
-        self.ctrl_listview.Bind(OLVEvent.EVT_CELL_EDIT_FINISHING,self.OnEditFinishing)
-        self.ctrl_listview.Bind(OLVEvent.EVT_CELL_EDIT_FINISHED,self.OnEditFinished)
-        self.ctrl_listview.Bind(OLVEvent.EVT_CELL_EDIT_STARTED,self.OnEditStarted)
+        self.ctrlOlv.Bind(wx.EVT_CHAR,self.OnChar)
+        self.ctrlOlv.Bind(OLVEvent.EVT_CELL_EDIT_FINISHING,self.OnEditFinishing)
+        self.ctrlOlv.Bind(OLVEvent.EVT_CELL_EDIT_FINISHED,self.OnEditFinished)
+        self.ctrlOlv.Bind(OLVEvent.EVT_CELL_EDIT_STARTED,self.OnEditStarted)
         # Layout
 
     def Sizer(self):
         sizerbase = wx.BoxSizer(wx.VERTICAL)
-        sizerbase.Add(self.ctrl_listview, 1, wx.ALL | wx.EXPAND, 0)
+        sizerbase.Add(self.ctrlOlv, 1, wx.ALL | wx.EXPAND, 0)
         sizerbase.Add(self.ctrl_footer, 0, wx.ALL | wx.EXPAND, 0)
         self.SetSizer(sizerbase)
         self.Layout()
@@ -413,16 +417,16 @@ class PanelListView(wx.Panel):
         if reinit:
             del self.ctrl_footer
         self.ctrl_footer = Footer.Footer(self)
-        self.ctrl_listview.SetFooter(ctrl=self.ctrl_footer, dictColFooter=self.dictColFooter)
+        self.ctrlOlv.SetFooter(ctrl=self.ctrl_footer, dictColFooter=self.dictColFooter)
         self.Sizer()
 
     def MAJ(self):
-        self.ctrl_listview.MAJ()
+        self.ctrlOlv.MAJ()
         self.ctrl_footer.MAJ_totaux()
         self.ctrl_footer.MAJ_affichage()
 
     def GetListview(self):
-        return self.ctrl_listview
+        return self.ctrlOlv
 
     # Handler niveau OLV
     def OnChar(self, event):
@@ -434,7 +438,7 @@ class PanelListView(wx.Panel):
 
     def OnCtrlC(self):
         # action copier
-        self.buffertracks = self.ctrl_listview.GetSelectedObjects()
+        self.buffertracks = self.ctrlOlv.GetSelectedObjects()
         if len(self.buffertracks) == 0:
             mess = "Pas de sélection faite"
             wx.MessageBox(mess)
@@ -442,7 +446,7 @@ class PanelListView(wx.Panel):
 
     def OnCtrlX(self,event):
         # action copier
-        self.buffertracks = self.ctrl_listview.GetSelectedObjects()
+        self.buffertracks = self.ctrlOlv.GetSelectedObjects()
         if len(self.buffertracks) == 0:
             mess = "Pas de sélection faite"
             wx.MessageBox(mess)
@@ -480,9 +484,9 @@ class PanelListView(wx.Panel):
 
     # Handlers niveau cell Editor
     def OnEditStarted(self,event):
-        row, col = self.ctrl_listview.cellBeingEdited
-        code = self.ctrl_listview.lstCodesColonnes[col]
-        track = self.ctrl_listview.GetObjectAt(row)
+        row, col = self.ctrlOlv.cellBeingEdited
+        code = self.ctrlOlv.lstCodesColonnes[col]
+        track = self.ctrlOlv.GetObjectAt(row)
 
         # cas d'une nouvelle ligne appel des éventuels traitements
         if self.oldRow != row and hasattr(self.parent, 'OnNewRow'):
@@ -504,10 +508,10 @@ class PanelListView(wx.Panel):
     def OnEditFinishing(self, event):
         self.event = event
         # gestion des actions de sortie
-        row, col = self.ctrl_listview.cellBeingEdited
-        track = self.ctrl_listview.GetObjectAt(row)
-        value = self.ctrl_listview.cellEditor.GetValue()
-        code = self.ctrl_listview.lstCodesColonnes[col]
+        row, col = self.ctrlOlv.cellBeingEdited
+        track = self.ctrlOlv.GetObjectAt(row)
+        value = self.ctrlOlv.cellEditor.GetValue()
+        code = self.ctrlOlv.lstCodesColonnes[col]
 
         # si pas de saisie on passe
         if (value == None) or track.oldValue == value:
@@ -526,9 +530,9 @@ class PanelListView(wx.Panel):
         event.Skip()
 
     def OnEditFinished(self, event):
-        if self.ctrl_listview.cellBeingEdited:
-            row, col = self.ctrl_listview.cellBeingEdited
-            track = self.ctrl_listview.GetObjectAt(row)
+        if self.ctrlOlv.cellBeingEdited:
+            row, col = self.ctrlOlv.cellBeingEdited
+            track = self.ctrlOlv.GetObjectAt(row)
             self.oldRow = row
 
             # si pas de saisie on passe
@@ -537,7 +541,7 @@ class PanelListView(wx.Panel):
                 return
 
             # appel des éventuels spécifiques
-            code = self.ctrl_listview.lstCodesColonnes[col]
+            code = self.ctrlOlv.lstCodesColonnes[col]
             if hasattr(self.parent, 'OnEditFinished'):
                 self.parent.OnEditFinished(code, track, editor=event.editor)
 
@@ -552,7 +556,7 @@ class PanelListView(wx.Panel):
 
     def OnEditFunctionKeys(self, event):
         # Fonction appelée par CellEditor.Validator lors de l'activation d'une touche de fonction
-        if self.ctrl_listview.cellBeingEdited:
+        if self.ctrlOlv.cellBeingEdited:
             self.parent.OnEditFunctionKeys(event)
             event.Skip()
 
@@ -586,12 +590,12 @@ class PNL_corps(wx.Panel):
     def __init__(self, parent, dicOlv,*args, **kwds):
         # size inutile car SizerAndFit l'ajustera
         minSize =       dicOlv.pop('minSize',(400,150))
-        getActions =    dicOlv.pop('getActions',None)
+        getBtnActions =    dicOlv.pop('getBtnActions',None)
         self.avecRecherche= dicOlv.pop('recherche',True)
         self.parent = parent
         # récupére les éventuels boutons d'actions
-        if getActions:
-            self.lstBtnActions = getActions(self)
+        if getBtnActions:
+            self.lstBtnActions = getBtnActions(self)
         else: self.lstBtnActions = None
 
         # init du super()
@@ -604,6 +608,7 @@ class PNL_corps(wx.Panel):
                         'lstColonnes',
                         'lstCodesSup',
                         'lstDonnees',
+                        'getDonnees',
                         'msgIfEmpty',
                         'sensTri',
                         'exportExcel',
@@ -634,7 +639,7 @@ class PNL_corps(wx.Panel):
                  dicOlvOut[key] = valeur
 
         self.olv = PanelListView(self,**dicOlvOut)
-        self.ctrlOlv = self.olv.ctrl_listview
+        self.ctrlOlv = self.olv.ctrlOlv
 
         # choix  barre de recherche ou pas
         if self.avecRecherche:

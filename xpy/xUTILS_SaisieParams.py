@@ -534,6 +534,8 @@ class PNL_ctrl(wx.Panel):
                 value = 0
         elif self.genre in ('datetime','date'):
             value = xformat.DatetimeToStr(value)
+        elif self.genre in ('str','string','texte','txt'):
+            value = str(value)
         elif value == None:
             value = ''
         self.ctrl.SetValue(value)
@@ -622,7 +624,7 @@ class PNL_listCtrl(wx.Panel):
                            help="Modifier la ligne selectionnée",
                            onBtn=self.OnModifier ),
                 xboutons.BTN_action(self,name='dupliquer',
-                           image=wx.Bitmap("xpy/Images/16x16/Dupliquer.png"),
+                           image=wx.Bitmap("xpy/Images/16x16/Copier.png"),
                            help="Dupliquer la ligne selectionée",
                            onBtn=self.OnDupliquer ),
                 xboutons.BTN_action(self,name='supprimer',

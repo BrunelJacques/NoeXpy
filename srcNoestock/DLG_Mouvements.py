@@ -11,6 +11,7 @@ import wx
 import os
 import datetime
 import srcNoestock.UTILS_Stocks        as nust
+import srcNoelite.UTILS_Noegest        as nung
 import xpy.xGestion_TableauEditor      as xgte
 import xpy.xUTILS_Identification       as xuid
 import xpy.xUTILS_SaisieParams         as xusp
@@ -364,7 +365,7 @@ class DLG(xusp.DLG_vide):
         # charger les valeurs de pnl_params
         self.pnlParams.SetOneSet('fournisseur',values=nust.SqlFournisseurs(self.db),codeBox='param2')
         self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
-        self.valuesAnalytique = ["%s %s"%(x[0],x[1]) for x in self.lstAnalytiques]
+        self.valuesAnalytique = [nust.MakeChoiceActivite(x) for x in self.lstAnalytiques]
         self.pnlParams.SetOneSet('analytique',values=self.valuesAnalytique,codeBox='param2')
         self.pnlParams.SetOneValue('origine',valeur=DICORIGINES[self.sens]['labels'][0],codeBox='param1')
         self.OnOrigine(None)
@@ -463,6 +464,14 @@ class DLG(xusp.DLG_vide):
             self.analytique = self.lstAnalytiques[ix][0]
         self.GetDonnees()
         if event: event.Skip()
+
+    def OnBtnAnalytique(self,event):
+        # Appel du choix d'un camp via un écran complet
+        noegest = nung.Noegest(self)
+        dicAnalytique = noegest.GetActivite(mode='dlg')
+        codeAct = nust.MakeChoiceActivite(dicAnalytique)
+        self.pnlParams.SetOneValue('analytique',codeAct,codeBox='param2')
+
 
     def OnBtnAnterieur(self,event):
         # lancement de la recherche d'un lot antérieur, on enlève le cellEdit pour éviter l'écho des clics

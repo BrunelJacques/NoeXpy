@@ -217,8 +217,9 @@ class Noegest(object):
         }
 
     def GetAnalytique(self,**kwd):
-        # choix d'un code analytique, retourne un dict, mode:'auto' automatisme d'affectation, f4 force écran
-        mode = kwd.pop('mode',None)
+        # choix d'un code analytique, retourne un dict,
+        # Le mode:'auto' permet un automatisme d'affectation, 'dlg' force écran
+        mode = kwd.pop('mode','dlg')
         axe = kwd.pop('axe',None)
         filtre = kwd.pop('filtre',None)
         getAnalytiques = kwd.pop('getAnalytiques', None)

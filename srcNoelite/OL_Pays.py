@@ -258,7 +258,7 @@ class BarreRecherche(wx.SearchCtrl):
         self.SetDescriptiveText("Rechercher un secteur géographique...")
         self.ShowSearchButton(True)
         
-        self.listView = self.parent.ctrl_listview
+        self.listView = self.parent.ctrlOlv
         nbreColonnes = self.listView.GetColumnCount()
         self.listView.SetFilter(Filter.TextSearch(self.listView, self.listView.columns[0:nbreColonnes]))
         

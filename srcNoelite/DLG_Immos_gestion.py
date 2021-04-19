@@ -50,7 +50,7 @@ def GetBoutons(dlg):
             ]
 
 # description des boutons à droite de l'écran de leurs actions
-def GetOlvActions(pnl):
+def GetBtnActions(pnl):
     # les fonctions appellées devront être présente dans PNL_corps qui implémentera les actions
     return  [
                 {'name': 'ajouter',
@@ -105,7 +105,7 @@ DICOLV = {
                   'immobilisations.libelle','immosComposants.etat', 'immosComposants.libComposant',
                   'immosComposants.valeur','immosComposants.type', 'immosComposants.tauxAmort',
                   'immosComposants.amortAnterieur','immosComposants.dotation', 'immosComposants.cessionDate'],
-    'getActions': GetOlvActions,
+    'getBtnActions': GetBtnActions,
     'minSize': (1300,400),
     'sortColumnIndex':2,
     'sortAscending':True,

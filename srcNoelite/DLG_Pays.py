@@ -28,9 +28,9 @@ class Dialog(wx.Dialog):
         intro = "Vous pouvez ici saisir, modifier ou supprimer des pays utilisés dans les adresses"
         titre = "Gestion des pays postaux"
         self.ctrl_bandeau = xbd.Bandeau(self, titre=titre, texte=intro, hauteur=15, nomImage="xpy/Images/32x32/Secteur.png")
-        self.ctrl_listview = OL_Pays.ListView(self, id=-1, style=wx.LC_REPORT|wx.SUNKEN_BORDER|wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES)
-        self.ctrl_listview.MAJ()
-        self.ctrl_recherche = OL_Pays.CTRL_Outils(self, listview=self.ctrl_listview)
+        self.ctrlOlv = OL_Pays.ListView(self, id=-1, style=wx.LC_REPORT|wx.SUNKEN_BORDER|wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES)
+        self.ctrlOlv.MAJ()
+        self.ctrl_recherche = OL_Pays.CTRL_Outils(self, listview=self.ctrlOlv)
         
         self.bouton_ajouter = wx.BitmapButton(self, -1, wx.Bitmap("xpy/Images/16x16/Ajouter.png", wx.BITMAP_TYPE_ANY))
         self.bouton_modifier = wx.BitmapButton(self, -1, wx.Bitmap("xpy/Images/16x16/Modifier.png", wx.BITMAP_TYPE_ANY))
@@ -66,7 +66,7 @@ class Dialog(wx.Dialog):
         grid_sizer_droit = wx.FlexGridSizer(rows=4, cols=1, vgap=5, hgap=5)
         grid_sizer_gauche = wx.FlexGridSizer(rows=3, cols=1, vgap=10, hgap=10)
         grid_sizer_base.Add(self.ctrl_bandeau, 0, wx.EXPAND, 0)
-        grid_sizer_gauche.Add(self.ctrl_listview, 0, wx.EXPAND, 0)
+        grid_sizer_gauche.Add(self.ctrlOlv, 0, wx.EXPAND, 0)
         grid_sizer_gauche.Add(self.ctrl_recherche, 0, wx.EXPAND, 0)
         grid_sizer_gauche.AddGrowableRow(0)
         grid_sizer_gauche.AddGrowableCol(0)
@@ -92,16 +92,16 @@ class Dialog(wx.Dialog):
         self.CenterOnScreen()
 
     def Ajouter(self, event):
-        self.ctrl_listview.Ajouter(None)
+        self.ctrlOlv.Ajouter(None)
         
     def Modifier(self, event):
-        self.ctrl_listview.Modifier(None)
+        self.ctrlOlv.Modifier(None)
 
     def Supprimer(self, event):
-        self.ctrl_listview.Supprimer(None)
+        self.ctrlOlv.Supprimer(None)
 
     def OnBoutonChoisir(self, event):
-        selection= self.ctrl_listview.Selection()
+        selection= self.ctrlOlv.Selection()
         if len(selection) == 0:
             dlg = wx.MessageDialog(self, "Vous n'avez effectué aucune sélection dans la liste !",
                                    "Erreur de saisie", wx.OK | wx.ICON_EXCLAMATION)

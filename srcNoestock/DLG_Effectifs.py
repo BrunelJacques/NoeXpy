@@ -11,7 +11,8 @@ import wx
 import os
 import datetime
 import srcNoestock.UTILS_Stocks        as nust
-import xpy.xGestion_TableauEditor      as xgte
+import srcNoelite.UTILS_Noegest        as nung
+import xpy.xGestion_TableauRecherche   as xgtr
 import xpy.xUTILS_Identification       as xuid
 import xpy.xUTILS_SaisieParams         as xusp
 import xpy.xUTILS_DB                   as xdb
@@ -116,26 +117,19 @@ def GetBoutons(dlg):
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
     return [
-            ColumnDefn("ID", 'centre', 0, 'IDmouvement',
-                       isEditable=False),
-            ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",isSpaceFilling=True),
-            ColumnDefn("Quantité", 'right', 110, 'qte', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal),
-            ColumnDefn(titlePrix, 'right', 110, 'pxUn', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal),
-            ColumnDefn("Mtt HT", 'right', 110, 'mttHT', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Mtt TTC", 'right', 110, 'mttTTC', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Qté stock", 'right', 110, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Nbre Rations", 'right', 110, 'nbRations', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal, isEditable=False),
+            ColumnDefn("PourTri", 'left', 60, 'dateAnsi',valueSetter='',),
+            ColumnDefn("Date", 'left', 60, 'date', valueSetter=datetime.date.today()),
+            ColumnDefn("RepasMidi", 'right', 30, 'repasMidi', valueSetter=0, stringConverter=xformat.FmtInt),
+            ColumnDefn("ClientsMidi", 'right', 30, 'clientsMidi', valueSetter=0, stringConverter=xformat.FmtInt),
+            ColumnDefn("RepasSoir", 'right', 30, 'repasSoir', valueSetter=0, stringConverter=xformat.FmtInt),
+            ColumnDefn("ClientsSoir", 'right', 30, 'clientsSoir', valueSetter=0, stringConverter=xformat.FmtInt),
+            ColumnDefn("PrévuInscrits", 'right', 30, 'prevuInscrits', valueSetter=0, stringConverter=xformat.FmtInt),
+            ColumnDefn("PrévuClients", 'right', 30, 'prevuClients', valueSetter=0, stringConverter=xformat.FmtInt),
             ]
 
 def GetOlvCodesSup():
     # codes dans les données olv, mais pas dans les colonnes, attributs des tracks non visibles en tableau
-    return ['prixTTC','IDmouvement','dicArticle']
+    return ['analytique',]
 
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
@@ -143,9 +137,11 @@ def GetOlvOptions(dlg):
             'checkColonne': False,
             'recherche': True,
             'minSize': (600, 100),
-            'dictColFooter': {"IDarticle": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
-                                  "mttHT": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
-                                  "mttTTC": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
+            'dictColFooter': {"date": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
+                                  "repasMidi": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
+                                  "clientsMidi": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
+                                  "prevuInscrits": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
+                                  "prevuClients": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
                                   },
     }
 
@@ -159,7 +155,7 @@ def GetDlgOptions(dlg):
 
     #----------------------- Parties de l'écrans -----------------------------------------
 
-class PNL_params(xgte.PNL_params):
+class PNL_params(xgtr.PNL_params):
     #panel de paramètres de l'application
     def __init__(self, parent, **kwds):
         self.parent = parent
@@ -170,106 +166,6 @@ class PNL_params(xgte.PNL_params):
             self.lanceur = parent.lanceur
         else: self.lanceur = parent
 
-class PNL_corps(xgte.PNL_corps):
-    #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
-    def __init__(self, parent, dicOlv,*args, **kwds):
-        xgte.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
-        self.db = parent.db
-        self.lstNewReglements = []
-        self.flagSkipEdit = False
-        self.oldRow = None
-        self.dicArticle = None
-
-    def InitTrackVierge(self,track,modelObject):
-        track.creer = True
-
-    def ValideParams(self):
-        pnl = self.parent.pnlParams
-        dicParams = {
-                     'periode': self.parent.GetDate(),
-                     'fournisseur': pnl.GetOneValue('fournisseur',codeBox='param2'),
-                     'analytique': pnl.GetOneValue('analytique',codeBox='param2'),
-                     'ht_ttc': pnl.GetOneValue('ht_ttc',codeBox='param3')}
-        ret = nust.ValideParams(pnl,dicParams)
-
-    def OnCtrlV(self,track):
-        # avant de coller une track, raz de certains champs et recalcul
-        track.IDmouvement = None
-        self.ValideLigne(None,track)
-        self.SauveLigne(track)
-
-    def OnDelete(self,track):
-        nust.DeleteLigne(self.parent.db,self.ctrlOlv,track)
-
-    def OnNewRow(self,row,track):
-        pass
-
-    def OnEditStarted(self,code,track=None,editor=None):
-        # affichage de l'aide
-        if code in DIC_INFOS.keys():
-            self.parent.pnlPied.SetItemsInfos( DIC_INFOS[code],
-                                               wx.ArtProvider.GetBitmap(wx.ART_FIND, wx.ART_OTHER, (16, 16)))
-        else:
-            self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
-
-        # travaux avant saisie
-        if code == 'qte':
-            if not hasattr(track,'oldQte'):
-                track.oldQte = track.qte
-        if code == 'pxUn':
-            if not hasattr(track, 'oldPu'):
-                nust.CalculeLigne(self.parent,track)
-                track.oldPu = track.prixTTC
-
-    def OnEditFinishing(self,code=None,value=None,editor=None):
-        self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
-        # flagSkipEdit permet d'occulter les évènements redondants. True durant la durée du traitement
-        if self.flagSkipEdit : return
-        self.flagSkipEdit = True
-
-        (row, col) = self.ctrlOlv.cellBeingEdited
-        track = self.ctrlOlv.GetObjectAt(row)
-
-        # Traitement des spécificités selon les zones
-        if code == 'IDarticle':
-            value = nust.SqlOneArticle(self.db,value)
-            track.IDarticle = value
-            if value:
-                track.dicArticle = nust.SqlDicArticle(self.db,self.ctrlOlv,value)
-                track.nbRations = track.dicArticle['rations']
-                track.qteStock = track.dicArticle['qteStock']
-                if self.parent.sens == 'sorties':
-                    track.pxUn = track.dicArticle['prixMoyen']
-        if code == 'qte' or code == 'pxUn':
-            # force la tentative d'enregistrement même en l'absece de saisie
-            track.noSaisie = False
-
-        # enlève l'info de bas d'écran
-        self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
-        self.flagSkipEdit = False
-        return value
-
-    def ValideLigne(self,code,track):
-        # Appelé par cellEditor en sortie
-        nust.ValideLigne(self.db,track)
-        nust.CalculeLigne(self.Parent,track)
-
-    def SauveLigne(self,track):
-        nust.SauveLigne(self.db,self.Parent,track)
-
-    def OnEditFunctionKeys(self,event):
-        row, col = self.ctrlOlv.cellBeingEdited
-        code = self.ctrlOlv.lstCodesColonnes[col]
-        if event.GetKeyCode() == wx.WXK_F4 and code == 'IDarticle':
-            # Choix article
-            IDarticle = nust.SqlOneArticle(self.db,self.ctrlOlv.GetObjectAt(row).IDarticle)
-            #self.ctrlOlv.GetObjectAt(row).IDarticle = IDarticle
-            ret = self.OnEditFinishing('IDarticle',IDarticle)
-
-class PNL_pied(xgte.PNL_pied):
-    #panel infos (gauche) et boutons sorties(droite)
-    def __init__(self, parent, dicPied, **kwds):
-        xgte.PNL_pied.__init__(self,parent, dicPied, **kwds)
 
 class DLG(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
@@ -324,7 +220,7 @@ class DLG(xusp.DLG_vide):
         # charger les valeurs de pnl_params
         self.pnlParams.SetOneSet('fournisseur',values=nust.SqlFournisseurs(self.db),codeBox='param2')
         self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
-        self.valuesAnalytique = ["%s %s"%(x[0],x[1]) for x in self.lstAnalytiques]
+        self.valuesAnalytique = [nust.MakeChoiceActivite(x) for x in self.lstAnalytiques]
         self.pnlParams.SetOneSet('analytique',values=self.valuesAnalytique,codeBox='param2')
         self.OnHt_ttc(None)
 
@@ -351,28 +247,10 @@ class DLG(xusp.DLG_vide):
         self.ctrlOlv.InitObjectListView()
         self.Refresh()
 
-    def OnDate(self,event):
-        saisie = self.GetDate(fr=True)
-        self.pnlParams.SetOneValue('periode',valeur=saisie,codeBox='param1')
+    def OnPeriode(self,event):
+        periode = self.GetPeriode(fr=True)
+        self.pnlParams.SetOneValue('periode',valeur=periode,codeBox='param1')
         self.GetDonnees()
-        if event: event.Skip()
-
-    def OnHt_ttc(self,event):
-        self.ht_ttc = self.pnlParams.GetOneValue('ht_ttc',codeBox='param3')
-        self.GetDonnees()
-        if event: event.Skip()
-
-    def OnFournisseur(self,event):
-        self.fournisseur = self.pnlParams.GetOneValue('fournisseur',codeBox='param2')
-        self.GetDonnees()
-        if event: event.Skip()
-
-    def OnBtnFournisseur(self,event):
-        # Simple message explication
-        mess = "Choix FOURNISSEURS\n\n"
-        mess += "Les fournisseurs proposés sont cherchés dans les utilisations précédentes,\n"
-        mess += "Il vous suffit de saisir un nouveau nom pour qu'il vous soit proposé la prochaine fois"
-        wx.MessageBox(mess,"Information",style=wx.ICON_INFORMATION|wx.OK)
         if event: event.Skip()
 
     def OnAnalytique(self,event):
@@ -382,6 +260,14 @@ class DLG(xusp.DLG_vide):
             self.analytique = self.lstAnalytiques[ix][0]
         self.GetDonnees()
         if event: event.Skip()
+
+    def OnBtnAnalytique(self,event):
+        # Appel du choix d'un camp via un écran complet
+        noegest = nung.Noegest(self)
+        dicAnalytique = noegest.GetActivite(mode='dlg')
+        codeAct = nust.MakeChoiceActivite(dicAnalytique)
+        self.pnlParams.SetOneValue('analytique',codeAct,codeBox='param2')
+
 
     def OnBtnSynchro(self,event):
         # lancement de la recherche d'un lot antérieur, on enlève le cellEdit pour éviter l'écho des clics
