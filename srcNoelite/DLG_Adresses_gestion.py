@@ -92,33 +92,35 @@ def ComposeLstDonnees(record,lstChamps,lstColonnes):
             lstdonnees.append(record[ix])
     return lstdonnees
 
-class Pnl_tableau(xgtr.PNL_tableau):
+def GetLstBtns(pnl,olv):
+    # retourne les Boutons du bas de l'écran
+    bmpcoords = wx.Bitmap("xpy/Images/32x32/Mobile.png")
+    helpcoords = "Ouvre une nouvelle fenêtre pour gérer l'adresse"
+    bouton_coords = xboutons.Bouton(pnl, label=ACTION2, image=bmpcoords, help=helpcoords, onBtn=olv.OnCoord)
+
+    bmpok = wx.Bitmap("xpy/Images/32x32/Boite.png")
+    helpok = "Ouvre une nouvelle fenêtre pour gérer l'adresse"
+    bouton_ok = xboutons.Bouton(pnl, label=ACTION, image=bmpok, help=helpok, onBtn=olv.OnDblClick)
+
+    bmpabort = wx.Bitmap("xpy/Images/32x32/Quitter.png")
+    bouton_fermer = wx.Button(pnl, id=wx.ID_CANCEL, label=(u"Quitter"))
+    bouton_fermer.SetBitmap(bmpabort)
+    bouton_fermer.SetToolTip(u"Cliquez ici pour fermer")
+    return [bouton_coords, bouton_ok, bouton_fermer]
+
+class Pnl_tableau(xgtr.PNL_corps):
     def __init__(self,parent,dicOlv):
 
         dicOlv['menuPersonnel'] = True
         dicOlv['autoSizer'] = False
-        xgtr.PNL_tableau.__init__(self,parent,dicOlv)
-        # Boutons
-        bmpcoords = wx.Bitmap("xpy/Images/32x32/Mobile.png")
-        helpcoords = "Ouvre une nouvelle fenêtre pour gérer l'adresse"
-        bouton_coords = xboutons.Bouton(self,label=ACTION2,image=bmpcoords,help=helpcoords,onBtn=self.OnCoord)
-
-        bmpok = wx.Bitmap("xpy/Images/32x32/Boite.png")
-        helpok = "Ouvre une nouvelle fenêtre pour gérer l'adresse"
-        bouton_ok = xboutons.Bouton(self,label=ACTION,image=bmpok,help=helpok,onBtn=self.OnDblClick)
-
-        bmpabort = wx.Bitmap("xpy/Images/32x32/Quitter.png")
-        bouton_fermer = wx.Button(self, id = wx.ID_CANCEL,label=(u"Quitter"))
-        bouton_fermer.SetBitmap(bmpabort)
-        bouton_fermer.SetToolTip(u"Cliquez ici pour fermer")
-        #self.bouton_fermer = bouton_fermer
-        self.lstBtns = [bouton_coords,bouton_ok,bouton_fermer]
+        xgtr.PNL_corps.__init__(self,parent,dicOlv)
 
         # Binds
-        self.Bind(wx.EVT_BUTTON, self.OnDblClicFermer, bouton_fermer)
         #self.ctrlOlv.Bind(wx.EVT_LIST_ITEM_ACTIVATED,self.OnDblClic)
-        self.ProprietesOlv()
-        self.Sizer()
+        self.ctrlOlv.Bind(wx.EVT_CONTEXT_MENU, self.ctrlOlv.OnContextMenu)
+        self.ctrlOlv.Bind(wx.EVT_LEFT_DCLICK, self.OnDblClick)
+        self.ctrlOlv.Bind(wx.EVT_COMMAND_ENTER, self.OnDblClicFermer)
+        #self.Sizer()
 
     def GetMenuPersonnel(self):
         menuPop = wx.Menu()
@@ -220,8 +222,12 @@ class Dialog(wx.Dialog):
         pnlOlv = Pnl_tableau(self, dicOlv)
         self.ctrlOlv = pnlOlv.ctrlOlv
         self.olv = pnlOlv
-
+        self.pnlPied = xgtr.PNL_pied(self,{'autoSizer':False,'lstBtns':[]})
         # Initialisations
+        self.pnlPied.lstBtns = GetLstBtns(self.pnlPied,self.olv)
+        btnFermer = self.pnlPied.lstBtns[1]
+        self.Bind(wx.EVT_BUTTON, self.OnFermer, btnFermer)
+        self.pnlPied.Sizer()
         self.__set_properties()
         self.Sizer()
 
@@ -236,13 +242,13 @@ class Dialog(wx.Dialog):
         sizerolv.Add(self.olv, 10, wx.EXPAND, 10)
         gridsizer_base.Add(sizerolv, 10, wx.EXPAND, 10)
         gridsizer_base.Add(wx.StaticLine(self), 0, wx.TOP| wx.EXPAND, 3)
+        gridsizer_base.Add(self.pnlPied, 10, wx.EXPAND, 0)
+        gridsizer_base.AddGrowableRow(1)
+        gridsizer_base.AddGrowableCol(0)
 
         self.SetSizer(gridsizer_base)
         gridsizer_base.Fit(self)
-        gridsizer_base.AddGrowableRow(1)
-        gridsizer_base.AddGrowableCol(0)
         self.Layout()
-        self.SetSizer(gridsizer_base)
 
     def GetIndividus(self,db,**kwd):
         # appel des données à afficher
@@ -332,6 +338,19 @@ class Dialog(wx.Dialog):
     def GetChoix(self):
         self.choix = self.ctrlOlv.GetSelectedObject()
         return self.choix
+
+    def OnFermer(self, *arg, **kwd):
+        end = kwd.pop('end',wx.OK)
+        if self.IsModal():
+            self.EndModal(end)
+        else:
+            self.Close()
+
+    def OnEsc(self,*arg, **kwd):
+        if self.IsModal():
+            self.EndModal(wx.ID_ABORT)
+        else:
+            self.Close()
 
 #-------------------------------------------------
 

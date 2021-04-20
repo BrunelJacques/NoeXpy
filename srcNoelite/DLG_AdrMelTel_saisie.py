@@ -311,7 +311,7 @@ class DlgAdrMelTel(xusp.DLG_vide):
     def GetRetourInd(self):
         return (self.nele,self.teldomicile,self.telmobile,self.mail1)
 
-    def Final(self):
+    def ValideSaisie(self):
         if len(self.ctrl.lstDonnees) == 0: return
         lstChamps = ["date_naiss","tel_domicile", "tel_mobile", "travail_tel",
                     "mail", "travail_mail", "refus_pub", "refus_mel"]
@@ -335,6 +335,7 @@ class DlgAdrMelTel(xusp.DLG_vide):
         self.telmobile = ligne[self.ctrl.lstCodesColonnes.index('telmobile')]
         self.mail1 = ligne[self.ctrl.lstCodesColonnes.index('mail1')]
         DB.Close()
+        return wx.OK
 
 if __name__ == "__main__":
     app = wx.App(0)

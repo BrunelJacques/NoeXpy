@@ -1255,8 +1255,13 @@ class DLG_vide(wx.Dialog):
 
     def OnFermer(self, event):
         # si présence d'un ValideSaisie chez le parent et pas de sortie par fermeture de la fenêtre
-        if event and not event.EventObject.ClassName == 'wxDialog' and hasattr(self.parent,'ValideSaisie'):
-            if self.parent.ValideSaisie(self) != wx.OK:
+        if event and not event.EventObject.ClassName == 'wxDialog':
+            valide = wx.OK
+            if hasattr(self.parent,'ValideSaisie'):
+                    valide = self.parent.ValideSaisie(self)
+            elif hasattr(self, 'ValideSaisie'):
+                valide = self.ValideSaisie()
+            if valide != wx.OK:
                 event.Skip()
                 return
 

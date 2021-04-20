@@ -15,25 +15,32 @@ def GetAddManyBtns(pnl,lstBtns,**kwds):
     lstWxBtns = []
     
     for itemBtn in lstBtns:
+        bouton = None
         # gestion par série :(code, ID, image ou texte, texteToolTip), image ou texte mais pas les deux!
         try:
-            if isinstance(itemBtn,Bouton):
+            if isinstance(itemBtn,(Bouton,wx.Button)):
                 bouton = itemBtn
             # gestion de l'ancien format par tuples, le label pouvait être remplacé par une image
             elif isinstance(itemBtn, (tuple, list)):
                 (name, ID, label, tooltip) = itemBtn
-                if isinstance(label,wx.Bitmap):
-                    image=label
-                    label=''
-                else: image=None
-                itemBtn = {'name':name,'ID':ID, 'label':label, 'help':tooltip,'image':image}
-                bouton= Bouton(pnl,**itemBtn)
+                if isinstance(name,(Bouton,wx.Button)):
+                    # cas d'une redondance de l'appel
+                    bouton = name
+                else:
+                    # tuple de params
+                    if isinstance(label,wx.Bitmap):
+                        image=label
+                        label=' '
+                    else: image=None
+                    dicBtn = {'name':name,'ID':ID, 'label':label, 'help':tooltip,'image':image}
+                    bouton= Bouton(pnl,**dicBtn)
             elif isinstance(itemBtn,dict):
                 bouton= Bouton(pnl,**itemBtn)
         except Exception as err:
             bouton = wx.Button(pnl, wx.ID_ANY, 'Erreur\nparam!')
             print("Construction bouton: ",err)
-        lstWxBtns.append((bouton, 0, wx.ALL, marge))
+        if bouton:
+            lstWxBtns.append((bouton, 0, wx.ALL, marge))
     return lstWxBtns
 
 def BTN_action(parent,**kwds):
@@ -84,9 +91,11 @@ class Bouton(wx.Button):
         sizeBmp =   kwds.pop('sizeBmp',None)
         sizeFont =  kwds.pop('sizeFont',None)
         # cas des boutons avec label
-        if image and len(label) > 0: defsize = (110,35)
+        if image and len(label) > 2:
+            defsize = (110,35)
         # cas des '...' sans image ou image seule
-        elif len(label) <= 3 : defsize = (24,24)
+        elif len(label) <= 3 :
+            defsize = (24,24)
         else: defsize = (70,24)
         size =      kwds.pop('size',defsize)
 
@@ -117,7 +126,13 @@ class Bouton(wx.Button):
                 lgBmp = 0
                 lignes = label.split('\n')
                 if imageBmp:
-                    lgBmp = (imageBmp.GetSize()[0] * 2) - 30
+                    lgBmp = (imageBmp.GetSize()[0] * 2) - 25
+                    hiBmp = (imageBmp.GetSize()[1] * 2) - 25
+                    if size[0] < lgBmp:
+                        size = (lgBmp,size[1])
+                    if size[1] < hiBmp:
+                        size = (size[0],hiBmp)
+
                 #mise en proportion de la hauteur
                 sizeFont = (size[1]) * 0.4 / (len(lignes) * 0.5 + 0.5)
                 # Teste si le label est trop long
@@ -127,6 +142,7 @@ class Bouton(wx.Button):
                     prorata = min(1,size[0] / lglabel)
                 else: prorata = 1
                 sizeFont = int(sizeFont * prorata)
+                
         elif sizeFont:
             lg = 5
             ht = sizeFont * 2
@@ -164,15 +180,22 @@ class Bouton(wx.Button):
         self.name = name
 
         # implémente les fonctions bind transmises, soit par le pointeur soit par eval du texte
-        if onBtn:
-            if isinstance(onBtn, str):
-                try:
-                    fonction = eval("parent.%s"%onBtn)
-                except Exception:
-                    fonction = eval("parent.parent.%s"%onBtn)
-            else:
-                fonction = onBtn
-            self.Bind(wx.EVT_BUTTON, fonction)
+        fonction = None
+        if onBtn == None:
+            # composition d'un bind par défaut
+            if ID in (wx.ID_CANCEL, wx.ID_EXIT):
+                onBtn = "OnEsc"
+            elif (ID in (wx.ID_OK, wx.OK)) or ('OK' in name):
+                onBtn = "OnFermer"
+
+        if isinstance(onBtn, str):
+            try:
+                fonction = eval("parent.%s"%onBtn)
+            except Exception:
+                fonction = eval("parent.parent.%s"%onBtn)
+        else:
+            fonction = onBtn
+        self.Bind(wx.EVT_BUTTON, fonction)
 
         if help: self.SetToolTip(help)
 
