@@ -184,7 +184,7 @@ def SqlArticles(**kwd):
 
 def SqlOneArticle(db,value,**kwds):
     # test de présence de l'article
-    if len(value)>0:
+    if value and len(value)>0:
         req = """   SELECT IDarticle
                     FROM stArticles
                     WHERE IDarticle LIKE '%%%s%%'
@@ -514,7 +514,7 @@ class DLG_articles(xgtr.DLG_tableau):
         self.db = db
 
         if  isinstance(value,str):
-            self.pnl.ctrlOutils.barreRecherche.SetValue(value)
+            self.pnlOlv.ctrlOutils.barreRecherche.SetValue(value)
         # enlève le filtre si pas de réponse
         if len(self.ctrlOlv.innerList) == 0:
             self.pnlOlv.ctrlOutils.barreRecherche.SetValue('')

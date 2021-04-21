@@ -200,6 +200,7 @@ def GetLstComptas():
     return lstCpta
 
 class Export(object):
+    # Génération d'un fichier d'export
     def __init__(self,parent,compta):
         self.parent = parent
         self.nameCpta = compta.nameCpta
@@ -299,6 +300,23 @@ class Compta(object):
         ret = self.db.ExecuterReq(req,mess="UTILS_Compta.GetDonnees %s"%table)
         if ret == "ok":
             donnees = self.db.ResultatReq()
+        return donnees
+
+    # Appel d'une balance de la base de donnée compta
+    def GetBalance(self,champs='Numero,Intitule,Debit,Credit',debut=None,fin=None):
+        wherePeriode = ""
+        if debut and fin:
+            wherePeriode = " AND ((Ecritures.PeriodeEcriture) Between '%s' And '%s')"%(debut,fin)
+        donnees = []
+        req = """
+            SELECT %s
+            FROM Comptes
+            WHERE ((Comptes.Type ="G") %s)
+            ;"""%(champs,wherePeriode)
+        ret = self.db.ExecuterReq(req,mess="UTILS_Compta.GetBalance")
+        if ret == "ok":
+            donnees = self.db.ResultatReq()
+        donnees = [[x[0],x[0][3:5],x[1],x[2],x[3],x[2]-x[3]] for x in donnees if (x[2]-x[3]) != 0.0]
         return donnees
 
     # Constitue la liste des journaux si la compta est en ligne

@@ -134,7 +134,9 @@ class ListView(FastObjectListView):
                 self.GetTitreImpression = dlg.GetTitreImpression
         elif hasattr(self.Parent, 'GetTitreImpresssion'):
             self.GetTitreImpression = self.Parent.GetTitreImpression
+        self.Proprietes()
 
+    def Proprietes(self):
         # Binds perso
         self.Bind(OLVEvent.EVT_ITEM_CHECKED, self.MAJ_footer)
         self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)

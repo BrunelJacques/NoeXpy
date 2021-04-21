@@ -367,7 +367,11 @@ def TransposeDonnees(dlg,recordset,lstCodesChamps,lstCodesDonnees):
 
         # recherche du mode de règlement
         IDmode = record[lstCodesChamps.index('IDmode')]
-        donnees[ixmode] = dlg.ddModesRegl[IDmode]['choice']
+
+        if 'choice' in dlg.ddModesRegl[IDmode].keys():
+            donnees[ixmode] = dlg.ddModesRegl[IDmode]['choice']
+        else:
+            donnees[ixmode] = dlg.ddModesRegl[IDmode]['label']
 
         # détermination de la nature 'Règlement','Acompte','Don','Debour','Libre'
         compte = record[lstCodesChamps.index('prestcompte')]
@@ -917,7 +921,7 @@ def GetDepot(db=None):
     dicOlv = GetMatriceDepots()
     dlg = xgtr.DLG_tableau(None,dicOlv=dicOlv,db=db)
     ret = dlg.ShowModal()
-    if ret == wx.OK:
+    if ret in (wx.OK,wx.ID_OPEN):
         donnees = dlg.GetSelection().donnees
         for ix in range(len(donnees)):
             dicDepot[dicOlv['listeCodesColonnes'][ix]] = donnees[ix]

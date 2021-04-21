@@ -16,7 +16,7 @@ from xpy.outils import xbandeau,xformat,xboutons,xshelve
 from xpy.outils.ObjectListView import ObjectListView, ColumnDefn, CTRL_Outils
 from xpy.outils.xconst import *
 
-def GetBtnsDefaut(pnl):
+def GetBtnsPied(pnl):
     return  [
             ('BtnPrec', wx.ID_CANCEL, wx.ArtProvider.GetBitmap(wx.ART_DELETE, wx.ART_OTHER, (32, 32)),
                     "Abandon, Cliquez ici pour retourner"),
@@ -24,176 +24,29 @@ def GetBtnsDefaut(pnl):
                     "Cliquez ici pour Choisir l'item sélectionné"),
             ]
 
-# Version ancienne groupant le bandeau, params, corps et pied dans le tableau
-class zzzPNL_tableau(wx.Panel):
-    #panel olv avec habillage optionnel pour des infos (bas gauche) et boutons sorties
-    def __init__(self, parent, dicOlv,*args, **kwds):
-        self.parent = parent
-        self.dicOlv = dicOlv
-        self.db = kwds.pop('db',None)
-        self.avecRecherche = dicOlv.pop('recherche',True)
-        dicBandeau = dicOlv.pop('dicBandeau',None)
-        autoSizer = dicOlv.pop('autoSizer',True)
-        self.lstBtns = kwds.pop('lstBtns', None)
-        if self.lstBtns == None:
-            self.lstBtns = dicOlv.pop('lstBtns', None)
-        self.lstBtnActions = kwds.pop('lstBtnActions',None)
-        wx.Panel.__init__(self, parent, *args,  **kwds)
+# série de boutons de gestion standards
+def GetBtnActions(self,lstNomsBtns):
+    dicParamsBtns =  {
+                'creer': {'name':'creer',
+                       'image':wx.Bitmap("xpy/Images/16x16/Ajouter.png"),
+                       'help':"Créer une nouvelle ligne",
+                       'onBtn':"OnAjouter" },
+                'modifier': {'name':'modifier',
+                       'image':wx.Bitmap("xpy/Images/16x16/Modifier.png"),
+                       'help':"Modifier la ligne selectionnée",
+                       'onBtn':"OnModifier" },
+                'dupliquer': {'name':'dupliquer',
+                       'image':wx.Bitmap("xpy/Images/16x16/Copier.png"),
+                       'help':"Dupliquer la ligne selectionnée",
+                       'onBtn':"OnSupprimer" },
+                'supprimer': {'name':'supprimer',
+                       'image':wx.Bitmap("xpy/Images/16x16/Supprimer.png"),
+                       'help':"Supprimer les lignes selectionnées",
+                       'onBtn':"OnSupprimer" },}
+    lstBtns = [dicParamsBtns[x] for x in lstNomsBtns]
+    return lstBtns
 
-        #ci dessous l'ensemble des autres paramètres possibles pour OLV
-        if dicBandeau:
-            self.bandeau = xbandeau.Bandeau(self,**dicBandeau)
-        else:self.bandeau = None
-
-        #récup des seules clés possibles pour dicOLV
-        lstParamsOlv = ['id',
-                        'style',
-                        'lstColonnes',
-                        'lstCodesSup',
-                        'lstChamps',
-                        'sortColumnIndex',
-                        'getDonnees',
-                        'msgIfEmpty',
-                        'sensTri',
-                        'exportExcel',
-                        'exportTexte',
-                        'apercuAvantImpression',
-                        'imprimer',
-                        'cellEditMode',
-                        'useAlternateBackColors',
-                        'menuPersonnel',
-                        'checkColonne'
-                        ]
-        dicOlvOut = {}
-        for key,valeur in dicOlv.items():
-            if key in lstParamsOlv:
-                 dicOlvOut[key] = valeur
-        self.ctrlOlv = ListView(self,**dicOlvOut)
-
-        # choix  barre de recherche ou pas
-        if self.avecRecherche:
-            afficherCocher = False
-            if self.ctrlOlv.checkStateColumn: afficherCocher = True
-            self.ctrlOutils = CTRL_Outils(self, listview=self.ctrlOlv, afficherCocher=afficherCocher)
-            self.ctrlOutils.Bind(wx.EVT_CHAR,self.OnRechercheChar)
-        else:
-            self.ctrlOutils = False
-            # Le pnlPied est un spécifique alimenté par les descendants
-
-        # Sizer différé pour les descendants avec spécificités modifiant le panel
-        if autoSizer:
-            self.ProprietesOlv()
-            self.Sizer()
-
-    def Sizer(self):
-        # force la présence d'un pied d'écran par défaut
-        if self.lstBtns == None :
-            self.lstBtns =  GetBtnsDefaut(self)
-        #composition de l'écran selon les composants
-        sizerbase = wx.BoxSizer(wx.VERTICAL)
-        if self.bandeau:
-            sizerhaut = wx.BoxSizer(wx.VERTICAL)
-            sizerhaut.Add(self.bandeau,0,wx.ALL|wx.EXPAND,3)
-            sizerbase.Add(sizerhaut, 0, wx.EXPAND, 5)
-
-        sizercentre = wx.BoxSizer(wx.HORIZONTAL)
-        sizercentre.Add(self.ctrlOlv,10,wx.ALL|wx.EXPAND,3)
-        if self.lstBtnActions:
-            sizeractions = wx.StaticBoxSizer(wx.VERTICAL, self, label='Gestion')
-            self.itemsActions = self.GetItemsBtn(self.lstBtnActions)
-            sizeractions.AddMany(self.itemsActions)
-            sizercentre.Add(sizeractions,0,wx.ALL|wx.EXPAND,3)
-        sizerbase.Add(sizercentre, 10, wx.EXPAND, 0)
-
-        sizerbase.Add(wx.StaticLine(self), 0, wx.TOP| wx.EXPAND, 3)
-
-        sizerpied = wx.FlexGridSizer(rows=1, cols=10, vgap=0, hgap=0)
-        if self.avecRecherche:
-            sizerpied.Add(self.ctrlOutils, 1, wx.EXPAND|wx.ALIGN_CENTRE_VERTICAL, 3)
-        sizerpied.Add((10,10), 1, wx.EXPAND|wx.ALIGN_LEFT, 0)
-
-        if len(self.lstBtns) > 0:
-            self.itemsBtns = self.GetItemsBtn(self.lstBtns)
-            sizerpied.AddMany(self.itemsBtns)
-        sizerpied.AddGrowableCol(0)
-        sizerbase.Add(sizerpied,0,wx.EXPAND,5)
-        self.SetSizerAndFit(sizerbase)
-        if self.avecRecherche:
-            self.ctrlOutils.SetFocus()
-
-    def ProprietesOlv(self):
-        self.ctrlOlv.Bind(wx.EVT_CONTEXT_MENU, self.ctrlOlv.OnContextMenu)
-        self.ctrlOlv.Bind(wx.EVT_LEFT_DCLICK, self.OnDblClick)
-        self.ctrlOlv.Bind(wx.EVT_COMMAND_ENTER, self.OnFermer)
-
-    def GetItemsBtn(self,lstBtns):
-        # décompactage des paramètres de type bouton
-        lstBtn = []
-        for btn in lstBtns:
-            if isinstance(btn,wx.Button):
-                bouton = btn
-            else:
-                # cas de paramètres bouton sous forme de tuple
-                try:
-                    (code,ID,label,tooltip) = btn
-                    if isinstance(label,wx.Bitmap):
-                        bouton = wx.BitmapButton(self,ID,label)
-                    elif isinstance(label,str):
-                        bouton = wx.Button(self,ID,label)
-                    else: bouton = wx.Button(self,ID,'Erreur!')
-                    bouton.SetToolTip(tooltip)
-                    bouton.name = code
-                    #le bouton OK est par défaut, il ferme l'écran DLG
-                    if code == 'BtnOK':
-                        bouton.Bind(wx.EVT_BUTTON, self.OnFermer)
-                except:
-                    bouton = wx.Button(self, wx.ID_ANY, 'Erreur!')
-            lstBtn.append((bouton, 0, wx.ALL | wx.ALIGN_RIGHT, 5))
-        return lstBtn
-
-    def OnDblClick(self,event):
-        # a écraser par homonyme dans l'instance
-        self.OnFermer(None)
-
-    def OnFermer(self,event):
-        if not self.ctrlOlv.GetSelectedObject():
-            wx.MessageBox("Aucun choix n'a été fait\n\nIl vous faut sélectionner une ligne ou abandonner!")
-            return
-        self.parent.OnFermer()
-
-    def OnRechercheChar(self,evt):
-        if evt.GetKeyCode() in (wx.WXK_UP,wx.WXK_DOWN,wx.WXK_PAGEDOWN,wx.WXK_PAGEUP):
-            self.ctrlOlv.Filtrer(self.ctrlOutils.GetValue())
-            self.ctrlOlv.SetFocus()
-            return
-        evt.Skip()
-
-class zzzDLG_tableau(wx.Dialog):
-    # minimum fonctionnel affiche un tableau de recherche sans gestion des lignes tout est dans pnl
-    def __init__(self,parent,dicOlv={}, **kwds):
-        self.parent = parent
-        # inutile si SetSizerAndFit qui ajuste
-        size = dicOlv.pop('size', (600,300))
-        pnlTableau = dicOlv.pop('pnlTableau',PNL_tableau )
-        listArbo=os.path.abspath(__file__).split("\\")
-        titre = listArbo[-1:][0] + "/" + self.__class__.__name__
-        wx.Dialog.__init__(self,None, title=titre, size=size,style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
-        self.SetBackgroundColour(wx.WHITE)
-        self.marge = 10
-        self.pnl = pnlTableau(self, dicOlv,  **kwds )
-        self.ctrlOlv = self.pnl.ctrlOlv
-        self.CenterOnScreen()
-
-    def GetSelection(self):
-        return self.pnl.ctrlOlv.GetSelectedObject()
-
-    def OnFermer(self, end=wx.OK):
-        if self.IsModal():
-            self.EndModal(end)
-        else:
-            self.Close()
-
-# ------------------------------------------------------------------------------------------------------------------
+# ------------ Gestion de l'OLV  -----------------------------------------------------------
 
 class TrackGeneral(object):
     #    Cette classe va transformer une ligne en objet selon les listes de colonnes et valeurs par défaut(setter)
@@ -202,10 +55,10 @@ class TrackGeneral(object):
         if not (len(donnees)-len(codesSup) == len(codesColonnes) == len(setterValues) ):
             lst = [str(codesColonnes),str(setterValues),str(donnees)]
             mess = "Problème de nombre d'occurences!\n\n"
-            mess += "%d - %d donnees, %d codes, %d colonnes et %d valeurs défaut"%(len(donnees),len(codesSup),
+            mess += "%d - %d donnees, %d codes, %d colonnes"%(len(donnees),len(codesSup),
                                                         len(codesColonnes), len(setterValues))
             mess += '\n\n'+'\n\n'.join(lst)
-            wx.MessageBox(mess,caption="xGestion_TableauEditor.TrackGeneral")
+            wx.MessageBox(mess,caption="xGestion_TableauRecherche.TrackGeneral")
         self.donnees = donnees
         for ix in range(len(codesColonnes + codesSup)):
             donnee = donnees[ix]
@@ -268,6 +121,8 @@ class ListView(ObjectListView):
         self.sensTri = kwds.pop('sensTri', True)
         self.menuPersonnel = kwds.pop('menuPersonnel', False)
         self.getDonnees = kwds.pop('getDonnees', None)
+        if isinstance(self.getDonnees,str):
+            self.getDonnees = eval(self.getDonnees)
 
         # Choix des options du 'tronc commun' du menu contextuel
         self.exportExcel = kwds.pop('exportExcel', True)
@@ -294,13 +149,19 @@ class ListView(ObjectListView):
         ObjectListView.__init__(self, *args,style=style,**kwds)
         self.InitObjectListView()
         self.InitModel()
-
+        self.Proprietes()
         if hasattr(self.GrandParent,'parent'):
             dlg = self.GrandParent.parent
             if hasattr(dlg,'GetTitreImpression'):
                 self.GetTitreImpression = dlg.GetTitreImpression
         elif hasattr(self.Parent,'GetTitreImpresssion'):
             self.GetTitreImpression = self.Parent.GetTitreImpression
+
+    def Proprietes(self):
+        # Binds perso
+        self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.parent.OnDblClick)
+
 
     def GetLstCodesColonnes(self):
         codeColonnes = list()
@@ -336,8 +197,8 @@ class ListView(ObjectListView):
 
     def formerTracks(self,**kwd):
         if self.lstDonnees == []:
-            kwd['dicOlv'] = self.dicOlv
-            self.lstDonnees = self.getDonnees(**kwd)
+            kwd['dicOlv'] = self.parent.dicOlv
+            self.lstDonnees = self.getDonnees(self,**kwd)
         tracks = list()
         if self.lstDonnees is None:
             return tracks
@@ -496,11 +357,11 @@ class ListView(ObjectListView):
 
     def ExportTexte(self, event):
         import xpy.outils.xexport
-        xpy.outils.xexport.ExportTexte(self, titre=self.GetTitreImpression, autoriseSelections=False)
+        xpy.outils.xexport.ExportTexte(self, titre=self.GetTitreImpression(), autoriseSelections=False)
 
     def ExportExcel(self, event):
         import xpy.outils.xexport
-        xpy.outils.xexport.ExportExcel(self, titre=self.GetTitreImpression, autoriseSelections=False)
+        xpy.outils.xexport.ExportExcel(self, titre=self.GetTitreImpression(), autoriseSelections=False)
 
     def GetTracksCoches(self):
         return self.GetCheckedObjects()
@@ -568,7 +429,7 @@ class PNL_params(xusp.TopBoxPanel):
 class PNL_corps(wx.Panel):
     #panel olv avec habillage optionnel pour recherche (en bas), boutons actions (à droite)
     def __init__(self, parent, dicOlv,*args, **kwds):
-        # size inutile car SizerAndFit l'ajustera
+        # size est inutile si SizerAndFit ajuste derrière le constructeur
         minSize =       dicOlv.pop('minSize',(400,150))
         lstNomsBtns =  dicOlv.pop('lstNomsBtns',None)
         getBtnActions =    dicOlv.pop('getBtnActions',None)
@@ -584,7 +445,7 @@ class PNL_corps(wx.Panel):
         if getBtnActions:
             self.lstBtnActions = getBtnActions(self)
         elif lstNomsBtns:
-            self.lstBtnActions = self.GetBtnActions(lstNomsBtns)
+            self.lstBtnActions = GetBtnActions(self,lstNomsBtns)
         else: self.lstBtnActions = None
 
 
@@ -651,10 +512,6 @@ class PNL_corps(wx.Panel):
         self.ctrlOlv = ListView(self,**dicOlvOut)
         self.olv = self.ctrlOlv
 
-
-        #self.olv = PNL_tableau(self,dicOlv=dicOlvOut)
-        #self.ctrlOlv = self.olv.ctrlOlv
-
         # choix  barre de recherche ou pas
         if self.avecRecherche:
             afficherCocher = False
@@ -669,16 +526,16 @@ class PNL_corps(wx.Panel):
         #composition de l'écran selon les composants
         sizerbase = wx.BoxSizer(wx.HORIZONTAL)
         sizercorps = wx.BoxSizer(wx.VERTICAL)
-        sizercorps.Add(self.olv, 10, wx.EXPAND, 10)
+        sizercorps.Add(self.olv, 10, wx.TOP|wx.LEFT|wx.EXPAND, 3)
         if self.avecRecherche:
-            sizercorps.Add(self.ctrlOutils, 0, wx.EXPAND, 10)
+            sizercorps.Add(self.ctrlOutils, 0,wx.ALL|wx.EXPAND, 5)
         sizerbase.Add(sizercorps, 10, wx.EXPAND, 10)
         # ajout des boutons d'actions
         if self.lstBtnActions:
             sizeractions = wx.BoxSizer(wx.VERTICAL)
             sizeractions.AddMany(xboutons.GetAddManyBtns(self,self.lstBtnActions))
             sizerbase.Add(sizeractions, 0, wx.TOP, 10)
-        self.SetSizerAndFit(sizerbase)
+        self.SetSizer(sizerbase)
 
     def EnableID(self,pnl,enable=True):
         ctrlID = pnl.GetPnlCtrl('ID')
@@ -697,6 +554,9 @@ class PNL_corps(wx.Panel):
             mess += "\n\n%s de profil %s n'est pas administrateur!"%(dicUser['utilisateur'],dicUser['profil'])
             wx.MessageBox(mess,"Verif droits d'accès")
         return self.estAdmin
+
+    def OnDblClick(self,event):
+        self.Parent.OnDblClick(event)
 
     def OnAjouter(self, event):
         if not self.EstAdmin(): return
@@ -756,27 +616,6 @@ class PNL_corps(wx.Panel):
         self.parent.GereDonnees(mode='suppr', ixligne=ixLigne)
         olv.RepopulateList()
 
-    # série de boutons de gestion standards
-    def GetBtnActions(self,lstNomsBtns):
-        dicAllBtns =  {
-                    'creer': xboutons.BTN_action(self,name='creer',
-                           image=wx.Bitmap("xpy/Images/16x16/Ajouter.png"),
-                           help="Créer une nouvelle ligne",
-                           onBtn=self.OnAjouter ),
-                    'modifier': xboutons.BTN_action(self,name='modifier',
-                           image=wx.Bitmap("xpy/Images/16x16/Modifier.png"),
-                           help="Modifier la ligne selectionnée",
-                           onBtn=self.OnModifier ),
-                    'dupliquer': xboutons.BTN_action(self,name='dupliquer',
-                           image=wx.Bitmap("xpy/Images/16x16/Copier.png"),
-                           help="Supprimer les lignes selectionées",
-                           onBtn=self.OnSupprimer ),
-                    'supprimer': xboutons.BTN_action(self,name='supprimer',
-                           image=wx.Bitmap("xpy/Images/16x16/Supprimer.png"),
-                           help="Supprimer les lignes selectionées",
-                           onBtn=self.OnSupprimer ),}
-        return [dicAllBtns[x] for x in lstNomsBtns]
-
 class PNL_pied(wx.Panel):
     #panel infos (gauche) et boutons sorties(droite)
     def __init__(self, parent, dicPied, **kwds):
@@ -785,7 +624,7 @@ class PNL_pied(wx.Panel):
         self.lstBtns =  dicPied.pop('lstBtns',None)
         if self.lstBtns == None:
             #force la présence d'un pied d'écran par défaut
-            self.lstBtns = GetBtnsDefaut(self)
+            self.lstBtns = GetBtnsPied(self)
         wx.Panel.__init__(self, parent,  **kwds)
         self.parent = parent
         if autoSizer:
@@ -796,18 +635,14 @@ class PNL_pied(wx.Panel):
         nbcol=(len(self.itemsBtns)+1)
         #composition de l'écran selon les composants
         sizerpied = wx.FlexGridSizer(rows=1, cols=nbcol, vgap=0, hgap=0)
-        sizerpied.Add((10,10),1,wx.ALL|wx.EXPAND,5)
+        sizerpied.Add((1,1),1,wx.EXPAND,0)
         if self.lstBtns:
             sizerbtns = wx.BoxSizer(wx.HORIZONTAL)
             sizerbtns.AddMany(xboutons.GetAddManyBtns(self,self.itemsBtns))
-            sizerpied.Add(sizerbtns, 0, wx.TOP, 10)
+            sizerpied.Add(sizerbtns, 0, 0, 0)
         sizerpied.AddGrowableCol(0)
         self.SetSizer(sizerpied)
         self.Layout()
-
-    def OnBoutonOK(self,event):
-        self.parent.OnFermer(None)
-
 
 # ------------- Lancement ------------------------------------------------------------------
 class DLG_tableau(xusp.DLG_vide):
@@ -822,15 +657,15 @@ class DLG_tableau(xusp.DLG_vide):
         self.Sizer()
 
     def Sizer(self):
-        sizer_base = wx.FlexGridSizer(rows=3, cols=1, vgap=0, hgap=0)
+        sizer_base = wx.FlexGridSizer(rows=6, cols=1, vgap=0, hgap=0)
         sizer_base.Add(self.pnlParams, 1, wx.TOP| wx.EXPAND, 3)
         sizer_base.Add(self.pnlOlv, 1, wx.TOP| wx.EXPAND, 3)
-        sizer_base.Add(self.pnlPied, 1,wx.ALL|wx.EXPAND, 3)
+        sizer_base.Add(wx.StaticLine(self),1,wx.EXPAND,0)
+        sizer_base.Add(self.pnlPied, 1,wx.EXPAND, 0)
         sizer_base.AddGrowableCol(0)
         sizer_base.AddGrowableRow(1)
         self.CenterOnScreen()
-        #self.Layout()
-        self.SetSizerAndFit(sizer_base)
+        self.SetSizer(sizer_base)
 
     def GereDonnees(self, mode=None, nomsCol=[], donnees=[], ixligne=0):
         lstDonnees = self.ctrlOlv.lstDonnees
@@ -841,6 +676,11 @@ class DLG_tableau(xusp.DLG_vide):
             lstDonnees[ixligne] = donnees
         elif mode == 'suppr':
             del lstDonnees[ixligne]
+
+    def OnDblClick(self,event):
+        if len(self.ctrlOlv.Selection())>0:
+            self.OnFermer(event,end=wx.ID_OPEN)
+        else: event.Skip()
 
     def OnFermer(self, *arg, **kwd):
         end = kwd.pop('end',wx.OK)
@@ -939,5 +779,6 @@ if __name__ == '__main__':
     exempleframe = DLG_tableau(None,dicParams,dicOlv=dicOlv,dicPied=dicPied)
     app.SetTopWindow(exempleframe)
     ret = exempleframe.ShowModal()
+    print(ret)
     app.MainLoop()
 
