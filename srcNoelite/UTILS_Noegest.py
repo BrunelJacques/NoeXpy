@@ -224,9 +224,14 @@ class Noegest(object):
         filtre = kwd.pop('filtre',None)
         getAnalytiques = kwd.pop('getAnalytiques', None)
         lstNomsCol = kwd.pop('lstNomsCol',['IDanalytique', 'abrégé', 'nom'])
-        lstChamps = kwd.pop('lstChamps',['cpta_analytiques.IDanalytique', 'cpta_analytiques.abrege', 'cpta_analytiques.nom'])
-        lstTypes = kwd.pop('lstTypes',['varchar(8)', 'varchar(8)', 'varchar(32)'])
+        lstChamps = kwd.pop('lstChamps',['cpta_analytiques.IDanalytique', 'cpta_analytiques.abrege',
+                                         'cpta_analytiques.nom'
+                                         ])
+        lstTypes = kwd.pop('lstTypes',None)
+        if not lstTypes:
+            lstTypes = [y for x,y,z in DB_TABLES['cpta_analytiques']]
         lstCodesColonnes = [xformat.SupprimeAccents(x).lower() for x in lstNomsCol]
+        lstCodesColonnes.append("axe")
 
         if not mode: mode = 'normal'
         dicAnalytique = None
@@ -237,8 +242,8 @@ class Noegest(object):
             for ix in range(len(lstChamps)):
                 kwd['whereFiltre']  = """
                     AND (%s LIKE '%s%%' )"""%(lstChamps[ix],filtre)
-
-                ltAnalytiques = getAnalytiques(lstChamps=lstChamps,**kwd)
+                kwd['lstChamps'] = lstChamps
+                ltAnalytiques = getAnalytiques(None,**kwd)
                 nb = len(ltAnalytiques)
                 if nb == 1:
                     dicAnalytique={}
@@ -255,6 +260,7 @@ class Noegest(object):
         # un item unique n'a pas été trouvé on affiche les choix possibles
         getDonnees = getAnalytiques
         dicOlv = self.GetMatriceAnalytiques(axe,lstChamps,lstNomsCol,lstTypes,getDonnees)
+        #dicOlv['lstCodesSup'] = ['axe',]
         dicOlv['size'] = (500,600)
 
         # appel dee l'écran de saisie
@@ -276,18 +282,17 @@ class Noegest(object):
         dlg.Destroy()
         return dicAnalytique
 
-    def SqlAnalytiques(self,lstChamps=None,**kwd):
+    def SqlAnalytiques(self,**kwd):
+        lstChamps = kwd.pop('lstChamps',['*',])
         reqFrom = kwd.pop('reqFrom','')
         reqWhere = kwd.pop('reqWhere','')
-
         # retourne un recordset de requête (liste de tuples)
         ltAnalytiques = []
         champs = ",".join(lstChamps)
         req = """SELECT %s
                 %s
                 %s
-                GROUP BY %s;
-                """%(champs,reqFrom,reqWhere,champs)
+                """%(champs,reqFrom,reqWhere)
         retour = self.db.ExecuterReq(req, mess='UTILS_Noegest.SqlAnalytiques')
         if retour == "ok":
             ltAnalytiques = self.db.ResultatReq()
@@ -391,12 +396,12 @@ class Noegest(object):
             'lstNomsCol': ['IDanalytique', 'abrégé', 'nom','prix'],
             'lstChamps': ['cpta_analytiques.IDanalytique', 'cpta_analytiques.abrege', 'cpta_analytiques.nom',
                           'vehiculesCouts.prixKmVte'],
-            'lstTypes': ['varchar(8)', 'varchar(8)', 'varchar(32)','float'],
             }
         dicVehicule = self.GetAnalytique(**kwd)
         return dicVehicule
 
-    def GetVehicules(self,lstChamps=None,**kwd):
+    def GetVehicules(self,olv,**kwd):
+        lstChamps = kwd.pop('lstChamps',None)
         # matriceOlv et filtre résultent d'une saisie en barre de recherche
         matriceOlv = kwd.pop('dicOlv',{})
         if (not lstChamps) and 'lstChamps' in matriceOlv:
@@ -412,7 +417,8 @@ class Noegest(object):
         kwd['reqFrom'] = """
                 FROM    cpta_analytiques   
                 LEFT JOIN vehiculesCouts ON cpta_analytiques.IDanalytique = vehiculesCouts.IDanalytique"""
-        return self.SqlAnalytiques(lstChamps,**kwd)
+        kwd['lstChamps'] = lstChamps
+        return self.SqlAnalytiques(**kwd)
 
     def GetActivite(self,filtre='', mode=None):
         # choix d'une activité et retour de son dict, mute sert pour automatisme d'affectation
@@ -424,11 +430,14 @@ class Noegest(object):
         dicActivite = self.GetAnalytique(**kwd)
         return dicActivite
 
-    def GetActivites(self,lstChamps=None,**kwd):
+    def GetActivites(self,olv,**kwd):
+        lstChamps = kwd.pop('lstChamps',None)
         # matriceOlv et filtre résultent d'une saisie en barre de recherche
         matriceOlv = kwd.pop('dicOlv',{})
         if (not lstChamps) and 'lstChamps' in matriceOlv:
             lstChamps = matriceOlv['lstChamps']
+        kwd['lstChamps'] = lstChamps
+
         filtre = kwd.pop('filtre','')
         kwd['filtre'] = filtre
         whereFiltre = kwd.pop('whereFiltre','')
@@ -439,7 +448,7 @@ class Noegest(object):
             """%(whereFiltre)
         kwd['reqFrom'] = """
             FROM cpta_analytiques"""
-        return self.SqlAnalytiques(lstChamps,**kwd)
+        return self.SqlAnalytiques(**kwd)
 
     def SetConsoKm(self,track):
         # --- Sauvegarde de la ligne consommation ---

@@ -453,8 +453,10 @@ def GetMatriceAnterieurs(dlg):
         'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
         'size': (650, 400)}
 
-def SqlAnterieurs(db=None, dicOlv={}, **kwd):
+def SqlAnterieurs(olv, **kwd):
     # ajoute les données à la matrice pour la recherche d'un anterieur
+    dicOlv = kwd.get('dicOlv',None)
+    db = kwd.get('db',None)
     filtre = kwd.pop('filtreTxt', '')
     nbreFiltres = kwd.pop('nbreFiltres', 0)
 

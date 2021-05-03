@@ -124,7 +124,7 @@ MATRICE_PARAMS = {
     ],
 }
 
-def GetParamsOptions(dlg):
+def GetDicParams(dlg):
     matrice = MATRICE_PARAMS
     lstChoices = xformat.GetValueInMatrice(matrice,'origine','values')
     lstChoices += DICORIGINES[dlg.sens]['labels']
@@ -203,7 +203,7 @@ class PNL_params(xgte.PNL_params):
     def __init__(self, parent, **kwds):
         self.parent = parent
         #('pos','size','style','name','matrice','donnees','lblBox')
-        kwds = GetParamsOptions(parent)
+        kwds = GetDicParams(parent)
         super().__init__(parent, **kwds)
         if hasattr(parent,'lanceur'):
             self.lanceur = parent.lanceur
@@ -471,7 +471,6 @@ class DLG(xusp.DLG_vide):
         dicAnalytique = noegest.GetActivite(mode='dlg')
         codeAct = nust.MakeChoiceActivite(dicAnalytique)
         self.pnlParams.SetOneValue('analytique',codeAct,codeBox='param2')
-
 
     def OnBtnAnterieur(self,event):
         # lancement de la recherche d'un lot antérieur, on enlève le cellEdit pour éviter l'écho des clics

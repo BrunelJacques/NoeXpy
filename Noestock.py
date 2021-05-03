@@ -58,12 +58,14 @@ class MyFrame(xAppli.MainFrame):
 
     def ConnectBase(self, etat= False):
         # test de connexion par défaut
-        DB = xdb.DB()
+        DB = xdb.DB(mute=True)
         self.echec = DB.echec
         if DB.echec == 0:
             etat = True
         self.GestMenu(etat)
         if not etat:
+            mess = "Veuillez gérer les accès aux bases de données dans le menu Outils,\npuis testez l'accès !!"
+            wx.MessageBox(mess,"Accès données impossible")
             self.infoStatus = "lancé sans accès à Noethys!"
         self.MakeStatusText()
         return
@@ -71,6 +73,8 @@ class MyFrame(xAppli.MainFrame):
     def GestMenu(self, etat):
         # grise les boutons si pas d'accès à la base
         self.panelAccueil.EnableBoutons(etat)
+        for numMenu in range(1,4):
+            self.menu.EnableTop(numMenu, etat)
 
         # grise ou dégrise les options du menu selon l'identification
         if self.dictUser :

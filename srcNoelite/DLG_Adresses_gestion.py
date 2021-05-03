@@ -215,8 +215,7 @@ class Dialog(wx.Dialog):
             self.getDonnees = self.GetFamilles
         else:
             dicOlv = dicOlvIndividus()
-            self.\
-                getDonnees = self.GetIndividus
+            self.getDonnees = self.GetIndividus
 
         dicOlv['getDonnees'] = self.getDonnees
         pnlOlv = Pnl_tableau(self, dicOlv)
@@ -250,7 +249,8 @@ class Dialog(wx.Dialog):
         gridsizer_base.Fit(self)
         self.Layout()
 
-    def GetIndividus(self,db,**kwd):
+    def GetIndividus(self,olv,**kwd):
+        db = kwd.pop('db',None)
         # appel des données à afficher
         filtreTxt = kwd.pop('filtreTxt','')
         lstChamps = kwd['dicOlv']['lstChamps']
@@ -294,7 +294,8 @@ class Dialog(wx.Dialog):
             lstDonnees.append(ligne)
         return lstDonnees
 
-    def GetFamilles(self,db,**kwd):
+    def GetFamilles(self,olv,**kwd):
+        db = kwd.pop('db',None)
         # appel des données à afficher
         filtreTxt = kwd.pop('filtreTxt','')
         lstChamps = kwd['dicOlv']['lstChamps']

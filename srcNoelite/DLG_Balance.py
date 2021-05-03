@@ -8,23 +8,85 @@
 # -------------------------------------------------------------------------------------
 
 import wx
+import datetime
 import xpy.xGestion_TableauRecherche       as xgtr
 import srcNoelite.UTILS_Utilisateurs    as nuutil
 import srcNoelite.UTILS_Compta          as nucompta
 from xpy.outils.ObjectListView  import ColumnDefn
-from xpy.outils                 import xformat,xbandeau
+from xpy.outils                 import xformat,xboutons,xdates
 
 #************************************** Paramètres PREMIER ECRAN ******************************************
 
 MODULE = 'DLG_Balance'
 TITRE = "BALANCE COMPTABLE"
-INTRO = "Cette balance provient de la base de donnée comptablilité"
+INTRO = "La balance appelée provient de la base de donnée comptablilité, pointée par Noelite"
 
 # Info par défaut
 INFO_OLV = "Le Double clic sur une ligne permet de sortir"
 
+
+class CtrlSynchro(wx.Panel):
+    # controle inséré dans la matrice_params qui suit. De genre AnyCtrl pour n'utiliser que le bind bouton
+    def __init__(self,parent):
+        super().__init__(parent,wx.ID_ANY)
+        kwd = {'label':"Actualiser",
+               'name':'synchro',
+               'image':wx.ArtProvider.GetBitmap(wx.ART_UNDO,size=(24,24)),
+               'help':"Pour appeler la balance",
+               'size' : (130,40)}
+        self.btn = xboutons.BTN_action(self,**kwd)
+        self.Sizer()
+
+    def Sizer(self):
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        box.Add(self.btn,1,wx.EXPAND, 0)
+        self.SetSizer(box)
+
+    def SetValue(self,value):
+        return
+
+    def GetValue(self):
+        return None
+
+    def Set(self,values):
+        # valeurs multiples
+        return
+
+
 # Description des paramètres à définir en haut d'écran pour PNL_params
-MATRICE_PARAMS = {}
+MATRICE_PARAMS = {
+("param1", "Paramètres période"): [
+    {'name': 'periode', 'genre': 'anyctrl', 'label': "",
+                    'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
+                                          "Les séparateurs ne sont pas obligatoires en saisie.",
+                                          "Saisissez début et fin de la période, "),
+                    'ctrl': xdates.CTRL_Periode,
+                    'value':xformat.DatetimeToStr(datetime.date.today()),
+                    'size':(200,40),},
+    ],
+("param2", "Comptes"): [
+    {'name': 'bilan', 'genre': 'Check', 'label': 'Avec comptes de bilan',
+                    'help': "Pour avoir les comptes des classes 1 à 5, sinon c'est seulement 6 et 7",
+                    'value':False,
+                    'size':(250,10),
+                    'txtSize': 170,
+     },
+    {'name': 'exercice', 'genre': 'Combo', 'label': 'Exercice archivé',
+                    'help': "L'année-mois de clôture permet de situer l'archive",
+                    'value':'','values':['2019'],
+                    'size':(150,30),
+                    'txtSize': 100,}
+],
+
+("param4", "Boutons actions"): [
+    {'name': 'synchro', 'genre': 'anyctrl','label': ' ',
+                     'txtSize': 20,
+                        'ctrlMaxSize':(250,50),
+                     'ctrl': CtrlSynchro,
+                     'ctrlAction': 'OnBtnSynchro',
+                     },
+    ],
+}
 
 # paramètre les options de l'OLV
 def GetDicOlv():
@@ -44,7 +106,7 @@ def GetDicOlv():
                       },
     'getDonnees': SqlBalance,
     'lstChamps': ['Numero','Intitule','Debit','Credit'],
-    'minSize': (600,300),
+    'minSize': (600,200),
     'sortColumnIndex':0,
     'sortAscending':True,
     'checkColonne': False,
@@ -53,48 +115,53 @@ def GetDicOlv():
     'msgIfEmpty':"Aucune écriture trouvée !",
     }
 
-#************************************ Paramètres ECRAN GESTION LIGNE **************************************
+def GetDicParams():
+    dicBandeau = {'titre': TITRE, 'texte': INTRO, 'hauteur': 20,
+                  'nomImage': "xpy/Images/48x48/Matth.png",
+                  'sizeImage': (40, 40)}
+    return {
+                'bandeau':dicBandeau,
+                'name':"PNL_params",
+                'matrice':MATRICE_PARAMS,
+                'lblBox':None,
+                'boxesSizes': [],
+                'pathdata':"srcNoelite/Data",
+                'nomfichier':"stparams",
+                'nomgroupe':"compta",
+            }
 
-# Description des paramètres à définir en haut d'écran pour PNL_params
-lMATRICE_PARAMS = {
-    ("comptes","Comptes d'amortissements"): [
-            {'name': 'compteimmo', 'label': "Immobilisation", 'genre': 'texte', 'size':(200,30),
-             'help': "Compte du plan comptable pour cet ensemble dans la classe 2"},
-            {'name': 'comptedotation', 'label': "Dotation", 'genre': 'texte', 'size': (200, 30),
-             'help': "Compte du plan comptable pour cet ensemble dans la classe 68"},
-            {'name': 'idanalytique', 'label': "Section analytique", 'genre': 'texte', 'size': (400, 30),
-             'help': "Section analytique s'insérant dans les deux comptes ci dessus",
-             'btnLabel': "...", 'btnHelp': "Cliquez pour choisir une section analytique",
-             'btnAction': 'OnBtnSection'},
-            ],
-    ("ensemble", "Propriétés de l'ensemble"): [
-            {'name': 'libelle', 'label': "Libellé", 'genre': 'texte', 'size':(500,30),
-             'help': "Libellé désignant cet ensemble"},
-            {'name': 'nbreplaces', 'label': "Nombre places", 'genre': 'int', 'size':(200,30),
-             'help': "Capacité ou nombre de places en service (dernière connue"},
-            {'name': 'noserie', 'label': "No de série", 'genre': 'str', 'size':(200,30),
-             'help': "Immatriculation des véhicules ou identification facultative"},
-            ],
-    ("infos", "Informations"): [
-            {'name': 'mode', 'label': "", 'genre': 'texte', 'size': (100, 30),
-             'enable':False},
-            ],
-    }
+
 
 def SqlBalance(olv,**kwd):
-    compta = nucompta.Compta(olv)
-    return compta.GetBalance()
+    if hasattr(olv,'dicOptions'):
+        dicOptions = olv.dicOptions
+    else: return []
+    compta = nucompta.Compta(olv,exercice=dicOptions['exercice'])
+    annee = dicOptions['exercice']
+    if len(annee) == 4:
+        n1 = str(int(annee)-1)
+        debut = annee +"-10-01"
+        fin = n1 + "09-30"
+    else:
+        debut = "2019-10-01"
+        fin = "2020-09-30"
+    return compta.GetBalance(debut=debut,fin=fin)
 
 #*********************** Parties de l'écran d'affichage de la liste *******************
 
 class DLG_balance(xgtr.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,parent):
-        self.dicOlv = GetDicOlv
         self.IDutilisateur = nuutil.GetIDutilisateur()
         if (not self.IDutilisateur) or not nuutil.VerificationDroitsUtilisateurActuel('facturation_factures','creer'):
             self.Destroy()
-        super().__init__(parent,dicOlv=GetDicOlv())
+        super().__init__(parent,dicParams=GetDicParams(),dicOlv=GetDicOlv())
+
+    def OnBtnSynchro(self,event):
+        self.ctrlOlv.dicOptions = self.pnlParams.GetValues(False)
+        self.ctrlOlv.MAJ()
+        event.Skip
+
 
 
 #------------------------ Lanceur de test  -------------------------------------------

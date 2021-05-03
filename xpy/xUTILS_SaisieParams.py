@@ -542,7 +542,7 @@ class PNL_ctrl(wx.Panel):
 
     # c'est la mise à jour des choices du controle
     def Set(self,values):
-        self.ctrl.Set(values)
+        ret = self.ctrl.Set(values)
 
     def OnDir(self,event):
         """ Open a dir"""
@@ -748,6 +748,7 @@ class BoxPanel(wx.Panel):
                     if ligne['genre']:
                         panel.ctrl.genreCtrl = ligne['genre'].lower()
                         panel.ctrl.nameCtrl = codename
+                        panel.ctrl.name = ligne['name']
                         panel.ctrl.labelCtrl = ligne['label']
                         panel.ctrl.actionCtrl = ligne['ctrlAction']
                         panel.ctrl.valueCtrl = ligne['value']

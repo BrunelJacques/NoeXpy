@@ -115,12 +115,12 @@ def GetValueInMatrice(dldMatrice,name,param):
 
 # Automatismes de gestion des ColumnDef
 
-def GetLstChamps(table=None):
-    [x for x,y,z in table]
-    return [x for x,y,z in table]
+def GetLstChamps(dicTable=None):
+    [x for x,y,z in dicTable]
+    return [x for x,y,z in dicTable]
 
-def GetLstTypes(table=None):
-    return [y for x, y, z in table]
+def GetLstTypes(dicTable=None):
+    return [y for x, y, z in dicTable]
 
 def GetLstNomsColonnes(table=None):
     return [x for x, y, z in table]
@@ -158,7 +158,8 @@ def LargeursDefaut(lstNomsColonnes,lstTypes,IDcache=True):
         elif tip[:5] == 'float': lstLargDef.append(max(lgtitle,60))
         elif tip[:4] == 'date': lstLargDef.append(max(lgtitle,80))
         elif tip[:7] == 'varchar':
-            lgdef = int(tip[8:-1])*4
+            # passé de 4 à 6
+            lgdef = int(tip[8:-1])*6
             lg = max(lgtitle,lgdef)
             if lg <= 24: lg=24
             if lg > 200:

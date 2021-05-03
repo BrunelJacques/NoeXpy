@@ -310,24 +310,33 @@ class DLG_choixConfig(wx.Dialog):
         try:
             eval(action)
         except Exception as err:
-            wx.MessageBox(
-                "Commande: '%s' \n\nErreur: \n%s" % (action, err),
-            "Echec sur lancement de l'action bouton")
+            mess = "Commande: '%s' \n\nErreur: \n%s" % (action, err)
+            mess += "\n Le Oui permet de récupérer l'erreur"
+            ret = wx.MessageBox(
+                mess,
+            "Echec sur lancement de l'action bouton",style=wx.YES_NO)
+            if ret == wx.YES:
+                raise(err)
 
     def OnBtnConfig(self,event):
         ctrl = event.EventObject.Parent
         # sur clic du bouton pour élargir le choix de la combo
         sc = DLG_listeConfigs(self,select=ctrl.GetValue(),typeConfig=self.typeConfig)
         if sc.ok :
-            sc.ShowModal()
-            if len(self.lstIDconfigsOK) >0:
+            ret = sc.ShowModal()
+            if ret == wx.OK:
                 self.lstIDconfigsOK = sc.GetDonnees()
-                ctrl.Set(self.lstIDconfigsOK)
+                for conf in self.lstChoixConfigs:
+                    for pnl in conf.lstPanels:
+                        if pnl.ctrl.name == ctrl.name:
+                            pnl.ctrl.Set(self.lstIDconfigsOK)
                 value = sc.GetChoix(idxColonne=0)
-                ctrl.SetValue(value)
+                if len(value) > 0:
+                    ctrl.SetValue(value)
                 # choix de configs user stockées
                 self.SauveConfig()
         else: wx.MessageBox('DLG_listeConfigs : lancement impossible, cf MATRICE_CONFIGS et  TYPE_CONFIG')
+
 
     def SauveParamUser(self):
         # sauve ID dans le registre de la session
@@ -452,7 +461,11 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
     def OnFermer(self, event):
         cfgF = xshelve.ParamFile()
         cfgF.SetDict({'lstConfigs':self.lstConfigsKO + self.lddDonnees}, 'CONFIGS')
-        return self.Close()
+        if self.IsModal():
+            self.EndModal(wx.OK)
+        else: self.Close()
+
+
 
     def GetChoix(self, idxColonne = 0):
         # récupère le choix fait dans le listCtrl par la recherche de son ID

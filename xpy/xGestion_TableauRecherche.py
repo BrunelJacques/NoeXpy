@@ -9,7 +9,6 @@
 
 import wx
 import os
-import datetime
 import xpy.xUTILS_DB            as xdb
 import xpy.xUTILS_SaisieParams  as xusp
 from xpy.outils import xbandeau,xformat,xboutons,xshelve
@@ -59,24 +58,26 @@ class TrackGeneral(object):
                                                         len(codesColonnes), len(setterValues))
             mess += '\n\n'+'\n\n'.join(lst)
             wx.MessageBox(mess,caption="xGestion_TableauRecherche.TrackGeneral")
+            raise("echec Track générél")
         self.donnees = donnees
         for ix in range(len(codesColonnes + codesSup)):
             donnee = donnees[ix]
-            if setterValues[ix]:
-                # prise de la valeur par défaut si pas de donnée
-                if (donnee is None):
-                    donnee = setterValues[ix]
-                # le type de la donnée n'est pas celui attendu
-                else:
-                    if not isinstance(donnee,type(setterValues[ix])):
-                        try:
-                            if type(setterValues[ix]) in (int,float):
-                                donnee = float(donnee)
-                            elif type(setterValues[ix]) == str:
-                                donnee = str(donnee)
-                            elif isinstance(setterValues[ix],(wx.DateTime,datetime.date,datetime.datetime,datetime.time)):
-                                donnee = xformat.DateSqlToDatetime(donnee)
-                        except : pass
+            if ix < len(codesColonnes):
+                if setterValues[ix]:
+                    # prise de la valeur par défaut si pas de donnée
+                    if (donnee is None):
+                        donnee = setterValues[ix]
+                    # le type de la donnée n'est pas celui attendu
+                    else:
+                        if not isinstance(donnee,type(setterValues[ix])):
+                            try:
+                                if type(setterValues[ix]) in (int,float):
+                                    donnee = float(donnee)
+                                elif type(setterValues[ix]) == str:
+                                    donnee = str(donnee)
+                                elif isinstance(setterValues[ix],(wx.DateTime,datetime.date,datetime.datetime,datetime.time)):
+                                    donnee = xformat.DateSqlToDatetime(donnee)
+                            except : pass
             self.__setattr__((codesColonnes + codesSup)[ix], donnee)
 
 class ListView(ObjectListView):
@@ -648,9 +649,14 @@ class PNL_pied(wx.Panel):
 class DLG_tableau(xusp.DLG_vide):
     # minimum fonctionnel dans dialog tout est dans les trois pnl
     def __init__(self,parent,dicParams={},dicOlv={},dicPied={}, **kwds):
-        db = kwds.pop('db',None)
+        db = kwds.pop('db',None) # purge d'éventuels arguments db
+        dicBandeau = dicParams.pop('bandeau',None)
         super().__init__(parent,**kwds)
-        self.pnlParams = PNL_params(self, matrice=dicParams)
+        if dicBandeau:
+            self.bandeau = xbandeau.Bandeau(self,**dicBandeau)
+        else: self.bandeau = None
+
+        self.pnlParams = PNL_params(self, **dicParams)
         self.pnlOlv = PNL_corps(self, dicOlv,  **kwds )
         self.ctrlOlv = self.pnlOlv.ctrlOlv
         self.pnlPied = PNL_pied(self, dicPied,  **kwds )
@@ -658,12 +664,17 @@ class DLG_tableau(xusp.DLG_vide):
 
     def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=6, cols=1, vgap=0, hgap=0)
+        # haut d'écran
+        growRow = 1
+        if self.bandeau:
+            growRow += 1
+            sizer_base.Add(self.bandeau, 0, wx.EXPAND, 0)
         sizer_base.Add(self.pnlParams, 1, wx.TOP| wx.EXPAND, 3)
         sizer_base.Add(self.pnlOlv, 1, wx.TOP| wx.EXPAND, 3)
         sizer_base.Add(wx.StaticLine(self),1,wx.EXPAND,0)
-        sizer_base.Add(self.pnlPied, 1,wx.EXPAND, 0)
+        sizer_base.Add(self.pnlPied, 0,wx.EXPAND, 0)
         sizer_base.AddGrowableCol(0)
-        sizer_base.AddGrowableRow(1)
+        sizer_base.AddGrowableRow(growRow)
         self.CenterOnScreen()
         self.SetSizer(sizer_base)
 
@@ -678,9 +689,8 @@ class DLG_tableau(xusp.DLG_vide):
             del lstDonnees[ixligne]
 
     def OnDblClick(self,event):
-        if len(self.ctrlOlv.Selection())>0:
-            self.OnFermer(event,end=wx.ID_OPEN)
-        else: event.Skip()
+        event.Skip()
+        self.OnFermer(event)
 
     def OnFermer(self, *arg, **kwd):
         end = kwd.pop('end',wx.OK)
@@ -701,7 +711,7 @@ class DLG_tableau(xusp.DLG_vide):
 
 # -- pour tests -----------------------------------------------------------------------------------------------------
 
-def GetDonnees(**kwds):
+def GetDonnees(olv,**kwds):
     filtre = kwds.pop('filtre',"")
     donnees = [[1,False, 'Bonjour', -1230.05939, -1230.05939, None,'deux'],
                      [2,None, 'Bonsoir', 57.5, 208.99,datetime.date.today(),None],
@@ -767,16 +777,19 @@ if __name__ == '__main__':
 
     # cadre des paramètres
     import datetime
-    dicParams = {
-            ('ident',"Vos paramètres"):[
-            {'name': 'date', 'genre': 'Date', 'label': 'Début de période', 'value': datetime.date.today(),
-                                    'help': 'Ce préfixe à votre nom permet de vous identifier'},
-            {'name': 'utilisateur', 'genre': 'String', 'label': 'Votre identifiant', 'value': "NomSession",
-                                    'help': 'Confirmez le nom de sesssion de l\'utilisateur'},
-                ],
-            }
+    bandeau = {'titre': "Mon Titre",'texte': "mes explications dans leur longueur"}
+    dicParams = {"matrice": {
+                      ('ident',"Vos paramètres"):[
+                                    {'name': 'date', 'genre': 'Date', 'label': 'Début de période', 'value': datetime.date.today(),
+                                                            'help': 'Ce préfixe à votre nom permet de vous identifier'},
+                                    {'name': 'utilisateur', 'genre': 'String', 'label': 'Votre identifiant', 'value': "NomSession",
+                                                            'help': 'Confirmez le nom de sesssion de l\'utilisateur'},
+                                    ],
+                            },
+                "bandeau":bandeau
+                }
 
-    exempleframe = DLG_tableau(None,dicParams,dicOlv=dicOlv,dicPied=dicPied)
+    exempleframe = DLG_tableau(None,dicParams=dicParams,dicOlv=dicOlv,dicPied=dicPied)
     app.SetTopWindow(exempleframe)
     ret = exempleframe.ShowModal()
     print(ret)

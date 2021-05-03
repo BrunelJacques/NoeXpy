@@ -12,15 +12,17 @@ import os
 import datetime
 import srcNoestock.UTILS_Stocks        as nust
 import srcNoelite.UTILS_Noegest        as nung
+import srcNoelite.DB_schema            as schema
 import xpy.xGestion_TableauRecherche   as xgtr
 import xpy.xUTILS_Identification       as xuid
 import xpy.xUTILS_SaisieParams         as xusp
 import xpy.xUTILS_DB                   as xdb
 from xpy.outils.ObjectListView  import ColumnDefn
-from xpy.outils                 import xformat,xbandeau,xboutons
+from xpy.outils                 import xformat,xbandeau,xboutons,xdates
 
 #---------------------- Matrices de paramétres -------------------------------------
 
+LIMITSQL = 100
 TITRE = "Suivi des effectifs quotidiens"
 INTRO = "La saisie des effectifs quotidiens réels permet de déterminer le prix de journée, il est rapprocché " \
         + "du nombre d'inscrits payants et non payants"
@@ -60,7 +62,7 @@ MATRICE_PARAMS = {
                     'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
                                           "Les séparateurs ne sont pas obligatoires en saisie.",
                                           "Saisissez début et fin de la période, "),
-                    'value':xformat.DatetimeToStr(datetime.date.today()),
+                    'ctrl':xdates.CTRL_Periode,
                     'size':(200,80),},
     ],
 ("param2", "Comptes"): [
@@ -93,7 +95,7 @@ MATRICE_PARAMS = {
     ],
 }
 
-def GetParamsOptions(dlg):
+def GetDicParams(dlg):
     matrice = MATRICE_PARAMS
     return {
                 'name':"PNL_params",
@@ -117,18 +119,18 @@ def GetBoutons(dlg):
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
     return [
-            ColumnDefn("PourTri", 'left', 60, 'dateAnsi',valueSetter='',),
-            ColumnDefn("Date", 'left', 60, 'date', valueSetter=datetime.date.today()),
-            ColumnDefn("RepasMidi", 'right', 30, 'repasMidi', valueSetter=0, stringConverter=xformat.FmtInt),
-            ColumnDefn("ClientsMidi", 'right', 30, 'clientsMidi', valueSetter=0, stringConverter=xformat.FmtInt),
-            ColumnDefn("RepasSoir", 'right', 30, 'repasSoir', valueSetter=0, stringConverter=xformat.FmtInt),
-            ColumnDefn("ClientsSoir", 'right', 30, 'clientsSoir', valueSetter=0, stringConverter=xformat.FmtInt),
-            ColumnDefn("PrévuInscrits", 'right', 30, 'prevuInscrits', valueSetter=0, stringConverter=xformat.FmtInt),
+            ColumnDefn("PourTri", 'left', 60,  'dateAnsi',valueSetter='',),
+            ColumnDefn("Date", 'left', 60,      'date', valueSetter=datetime.date.today()),
+            ColumnDefn("RepasMidi", 'right', 30, 'midiRepas', valueSetter=0, stringConverter=xformat.FmtInt),
+            ColumnDefn("ClientsMidi", 'right', 30,'midiclients', valueSetter=0, stringConverter=xformat.FmtInt),
+            ColumnDefn("RepasSoir", 'right', 30,   'soirRepas', valueSetter=0, stringConverter=xformat.FmtInt),
+            ColumnDefn("ClientsSoir", 'right', 30, 'soirClients', valueSetter=0, stringConverter=xformat.FmtInt),
+            ColumnDefn("PrévuInscrits", 'right', 30, 'prevuRepas', valueSetter=0, stringConverter=xformat.FmtInt),
             ColumnDefn("PrévuClients", 'right', 30, 'prevuClients', valueSetter=0, stringConverter=xformat.FmtInt),
             ]
 
 def GetOlvCodesSup():
-    # codes dans les données olv, mais pas dans les colonnes, attributs des tracks non visibles en tableau
+    # codes dans les tracks, mais pas dans les colonnes, ces attributs sont non visibles à l'écran
     return ['analytique',]
 
 def GetOlvOptions(dlg):
@@ -137,6 +139,7 @@ def GetOlvOptions(dlg):
             'checkColonne': False,
             'recherche': True,
             'minSize': (600, 100),
+            'getDonnees': GetEffectifs,
             'dictColFooter': {"date": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
                                   "repasMidi": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
                                   "clientsMidi": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
@@ -153,14 +156,58 @@ def GetDlgOptions(dlg):
         'size': (850, 550),
         }
 
-    #----------------------- Parties de l'écrans -----------------------------------------
+def GetEffectifs(olv,**kwd):
+    # ajoute les données effectifs
+    dicOlv = kwd.get('dicOlv', None)
+    db = kwd.get('db', None)
+    nbreFiltres = kwd.pop('nbreFiltres', 0)
+
+    # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
+    # cf self.listeFiltresColonnes  à gérer avec champs au lieu de codes colonnes
+    limit = ''
+    if nbreFiltres == 0:
+        limit = "LIMIT %d" % LIMITSQL
+
+    where = ""
+    table = schema.DB_TABLES['stEffectifs']
+    lstChamps = xformat.GetLstChamps(table)
+
+    req = """   SELECT %s
+                FROM stEffectifs
+                %s 
+                ORDER BY IDdate DESC
+                %s ;""" % (",".join(lstChamps), where, limit)
+    retour = db.ExecuterReq(req, mess='GetEffectifs')
+    recordset = ()
+    if retour == "ok":
+        recordset = db.ResultatReq()
+
+    # composition des données du tableau à partir du recordset
+    lstDonnees = []
+    for record in recordset:
+        dic = xformat.ListToDict(lstChamps,record)
+        ligne = [
+            dic['IDdate'],
+            dic['IDdate'],
+            dic['midiRepas'],
+            dic['midiClients'],
+            dic['soirRepas'],
+            dic['soirClients'],
+            dic['prevuRepas'],
+            dic['prevuClients'],
+            dic['IDanalytique'],]
+        lstDonnees.append(ligne)
+    dicOlv['lstDonnees'] = lstDonnees
+    return lstDonnees
+
+#----------------------- Parties de l'écrans -----------------------------------------
 
 class PNL_params(xgtr.PNL_params):
     #panel de paramètres de l'application
     def __init__(self, parent, **kwds):
         self.parent = parent
         #('pos','size','style','name','matrice','donnees','lblBox')
-        kwds = GetParamsOptions(parent)
+        kwds = GetDicParams(parent)
         super().__init__(parent, **kwds)
         if hasattr(parent,'lanceur'):
             self.lanceur = parent.lanceur
@@ -203,18 +250,18 @@ class DLG(xusp.DLG_vide):
 
         # lancement de l'écran en blocs principaux
         if self.sens == 'entrees':
-            self.pnlBandeau = xbandeau.Bandeau(self,TITRE[self.sens],INTRO[self.sens], hauteur=20,
+            self.pnlBandeau = xbandeau.Bandeau(self,TITRE,INTRO, hauteur=20,
                                                nomImage="xpy/Images/80x80/Entree.png",
                                                sizeImage=(60,40))
             self.pnlBandeau.SetBackgroundColour(wx.Colour(220, 250, 220))
         else:
-            self.pnlBandeau = xbandeau.Bandeau(self,TITRE[self.sens],INTRO[self.sens], hauteur=20,
+            self.pnlBandeau = xbandeau.Bandeau(self,TITRE,INTRO, hauteur=20,
                                                 nomImage="xpy/Images/80x80/Sortie.png",
                                                 sizeImage=(60,40))
             self.pnlBandeau.SetBackgroundColour(wx.Colour(250, 220, 220))
         self.pnlParams = PNL_params(self)
-        self.pnlOlv = PNL_corps(self, self.dicOlv)
-        self.pnlPied = PNL_pied(self, dicPied)
+        self.pnlOlv = xgtr.PNL_corps(self, self.dicOlv)
+        self.pnlPied = xgtr.PNL_pied(self, dicPied)
         self.ctrlOlv = self.pnlOlv.ctrlOlv
 
         # charger les valeurs de pnl_params
@@ -222,7 +269,6 @@ class DLG(xusp.DLG_vide):
         self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
         self.valuesAnalytique = [nust.MakeChoiceActivite(x) for x in self.lstAnalytiques]
         self.pnlParams.SetOneSet('analytique',values=self.valuesAnalytique,codeBox='param2')
-        self.OnHt_ttc(None)
 
         self.Bind(wx.EVT_CLOSE,self.OnClose)
         self.Sizer()
@@ -236,7 +282,7 @@ class DLG(xusp.DLG_vide):
         sizer_base.AddGrowableCol(0)
         sizer_base.AddGrowableRow(2)
         self.CenterOnScreen()
-        self.SetSizer(sizer_base)
+        self.SetSizerAndFit(sizer_base)
         self.CenterOnScreen()
 
     # ------------------- Gestion des actions -----------------------
@@ -268,6 +314,10 @@ class DLG(xusp.DLG_vide):
         codeAct = nust.MakeChoiceActivite(dicAnalytique)
         self.pnlParams.SetOneValue('analytique',codeAct,codeBox='param2')
 
+    def OnRepas(self,event):
+        self.GetDonnees()
+        if event: event.Skip()
+
 
     def OnBtnSynchro(self,event):
         # lancement de la recherche d'un lot antérieur, on enlève le cellEdit pour éviter l'écho des clics
@@ -280,44 +330,11 @@ class DLG(xusp.DLG_vide):
         if event: event.Skip()
 
     def GetDonnees(self,dicParams=None):
-        if not dicParams:
-            dicParams = {
-                         'periode':self.periode,
-                         'fournisseur':self.fournisseur,
-                         'analytique':self.analytique,
-                         'ht_ttx':self.ht_ttc}
-        valide = nust.ValideParams(self.pnlParams,dicParams, mute=True)
-        if not valide: return
-
-        # appel des données de l'Olv principal à éditer
-        lstDonnees = nust.GetDonneesEntrees(self,dicParams)
-        lstNoModif = [1 for rec in  lstDonnees if not (rec[-1])]
-        # présence de lignes déjà transférées compta
-        if len(lstNoModif) >0:
-            self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
-            self.pnlPied.SetItemsInfos("NON MODIFIABLE: enregistrements transféré ",
-                                       wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
-        # l'appel des données peut avoir retourné d'autres paramètres, il faut mettre à jour l'écran
-        if len(lstDonnees) > 0:
-            # set date du lot importé
-            self.pnlParams.SetOneValue('periode',xformat.FmtDate(dicParams['periode']),'param1')
-            self.periode = dicParams['periode']
-
-            # set Fournisseur et analytique
-            self.pnlParams.SetOneValue('fournisseur',dicParams['fournisseur'],'param2')
-            self.fournisseur = dicParams['fournisseur']
-            self.pnlParams.SetOneValue('analytique',dicParams['analytique'],'param2')
-            self.analytique = dicParams['analytique']
-
+        # rafraîchissement des données de l'Olv principal suite à changement de params
+        kwd = {'dicOlv': self.dicOlv,}
+        lstDonnees = GetEffectifs(self.ctrlOlv,**kwd)
         # alimente la grille, puis création de modelObejects pr init
-        self.ctrlOlv.lstDonnees = lstDonnees
         self.InitOlv()
-
-        # les écritures reprises sont censées être valides, mais il fatu les compléter
-        for track in self.ctrlOlv.modelObjects[:-1]:
-            nust.CalculeLigne(self,track)
-            track.valide = True
-        self.ctrlOlv._FormatAllRows()
 
     def GetTitreImpression(self):
         tiers = ''

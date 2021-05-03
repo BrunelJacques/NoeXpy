@@ -12,7 +12,7 @@ import wx
 import os
 import datetime
 import xpy.xUTILS_SaisieParams as xusp
-from xpy.outils                 import xformat, xboutons
+from xpy.outils                 import xbandeau,xformat, xboutons
 from xpy.outils.ObjectListView  import FastObjectListView, ObjectListView, ColumnDefn, Footer, CTRL_Outils, OLVEvent,CellEditor
 from xpy.outils.xconst          import *
 
@@ -727,7 +727,11 @@ class PNL_pied(wx.Panel):
 class DLG_tableau(xusp.DLG_vide):
     # minimum fonctionnel dans dialog tout est dans les trois pnl
     def __init__(self,parent,dicParams={},dicOlv={},dicPied={}, **kwds):
+        dicBandeau = dicParams.pop('bandeau',None)
         super().__init__(parent,**kwds)
+        if dicBandeau:
+            self.bandeau = xbandeau.Bandeau(self,**dicBandeau)
+        else: self.bandeau = None
         self.pnlParams = PNL_params(self, matrice=dicParams)
         self.pnlOlv = PNL_corps(self, dicOlv,  **kwds )
         self.ctrlOlv = self.pnlOlv.ctrlOlv
@@ -736,11 +740,13 @@ class DLG_tableau(xusp.DLG_vide):
 
     def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=3, cols=1, vgap=0, hgap=0)
+        if self.bandeau:
+            sizer_base.Add(self.bandeau, 0, wx.EXPAND, 0)
         sizer_base.Add(self.pnlParams, 1, wx.TOP| wx.EXPAND, 3)
         sizer_base.Add(self.pnlOlv, 1, wx.TOP| wx.EXPAND, 3)
         sizer_base.Add(self.pnlPied, 0,wx.ALL|wx.EXPAND, 3)
         sizer_base.AddGrowableCol(0)
-        sizer_base.AddGrowableRow(1)
+        sizer_base.AddGrowableRow(2)
         self.CenterOnScreen()
         #self.Layout()
         self.SetSizerAndFit(sizer_base)

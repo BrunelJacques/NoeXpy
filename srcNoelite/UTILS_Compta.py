@@ -154,7 +154,6 @@ def ExportQuadra(formatExp, lstValeurs):
     # envois dans un fichier texte
     return xexport.ExportLgFixe(nomfic=formatExp+".txt",matrice=matrice,valeurs=lstValeurs)
 
-
 FORMATS_EXPORT = {"Quadra via Excel":{  'compta':'quadra',
                                         'fonction':ComposeFuncExp,
                                         'matrice':[
@@ -228,7 +227,10 @@ class Export(object):
 
 # ouvre la base de donnée compta et interagit
 class Compta(object):
-    def __init__(self,parent,compta='quadra'):
+    def __init__(self,parent,compta='quadra',exercice=None):
+        if exercice and len(exercice) == 4:
+            self.exercice = exercice
+        else: self.exercice = None
         self.db = self.DB(parent,compta)
         if compta in MATRICE_COMPTAS:
             self.dicTables = MATRICE_COMPTAS[compta]
@@ -273,11 +275,15 @@ class Compta(object):
                     cfg.SetDict({'lstIDconfigs': dicConfig['lstIDconfigs']}, 'CONFIGS', close=False)
                     cfg.SetDict({'lstConfigs': lddDonnees}, 'CONFIGS')
 
+        if self.exercice:
+            if 'quadra' in configCpta['serveur'].lower():
+                annee = self.exercice
+                configCpta['serveur'] = configCpta['serveur'].replace("\\DC\\","\\DA%s\\"%annee)
         if configCpta:
             return xdb.DB(config=configCpta)
 
     # Appel d'une liste extraite de la base de donnée pour table préalablement renseignée
-    def GetDonnees(self,**kwds):
+    def GetDonnees(self,olv,**kwds):
         filtre = kwds.pop('filtre','')
         table = kwds.pop('table','')
         if table == '': table = self.table
@@ -305,24 +311,27 @@ class Compta(object):
     # Appel d'une balance de la base de donnée compta
     def GetBalance(self,champs='Numero,Intitule,Debit,Credit',debut=None,fin=None):
         wherePeriode = ""
-        if debut and fin:
-            wherePeriode = " AND ((Ecritures.PeriodeEcriture) Between '%s' And '%s')"%(debut,fin)
+        if debut and fin and False:
+            wherePeriode = " AND ((Ecritures.PeriodeEcriture) Between '%s' And '%s')" % (debut, fin)
+        whereBilan = ""
+        whereBilan = " AND (Comptes.Numero  >= '6')"
         donnees = []
         req = """
             SELECT %s
             FROM Comptes
-            WHERE ((Comptes.Type ="G") %s)
-            ;"""%(champs,wherePeriode)
+            WHERE ((Comptes.Type ="G") %s %s)
+            ;"""%(champs,wherePeriode,whereBilan)
         ret = self.db.ExecuterReq(req,mess="UTILS_Compta.GetBalance")
         if ret == "ok":
             donnees = self.db.ResultatReq()
+        # ajout du solde et filtrage des comptes à zéro
         donnees = [[x[0],x[0][3:5],x[1],x[2],x[3],x[2]-x[3]] for x in donnees if (x[2]-x[3]) != 0.0]
         return donnees
 
     # Constitue la liste des journaux si la compta est en ligne
     def GetJournaux(self,table='journaux'):
         if not self.db: return []
-        return self.GetDonnees(table=table)
+        return self.GetDonnees(None,table=table)
 
     # Composition du dic de tous les paramètres à fournir pour l'OLV
     def GetDicOlv(self,table):
@@ -392,7 +401,7 @@ class Compta(object):
             match = False
             lgrad = 0
             for lgtest in range(lg,mini-1,-1):
-                lstTemp = self.GetDonnees(filtre=mot[:lgtest],table=table)
+                lstTemp = self.GetDonnees(None,filtre=mot[:lgtest],table=table)
                 # élimine les cas où la cle d'appel du compte n'est pas présente dans le libelle complet
                 if lib:
                     lstTemp = [x for x in lstTemp if x[1] and len(x[1]) > 2 and x[1] in lib]

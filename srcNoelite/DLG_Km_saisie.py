@@ -436,10 +436,10 @@ class Dialog(xusp.DLG_vide):
             self.exercice = self.noegest.ltExercices[0]
             self.exercice = self.noegest.ltExercices[lClotures.index(self.noegest.cloture)]
         except: pass
-        self.lstVehicules = [x[0] for x in self.noegest.GetVehicules(lstChamps=['abrege'])]
+        self.lstVehicules = [x[0] for x in self.noegest.GetVehicules(None,lstChamps=['abrege'])]
         box.SetOneSet('vehicule',self.lstVehicules)
         self.ctrlOlv.dicChoices[self.ctrlOlv.lstCodesColonnes.index('vehicule')]= self.lstVehicules
-        self.lstActivites = [x[0]+" "+x[1] for x in self.noegest.GetActivites(lstChamps=['IDanalytique','nom'])]
+        self.lstActivites = [x[0]+" "+x[1] for x in self.noegest.GetActivites(None,lstChamps=['IDanalytique','nom'])]
         self.noegest.GetConsosKm()
 
     def OnDateFact(self,evt):

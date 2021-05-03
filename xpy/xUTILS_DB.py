@@ -1006,10 +1006,8 @@ def Init_tables(parent=None, mode="creat"):
 if __name__ == "__main__":
     app = wx.App()
     os.chdir("..")
-    """
-    db = DB()
-    print("test echec ouverture: ",db.echec)
-    from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
-    db.CreationTables(dicTables=DB_TABLES)
-    db.CreationTousIndex(DB_IX)
-    db.CreationTousIndex(DB_PK)"""
+    #db = DB()
+    #from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
+    #db.CreationTables(dicTables=DB_TABLES)
+    #db.CreationTousIndex(DB_IX)
+    #db.CreationTousIndex(DB_PK)
