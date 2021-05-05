@@ -298,6 +298,7 @@ def DateSqlToFr(date):
 def DateSqlToIso(date):
     # Conversion de date récupérée de requête SQL en aaaa-mm-jj
     if date == None : return ""
+    if isinstance(date,(tuple,list,dict)): return ""
     if not isinstance(date, str) : date = str(date)
     date = date.strip()
     if date == "" : return ""
@@ -753,6 +754,10 @@ def FinDeMois(date,typeOut=datetime.date):
 def DebutDeMois(date,typeOut=datetime.date):
     # Retourne le dernier jour du mois dans le format reçu
     return BorneMois(date,fin=False,typeOut=typeOut)
+
+def PeriodeMois(date,typeOut=datetime.date):
+    # Retourne un tuple Debut de mois, Fin de mois de la date fournie
+    return (DebutDeMois(date,typeOut),FinDeMois(date,typeOut))
 
 def ProrataCommercial(entree,sortie,debutex,finex):
     # Prorata d'une présence sur exercice sur la base d'une année commerciale pour un bien entré et sorti

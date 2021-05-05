@@ -421,6 +421,41 @@ def DeleteLigne(db,olv,track):
         ret = db.ReqDEL("stMouvements", "IDmouvement", track.IDmouvement,affichError=True)
     return
 
+def GereEffectif(dlg,**kwd):
+    # Appelé en retour de saisie, gère l'enregistrement
+    mode = kwd.pop('mode',None)
+    donnees = kwd.pop('donnees',None)
+    if 'lstCodesSup' in dlg.dicOlv:
+        donnees += ['']*len(dlg.dicOlv['lstCodesSup'])
+    ixligne = kwd.pop('ixLigne',None)
+    db = kwd.pop('db',None)
+    donneesOlv = dlg.ctrlOlv.lstDonnees
+
+    lstDonnees = [('IDdate',donnees[0]),
+                  ('IDanalytique',dlg.analytique),
+                  ('midiRepas',donnees[2]),
+                  ('midiClients', donnees[3]),
+                  ('soirRepas',donnees[4]),
+                  ('soirClients', donnees[5]),
+                  ('prevuRepas',donnees[6]),
+                  ('prevuClients', donnees[7]),
+                  ]
+    if mode == 'ajout':
+        ret = db.ReqInsert('stEffectifs',lstDonnees=lstDonnees,mess="Insert Effectifs")
+        if ret == 'ok':
+            donneesOlv = donneesOlv[:ixligne] + [donnees,] + donneesOlv[ixligne:]
+
+    elif mode == 'modif':
+        ret = db.ReqMAJ('stEffectifs',lstDonnees[1:],'IDdate',donnees[0],mess="MAJ Effectifs")
+        if ret == 'ok':
+            donneesOlv[ixligne] = donnees
+
+    elif mode == 'suppr':
+        ret = db.ReqDEL('stEffectifs','IDdate',donnees[0],mess="Suppression Effectifs")
+        if ret == 'ok':
+            del donneesOlv[ixligne]
+
+
 # Choix des params  pour reprise de mouvements antérieurs------------------------------------------------
 
 def GetMatriceAnterieurs(dlg):
@@ -453,7 +488,7 @@ def GetMatriceAnterieurs(dlg):
         'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
         'size': (650, 400)}
 
-def SqlAnterieurs(olv, **kwd):
+def SqlAnterieurs(**kwd):
     # ajoute les données à la matrice pour la recherche d'un anterieur
     dicOlv = kwd.get('dicOlv',None)
     db = kwd.get('db',None)

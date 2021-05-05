@@ -2517,7 +2517,7 @@ class ObjectListView(wx.ListCtrl):
 
     def GetTitreImpression(self):
         # fonction à substituer par implémentation ou gérer variable olv.titreImresssion
-        if hasattr(self, 'titreImpression'):
+        if hasattr(self, 'titreImpression') and self.titreImpression:
             return self.titreImpression
         return "Tableau récapitulatif"
 

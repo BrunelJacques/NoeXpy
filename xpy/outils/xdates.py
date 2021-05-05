@@ -372,7 +372,7 @@ class Calendrier(wx.ScrolledWindow):
             wx.GetApp().GetTopWindow().SetStatusText(txt, 1)
         except:
             pass
-        event.Skip()
+        #event.Skip()
 
     def RedrawCase(self, IDobjet, survol=False):
         """ Redessine une case """
@@ -908,14 +908,19 @@ class PNL_calendrier(wx.Panel):
             self.bouton_CalendrierAnnuel.Show(False)
         else:
             self.bouton_CalendrierAnnuel.Show(True)
+        self.Proprietes()
+
+    def Proprietes(self):
         if self.typeCalendrier == "annuel":
             self.combo_mois.Enable(False)
             self.spin.Enable(False)
             self.bouton_CalendrierAnnuel.SetToolTip("Cliquez ici pour afficher le calendrier mensuel")
+            self.parent.SetSize((650,550))
         else:
             self.combo_mois.Enable(True)
             self.spin.Enable(True)
             self.bouton_CalendrierAnnuel.SetToolTip("Cliquez ici pour afficher le calendrier annuel")
+            self.parent.SetSize((400, 300))
 
     def SetMultiSelection(self, etat=False):
         self.multiSelections = etat
@@ -965,16 +970,11 @@ class PNL_calendrier(wx.Panel):
     def OnBoutonAnnuel(self, event):
         if self.calendrier.GetTypeCalendrier() == "mensuel":
             self.calendrier.SetTypeCalendrier("annuel")
-            self.combo_mois.Enable(False)
-            self.spin.Enable(False)
-            self.bouton_CalendrierAnnuel.SetToolTip("Cliquez ici pour afficher le calendrier mensuel")
-            self.parent.SetSize((700, 600))
+            self.typeCalendrier = "annuel"
         else:
             self.calendrier.SetTypeCalendrier("mensuel")
-            self.combo_mois.Enable(True)
-            self.spin.Enable(True)
-            self.bouton_CalendrierAnnuel.SetToolTip("Cliquez ici pour afficher le calendrier annuel")
-            self.parent.SetSize((300, 300))
+            self.typeCalendrier = "mensuel"
+        self.Proprietes()
 
     def MAJPeriodeCalendrier(self):
         mois = self.combo_mois.GetSelection() + 1
@@ -993,7 +993,6 @@ class PNL_calendrier(wx.Panel):
     def MAJcontrolesNavigation(self, mois, annee):
         self.combo_mois.SetSelection(mois - 1)
         self.combo_annee.SetValue(annee)
-
 
     def onClose(self, event):
         self.Show(False)
@@ -1020,13 +1019,9 @@ class DLG_calendrier(wx.Dialog):
         wx.Dialog.__init__(self, parent, -1, **kwDlgOut )
         self.parent = parent
         minSize = (320, 350)
-        if kwCalOut['typeCalendrier'] == 'annuel':
-            minSize = (500,400)
         self.ctrl_calendrier = PNL_calendrier(self,**kwCalOut)
-        self.ctrl_calendrier.Bind(EVT_SELECT_DATES, self.OnDateSelected)
+        self.ctrl_calendrier.Bind(EVT_SELECT_DATES, self.OnFermer)
 
-        self.bouton_ok = xboutons.BTN_fermer(self,onBtn=self.OnBoutonOk)
-        self.bouton_ok.Show(False)
         self.bouton_annuler = xboutons.Bouton(self, id=wx.ID_CANCEL, label=("Annuler"),
                                                      image="xpy/Images/32x32/Annuler.png")
 
@@ -1044,7 +1039,6 @@ class DLG_calendrier(wx.Dialog):
 
         grid_sizer_boutons = wx.FlexGridSizer(rows=1, cols=4, vgap=10, hgap=10)
         grid_sizer_boutons.Add((1, 1), 0, 0, 0)
-        grid_sizer_boutons.Add(self.bouton_ok, 0, 0, 0)
         grid_sizer_boutons.Add(self.bouton_annuler, 0, 0, 0)
         grid_sizer_boutons.AddGrowableCol(0)
         grid_sizer_base.Add(grid_sizer_boutons, 1, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 10)
@@ -1056,9 +1050,6 @@ class DLG_calendrier(wx.Dialog):
         self.Layout()
         self.CenterOnScreen()
 
-    def OnDateSelected(self, event):
-        self.OnBoutonOk(event)
-
     def GetDate(self):
         selections = self.ctrl_calendrier.GetSelections()
         if len(selections) > 0:
@@ -1069,9 +1060,16 @@ class DLG_calendrier(wx.Dialog):
     def SetDate(self, date=None):
         self.ctrl_calendrier.SelectJours([date, ])
 
-    def OnBoutonOk(self, event):
+    def OnFermer(self, event):
+        # appelé par Date Selected
         if self.IsModal():
             self.EndModal(wx.ID_OK)
+        else:
+            self.Close()
+
+    def OnEsc(self, event):
+        if self.IsModal():
+            self.EndModal(wx.ID_CANCEL)
         else: self.Close()
 
 # ---------------Ctrls de saisie de dates appelant un calendrier -------------------------------------
@@ -1086,17 +1084,19 @@ class TxtDate(masked.TextCtrl):
     def OnKillFocus(self, event):
         # Envoi un signal de changement de date au panel parent
         try:
-            self.parent.OnChoixDate(event)
+            self.parent.OnDate(event)
         except:
             pass
-        event.Skip()
+        #event.Skip()
 
-# saisie date avec calendrier incorporé
+# saisie date par le calendrier incorporé
 class CTRL_SaisieDate(wx.Panel):
     def __init__(self, parent, **kwds):
         name = kwds.pop("name","CTRL_SaisieDate")
         label = kwds.pop("label","")
         minSize = kwds.pop("minSize",(100 + len(label)*5, 25))
+        self.OnDate = kwds.pop("OnDate",None)
+        self.flagSkipEdit = False
         wx.Panel.__init__(self, parent, id=-1, name=name)
         self.parent = parent
         # kwcal sera adressé au panel calendrier
@@ -1130,9 +1130,13 @@ class CTRL_SaisieDate(wx.Panel):
 
     def OnChoixDate(self,event):
         # vérification de la validité de la date par passage en datetime et réaffichage
+        if self.flagSkipEdit:
+            #event.Skip()
+            return
+        self.flagSkipEdit = True
         dtDate = None
         origine = event.EventObject.Parent.Name
-        event.Skip()
+        #event.Skip()
         try:
             dtDate = xformat.DateToDatetime(self.GetValue())
         except:
@@ -1140,8 +1144,12 @@ class CTRL_SaisieDate(wx.Panel):
             self.SetFocus()
         if dtDate:
             self.SetValue(xformat.DatetimeToStr(dtDate))
-            if hasattr(self.parent,'OnChoixDate'):
-                self.parent.OnChoixDate(origine)
+            if self.OnDate:
+                self.OnDate(origine)
+            elif hasattr(self,'actionCtrl'):
+                eval('self.parent.lanceur.%s())'%self.actionCtrl)
+            else: wx.MessageBox("xdate.CTRL_SaisieDate: pas de retour 'OnDate' géré!!!")
+        self.flagSkipEdit = False
 
     def SetFocus(self):
         self.ctrlDate.SetFocus()
@@ -1152,8 +1160,11 @@ class CTRL_SaisieDate(wx.Panel):
             date = dlg.GetDate()
             self.ctrlDate.SetValue(xformat.DatetimeToStr(date))
             self.ctrlDate.SetFocus()
-            event.Skip()
+            #event.Skip()
         dlg.Destroy()
+
+    def OnEsc(self,event):
+        pass
 
     def SetValue(self,date):
         # affichée en format fr
@@ -1167,17 +1178,18 @@ class CTRL_SaisieDate(wx.Panel):
 class CTRL_Periode(wx.Panel):
     def __init__(self, parent, **kwds):
         name = kwds.pop("name","CTRL_Periode")
-        label = kwds.pop("label","Période")
         orientation = kwds.pop("orientation",wx.VERTICAL)
+        self.OnPeriode = kwds.pop("OnPeriode",None)
 
         wx.Panel.__init__(self, parent, id=-1, name=name, style=wx.TAB_TRAVERSAL)
         self.parent = parent
         self.kwcal = kwds.pop('kwcal',{'typeCalendrier':'annuel'})
-        self.kwdlg = kwds.pop('kwdlg',{'size':(450,450)})
+        self.kwdlg = kwds.pop('kwdlg',{'size':(450,350)})
 
         self.stboxPeriode = wx.StaticBox(self, wx.ID_ANY, "Période")
-        self.ctrlSaisieDu = CTRL_SaisieDate(self,name="date_du",label="du : ",kwcal=self.kwcal,kwdlg=self.kwdlg)
-        self.ctrlSaisieAu = CTRL_SaisieDate(self,name="date_au",label="au : ",kwcal=self.kwcal,kwdlg=self.kwdlg)
+        kwDate = {'OnDate':self.OnDate,'kwcal':self.kwcal,'kwdlg':self.kwdlg}
+        self.ctrlSaisieDu = CTRL_SaisieDate(self,name="date_du",label="du : ",**kwDate)
+        self.ctrlSaisieAu = CTRL_SaisieDate(self,name="date_au",label="au : ",**kwDate)
 
         # Sizert
         static_sizer_periode = wx.StaticBoxSizer(self.stboxPeriode,orientation)
@@ -1187,16 +1199,17 @@ class CTRL_Periode(wx.Panel):
         #static_sizer_periode.Add((100,100), 1, wx.EXPAND, 0)
         self.SetSizer(static_sizer_periode)
 
-    def OnChoixDate(self,origine):
+    def OnDate(self,origine):
         if  origine == 'date_du':
             self.ctrlSaisieAu.SetFocus()
         else:
             debut,fin = self.GetValue()
             if len(fin)>0 and fin < debut:
                 wx.MessageBox("La date fin est antérieure au début!!")
-            elif hasattr(self.parent,'OnChoixDate'):
-                # relais du Bind au parent après saisie de la deuxième date
-                self.parent.OnChoixDate()
+            elif hasattr(self, 'actionCtrl'):
+                eval('self.parent.lanceur.%s(None)'% self.actionCtrl)
+            else:
+                wx.MessageBox("xdate.CTRL_Periode: pas de retour 'OnPeriode' géré!!!")
 
     def SetValue(self,tplDates):
         # le tuple correspond aux deux dates
@@ -1214,7 +1227,7 @@ class TestFrame(wx.Frame):
     def __init__(self, **kwd):
         wx.Frame.__init__(self, None, -1, **kwd)
 
-    def OnChoixDate(self):
+    def OnDate(self):
         self.Close()
 
 if __name__ == '__main__':
@@ -1232,7 +1245,7 @@ if __name__ == '__main__':
     frame_2.Show()
     """
 
-    frame_3 = TestFrame(title='CTRL_SaisieDate', pos=(100,300),size=(300,150))
+    frame_3 = TestFrame(title='CTRL_SaisieDate', pos=(100,300),size=(230,120))
     frame_3.ctrl = CTRL_Periode(frame_3)
     #frame_3.ctrl = CTRL_SaisieDate(frame_3,label="Du:")
     frame_3.Show()

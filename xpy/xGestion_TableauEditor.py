@@ -88,6 +88,7 @@ class ListView(FastObjectListView):
 
     def __init__(self, *args, **kwds):
         self.parent = args[0].parent
+        self.lanceur = self.parent.lanceur
         self.dicOlv = xformat.CopyDic(kwds)
         self.pnlFooter = kwds.pop('pnlFooter', None)
         self.checkColonne = kwds.pop('checkColonne',True)
@@ -127,13 +128,6 @@ class ListView(FastObjectListView):
         if not 'autoAddRow' in kwds: kwds['autoAddRow']=True
         if not 'sortable' in kwds: kwds['sortable']=True
         FastObjectListView.__init__(self, *args,**kwds)
-
-        if hasattr(self.GrandParent, 'parent'):
-            dlg = self.GrandParent.parent
-            if hasattr(dlg, 'GetTitreImpression'):
-                self.GetTitreImpression = dlg.GetTitreImpression
-        elif hasattr(self.Parent, 'GetTitreImpresssion'):
-            self.GetTitreImpression = self.Parent.GetTitreImpression
         self.Proprietes()
 
     def Proprietes(self):
@@ -144,6 +138,30 @@ class ListView(FastObjectListView):
             self.cellEditMode = ObjectListView.CELLEDIT_SINGLECLICK
         self.Bind(wx.EVT_SET_FOCUS,self.OnSetFocus)
         self.flagSkipEdit = False
+
+    def InitObjectListView(self):
+        # Couleur en alternance des lignes
+        self.useExpansionColumn = True
+        # On définit les colonnes
+        self.SetColumns(self.lstColonnes)
+        if self.checkColonne:
+            self.CreateCheckStateColumn(0)
+        self.lstCodesColonnes = self.GetLstCodesColonnes()
+        self.lstNomsColonnes = self.GetLstNomsColonnes()
+        self.lstSetterValues = self.GetLstSetterValues()
+        # On définit le message en cas de tableau vide
+        self.SetEmptyListMsg(self.msgIfEmpty)
+        self.SetEmptyListMsgFont(wx.FFont(11, wx.FONTFAMILY_DEFAULT))
+        self.SetObjects(self.formerTracks(self.dicOlv))
+
+    def MAJ(self, ID=None):
+        self.selectionID = ID
+        self.InitObjectListView()
+        if self.pnlFooter:
+            self.MAJ_footer(None)
+        # Rappel de la sélection d'un item
+        if self.selectionID != None and len(self.innerList) > 0:
+            self.SelectObject(self.innerList[ID], deselectOthers=True, ensureVisible=True)
 
     def OnSetFocus(self,evt):
         if self.flagSkipEdit : return
@@ -218,30 +236,6 @@ class ListView(FastObjectListView):
                         tip = wx.DateTime.FromDMY(1,0,1900)
             setterValues.append(tip)
         return setterValues
-
-    def InitObjectListView(self):
-        # Couleur en alternance des lignes
-        self.useExpansionColumn = True
-        # On définit les colonnes
-        self.SetColumns(self.lstColonnes)
-        if self.checkColonne:
-            self.CreateCheckStateColumn(0)
-        self.lstCodesColonnes = self.GetLstCodesColonnes()
-        self.lstNomsColonnes = self.GetLstNomsColonnes()
-        self.lstSetterValues = self.GetLstSetterValues()
-        # On définit le message en cas de tableau vide
-        self.SetEmptyListMsg(self.msgIfEmpty)
-        self.SetEmptyListMsgFont(wx.FFont(11, wx.FONTFAMILY_DEFAULT))
-        self.SetObjects(self.formerTracks(self.dicOlv))
-
-    def MAJ(self, ID=None):
-        self.selectionID = ID
-        self.InitObjectListView()
-        if self.pnlFooter:
-            self.MAJ_footer(None)
-        # Rappel de la sélection d'un item
-        if self.selectionID != None and len(self.innerList) > 0:
-            self.SelectObject(self.innerList[ID], deselectOthers=True, ensureVisible=True)
 
     def Selection(self):
         return self.GetSelectedObjects()
@@ -384,11 +378,20 @@ class ListView(FastObjectListView):
         self._SelectAndFocus(ix)
         return True
 
+    def GetTitreImpression(self):
+        if hasattr(self.lanceur,'GetTitreImpression'):
+            return self.lanceur.GetTitreImpression()
+        elif hasattr(self, 'titreImpression') and self.titreImpression:
+            return self.titreImpression
+        return "Tableau récapitulatif"
+
 class PanelListView(wx.Panel):
     # Panel pour listView et le footer, attention il crée un niveau généalogique supplémentaire (parent.parent)
     def __init__(self, parent, **dicOlv):
         id = -1
         self.parent = parent
+        self.lanceur = parent
+        if hasattr(parent,'lanceur'): self.lanceur = parent.lanceur
         self.oldRow = None
         stylePanel = wx.SUNKEN_BORDER | wx.TAB_TRAVERSAL
         wx.Panel.__init__(self, parent, id=id, style=stylePanel)
@@ -595,6 +598,8 @@ class PNL_corps(wx.Panel):
         getBtnActions =    dicOlv.pop('getBtnActions',None)
         self.avecRecherche= dicOlv.pop('recherche',True)
         self.parent = parent
+        self.lanceur = parent
+        if hasattr(parent,'lanceur'): self.lanceur = parent.lanceur
         # récupére les éventuels boutons d'actions
         if getBtnActions:
             self.lstBtnActions = getBtnActions(self)
@@ -682,7 +687,7 @@ class PNL_pied(wx.Panel):
         self.parent = parent
         self.Sizer()
 
-    def Sizer(self,reinit = False):
+    def Sizer(self):
         self.itemsBtns = xboutons.GetAddManyBtns(self,self.lstBtns)
         self.itemsInfos = self.CreateItemsInfos(self.lstInfos)
         nbinfos = len(self.itemsInfos)

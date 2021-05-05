@@ -493,7 +493,7 @@ class PNL_ctrl(wx.Panel):
 
     def PnlSizer(self):
         topbox = wx.BoxSizer(wx.HORIZONTAL)
-        topbox.Add(self.txt,0, wx.LEFT|wx.TOP|wx.ALIGN_TOP, 5)
+        topbox.Add(self.txt,0, wx.LEFT|wx.TOP|wx.ALIGN_CENTER, 5)
         topbox.Add(self.ctrl, 1, wx.ALL|wx.EXPAND , 4)
         if self.avecBouton:
             topbox.Add(self.btn, 0, wx.ALL|wx.EXPAND, 4)
@@ -771,7 +771,6 @@ class BoxPanel(wx.Panel):
                             if panel.ctrl.genreCtrl in ['enum','combo','multichoice','choice']:
                                 panel.ctrl.Bind(wx.EVT_COMBOBOX,self.parent.OnCtrlAction)
                                 panel.ctrl.Bind(wx.EVT_CHECKBOX, self.parent.OnCtrlAction)
-
                     self.lstPanels.append(panel)
         self.SetSizer(self.ssbox)
 
@@ -1206,6 +1205,7 @@ class DLG_vide(wx.Dialog):
         super().__init__(None, wx.ID_ANY, *args, title=title, style=style, pos=pos, **kwds)
         self.marge = marge
         self.parent = parent
+        self.lanceur = self
         self.SetMinSize(minSize)
         self.SetSize(size)
         self.SetBackgroundColour(couleur)
@@ -1292,13 +1292,17 @@ class DLG_vide(wx.Dialog):
             eval(action)
 
     def OnChildCtrlAction(self, event):
-        # relais des actions sur boutons ou contrôles priorité si le parent gère ce relais
+        # relais des Binds sur boutons ou contrôles. priorité au parent s'il gère ce relais sinon exécution par eval
+        event.Skip()
         if self.parent and hasattr(self.parent, 'OnChildCtrlAction'):
             self.parent.OnChildCtrlAction(event)
         else:
             if hasattr(event.EventObject,'actionCtrl'):
                 action = 'self.%s(event)' % event.EventObject.actionCtrl
-            else: action = 'self.%s(event)' % event.EventObject.Parent.actionCtrl
+            elif hasattr(event.EventObject.Parent,'actionCtrl'):
+                action = 'self.%s(event)' % event.EventObject.Parent.actionCtrl
+            else:
+                action = "print('!!!! actionCtrl de '%s' non trouvée,wx.BELL()"%event.EventObject.Name
             eval(action)
 
 #************************   Pour Test ou modèle  *********************************

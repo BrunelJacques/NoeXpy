@@ -243,7 +243,7 @@ class Noegest(object):
                 kwd['whereFiltre']  = """
                     AND (%s LIKE '%s%%' )"""%(lstChamps[ix],filtre)
                 kwd['lstChamps'] = lstChamps
-                ltAnalytiques = getAnalytiques(None,**kwd)
+                ltAnalytiques = getAnalytiques(**kwd)
                 nb = len(ltAnalytiques)
                 if nb == 1:
                     dicAnalytique={}
@@ -400,7 +400,7 @@ class Noegest(object):
         dicVehicule = self.GetAnalytique(**kwd)
         return dicVehicule
 
-    def GetVehicules(self,olv,**kwd):
+    def GetVehicules(self,**kwd):
         lstChamps = kwd.pop('lstChamps',None)
         # matriceOlv et filtre résultent d'une saisie en barre de recherche
         matriceOlv = kwd.pop('dicOlv',{})
@@ -430,7 +430,7 @@ class Noegest(object):
         dicActivite = self.GetAnalytique(**kwd)
         return dicActivite
 
-    def GetActivites(self,olv,**kwd):
+    def GetActivites(self,**kwd):
         lstChamps = kwd.pop('lstChamps',None)
         # matriceOlv et filtre résultent d'une saisie en barre de recherche
         matriceOlv = kwd.pop('dicOlv',{})

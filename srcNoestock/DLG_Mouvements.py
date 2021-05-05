@@ -39,8 +39,6 @@ DIC_INFOS = {
 
 INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
 
-# Description des paramètres à choisir en haut d'écran
-
 class CtrlAnterieur(wx.Panel):
     # controle inséré dans la matrice_params qui suit. De genre AnyCtrl pour n'utiliser que le bind bouton
     def __init__(self,parent):
@@ -67,6 +65,8 @@ class CtrlAnterieur(wx.Panel):
     def Set(self,values):
         # valeurs multiples
         return
+
+# Description des paramètres à choisir en haut d'écran
 
 MATRICE_PARAMS = {
 ("param1", "Paramètres"): [
@@ -312,11 +312,10 @@ class PNL_pied(xgte.PNL_pied):
 
 class DLG(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,sens='sorties'):
+    def __init__(self,sens='entrees'):
         self.sens = sens
         kwds = GetDlgOptions(self)
         super().__init__(None,**kwds)
-        self.lanceur = self
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
         self.dicOlv.update(GetOlvOptions(self))

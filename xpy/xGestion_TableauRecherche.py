@@ -12,7 +12,7 @@ import os
 import xpy.xUTILS_DB            as xdb
 import xpy.xUTILS_SaisieParams  as xusp
 from xpy.outils import xbandeau,xformat,xboutons,xshelve
-from xpy.outils.ObjectListView import ObjectListView, ColumnDefn, CTRL_Outils
+from xpy.outils.ObjectListView import ObjectListView, ColumnDefn, CTRL_Outils, Footer
 from xpy.outils.xconst import *
 
 def GetBtnsPied(pnl):
@@ -109,10 +109,11 @@ class ListView(ObjectListView):
 
     def __init__(self, *args, **kwds):
         self.parent = args[0]
+        self.lanceur = self.parent.lanceur
         self.filtre = ''
         self.lstDonnees = []
+        self.avecFooter = False
         self.dicOlv = xformat.CopyDic(kwds)
-        #self.pnlFooter = kwds.pop('pnlFooter', None) - pas implementé
         style = kwds.pop('style', wx.LC_SINGLE_SEL)| wx.LC_REPORT
         self.checkColonne = kwds.pop('checkColonne',False)
         self.lstColonnes = kwds.pop('lstColonnes', [])
@@ -129,6 +130,8 @@ class ListView(ObjectListView):
         self.exportExcel = kwds.pop('exportExcel', True)
         self.exportTexte = kwds.pop('exportTexte', True)
         self.apercuAvantImpression = kwds.pop('apercuAvantImpression', True)
+        self.orientationImpression = kwds.pop('orientationImpression', True)
+        self.titreImpression = kwds.pop('titreImpression', None)
         self.imprimer = kwds.pop('imprimer', True)
         self.toutCocher = kwds.pop('toutCocher', True)
         self.toutDecocher = kwds.pop('toutDecocher', True)
@@ -145,24 +148,58 @@ class ListView(ObjectListView):
         self.criteres = ""
         self.itemSelected = False
         self.popupIndex = -1
-
         # Initialisation du listCtrl
         ObjectListView.__init__(self, *args,style=style,**kwds)
         self.InitObjectListView()
         self.InitModel()
         self.Proprietes()
-        if hasattr(self.GrandParent,'parent'):
-            dlg = self.GrandParent.parent
-            if hasattr(dlg,'GetTitreImpression'):
-                self.GetTitreImpression = dlg.GetTitreImpression
-        elif hasattr(self.Parent,'GetTitreImpresssion'):
-            self.GetTitreImpression = self.Parent.GetTitreImpression
 
     def Proprietes(self):
         # Binds perso
         self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
         self.Bind(wx.EVT_LEFT_DCLICK, self.parent.OnDblClick)
 
+    def InitObjectListView(self):
+        # Couleur en alternance des lignes
+        self.useExpansionColumn = True
+        self.oddRowsBackColor = '#F0FBED'
+        self.evenRowsBackColor = wx.Colour(255, 255, 255)
+        # On définit les colonnes0
+        self.SetColumns(self.lstColonnes)
+        if self.checkColonne:
+            self.CreateCheckStateColumn(0)
+        self.lstCodesColonnes = self.GetLstCodesColonnes()
+        self.lstNomsColonnes = self.GetLstNomsColonnes()
+        self.lstSetterValues = self.GetLstSetterValues()
+        # On définit le message en cas de tableau vide
+        self.SetEmptyListMsg(self.msgIfEmpty)
+        self.SetEmptyListMsgFont(wx.FFont(11, wx.FONTFAMILY_DEFAULT))
+        # Si la colonne à trier n'est pas précisée on trie selon la première par défaut
+        if self.ColumnCount > 1:
+            if self.sortColumnIndex == None:
+                self.SortBy(1, self.sensTri)
+            else:
+                self.SortBy(self.sortColumnIndex, self.sensTri)
+
+    def InitModel(self,**kwd):
+        #kwd peut contenir  filtretxt et lstfiltres
+        if hasattr(self.Parent.Parent,'db'):
+            kwd['db'] = self.Parent.Parent.db
+        else:
+            kwd['db'] = xdb.DB()
+        self.SetObjects(self.formerTracks(**kwd))
+        if len(self.innerList) >0:
+            self.SelectObject(self.innerList[0])
+        if self.avecFooter:
+            self.ctrlFooter.MAJ_totaux()
+            self.ctrlFooter.Refresh()
+
+    def MAJ(self, ID=None):
+        self.selectionID = ID
+        self.InitModel()
+        # Rappel de la sélection d'un item
+        if self.selectionID != None and len(self.innerList) > 0:
+            self.SelectObject(self.innerList[ID], deselectOthers=True, ensureVisible=True)
 
     def GetLstCodesColonnes(self):
         codeColonnes = list()
@@ -199,7 +236,9 @@ class ListView(ObjectListView):
     def formerTracks(self,**kwd):
         if self.lstDonnees == []:
             kwd['dicOlv'] = self.parent.dicOlv
-            self.lstDonnees = self.getDonnees(self,**kwd)
+            if hasattr(self,'getDonnees') and self.getDonnees :
+                self.lstDonnees = self.getDonnees(**kwd)
+            else: self.lstDonnees = []
         tracks = list()
         if self.lstDonnees is None:
             return tracks
@@ -207,45 +246,6 @@ class ListView(ObjectListView):
             tracks.append(TrackGeneral(ligneDonnees,self.lstCodesColonnes,self.lstSetterValues,
                                         codesSup=self.lstCodesSup))
         return tracks
-
-    def InitObjectListView(self):
-        # Couleur en alternance des lignes
-        self.oddRowsBackColor = '#F0FBED'
-        self.evenRowsBackColor = wx.Colour(255, 255, 255)
-        self.useExpansionColumn = True
-        # On définit les colonnes0
-        self.SetColumns(self.lstColonnes)
-        if self.checkColonne:
-            self.CreateCheckStateColumn(0)
-        self.lstCodesColonnes = self.GetLstCodesColonnes()
-        self.lstNomsColonnes = self.GetLstNomsColonnes()
-        self.lstSetterValues = self.GetLstSetterValues()
-        # On définit le message en cas de tableau vide
-        self.SetEmptyListMsg(self.msgIfEmpty)
-        self.SetEmptyListMsgFont(wx.FFont(11, wx.FONTFAMILY_DEFAULT))
-        # Si la colonne à trier n'est pas précisée on trie selon la première par défaut
-        if self.ColumnCount > 1:
-            if self.sortColumnIndex == None:
-                self.SortBy(1, self.sensTri)
-            else:
-                self.SortBy(self.sortColumnIndex, self.sensTri)
-
-    def InitModel(self,**kwd):
-        #kwd peut contenir  filtretxt et lstfiltres
-        if hasattr(self.Parent.Parent,'db'):
-            kwd['db'] = self.Parent.Parent.db
-        else:
-            kwd['db'] = xdb.DB()
-        self.SetObjects(self.formerTracks(**kwd))
-        if len(self.innerList) >0:
-            self.SelectObject(self.innerList[0])
-
-    def MAJ(self, ID=None):
-        self.selectionID = ID
-        self.InitModel()
-        # Rappel de la sélection d'un item
-        if self.selectionID != None and len(self.innerList) > 0:
-            self.SelectObject(self.innerList[ID], deselectOthers=True, ensureVisible=True)
 
     def Selection(self):
         return self.GetSelectedObjects()
@@ -345,7 +345,8 @@ class ListView(ObjectListView):
 
     def Apercu(self, event):
         import xpy.outils.ObjectListView.Printer as printer
-        # Je viens de voir dans la fonction concernée, le format n'est pas utilisé et il vaut 'A' par défaut donc rien ne change
+        # L'orientation par défaut est donnée par l'attribut 'orientationImpression' de l'olv
+        titre = self.GetTitreImpression()
         prt = printer.ObjectListViewPrinter(self, titre=self.GetTitreImpression(),
                                                         orientation=self.GetOrientationImpression())
         prt.Preview()
@@ -372,6 +373,13 @@ class ListView(ObjectListView):
 
     def SupprimerFiltres(self, event=None):
         self.parent.ctrlOutils.SupprimerFiltres()
+
+    def GetTitreImpression(self):
+        if hasattr(self.lanceur,'GetTitreImpression'):
+            return self.lanceur.GetTitreImpression()
+        elif hasattr(self, 'titreImpression') and self.titreImpression:
+            return self.titreImpression
+        return "Tableau récapitulatif"
 
 # Saisie d'une ligne de l'olv
 class DLG_saisie(xusp.DLG_vide):
@@ -422,10 +430,11 @@ class DLG_saisie(xusp.DLG_vide):
 class PNL_params(xusp.TopBoxPanel):
     def __init__(self, parent, *args, **kwds):
         kwdsTopBox = {}
-        for key in ('pos','size','style','name','matrice','donnees','lblTopBox','lblBox'):
+        for key in ('pos','size','style','name','matrice','donnees','lblTopBox','lblBox','boxesSizes'):
             if key in kwds.keys(): kwdsTopBox[key] = kwds[key]
         super().__init__(parent, *args, **kwdsTopBox)
         self.parent = parent
+        self.lanceur = parent.lanceur
 
 class PNL_corps(wx.Panel):
     #panel olv avec habillage optionnel pour recherche (en bas), boutons actions (à droite)
@@ -434,13 +443,16 @@ class PNL_corps(wx.Panel):
         minSize =       dicOlv.pop('minSize',(400,150))
         lstNomsBtns =  dicOlv.pop('lstNomsBtns',None)
         getBtnActions =    dicOlv.pop('getBtnActions',None)
+        self.dictColFooter = dicOlv.pop('dictColFooter',None)
+        self.avecFooter = isinstance(self.dictColFooter,dict)
         self.avecRecherche= dicOlv.pop('recherche',True)
         self.parent = parent
+        self.lanceur = parent
         self.estAdmin = None
         self.dicOlv = xformat.CopyDic(dicOlv)
 
         # init du super()
-        wx.Panel.__init__(self, parent, *args,  **kwds)
+        wx.Panel.__init__(self, parent, *args)
 
         # récupére les éventuels boutons d'actions
         if getBtnActions:
@@ -449,24 +461,29 @@ class PNL_corps(wx.Panel):
             self.lstBtnActions = GetBtnActions(self,lstNomsBtns)
         else: self.lstBtnActions = None
 
-
-        #ci dessous l'ensemble des autres paramètres possibles pour OLV
+        #ci dessous l'ensemble des autres paramètres possibles pour OLV pour les transmettre exclusivement
         lstParamsOlv = ['id',
                         'style',
                         'lstColonnes',
                         'lstCodesSup',
+                        'lstChamps',
+                        'getDonnees',
+                        'cellEditMode',
+                        'useAlternateBackColors',
+                        'menuPersonnel',
                         'msgIfEmpty',
                         'sensTri',
                         'exportExcel',
                         'exportTexte',
                         'checkColonne',
                         'apercuAvantImpression',
+                        'orientationImpression',
+                        'titreImpression',
                         'imprimer',
                         'saisie',
                         'toutCocher',
                         'toutDecocher',
                         'inverserSelection',
-                        'dictColFooter',
                         'editMode',
                         'autoAddRow',
                         'sortable',
@@ -474,36 +491,7 @@ class PNL_corps(wx.Panel):
                         'sortAscending',
                         ]
 
-        # le footer éventuel doit passer au niveau panel suivant, sinon on ne cherche pas à le transférer
-        self.avecFooter = ('dictColFooter'  in dicOlv)
-        if not self.avecFooter : lstParamsOlv.remove('dictColFooter')
-
         #récup des seules clés possibles pour dicOLV
-        dicOlvOut = {}
-        for key,valeur in dicOlv.items():
-            if key in lstParamsOlv:
-                 dicOlvOut[key] = valeur
-
-
-        #récup des seules clés possibles pour dicOLV
-        lstParamsOlv = ['id',
-                        'style',
-                        'lstColonnes',
-                        'lstCodesSup',
-                        'lstChamps',
-                        'sortColumnIndex',
-                        'getDonnees',
-                        'msgIfEmpty',
-                        'sensTri',
-                        'exportExcel',
-                        'exportTexte',
-                        'apercuAvantImpression',
-                        'imprimer',
-                        'cellEditMode',
-                        'useAlternateBackColors',
-                        'menuPersonnel',
-                        'checkColonne'
-                        ]
         dicOlvOut = {}
         for key,valeur in dicOlv.items():
             if key in lstParamsOlv:
@@ -513,6 +501,9 @@ class PNL_corps(wx.Panel):
         self.ctrlOlv = ListView(self,**dicOlvOut)
         self.olv = self.ctrlOlv
 
+        # éventuel footer
+        if self.avecFooter: self.SetFooter()
+        
         # choix  barre de recherche ou pas
         if self.avecRecherche:
             afficherCocher = False
@@ -523,11 +514,22 @@ class PNL_corps(wx.Panel):
         self.ctrlOlv.MAJ()
         self.Sizer()
 
+    def SetFooter(self,reinit=False):
+        if reinit:
+            del self.ctrlFooter
+        self.ctrlFooter = Footer.Footer(self)
+        self.ctrlFooter.listview = self.ctrlOlv
+        self.ctrlFooter.dictColFooter = self.dictColFooter
+        self.ctrlOlv.avecFooter = True
+        self.ctrlOlv.ctrlFooter = self.ctrlFooter
+
     def Sizer(self):
         #composition de l'écran selon les composants
         sizerbase = wx.BoxSizer(wx.HORIZONTAL)
         sizercorps = wx.BoxSizer(wx.VERTICAL)
         sizercorps.Add(self.olv, 10, wx.TOP|wx.LEFT|wx.EXPAND, 3)
+        if self.avecFooter:
+            sizercorps.Add(self.ctrlFooter, 0,wx.ALL|wx.EXPAND, 5)
         if self.avecRecherche:
             sizercorps.Add(self.ctrlOutils, 0,wx.ALL|wx.EXPAND, 5)
         sizerbase.Add(sizercorps, 10, wx.EXPAND, 10)
@@ -600,7 +602,7 @@ class PNL_corps(wx.Panel):
             #récupération des valeurs saisies puis ajout dans les données avant reinit olv
             ddDonnees = dlgSaisie.pnl.GetValues()
             nomsCol, donnees = xformat.DictToList(ddDonnees)
-            self.parent.GereDonnees('modif',nomsCol, donnees, ixLigne)
+            self.parent.GereDonnees(mode='modif',nomsCol=nomsCol, donnees=donnees, ixLigne=ixLigne)
             olv.Filtrer()
         olv.Select(ixLigne)
 
@@ -614,24 +616,24 @@ class PNL_corps(wx.Panel):
         ligne = olv.GetSelectedObject()
         ixLigne = olv.modelObjects.index(ligne)
         olv.modelObjects.remove(ligne)
-        self.parent.GereDonnees(mode='suppr', ixligne=ixLigne)
+        self.parent.GereDonnees(mode='suppr', ixLigne=ixLigne)
         olv.RepopulateList()
 
 class PNL_pied(wx.Panel):
     #panel infos (gauche) et boutons sorties(droite)
     def __init__(self, parent, dicPied, **kwds):
-        self.lanceur =  dicPied.pop('lanceur',None)
         autoSizer =     dicPied.pop('autoSizer', True)
         self.lstBtns =  dicPied.pop('lstBtns',None)
         if self.lstBtns == None:
             #force la présence d'un pied d'écran par défaut
             self.lstBtns = GetBtnsPied(self)
-        wx.Panel.__init__(self, parent,  **kwds)
+        wx.Panel.__init__(self, parent)
         self.parent = parent
+        self.lanceur = parent
         if autoSizer:
             self.Sizer()
 
-    def Sizer(self,reinit = False):
+    def Sizer(self):
         self.itemsBtns = xboutons.GetAddManyBtns(self,self.lstBtns)
         nbcol=(len(self.itemsBtns)+1)
         #composition de l'écran selon les composants
@@ -645,22 +647,28 @@ class PNL_pied(wx.Panel):
         self.SetSizer(sizerpied)
         self.Layout()
 
-# ------------- Lancement ------------------------------------------------------------------
+# ------------- Ecran Dialog, Lancement des composantes -------------------------------------
 class DLG_tableau(xusp.DLG_vide):
-    # minimum fonctionnel dans dialog tout est dans les trois pnl
+    # minimum fonctionnel du dialog l'essentiel est dans les trois pnl
     def __init__(self,parent,dicParams={},dicOlv={},dicPied={}, **kwds):
         db = kwds.pop('db',None) # purge d'éventuels arguments db
+        autoSizer =     kwds.pop('autoSizer', True)
         dicBandeau = dicParams.pop('bandeau',None)
         super().__init__(parent,**kwds)
         if dicBandeau:
             self.bandeau = xbandeau.Bandeau(self,**dicBandeau)
         else: self.bandeau = None
 
+        # Création des différentes parties de l'écran
         self.pnlParams = PNL_params(self, **dicParams)
         self.pnlOlv = PNL_corps(self, dicOlv,  **kwds )
         self.ctrlOlv = self.pnlOlv.ctrlOlv
         self.pnlPied = PNL_pied(self, dicPied,  **kwds )
-        self.Sizer()
+
+
+        # permet un Sizer de substitution différé après l'init propre à l'instance
+        if autoSizer:
+            self.Sizer()
 
     def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=6, cols=1, vgap=0, hgap=0)
@@ -678,15 +686,15 @@ class DLG_tableau(xusp.DLG_vide):
         self.CenterOnScreen()
         self.SetSizer(sizer_base)
 
-    def GereDonnees(self, mode=None, nomsCol=[], donnees=[], ixligne=0):
+    def GereDonnees(self, mode=None, nomsCol=[], donnees=[], ixLigne=0):
         lstDonnees = self.ctrlOlv.lstDonnees
-        # Appelé en retour de saisie, à vocation a être substitué par des accès base de données
+        # Appelé en retour de saisie, à vocation a être complété ou substitué par des accès base de données
         if mode == 'ajout':
-            lstDonnees = lstDonnees[:ixligne] + [donnees,] + lstDonnees[ixligne:]
+            lstDonnees = lstDonnees[:ixLigne] + [donnees,] + lstDonnees[ixLigne:]
         elif mode == 'modif':
-            lstDonnees[ixligne] = donnees
+            lstDonnees[ixLigne] = donnees
         elif mode == 'suppr':
-            del lstDonnees[ixligne]
+            del lstDonnees[ixLigne]
 
     def OnDblClick(self,event):
         event.Skip()
@@ -709,6 +717,7 @@ class DLG_tableau(xusp.DLG_vide):
         # appellé depuis parent
         return self.ctrlOlv.GetSelectedObject()
 
+
 # -- pour tests -----------------------------------------------------------------------------------------------------
 
 def GetDonnees(olv,**kwds):
@@ -724,7 +733,6 @@ def GetDonnees(olv,**kwds):
                      ]
     donneesFiltrees = [x for x in donnees if filtre in x[2] ]
     return donneesFiltrees
-
 
 if __name__ == '__main__':
     app = wx.App(0)

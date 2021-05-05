@@ -283,7 +283,7 @@ class Compta(object):
             return xdb.DB(config=configCpta)
 
     # Appel d'une liste extraite de la base de donnée pour table préalablement renseignée
-    def GetDonnees(self,olv,**kwds):
+    def GetDonnees(self,**kwds):
         filtre = kwds.pop('filtre','')
         table = kwds.pop('table','')
         if table == '': table = self.table
@@ -331,7 +331,7 @@ class Compta(object):
     # Constitue la liste des journaux si la compta est en ligne
     def GetJournaux(self,table='journaux'):
         if not self.db: return []
-        return self.GetDonnees(None,table=table)
+        return self.GetDonnees(table=table)
 
     # Composition du dic de tous les paramètres à fournir pour l'OLV
     def GetDicOlv(self,table):
@@ -401,7 +401,7 @@ class Compta(object):
             match = False
             lgrad = 0
             for lgtest in range(lg,mini-1,-1):
-                lstTemp = self.GetDonnees(None,filtre=mot[:lgtest],table=table)
+                lstTemp = self.GetDonnees(filtre=mot[:lgtest],table=table)
                 # élimine les cas où la cle d'appel du compte n'est pas présente dans le libelle complet
                 if lib:
                     lstTemp = [x for x in lstTemp if x[1] and len(x[1]) > 2 and x[1] in lib]
