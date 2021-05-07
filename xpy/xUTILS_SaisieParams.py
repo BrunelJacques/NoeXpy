@@ -524,9 +524,9 @@ class PNL_ctrl(wx.Panel):
         if self.genre in ('int','float'):
             if not value: value = 0
             if isinstance(value,float):
-                value = xformat.FmtDecimal(value)
+                value = xformat.FmtDecimal(value).strip()
             else:
-                value = xformat.FmtInt(value)
+                value = xformat.FmtIntNoSpce(value)
         elif self.genre in ('bool','check'):
             try:
                 value = int(value)
@@ -536,6 +536,7 @@ class PNL_ctrl(wx.Panel):
             value = xformat.DatetimeToStr(value)
         elif self.genre in ('str','string','texte','txt'):
             value = str(value)
+            if len(value) > 1: value = value.strip()
         elif value == None:
             value = ''
         self.ctrl.SetValue(value)
@@ -1205,7 +1206,10 @@ class DLG_vide(wx.Dialog):
         super().__init__(None, wx.ID_ANY, *args, title=title, style=style, pos=pos, **kwds)
         self.marge = marge
         self.parent = parent
-        self.lanceur = self
+        if parent:
+            self.lanceur = parent
+        else:
+            self.lanceur = self
         self.SetMinSize(minSize)
         self.SetSize(size)
         self.SetBackgroundColour(couleur)
@@ -1258,10 +1262,10 @@ class DLG_vide(wx.Dialog):
         # si présence d'un ValideSaisie chez le parent et pas de sortie par fermeture de la fenêtre
         if event and not event.EventObject.ClassName == 'wxDialog':
             valide = wx.OK
-            if hasattr(self.parent,'ValideSaisie'):
-                    valide = self.parent.ValideSaisie(self)
+            if self.lanceur and hasattr(self.lanceur,'ValideSaisie'):
+                    valide = self.lanceur.ValideSaisie(self)
             elif hasattr(self, 'ValideSaisie'):
-                valide = self.ValideSaisie()
+                valide = self.ValideSaisie(None)
             if valide != wx.OK:
                 event.Skip()
                 return
@@ -1291,19 +1295,21 @@ class DLG_vide(wx.Dialog):
             action = 'self.%s(event)' % event.EventObject.actionBtn
             eval(action)
 
+    # relais des Binds sur contrôles.
     def OnChildCtrlAction(self, event):
-        # relais des Binds sur boutons ou contrôles. priorité au parent s'il gère ce relais sinon exécution par eval
-        event.Skip()
-        if self.parent and hasattr(self.parent, 'OnChildCtrlAction'):
-            self.parent.OnChildCtrlAction(event)
+        #Recherche de l'action dans l'attribut du ctrl
+        if hasattr(event.EventObject,'actionCtrl'):
+            actionCtrl = event.EventObject.actionCtrl
+        # via le parent de l'objet
+        elif hasattr(event.EventObject.Parent,'actionCtrl'):
+            actionCtrl = event.EventObject.Parent.actionCtrl
         else:
-            if hasattr(event.EventObject,'actionCtrl'):
-                action = 'self.%s(event)' % event.EventObject.actionCtrl
-            elif hasattr(event.EventObject.Parent,'actionCtrl'):
-                action = 'self.%s(event)' % event.EventObject.Parent.actionCtrl
-            else:
-                action = "print('!!!! actionCtrl de '%s' non trouvée,wx.BELL()"%event.EventObject.Name
-            eval(action)
+            actionCtrl = "print('!!!! actionCtrl de '%s' non trouvée,wx.BELL()"%event.EventObject.Name
+        # selon la nature texte ou pas
+        if isinstance(actionCtrl,str):
+            eval(actionCtrl)
+        else:
+            actionCtrl(event)
 
 #************************   Pour Test ou modèle  *********************************
 

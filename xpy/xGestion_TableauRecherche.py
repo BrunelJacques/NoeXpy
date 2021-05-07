@@ -58,7 +58,7 @@ class TrackGeneral(object):
                                                         len(codesColonnes), len(setterValues))
             mess += '\n\n'+'\n\n'.join(lst)
             wx.MessageBox(mess,caption="xGestion_TableauRecherche.TrackGeneral")
-            raise("echec Track générél")
+            raise("echec Track général")
         self.donnees = donnees
         for ix in range(len(codesColonnes + codesSup)):
             donnee = donnees[ix]
@@ -381,20 +381,22 @@ class ListView(ObjectListView):
             return self.titreImpression
         return "Tableau récapitulatif"
 
-# Saisie d'une ligne de l'olv
+# Saisie ou gestion d'une ligne de l'olv dans un nouvel écran
 class DLG_saisie(xusp.DLG_vide):
     def __init__(self,parent,dicOlv,mode='creation',**kwds):
-        # récup de la matrice servant à la gestion des données
+        # récup de la matrice servant à la gestion des données, si non fournie elle est composée automatiquemetn
         matrice = dicOlv.pop('matriceSaisie',None)
         if not matrice:
             key = ("saisie","")
             matrice = xformat.DicOlvToMatrice(key,dicOlv)
         sizeSaisie = dicOlv.pop('sizeSaisie',None)
+
+        # Size de l'écran de saisie
         if not sizeSaisie:
             nblignes = 0
             for key, lst in matrice.items():
                 nblignes += len(lst)
-            sizeSaisie = (200,max(60 + nblignes * 50,400))
+            sizeSaisie = (200,max(80 + nblignes * 50,400))
         kwds['size'] = sizeSaisie
         super().__init__(parent, **kwds)
 
@@ -462,7 +464,7 @@ class PNL_corps(wx.Panel):
         else: self.lstBtnActions = None
 
         #ci dessous l'ensemble des autres paramètres possibles pour OLV pour les transmettre exclusivement
-        lstParamsOlv = ['id',
+        lstKwdsOlv = ['id',
                         'style',
                         'lstColonnes',
                         'lstCodesSup',
@@ -494,7 +496,7 @@ class PNL_corps(wx.Panel):
         #récup des seules clés possibles pour dicOLV
         dicOlvOut = {}
         for key,valeur in dicOlv.items():
-            if key in lstParamsOlv:
+            if key in lstKwdsOlv:
                  dicOlvOut[key] = valeur
 
         # création de l'olv
@@ -570,13 +572,13 @@ class PNL_corps(wx.Panel):
         if ligne:
             ixLigne = olv.modelObjects.index(ligne)
         else: ixLigne = len(olv.lstDonnees)
-        dlgSaisie = DLG_saisie(self,self.dicOlv)
+        dlgSaisie = DLG_saisie(self.lanceur,self.dicOlv)
         ret = dlgSaisie.ShowModal()
         if ret == wx.OK:
             #récupération des valeurs saisies puis ajout dans les données avant reinit olv
             ddDonnees = dlgSaisie.pnl.GetValues()
             nomsCol, donnees = xformat.DictToList(ddDonnees)
-            self.parent.GereDonnees('ajout',nomsCol, donnees, ixLigne)
+            self.parent.GereDonnees(mode='modif',nomsCol=nomsCol, donnees=donnees, ixLigne=ixLigne)
             self.ctrlOutils.barreRecherche.SetValue('')
             olv.Filtrer('')
         olv.Select(ixLigne)
@@ -594,7 +596,7 @@ class PNL_corps(wx.Panel):
         ixLigne = olv.modelObjects.index(ligne)
 
         dDonnees = xformat.TrackToDdonnees(ligne,olv)
-        dlgSaisie = DLG_saisie(self,self.dicOlv)
+        dlgSaisie = DLG_saisie(self.lanceur,self.dicOlv)
         dlgSaisie.pnl.SetValues(dDonnees,)
         self.EnableID(dlgSaisie.pnl, enable=False)
         ret = dlgSaisie.ShowModal()

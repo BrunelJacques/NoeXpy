@@ -433,12 +433,12 @@ def GereEffectif(dlg,**kwd):
 
     lstDonnees = [('IDdate',donnees[0]),
                   ('IDanalytique',dlg.analytique),
-                  ('midiRepas',donnees[2]),
-                  ('midiClients', donnees[3]),
-                  ('soirRepas',donnees[4]),
-                  ('soirClients', donnees[5]),
-                  ('prevuRepas',donnees[6]),
-                  ('prevuClients', donnees[7]),
+                  ('midiRepas',donnees[1]),
+                  ('midiClients', donnees[2]),
+                  ('soirRepas',donnees[3]),
+                  ('soirClients', donnees[4]),
+                  ('prevuRepas',donnees[5]),
+                  ('prevuClients', donnees[6]),
                   ]
     if mode == 'ajout':
         ret = db.ReqInsert('stEffectifs',lstDonnees=lstDonnees,mess="Insert Effectifs")

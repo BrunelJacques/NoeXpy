@@ -479,7 +479,7 @@ def FmtIntNoSpce(montant):
     if montant == None or montant == '' or float(montant) == 0:
         return ""
     strMtt = '{:.0f} '.format(int(float(montant)))
-    return strMtt
+    return strMtt.strip()
 
 def FmtPercent(montant):
     if isinstance(montant,str): montant = montant.replace(',','.')

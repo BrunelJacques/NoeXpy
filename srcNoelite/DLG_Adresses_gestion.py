@@ -249,7 +249,7 @@ class Dialog(wx.Dialog):
         gridsizer_base.Fit(self)
         self.Layout()
 
-    def GetIndividus(self,olv,**kwd):
+    def GetIndividus(self,**kwd):
         db = kwd.pop('db',None)
         # appel des données à afficher
         filtreTxt = kwd.pop('filtreTxt','')
@@ -294,7 +294,7 @@ class Dialog(wx.Dialog):
             lstDonnees.append(ligne)
         return lstDonnees
 
-    def GetFamilles(self,olv,**kwd):
+    def GetFamilles(self,**kwd):
         db = kwd.pop('db',None)
         # appel des données à afficher
         filtreTxt = kwd.pop('filtreTxt','')

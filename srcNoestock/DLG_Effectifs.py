@@ -94,7 +94,7 @@ MATRICE_PARAMS = {
     ],
 }
 
-def GetDicParams(dlg):
+def GetDicParams():
     return {
                 'name':"PNL_params",
                 'matrice':MATRICE_PARAMS,
@@ -117,8 +117,7 @@ def GetBoutons(dlg):
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
     return [
-            ColumnDefn("PourTri", 'left', 60,  'dateAnsi',valueSetter=''),
-            ColumnDefn("Date", 'left', 80,      'date', valueSetter=datetime.date.today(),stringConverter=xformat.FmtDate),
+            ColumnDefn("Date", 'left', 90,      'ID', valueSetter=datetime.date.today(),stringConverter=xformat.FmtDate),
             ColumnDefn("RepasMidi", 'right', 72, 'midiRepas', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
             ColumnDefn("ClientsMidi", 'right', 72,'midiClients', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
             ColumnDefn("RepasSoir", 'right', 72,   'soirRepas', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
@@ -146,6 +145,17 @@ def GetOlvOptions(dlg):
             'orientationImpression': wx.PORTRAIT,
             'lstNomsBtns': ['creer', 'modifier','supprimer'],
     }
+
+def GetMatriceSaisie(dlg):
+    # utile pour personaliser la saisie avec des contrôles particuliers, sinon ignorer cette étape
+    dicRetour = {}
+    key = ("saisie", "")
+    matrice = xformat.DicOlvToMatrice(key, dlg.dicOlv)
+    # mise en place d'un contrôle sur la date saisie via la matrice
+    # matrice[key][0]['ctrlAction'] = dlg.VerifieDate
+    dicRetour['matriceSaisie'] = matrice
+    dicRetour['sizeSaisie'] = (200,420)
+    return dicRetour
 
 def GetDlgOptions(dlg):
     # Options du Dlg de lancement
@@ -190,7 +200,6 @@ def GetEffectifs(params,**kwd):
         dic = xformat.ListToDict(lstChamps,record)
         ligne = [
             dic['IDdate'],
-            dic['IDdate'],
             dic['midiRepas'],
             dic['midiClients'],
             dic['soirRepas'],
@@ -217,6 +226,7 @@ class DLG(xgtr.DLG_tableau):
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
         self.dicOlv.update(GetOlvOptions(self))
+        self.dicOlv.update(GetMatriceSaisie(self))
 
         # variables gérées par l'écran paramètres
         self.today = datetime.date.today()
@@ -227,7 +237,7 @@ class DLG(xgtr.DLG_tableau):
         # Propriétés de l'écran global type Dialog
         kwds = GetDlgOptions(self)
         kwds['autoSizer'] = False
-        kwds['dicParams'] = GetDicParams(self)
+        kwds['dicParams'] = GetDicParams()
         kwds['dicOlv'] = self.dicOlv
         kwds['dicPied'] = dicPied
 
@@ -255,6 +265,7 @@ class DLG(xgtr.DLG_tableau):
         self.txtAnalytique = self.pnlParams.GetPnlCtrl('analytique','param2').txt
         self.txtAnalytique.Enable(False)
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
+        self.GetDonnees()
 
     def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
@@ -339,6 +350,10 @@ class DLG(xgtr.DLG_tableau):
     def GereDonnees(self,**kwd):
         kwd['db'] = self.db
         nust.GereEffectif(self,**kwd)
+
+    def ValideSaisie(self,*args,**kwd):
+        print('coucou')
+        return False
 
     def OnImprimer(self,event):
         # test de présence d'un filtre
