@@ -111,11 +111,11 @@ MATRICE_PARAMS = {
     {'name': 'formatexp', 'genre': 'Enum', 'label': 'Format export',
                     'help': "Le choix est limité par la programmation", 'value':0,
                     'values':[x for x in UTILS_Compta.FORMATS_EXPORT.keys()],
-                    'ctrlAction':'OnChoixExport',
+                    'ctrlAction':'self.OnChoixExport',
                     'size':(300,30)},
     ],
 ("compta", "Paramètres comptables"): [
-    {'name': 'journal', 'genre': 'Combo', 'label': 'Journal','ctrlAction':'OnCtrlJournal',
+    {'name': 'journal', 'genre': 'Combo', 'label': 'Journal','ctrlAction':'self.OnCtrlJournal',
                     'help': "Code journal utilisé dans la compta",'size':(350,30),
                     'values':['BQ','LCL','LBP','CCP'],
                     'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un journal",

@@ -47,7 +47,7 @@ def GetMatriceFamilles():
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 }
 
-def GetFamilles(olv,**kwd):
+def GetFamilles(**kwd):
     # ajoute les données à la matrice pour la recherche d'une famille
     dicOlv = kwd.get('dicOlv',None)
     db = kwd.get('db',None)
@@ -150,7 +150,7 @@ def GetMatriceDepots():
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 'size':(900, 400)                }
 
-def GetDepots(olv,**kwd):
+def GetDepots(**kwd):
     # ajoute les données à la matrice pour la recherche d'un depot
     dicOlv = kwd.get('dicOlv',None)
     db = kwd.get('db',None)

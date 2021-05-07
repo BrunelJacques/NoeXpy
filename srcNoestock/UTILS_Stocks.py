@@ -11,7 +11,6 @@ import wx
 import xpy.xGestion_TableauRecherche as xgtr
 from srcNoelite     import DB_schema
 from xpy.outils     import xformat
-from srcNoestock import DLG_Mouvements
 
 LIMITSQL =100
 
@@ -421,7 +420,7 @@ def DeleteLigne(db,olv,track):
         ret = db.ReqDEL("stMouvements", "IDmouvement", track.IDmouvement,affichError=True)
     return
 
-def GereEffectif(dlg,**kwd):
+def SetEffectifs(dlg,**kwd):
     # Appelé en retour de saisie, gère l'enregistrement
     mode = kwd.pop('mode',None)
     donnees = kwd.pop('donnees',None)
@@ -443,7 +442,9 @@ def GereEffectif(dlg,**kwd):
     if mode == 'ajout':
         ret = db.ReqInsert('stEffectifs',lstDonnees=lstDonnees,mess="Insert Effectifs")
         if ret == 'ok':
-            donneesOlv = donneesOlv[:ixligne] + [donnees,] + donneesOlv[ixligne:]
+            if ixligne and ixligne < len(donneesOlv):
+                dlg.ctrlOlv.lstDonnees = donneesOlv[:ixligne] + [donnees,] + donneesOlv[ixligne:]
+            else: dlg.ctrlOlv.lstDonnees.append(donnees)
 
     elif mode == 'modif':
         ret = db.ReqMAJ('stEffectifs',lstDonnees[1:],'IDdate',donnees[0],mess="MAJ Effectifs")
@@ -455,6 +456,51 @@ def GereEffectif(dlg,**kwd):
         if ret == 'ok':
             del donneesOlv[ixligne]
 
+def GetEffectifs(params,**kwd):
+    # retourne les effectifs dans la table stEffectifs
+    db = kwd.get('db',None)
+    nbreFiltres = kwd.get('nbreFiltres', 0)
+    # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
+    limit = ''
+    if nbreFiltres == 0:
+        limit = "LIMIT %d" % LIMITSQL
+
+    where = """
+                WHERE (IDdate >= '%s' AND IDdate <= '%s')"""%(params['param1']['periode'][0],params['param1']['periode'][1])
+    if params['param2']['repas']: where += """
+                        AND ( IDanalytique = '' )"""
+    else: where += """
+                        AND ( IDanalytique = '%s')"""%params['param2']['analytique']
+
+    table = DB_schema.DB_TABLES['stEffectifs']
+    lstChamps = xformat.GetLstChamps(table)
+
+    req = """   SELECT %s
+                FROM stEffectifs
+                %s 
+                ORDER BY IDdate DESC
+                %s ;""" % (",".join(lstChamps), where, limit)
+    retour = db.ExecuterReq(req, mess='GetEffectifs')
+    recordset = ()
+    if retour == "ok":
+        recordset = db.ResultatReq()
+
+    # composition des données du tableau à partir du recordset
+    lstDonnees = []
+    for record in recordset:
+        dic = xformat.ListToDict(lstChamps,record)
+        ligne = [
+            dic['IDdate'],
+            dic['midiRepas'],
+            dic['midiClients'],
+            dic['soirRepas'],
+            dic['soirClients'],
+            dic['prevuRepas'],
+            dic['prevuClients'],
+            dic['IDanalytique'],
+            dic['modifiable'],]
+        lstDonnees.append(ligne)
+    return lstDonnees
 
 # Choix des params  pour reprise de mouvements antérieurs------------------------------------------------
 

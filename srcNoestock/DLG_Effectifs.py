@@ -12,7 +12,6 @@ import os
 import datetime
 import srcNoestock.UTILS_Stocks        as nust
 import srcNoelite.UTILS_Noegest        as nung
-import srcNoelite.DB_schema            as schema
 import xpy.xGestion_TableauRecherche   as xgtr
 import xpy.xUTILS_Identification       as xuid
 import xpy.xUTILS_SaisieParams         as xusp
@@ -165,52 +164,6 @@ def GetDlgOptions(dlg):
         'size': (650, 600),
         }
 
-def GetEffectifs(params,**kwd):
-    # retourne les effectifs dans la table stEffectifs
-    db = kwd.get('db',None)
-    nbreFiltres = kwd.get('nbreFiltres', 0)
-    # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
-    limit = ''
-    if nbreFiltres == 0:
-        limit = "LIMIT %d" % LIMITSQL
-
-    where = """
-                WHERE (IDdate >= '%s' AND IDdate <= '%s')"""%(params['param1']['periode'][0],params['param1']['periode'][1])
-    if params['param2']['repas']: where += """
-                        AND ( IDanalytique = '' )"""
-    else: where += """
-                        AND ( IDanalytique = '%s')"""%params['param2']['analytique']
-
-    table = schema.DB_TABLES['stEffectifs']
-    lstChamps = xformat.GetLstChamps(table)
-
-    req = """   SELECT %s
-                FROM stEffectifs
-                %s 
-                ORDER BY IDdate DESC
-                %s ;""" % (",".join(lstChamps), where, limit)
-    retour = db.ExecuterReq(req, mess='GetEffectifs')
-    recordset = ()
-    if retour == "ok":
-        recordset = db.ResultatReq()
-
-    # composition des données du tableau à partir du recordset
-    lstDonnees = []
-    for record in recordset:
-        dic = xformat.ListToDict(lstChamps,record)
-        ligne = [
-            dic['IDdate'],
-            dic['midiRepas'],
-            dic['midiClients'],
-            dic['soirRepas'],
-            dic['soirClients'],
-            dic['prevuRepas'],
-            dic['prevuClients'],
-            dic['IDanalytique'],
-            dic['modifiable'],]
-        lstDonnees.append(ligne)
-    return lstDonnees
-
 #----------------------- Parties de l'écrans -----------------------------------------
 
 class DLG(xgtr.DLG_tableau):
@@ -335,7 +288,7 @@ class DLG(xgtr.DLG_tableau):
         if hasattr(self,'ctrlOlv'):
             # les accès en cours de construction sont ignorés
             kwd['db'] = self.db
-            lstDonnees = GetEffectifs(params, **kwd)
+            lstDonnees = nust.GetEffectifs(params, **kwd)
             self.ctrlOlv.lstDonnees = lstDonnees
             self.ctrlOlv.InitObjectListView()
             self.ctrlOlv.MAJ()
@@ -349,11 +302,24 @@ class DLG(xgtr.DLG_tableau):
 
     def GereDonnees(self,**kwd):
         kwd['db'] = self.db
-        nust.GereEffectif(self,**kwd)
+        nust.SetEffectifs(self,**kwd)
 
-    def ValideSaisie(self,*args,**kwd):
-        print('coucou')
-        return False
+    def ValideSaisie(self,dlgSaisie,*args,**kwd):
+        dDonnees = dlgSaisie.pnl.GetValues(fmtDD=False)
+        mess = "Incohérence relevée dans les données saisies\n"
+        lg = len(mess)
+        if not (dDonnees['ID'] >= self.periode[0] and dDonnees['ID'] <= self.periode[1]):
+            mess += "\n- La date saisie est hors période\n\nLa période a été choisie dans l'écran précédent. Corrigez\n"
+        if dDonnees['midiRepas']< dDonnees['midiClients']:
+            mess += "\n- S'il y a plus de clients que de repas à midi, ceux qui jeunent ne sont pas à compter\n"
+        if dDonnees['soirRepas']< dDonnees['soirClients']:
+            mess += "\n- S'il y a plus de clients que de repas le soir, ceux qui jeunent ne sont pas à compter\n"
+        if dDonnees['prevuRepas']< dDonnees['prevuClients']:
+            mess += "\n- Plus de clients que d'inscrits, n'est pas cohérent! "
+        if len(mess) != lg:
+            wx.MessageBox(mess,"Entrée refusée!!!",style=wx.ICON_HAND)
+            return wx.NO
+        return wx.OK
 
     def OnImprimer(self,event):
         # test de présence d'un filtre

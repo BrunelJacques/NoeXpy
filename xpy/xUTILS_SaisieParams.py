@@ -501,23 +501,23 @@ class PNL_ctrl(wx.Panel):
 
     def GetValue(self):
         value = self.ctrl.GetValue()
-        if self.genre in ('int','float'):
-            if not value: value = 0
-            value = xdb.NoLettre(str(value))
-            if self.genre == 'float':
-                value = float(value)
-            if self.genre == 'int':
-                value = int(value)
-        elif self.genre in ('bool','check'):
-            try:
+        try:
+            if self.genre in ('int','float'):
+                if not value: value = 0
+                value = xdb.NoLettre(str(value))
+                if self.genre == 'float':
+                    value = float(value)
+                if self.genre == 'int':
+                    value = int(value)
+            elif self.genre in ('bool','check'):
                 if value in ('x','X','true',True): value = 1
                 value = int(value)
-            except Exception:
-                value = 0
-        elif self.genre in ('datetime','date'):
-            value = xformat.DateFrToSql(value)
-        elif value == None:
-            value = ''
+            elif self.genre in ('datetime','date'):
+                value = xformat.DateFrToSql(value)
+            elif value == None:
+                value = ''
+        except Exception:
+            pass
         return value
 
     def SetValue(self,value):
@@ -898,11 +898,17 @@ class TopBoxPanel(wx.Panel):
                 self.lstBoxes.append(box)
                 self.topbox.Add(box, width, wx.EXPAND|wx.ALL,3)
                 ixBox +=1
-
         self.SetSizer(self.topbox)
+        self.flagSkipEdit = False
 
     def OnCtrlAction(self,event):
+        if self.flagSkipEdit == True:
+            event.Skip()
+            return
+        self.flagSkipEdit = True
         self.parent.OnChildCtrlAction(event)
+        event.Skip()
+        self.flagSkipEdit = False
 
     def OnBtnAction(self,event):
         self.parent.OnChildBtnAction(event)
@@ -1290,7 +1296,7 @@ class DLG_vide(wx.Dialog):
     def OnChildBtnAction(self, event):
         # relais des actions sur les boutons du bas d'écran
         if self.parent != self and hasattr(self.parent, 'OnChildBtnAction'):
-            self.parent.OnChildBtnAction(event)
+            self.parent.OnChildBtnAction(self,event)
         else:
             action = 'self.%s(event)' % event.EventObject.actionBtn
             eval(action)

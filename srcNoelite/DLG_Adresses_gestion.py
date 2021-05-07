@@ -250,7 +250,7 @@ class Dialog(wx.Dialog):
         self.Layout()
 
     def GetIndividus(self,**kwd):
-        db = kwd.pop('db',None)
+        db = self.db
         # appel des données à afficher
         filtreTxt = kwd.pop('filtreTxt','')
         lstChamps = kwd['dicOlv']['lstChamps']
@@ -267,7 +267,7 @@ class Dialog(wx.Dialog):
         if filtreTxt and len(filtreTxt) >0:
             whereFiltre = xformat.ComposeWhereFiltre(filtreTxt,lstChamps, lstColonnes = lstColonnes)
 
-        del db.cursor
+        if db: del db.cursor
         db.cursor = db.connexion.cursor(buffered=False)
 
         req = """FLUSH  TABLES individus;"""
@@ -295,7 +295,7 @@ class Dialog(wx.Dialog):
         return lstDonnees
 
     def GetFamilles(self,**kwd):
-        db = kwd.pop('db',None)
+        db = self.db
         # appel des données à afficher
         filtreTxt = kwd.pop('filtreTxt','')
         lstChamps = kwd['dicOlv']['lstChamps']

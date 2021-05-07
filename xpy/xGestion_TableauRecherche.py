@@ -125,6 +125,7 @@ class ListView(ObjectListView):
         self.getDonnees = kwds.pop('getDonnees', None)
         if isinstance(self.getDonnees,str):
             self.getDonnees = eval(self.getDonnees)
+        self.db = None
 
         # Choix des options du 'tronc commun' du menu contextuel
         self.exportExcel = kwds.pop('exportExcel', True)
@@ -151,7 +152,6 @@ class ListView(ObjectListView):
         # Initialisation du listCtrl
         ObjectListView.__init__(self, *args,style=style,**kwds)
         self.InitObjectListView()
-        self.InitModel()
         self.Proprietes()
 
     def Proprietes(self):
@@ -183,10 +183,12 @@ class ListView(ObjectListView):
 
     def InitModel(self,**kwd):
         #kwd peut contenir  filtretxt et lstfiltres
-        if hasattr(self.Parent.Parent,'db'):
-            kwd['db'] = self.Parent.Parent.db
-        else:
-            kwd['db'] = xdb.DB()
+        if self.db:
+            kwd['db'] = self.db
+        elif hasattr(self.parent,'db'):
+            kwd['db'] = self.parent.db
+        elif hasattr(self.lanceur,'db'):
+            kwd['db'] = self.lanceur.db
         self.SetObjects(self.formerTracks(**kwd))
         if len(self.innerList) >0:
             self.SelectObject(self.innerList[0])
@@ -445,6 +447,7 @@ class PNL_corps(wx.Panel):
         minSize =       dicOlv.pop('minSize',(400,150))
         lstNomsBtns =  dicOlv.pop('lstNomsBtns',None)
         getBtnActions =    dicOlv.pop('getBtnActions',None)
+        self.db = kwds.pop('db',None) #d'éventuels arguments db seront envoyés à olv pour les get données
         self.dictColFooter = dicOlv.pop('dictColFooter',None)
         self.avecFooter = isinstance(self.dictColFooter,dict)
         self.avecRecherche= dicOlv.pop('recherche',True)
@@ -513,6 +516,7 @@ class PNL_corps(wx.Panel):
             self.ctrlOutils = CTRL_Outils(self, listview=self.ctrlOlv, afficherCocher=afficherCocher)
             self.olv.ctrlOutils = self.ctrlOutils
         self.ctrlOlv.SetMinSize(minSize)
+        self.ctrlOlv.db = self.db
         self.ctrlOlv.MAJ()
         self.Sizer()
 
@@ -578,7 +582,7 @@ class PNL_corps(wx.Panel):
             #récupération des valeurs saisies puis ajout dans les données avant reinit olv
             ddDonnees = dlgSaisie.pnl.GetValues()
             nomsCol, donnees = xformat.DictToList(ddDonnees)
-            self.parent.GereDonnees(mode='modif',nomsCol=nomsCol, donnees=donnees, ixLigne=ixLigne)
+            self.parent.GereDonnees(mode='ajout',nomsCol=nomsCol, donnees=donnees, ixLigne=ixLigne)
             self.ctrlOutils.barreRecherche.SetValue('')
             olv.Filtrer('')
         olv.Select(ixLigne)
@@ -653,7 +657,7 @@ class PNL_pied(wx.Panel):
 class DLG_tableau(xusp.DLG_vide):
     # minimum fonctionnel du dialog l'essentiel est dans les trois pnl
     def __init__(self,parent,dicParams={},dicOlv={},dicPied={}, **kwds):
-        db = kwds.pop('db',None) # purge d'éventuels arguments db
+        self.db = kwds.pop('db',None) #purge d'éventuels arguments db à ne pas envoyer à super()
         autoSizer =     kwds.pop('autoSizer', True)
         dicBandeau = dicParams.pop('bandeau',None)
         super().__init__(parent,**kwds)
@@ -663,6 +667,7 @@ class DLG_tableau(xusp.DLG_vide):
 
         # Création des différentes parties de l'écran
         self.pnlParams = PNL_params(self, **dicParams)
+        kwds['db'] = self.db
         self.pnlOlv = PNL_corps(self, dicOlv,  **kwds )
         self.ctrlOlv = self.pnlOlv.ctrlOlv
         self.pnlPied = PNL_pied(self, dicPied,  **kwds )
@@ -692,11 +697,14 @@ class DLG_tableau(xusp.DLG_vide):
         lstDonnees = self.ctrlOlv.lstDonnees
         # Appelé en retour de saisie, à vocation a être complété ou substitué par des accès base de données
         if mode == 'ajout':
-            lstDonnees = lstDonnees[:ixLigne] + [donnees,] + lstDonnees[ixLigne:]
+            self.ctrlOlv.lstDonnees = lstDonnees[:ixLigne] + [donnees,] + lstDonnees[ixLigne:]
         elif mode == 'modif':
-            lstDonnees[ixLigne] = donnees
+            if ixLigne < len(lstDonnees):
+                lstDonnees[ixLigne] = donnees
+            else: lstDonnees.append(donnees)
         elif mode == 'suppr':
             del lstDonnees[ixLigne]
+        self.ctrlOlv.MAJ(ixLigne)
 
     def OnDblClick(self,event):
         event.Skip()
@@ -722,7 +730,7 @@ class DLG_tableau(xusp.DLG_vide):
 
 # -- pour tests -----------------------------------------------------------------------------------------------------
 
-def GetDonnees(olv,**kwds):
+def GetDonnees(**kwds):
     filtre = kwds.pop('filtre',"")
     donnees = [[1,False, 'Bonjour', -1230.05939, -1230.05939, None,'deux'],
                      [2,None, 'Bonsoir', 57.5, 208.99,datetime.date.today(),None],

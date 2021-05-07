@@ -18,7 +18,7 @@ from xpy.outils                 import xformat,xboutons,xdates
 #************************************** Paramètres PREMIER ECRAN ******************************************
 
 MODULE = 'DLG_Balance'
-TITRE = "BALANCE COMPTABLE"
+TITRE = "BALANCE COMPTABLE non fini!!!!"
 INTRO = "La balance appelée provient de la base de donnée comptablilité, pointée par Noelite"
 
 # Info par défaut
@@ -89,7 +89,7 @@ MATRICE_PARAMS = {
 }
 
 # paramètre les options de l'OLV
-def GetDicOlv():
+def GetDicOlv(dlg):
     return {
     'lstColonnes': [
                 ColumnDefn("Compte", 'centre', 90, 'IDcompte'),
@@ -104,7 +104,7 @@ def GetDicOlv():
                       'credit': {"mode": "total","alignement": wx.ALIGN_RIGHT},
                       'solde': {"mode": "total","alignement": wx.ALIGN_RIGHT},
                       },
-    'getDonnees': SqlBalance,
+    'getDonnees': dlg.GetDonnees,
     'lstChamps': ['Numero','Intitule','Debit','Credit'],
     'minSize': (600,200),
     'sortColumnIndex':0,
@@ -131,13 +131,9 @@ def GetDicParams():
             }
 
 
-
-def SqlBalance(olv,**kwd):
-    if hasattr(olv,'dicOptions'):
-        dicOptions = olv.dicOptions
-    else: return []
-    compta = nucompta.Compta(olv,exercice=dicOptions['exercice'])
-    annee = dicOptions['exercice']
+def SqlBalance(dlg,dicParams):
+    compta = nucompta.Compta(dlg.ctrlOlv,exercice=dicParams['exercice'])
+    annee = dicParams['exercice']
     if len(annee) == 4:
         n1 = str(int(annee)-1)
         debut = annee +"-10-01"
@@ -155,13 +151,18 @@ class DLG_balance(xgtr.DLG_tableau):
         self.IDutilisateur = nuutil.GetIDutilisateur()
         if (not self.IDutilisateur) or not nuutil.VerificationDroitsUtilisateurActuel('facturation_factures','creer'):
             self.Destroy()
-        super().__init__(parent,dicParams=GetDicParams(),dicOlv=GetDicOlv())
+        self.dicParams = GetDicParams()
+        super().__init__(self,dicParams=self.dicParams,dicOlv=GetDicOlv(self))
 
     def OnBtnSynchro(self,event):
         self.ctrlOlv.dicOptions = self.pnlParams.GetValues(False)
         self.ctrlOlv.MAJ()
         event.Skip
 
+    def GetDonnees(self,*args,**kwds):
+        if hasattr(self,'ctrlOlv'):
+            return SqlBalance(self,self.dicParams)
+        else: return []
 
 
 #------------------------ Lanceur de test  -------------------------------------------
