@@ -4353,7 +4353,7 @@ class CTRL_Outils(wx.Panel):
 
     def OnBoutonFiltrer(self,event):
         dlg = ListeFiltres.DLG_listeFiltres(self,self.listview,self.listeFiltres)
-        if dlg.ShowModal() == wx.OK:
+        if dlg.ShowModal() == wx.OK or wx.ID_OK:
             self.listeFiltres = dlg.GetFiltres()
             self.listview.SetFiltresColonnes(self.listeFiltres)
             self.listview.Filtrer()

@@ -456,7 +456,7 @@ def SetEffectifs(dlg,**kwd):
         if ret == 'ok':
             del donneesOlv[ixligne]
 
-def GetEffectifs(params,**kwd):
+def GetEffectifs(dlg,**kwd):
     # retourne les effectifs dans la table stEffectifs
     db = kwd.get('db',None)
     nbreFiltres = kwd.get('nbreFiltres', 0)
@@ -466,15 +466,14 @@ def GetEffectifs(params,**kwd):
         limit = "LIMIT %d" % LIMITSQL
 
     where = """
-                WHERE (IDdate >= '%s' AND IDdate <= '%s')"""%(params['param1']['periode'][0],params['param1']['periode'][1])
-    if params['param2']['repas']: where += """
-                        AND ( IDanalytique = '' )"""
+                WHERE (IDdate >= '%s' AND IDdate <= '%s')"""%(dlg.periode[0],dlg.periode[1])
+    if dlg.repas: where += """
+                        AND ( IDanalytique = '00' )"""
     else: where += """
-                        AND ( IDanalytique = '%s')"""%params['param2']['analytique']
+                        AND ( IDanalytique = '%s')"""%dlg.analytique
 
     table = DB_schema.DB_TABLES['stEffectifs']
     lstChamps = xformat.GetLstChamps(table)
-
     req = """   SELECT %s
                 FROM stEffectifs
                 %s 

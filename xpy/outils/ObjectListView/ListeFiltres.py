@@ -86,7 +86,7 @@ class DLG_listeFiltres(xusp.DLG_listCtrl):
                                     dlChamps=CHAMPS,
                                     lblList="Liste des filtres",
                                     gestionProperty=False,
-                                    boxSize=(300,250),
+                                    boxSize=(350,450),
                                     ctrlSize=(280,30),
                                     txtSize=110)
 

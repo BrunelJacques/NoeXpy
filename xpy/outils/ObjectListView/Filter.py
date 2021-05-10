@@ -300,5 +300,4 @@ if __name__ == '__main__':
     app.SetTopWindow(frame_3)
     frame_3.ShowModal()
     """
-    print(GetFiltrePython(wx.DateTime,"macolonne","APRES","aujourd'hui"))
     app.MainLoop()

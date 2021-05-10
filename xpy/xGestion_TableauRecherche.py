@@ -189,16 +189,19 @@ class ListView(ObjectListView):
             kwd['db'] = self.parent.db
         elif hasattr(self.lanceur,'db'):
             kwd['db'] = self.lanceur.db
-        self.SetObjects(self.formerTracks(**kwd))
+        lstDonnees = self.formerTracks(**kwd)
+        self.SetObjects(lstDonnees)
         if len(self.innerList) >0:
             self.SelectObject(self.innerList[0])
         if self.avecFooter:
             self.ctrlFooter.MAJ_totaux()
             self.ctrlFooter.Refresh()
 
+
     def MAJ(self, ID=None):
         self.selectionID = ID
         self.InitModel()
+        self.Refresh()
         # Rappel de la sélection d'un item
         if self.selectionID != None and len(self.innerList) > 0:
             self.SelectObject(self.innerList[ID], deselectOthers=True, ensureVisible=True)
@@ -236,11 +239,10 @@ class ListView(ObjectListView):
         return setterValues
 
     def formerTracks(self,**kwd):
-        if self.lstDonnees == []:
-            kwd['dicOlv'] = self.parent.dicOlv
-            if hasattr(self,'getDonnees') and self.getDonnees :
-                self.lstDonnees = self.getDonnees(**kwd)
-            else: self.lstDonnees = []
+        kwd['dicOlv'] = self.parent.dicOlv
+        if hasattr(self,'getDonnees') and self.getDonnees :
+            self.lstDonnees = self.getDonnees(**kwd)
+        else: self.lstDonnees = []
         tracks = list()
         if self.lstDonnees is None:
             return tracks
@@ -517,7 +519,6 @@ class PNL_corps(wx.Panel):
             self.olv.ctrlOutils = self.ctrlOutils
         self.ctrlOlv.SetMinSize(minSize)
         self.ctrlOlv.db = self.db
-        self.ctrlOlv.MAJ()
         self.Sizer()
 
     def SetFooter(self,reinit=False):
@@ -672,9 +673,9 @@ class DLG_tableau(xusp.DLG_vide):
         self.ctrlOlv = self.pnlOlv.ctrlOlv
         self.pnlPied = PNL_pied(self, dicPied,  **kwds )
 
-
         # permet un Sizer de substitution différé après l'init propre à l'instance
         if autoSizer:
+            self.ctrlOlv.MAJ()
             self.Sizer()
 
     def Sizer(self):

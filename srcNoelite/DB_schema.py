@@ -309,7 +309,7 @@ DB_TABLES = {
 DB_PK = {
         'PK_vehiculesCouts_IDanalytique_cloture': {'table': 'vehiculesCouts', 'champ': 'IDanalytique, cloture'},
         'PK_stArticles_IDarticle': {'table': 'stArticles', 'champ': 'IDarticle'},
-        'PK_stEffectifs_date': {'table': 'stEffectifs', 'champ': 'IDdate,IDanalytique'},
+        'PK_stEffectifs_date_IDanalytique': {'table': 'stEffectifs', 'champ': 'IDdate,IDanalytique'},
         'PK_stInventaires_date_IDarticle': {'table': 'stInventaires', 'champ': 'IDdate,IDarticle'},
         }
 

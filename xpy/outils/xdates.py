@@ -1087,7 +1087,7 @@ class TxtDate(masked.TextCtrl):
             self.parent.OnDate(event)
         except:
             pass
-        #event.Skip()
+        event.Skip()
 
 # saisie date par le calendrier incorporé
 class CTRL_SaisieDate(wx.Panel):
@@ -1131,12 +1131,9 @@ class CTRL_SaisieDate(wx.Panel):
     def OnChoixDate(self,event):
         # vérification de la validité de la date par passage en datetime et réaffichage
         if self.flagSkipEdit:
-            #event.Skip()
             return
         self.flagSkipEdit = True
         dtDate = None
-        origine = event.EventObject.Parent.Name
-        #event.Skip()
         try:
             dtDate = xformat.DateToDatetime(self.GetValue())
         except:
@@ -1145,10 +1142,11 @@ class CTRL_SaisieDate(wx.Panel):
         if dtDate:
             self.SetValue(xformat.DatetimeToStr(dtDate))
             if self.OnDate:
-                self.OnDate(origine)
+                self.OnDate(event)
             elif hasattr(self,'actionCtrl'):
                 eval('self.parent.lanceur.%s())'%self.actionCtrl)
             else: wx.MessageBox("xdate.CTRL_SaisieDate: pas de retour 'OnDate' géré!!!")
+        event.Skip()
         self.flagSkipEdit = False
 
     def SetFocus(self):
@@ -1199,8 +1197,9 @@ class CTRL_Periode(wx.Panel):
         #static_sizer_periode.Add((100,100), 1, wx.EXPAND, 0)
         self.SetSizer(static_sizer_periode)
 
-    def OnDate(self,origine):
-        if  origine == 'date_du':
+    def OnDate(self,event):
+        origine = event.EventObject.Parent.Name
+        if  origine == 'date_du' and event.EventType == wx.EVT_TEXT_ENTER.evtType[0]:
             self.ctrlSaisieAu.SetFocus()
         else:
             debut,fin = self.GetValue()

@@ -494,7 +494,7 @@ class PNL_ctrl(wx.Panel):
     def PnlSizer(self):
         topbox = wx.BoxSizer(wx.HORIZONTAL)
         topbox.Add(self.txt,0, wx.LEFT|wx.TOP|wx.ALIGN_CENTER, 5)
-        topbox.Add(self.ctrl, 1, wx.ALL|wx.EXPAND , 4)
+        topbox.Add(self.ctrl, 1, wx.ALL|wx.ALIGN_CENTER_VERTICAL , 4)
         if self.avecBouton:
             topbox.Add(self.btn, 0, wx.ALL|wx.EXPAND, 4)
         self.SetSizer(topbox)
@@ -1069,13 +1069,14 @@ class DLG_listCtrl(wx.Dialog):
         self.btn = xboutons.BTN_fermer(self)
         self.btn.Bind(wx.EVT_BUTTON, self.OnFermer)
         self.btnEsc = xboutons.BTN_esc(self)
-        self.MinSize = (400, 300)
         self.dlgGest = None
 
     # définition (par défaut) de l'écran de gestion d'une ligne
     def InitDlgGestion(self):
         # permet d'intervenir avant le lancement du sizer global pour personnaliser l'écran de gestion
-        self.dlgGest = DLG_vide(self,)
+        size = self.kwds.get('boxSize',(200,300))
+        kw = {'size':size}
+        self.dlgGest = DLG_vide(self,**kw)
         if self.gestionProperty:
             self.dlgGest.pnl = PNL_property(self.dlgGest, self, matrice=self.dldMatrice, **self.kwds)
         else:
@@ -1310,10 +1311,11 @@ class DLG_vide(wx.Dialog):
         elif hasattr(event.EventObject.Parent,'actionCtrl'):
             actionCtrl = event.EventObject.Parent.actionCtrl
         else:
-            actionCtrl = "print('!!!! actionCtrl de '%s' non trouvée,wx.BELL()"%event.EventObject.Name
+            actionCtrl = "print('!!!! actionCtrl de <%s> non trouvée,wx.BELL()"%event.EventObject.Name
         # selon la nature texte ou pas
         if isinstance(actionCtrl,str):
-            eval(actionCtrl)
+            action = "self."+actionCtrl+"(event)"
+            eval(action)
         else:
             actionCtrl(event)
 

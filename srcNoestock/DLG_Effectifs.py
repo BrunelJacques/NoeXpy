@@ -183,9 +183,9 @@ class DLG(xgtr.DLG_tableau):
 
         # variables gérées par l'écran paramètres
         self.today = datetime.date.today()
-        self.periode = (None,None)
+        #self.periode = (None,None)
         self.repas = True
-        self.analytique = ''
+        self.analytique = '00'
 
         # Propriétés de l'écran global type Dialog
         kwds = GetDlgOptions(self)
@@ -193,15 +193,15 @@ class DLG(xgtr.DLG_tableau):
         kwds['dicParams'] = GetDicParams()
         kwds['dicOlv'] = self.dicOlv
         kwds['dicPied'] = dicPied
+        kwds['db'] = xdb.DB()
 
         super().__init__(None, **kwds)
         ret = self.Init()
         if ret == wx.ID_ABORT: self.Destroy()
         self.Sizer()
+        self.ctrlOlv.MAJ()
 
     def Init(self):
-        self.db = xdb.DB()
-
         # lancement de l'écran en blocs principaux
         self.pnlBandeau = xbandeau.Bandeau(self,TITRE,INTRO, hauteur=20,
                                            nomImage="xpy/Images/80x80/Famille.png",
@@ -218,7 +218,6 @@ class DLG(xgtr.DLG_tableau):
         self.txtAnalytique = self.pnlParams.GetPnlCtrl('analytique','param2').txt
         self.txtAnalytique.Enable(False)
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
-        self.GetDonnees()
 
     def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
@@ -242,7 +241,7 @@ class DLG(xgtr.DLG_tableau):
 
     def OnPeriode(self,event):
         self.periode = self.pnlParams.GetOneValue('periode','param1')
-        self.GetDonnees()
+        self.ctrlOlv.MAJ()
         if event: event.Skip()
 
     def OnRepas(self,event):
@@ -257,15 +256,16 @@ class DLG(xgtr.DLG_tableau):
         self.pnlParams.SetOneSet('analytique', values=self.valuesAnalytique, codeBox='param2')
         self.btnAnalytique.Enable(not self.repas)
         self.txtAnalytique.Enable(not self.repas)
-        self.analytique = ''
-        self.GetDonnees()
+        self.analytique = '00'
+        self.ctrlOlv.MAJ()
 
     def OnAnalytique(self,event):
         choixAnalytique = self.pnlParams.GetOneValue('analytique',codeBox='param2')
         if len(choixAnalytique) > 0:
-            ix = self.valuesAnalytique.index(choixAnalytique)
+            ix = self.valuesAnalytique.index(choixAnalytique)-1
             self.analytique = self.lstAnalytiques[ix][0]
-        self.GetDonnees()
+        else: self.analytique = '00'
+        self.ctrlOlv.MAJ()
         if event: event.Skip()
 
     def OnBtnAnalytique(self,event):
@@ -274,6 +274,7 @@ class DLG(xgtr.DLG_tableau):
         dicAnalytique = noegest.GetActivite(mode='dlg')
         codeAct = nust.MakeChoiceActivite(dicAnalytique)
         self.pnlParams.SetOneValue('analytique',codeAct,codeBox='param2')
+        self.OnAnalytique(event)
 
     def OnBtnSynchro(self,event):
         # lancement de la synchronisation entre base LAN et Wan
@@ -283,15 +284,14 @@ class DLG(xgtr.DLG_tableau):
 
     def GetDonnees(self,**kwd):
         # rafraîchissement des données de l'Olv principal suite à changement de params
-        params = self.pnlParams.GetValues()
-        # alimente la grille, puis création de modelObejects pr init
-        if hasattr(self,'ctrlOlv'):
-            # les accès en cours de construction sont ignorés
+        # periode est construite dans DLG.Init les accès en cours de construction sont ignorés
+        lstDonnees = []
+        if hasattr(self,'periode'):
+            params = self.pnlParams.GetValues()
             kwd['db'] = self.db
-            lstDonnees = nust.GetEffectifs(params, **kwd)
-            self.ctrlOlv.lstDonnees = lstDonnees
-            self.ctrlOlv.InitObjectListView()
-            self.ctrlOlv.MAJ()
+            lstDonnees = nust.GetEffectifs(self, **kwd)
+        return lstDonnees
+
 
     def GetTitreImpression(self):
         datedeb = xformat.DateSqlToFr(self.periode[0])
