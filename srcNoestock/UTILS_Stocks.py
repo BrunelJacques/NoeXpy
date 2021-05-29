@@ -45,7 +45,7 @@ def GetMatriceArticles(cutend=None):
         table = DB_schema.DB_TABLES['stArticles']
     lstChamps = xformat.GetLstChamps(table)
     lstTypes = xformat.GetLstTypes(table)
-    lstNomsColonnes = xformat.GetLstNomsColonnes(table)
+    lstNomsColonnes = xformat.GetLstChamps(table)
     lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes,IDcache=False)
     lstColonnes = xformat.GetLstColonnes(table=table,lstLargeur=lstLargeurColonnes,lstNoms=lstNomsColonnes)
     matriceSaisie =  xformat.DicOlvToMatrice(('ligne',""),{'lstColonnes':lstColonnes})
@@ -218,7 +218,8 @@ def SqlDicArticle(db,olv,IDarticle):
             # charge l'article non encore présent
             table = DB_schema.DB_TABLES['stArticles']
             lstChamps = xformat.GetLstChamps(table)
-            lstNomsColonnes = xformat.GetLstNomsColonnes(table)
+            lstNomsColonnes = xformat.GetLstChamps(table)
+            lstSetterValues = xformat.GetValeursDefaut(table)
             req = """   SELECT %s
                             FROM stArticles
                             WHERE IDarticle LIKE '%%%s%%'
@@ -228,7 +229,10 @@ def SqlDicArticle(db,olv,IDarticle):
                 recordset = db.ResultatReq()
                 if len(recordset) > 0:
                     for key in  lstNomsColonnes:
-                        valeur = recordset[0][lstNomsColonnes.index(key)]
+                        ix = lstNomsColonnes.index(key)
+                        valeur = recordset[0][ix]
+                        if not valeur:
+                            valeur = lstSetterValues[ix]
                         dicArticle[key] = valeur
             # bufferisation avec tuple QstPmoy pour calcul des variations lors des entrées
             #dicArticle['oldQstPmoy'] = (dicArticle['qteStock',dicArticle['prixMoyen']])
@@ -424,9 +428,10 @@ def SetEffectifs(dlg,**kwd):
     # Appelé en retour de saisie, gère l'enregistrement
     mode = kwd.pop('mode',None)
     donnees = kwd.pop('donnees',None)
-    if 'lstCodesSup' in dlg.dicOlv:
+    if dlg and 'lstCodesSup' in dlg.dicOlv:
+        # pour aligner le nbre de données sur le nbre de colonnes de l'olv décrit dans dicOlv
         donnees += ['']*len(dlg.dicOlv['lstCodesSup'])
-    ixligne = kwd.pop('ixLigne',None)
+    ixLigne = kwd.pop('ixLigne',None)
     db = kwd.pop('db',None)
     donneesOlv = dlg.ctrlOlv.lstDonnees
 
@@ -442,19 +447,19 @@ def SetEffectifs(dlg,**kwd):
     if mode == 'ajout':
         ret = db.ReqInsert('stEffectifs',lstDonnees=lstDonnees,mess="Insert Effectifs")
         if ret == 'ok':
-            if ixligne and ixligne < len(donneesOlv):
-                dlg.ctrlOlv.lstDonnees = donneesOlv[:ixligne] + [donnees,] + donneesOlv[ixligne:]
+            if ixLigne and ixLigne < len(donneesOlv):
+                dlg.ctrlOlv.lstDonnees = donneesOlv[:ixLigne] + [donnees,] + donneesOlv[ixLigne:]
             else: dlg.ctrlOlv.lstDonnees.append(donnees)
 
     elif mode == 'modif':
         ret = db.ReqMAJ('stEffectifs',lstDonnees[1:],'IDdate',donnees[0],mess="MAJ Effectifs")
         if ret == 'ok':
-            donneesOlv[ixligne] = donnees
+            donneesOlv[ixLigne] = donnees
 
     elif mode == 'suppr':
         ret = db.ReqDEL('stEffectifs','IDdate',donnees[0],mess="Suppression Effectifs")
         if ret == 'ok':
-            del donneesOlv[ixligne]
+            del donneesOlv[ixLigne]
 
 def GetEffectifs(dlg,**kwd):
     # retourne les effectifs dans la table stEffectifs
@@ -575,7 +580,7 @@ def GetAnterieur(dlg,db=None):
     dicOlv = GetMatriceAnterieurs(dlg)
     dlg = xgtr.DLG_tableau(None, dicOlv=dicOlv, db=db)
     ret = dlg.ShowModal()
-    if ret == wx.OK:
+    if ret == wx.OK and dlg.GetSelection():
         donnees = dlg.GetSelection().donnees
         for ix in range(len(donnees)):
             dicParams[dicOlv['listeCodesColonnes'][ix]] = donnees[ix]
@@ -586,10 +591,10 @@ def GetAnterieur(dlg,db=None):
 
 class DLG_articles(xgtr.DLG_tableau):
     def __init__(self,*args,**kwds):
-        db = kwds.pop('db',None)
         value = kwds.pop('value',None)
 
         super().__init__(None, **kwds)
+        db = kwds.pop('db',None)
         if db == None:
             import xpy.xUTILS_DB as xdb
             db = xdb.DB()
@@ -603,7 +608,7 @@ class DLG_articles(xgtr.DLG_tableau):
 
     def FmtDonneesDB(self,nomsCol,donnees,complete = True):
         table = DB_schema.DB_TABLES['stArticles']
-        lstNomsColonnes = xformat.GetLstNomsColonnes(table)
+        lstNomsColonnes = xformat.GetLstChamps(table)
         lstChamps = xformat.GetLstChamps(table)
         lstDonnees = []
         # alimente les données saisies
@@ -619,16 +624,16 @@ class DLG_articles(xgtr.DLG_tableau):
                 lstDonnees.append((champ,lstValDef[lstChamps.index(champ)]))
         return lstDonnees
 
-    def GereDonnees(self, mode=None, nomsCol=[], donnees=[], ixligne=0):
+    def GereDonnees(self, mode=None, nomsCol=[], donnees=[], ixLigne=0):
         # à vocation a être substitué par des accès base de données
         if mode == 'ajout':
-            self.donnees = self.donnees[:ixligne] + [donnees, ] + self.donnees[ixligne:]
+            self.donnees = self.donnees[:ixLigne] + [donnees, ] + self.donnees[ixLigne:]
             lstDonnees = self.FmtDonneesDB(nomsCol,donnees,complete=True)
             mess="DLG_articles.GereDonnees Ajout"
             self.db.ReqInsert('stArticles',lstDonnees=lstDonnees,mess=mess)
 
         elif mode == 'modif':
-            self.ctrlOlv.lstDonnees[ixligne] = donnees
+            self.ctrlOlv.lstDonnees[ixLigne] = donnees
             lstDonnees = self.FmtDonneesDB(nomsCol,donnees,complete=False)
             mess="DLG_articles.GereDonnees Modif"
             ret = self.db.ReqMAJ('stArticles',lstDonnees,nomChampID=lstDonnees[0][0],ID=lstDonnees[0][1],mess=mess)
@@ -636,7 +641,7 @@ class DLG_articles(xgtr.DLG_tableau):
                 pass
 
         elif mode == 'suppr':
-            del self.donnees[ixligne]
+            del self.donnees[ixLigne]
             mess="DLG_articles.GereDonnees Suppr"
             self.db.ReqDel()
 

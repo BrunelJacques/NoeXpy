@@ -13,8 +13,8 @@ import datetime
 import srcNoestock.UTILS_Stocks        as nust
 import srcNoelite.UTILS_Noegest        as nung
 import xpy.xGestion_TableauRecherche   as xgtr
-import xpy.xUTILS_Identification       as xuid
-import xpy.xUTILS_SaisieParams         as xusp
+#import xpy.xUTILS_Identification       as xuid
+#import xpy.xUTILS_SaisieParams         as xusp
 import xpy.xUTILS_DB                   as xdb
 from xpy.outils.ObjectListView  import ColumnDefn
 from xpy.outils                 import xformat,xbandeau,xboutons,xdates
@@ -164,12 +164,56 @@ def GetDlgOptions(dlg):
         'size': (650, 600),
         }
 
-#----------------------- Parties de l'écrans -----------------------------------------
+#----------------------- Parties de l'écran -----------------------------------------
+
+class Saisie(object):
+    # ------------------- Composition de l'écran de gestion----------
+    def __init__(self):
+        # Lanceur de l'écran de saisie d'un nouvelle ligne d'effectif
+        # Propriétés identiques au DLG de gestion pour simuler un passage via l'écran DLG
+        self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
+        self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
+        self.dicOlv.update(GetOlvOptions(self))
+        self.dicOlv.update(GetMatriceSaisie(self))
+
+        # l'ajout d'une ligne nécessite d'appeler un écran avec les champs en lignes
+        dlgSaisie = xgtr.DLG_saisie(self,self.dicOlv)
+        ret = dlgSaisie.ShowModal()
+        if ret == wx.OK:
+            #récupération des valeurs saisies puis ajout dans les données
+            ddDonnees = dlgSaisie.pnl.GetValues()
+            nomsCol, donnees = xformat.DictToList(ddDonnees)
+            self.GereDonnees(nomsCol=nomsCol, donnees=donnees)
+
+    def GetDonnees(self,**kwd):
+        # censées être les données d'un OLV non créé
+        return []
+
+    def GereDonnees(self,**kwd):
+            # Appelé en retour de saisie, gère l'enregistrement
+            donnees = kwd.pop('donnees', None)
+            db = xdb.DB()
+
+            lstDonnees = [('IDdate', donnees[0]),
+                          ('IDanalytique', self.analytique),
+                          ('midiRepas', donnees[1]),
+                          ('midiClients', donnees[2]),
+                          ('soirRepas', donnees[3]),
+                          ('soirClients', donnees[4]),
+                          ('prevuRepas', donnees[5]),
+                          ('prevuClients', donnees[6]),
+                          ]
+            ret = db.ReqInsert('stEffectifs', lstDonnees=lstDonnees, mess="Insert Effectifs")
+            if ret == 'ok':
+                if ixligne and ixligne < len(donneesOlv):
+                    self.ctrlOlv.lstDonnees = donneesOlv[:ixligne] + [donnees, ] + donneesOlv[ixligne:]
+                else:
+                    self.ctrlOlv.lstDonnees.append(donnees)
+
 
 class DLG(xgtr.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self):
-
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
         self.txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"
         lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),self.txtInfo]
@@ -292,6 +336,9 @@ class DLG(xgtr.DLG_tableau):
             lstDonnees = nust.GetEffectifs(self, **kwd)
         return lstDonnees
 
+    def OnDblClick(self,event):
+        event.Skip()
+        self.pnlOlv.OnModifier(event)
 
     def GetTitreImpression(self):
         datedeb = xformat.DateSqlToFr(self.periode[0])
@@ -342,4 +389,5 @@ if __name__ == '__main__':
     os.chdir("..")
     dlg = DLG()
     dlg.ShowModal()
+    Saisie()
     app.MainLoop()

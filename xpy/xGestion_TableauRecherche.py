@@ -125,7 +125,7 @@ class ListView(ObjectListView):
         self.getDonnees = kwds.pop('getDonnees', None)
         if isinstance(self.getDonnees,str):
             self.getDonnees = eval(self.getDonnees)
-        self.db = None
+        self.db  = kwds.pop('db', None)
 
         # Choix des options du 'tronc commun' du menu contextuel
         self.exportExcel = kwds.pop('exportExcel', True)
@@ -196,7 +196,6 @@ class ListView(ObjectListView):
         if self.avecFooter:
             self.ctrlFooter.MAJ_totaux()
             self.ctrlFooter.Refresh()
-
 
     def MAJ(self, ID=None):
         self.selectionID = ID

@@ -26,10 +26,14 @@ INTRO = {'entrees':"Gestion des entrées dans le stock, par livraison, retour ou
         'sorties':"Gestion des sorties du stock, par repas multicamp, pour un camp ou autre ",}
 
 DICORIGINES = {
-                'entrees':{'codes':['achat','retour','od_in'],
-                          'labels':['achat livraison', 'retour camp', 'od entrée']},
+                'entrees':{'codes': ['achat','retour','od_in'],
+                           'label':"Nature  entrée",
+                           'values': ['achat livraison', 'retour camp', 'od entrée']},
                 'sorties': {'codes': ['repas', 'camp', 'od_out'],
-                           'labels': ['repas, encas', 'camp exterieur', 'od sortie']}}
+                           'label':"Nature  sortie",
+                           'values': ['vers cuisine', 'camp exterieur', 'od sortie']}}
+DICDATE = {     'entrees':{'label':"Date d' entrée"},
+                'sorties':{'label':"Date de sortie",}}
 
 DIC_INFOS = {
             'IDarticle': "<F4> Choix d'un article, ou saisie directe de son code",
@@ -70,13 +74,13 @@ class CtrlAnterieur(wx.Panel):
 
 MATRICE_PARAMS = {
 ("param1", "Paramètres"): [
-    {'name': 'origine', 'genre': 'Choice', 'label': "Nature d'entrée",
+    {'name': 'origine', 'genre': 'Choice', 'label': "",
                     'help': "Le choix de la nature modifie certains contrôles",
                     'value':0, 'values':[],
                     'ctrlAction': 'OnOrigine',
                     'size':(205,30),
                     'txtSize': 90},
-    {'name': 'date', 'genre': 'Texte', 'label': "Date d'entrée",
+    {'name': 'date', 'genre': 'Texte', 'label': "",
                     'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
                                           "Les séparateurs ne sont pas obligatoires en saisie.",
                                           "Saisissez la date de l'entrée en stock sans séparateurs, "),
@@ -125,9 +129,10 @@ MATRICE_PARAMS = {
 }
 
 def GetDicParams(dlg):
-    matrice = MATRICE_PARAMS
-    lstChoices = xformat.GetValueInMatrice(matrice,'origine','values')
-    lstChoices += DICORIGINES[dlg.sens]['labels']
+    matrice = xformat.CopyDic(MATRICE_PARAMS)
+    xformat.SetItemInMatrice(matrice,'origine','values', DICORIGINES[dlg.sens]['values'])
+    xformat.SetItemInMatrice(matrice,'origine','label', DICORIGINES[dlg.sens]['label'])
+    xformat.SetItemInMatrice(matrice,'date','label', DICDATE[dlg.sens]['label'])
     return {
                 'name':"PNL_params",
                 'matrice':matrice,
@@ -312,13 +317,14 @@ class PNL_pied(xgte.PNL_pied):
 
 class DLG(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,sens='entrees'):
+    def __init__(self,sens='sorties'):
         self.sens = sens
         kwds = GetDlgOptions(self)
         super().__init__(None,**kwds)
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
         self.dicOlv.update(GetOlvOptions(self))
+        self.dicOlv['db'] = xdb.DB()
         self.origines = self.dicOlv.pop("codesOrigines",[])
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
@@ -366,7 +372,7 @@ class DLG(xusp.DLG_vide):
         self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
         self.valuesAnalytique = [nust.MakeChoiceActivite(x) for x in self.lstAnalytiques]
         self.pnlParams.SetOneSet('analytique',values=self.valuesAnalytique,codeBox='param2')
-        self.pnlParams.SetOneValue('origine',valeur=DICORIGINES[self.sens]['labels'][0],codeBox='param1')
+        self.pnlParams.SetOneValue('origine',valeur=DICORIGINES[self.sens]['values'][0],codeBox='param1')
         self.OnOrigine(None)
         self.OnHt_ttc(None)
 
@@ -396,7 +402,7 @@ class DLG(xusp.DLG_vide):
     def GetOrigine(self):
         pnlOrigine = self.pnlParams.GetPnlCtrl('origine',codebox='param1')
         lblOrigine = pnlOrigine.GetValue()
-        ixo = DICORIGINES[self.sens]['labels'].index(lblOrigine)
+        ixo = DICORIGINES[self.sens]['values'].index(lblOrigine)
         return DICORIGINES[self.sens]['codes'][ixo]
 
     def OnOrigine(self,event):
@@ -475,7 +481,7 @@ class DLG(xusp.DLG_vide):
         # lancement de la recherche d'un lot antérieur, on enlève le cellEdit pour éviter l'écho des clics
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
         # choix d'un lot de lignes définies par des params
-        dicParams = nust.GetAnterieur(self)
+        dicParams = nust.GetAnterieur(self,db = self.db)
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK        # gestion du retour du choix dépot
         if not 'date' in dicParams.keys(): return
         self.GetDonnees(dicParams)
@@ -507,7 +513,7 @@ class DLG(xusp.DLG_vide):
 
             # set origine
             ixo = DICORIGINES[self.sens]['codes'].index(dicParams['origine'])
-            self.pnlParams.SetOneValue(DICORIGINES[self.sens]['labels'][ixo])
+            self.pnlParams.SetOneValue(DICORIGINES[self.sens]['values'][ixo])
             self.OnOrigine(None)
 
             # set Fournisseur et analytique

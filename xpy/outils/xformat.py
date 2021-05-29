@@ -96,8 +96,8 @@ def ComposeWhereFiltre(filtre,lstChamps,lstColonnes=None, lien='WHERE'):
                 %s ( %s )"""%(lien,texte)
         return whereFiltre
 
-def GetValueInMatrice(dldMatrice,name,param):
-    # retourne la valeur d'un param de la ligne désignée par son name, dans une matrice
+def SetItemInMatrice(dldMatrice,name,item,value):
+    # retourne la valeur d'un item de la ligne désignée par son name, dans une matrice
     valueFound = None
     for cle,ldMatrice in dldMatrice.items():
         for dLigne in ldMatrice:
@@ -105,25 +105,22 @@ def GetValueInMatrice(dldMatrice,name,param):
                 continue
             if dLigne['name'] != name:
                 continue
-            for cle2,value in dLigne.items():
-                if param.lower() == cle2.lower():
-                    valueFound = value
-                    break
-            if valueFound != None: break
+            dLigne[item] = value
+            valueFound = True
+            break
         if valueFound != None: break
-    return valueFound
+    return
 
 # Automatismes de gestion des ColumnDef
 
-def GetLstChamps(dicTable=None):
-    [x for x,y,z in dicTable]
+def GetLstChamps(dicTable):
     return [x for x,y,z in dicTable]
 
-def GetLstTypes(dicTable=None):
+def GetLstTypes(dicTable):
     return [y for x, y, z in dicTable]
 
-def GetLstNomsColonnes(table=None):
-    return [x for x, y, z in table]
+def GetValeursDefaut(dicTable):
+    return ValeursDefaut(GetLstChamps(dicTable),GetLstTypes(dicTable))
 
 def ValeursDefaut(lstNomsColonnes,lstTypes,wxDates=False):
     # Détermine des valeurs par défaut selon le type des variables, précision pour les dates wx ou datetime
@@ -241,7 +238,7 @@ def GetLstColonnes(**kwd):
     IDcache = kwd.pop('IDcache',True)
     wxDates = kwd.pop('wxDates',True)
     # si les listes sont fournies, les param précédents sont inutiles
-    lstNoms = kwd.pop('lstNoms',GetLstNomsColonnes(table))
+    lstNoms = kwd.pop('lstNoms',GetLstChamps(table))
     lstTypes = kwd.pop('lstTypes',[y for x, y, z in table])
     lstCodes = kwd.pop('lstCodes',[SupprimeAccents(x,lower=False) for x in lstNoms])
     lstValDef = kwd.pop('lstValDef',ValeursDefaut(lstNoms, lstTypes,wxDates=wxDates))

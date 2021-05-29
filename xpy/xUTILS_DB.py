@@ -723,6 +723,7 @@ class DB():
             if nomTable[:2] == "v_":
                 continue
             mess = None
+            print("table: ",nomTable)
             if not self.IsTableExists(nomTable):
                 ret = self.CreationUneTable(dicTables=dicTables,nomTable=nomTable)
                 mess = "Création de la table de données %s: %s" %(nomTable,ret)

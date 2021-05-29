@@ -260,6 +260,7 @@ DB_TABLES = {
     'stArticles':[
                 ('IDarticle', 'VARCHAR(32)', "PK Désignation du produit"),
                 ('rations', 'FLOAT', "Nombre de ration pour une unité"),
+                ('obsolete', 'TINYINT', "0/1 si 1 n'est plus utilisé"),
                 ('fournisseur', 'VARCHAR(32)', "Fournisseur habituel"),
                 ('txTva', 'FLOAT', "tx de TVA en %"),
                 ('magasin', 'VARCHAR(32)', "Lieu de stockage: réserve, congel,frigo"),
@@ -290,6 +291,7 @@ DB_TABLES = {
                 ('IDarticle', 'VARCHAR(32)', "clé dans gstArticles"),
                 ('qte', 'INTEGER', "Quantitée mouvementée signée"),
                 ('prixUnit', 'FLOAT', "Prix moyen pour sorties et retour, Prix revient pour achats"),
+                ('repas', 'INTEGER', "1 midi, 2 soir et matin j+1"),
                 ('IDanalytique', 'VARCHAR(8)', "Section analytique du camp à facturer"),
                 ('ordi', 'VARCHAR(16)', "Nom de l'ordi utilisé pour l'entrée ou la modif"),
                 ('dateSaisie', 'DATE', "Date de l'entrée ou la modif"),
@@ -309,8 +311,8 @@ DB_TABLES = {
 DB_PK = {
         'PK_vehiculesCouts_IDanalytique_cloture': {'table': 'vehiculesCouts', 'champ': 'IDanalytique, cloture'},
         'PK_stArticles_IDarticle': {'table': 'stArticles', 'champ': 'IDarticle'},
-        'PK_stEffectifs_date_IDanalytique': {'table': 'stEffectifs', 'champ': 'IDdate,IDanalytique'},
-        'PK_stInventaires_date_IDarticle': {'table': 'stInventaires', 'champ': 'IDdate,IDarticle'},
+        'PK_stEffectifs_IDdate_IDanalytique': {'table': 'stEffectifs', 'champ': 'IDdate,IDanalytique'},
+        'PK_stInventaires_IDdate_IDarticle': {'table': 'stInventaires', 'champ': 'IDdate,IDarticle'},
         }
 
 # index sans contrainte
