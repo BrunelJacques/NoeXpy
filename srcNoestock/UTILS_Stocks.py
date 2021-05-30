@@ -39,17 +39,18 @@ def GetMatriceArticles(cutend=None):
                   'hauteur':15, 'nomImage':"xpy/Images/32x32/Matth.png"}
 
     # Composition de la matrice de l'OLV articles, retourne un dictionnaire
+    nbcol = len(DB_schema.DB_TABLES['stArticles'])
     if cutend:
-        table = DB_schema.DB_TABLES['stArticles'][:-cutend]
-    else:
-        table = DB_schema.DB_TABLES['stArticles']
+        nbcol -= cutend
+    table = DB_schema.DB_TABLES['stArticles'][:nbcol]
     lstChamps = xformat.GetLstChamps(table)
-    lstTypes = xformat.GetLstTypes(table)
+    #lstTypes = xformat.GetLstTypes(table)
     lstNomsColonnes = xformat.GetLstChamps(table)
-    lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes,IDcache=False)
+    lstLargeurColonnes = [200, 60, 60, 128, 60, -1, -1, 60, 52, 67, 67, 75, 90][:nbcol]
     lstColonnes = xformat.GetLstColonnes(table=table,lstLargeur=lstLargeurColonnes,lstNoms=lstNomsColonnes)
     matriceSaisie =  xformat.DicOlvToMatrice(('ligne',""),{'lstColonnes':lstColonnes})
-    lgSize = 60
+    # Personnalisation
+    lgSize = 160
     for lg in lstLargeurColonnes: lgSize += lg
     sizeSaisie = (200, max(len(lstColonnes) * 50, 400))
     return   {
@@ -57,7 +58,7 @@ def GetMatriceArticles(cutend=None):
                 'lstChamps':lstChamps,
                 'getDonnees': SqlArticles,
                 'lstNomsBtns': ['creer','modifier'],
-                'size':(lgSize,400),
+                'size':(lgSize,700),
                 'sizeSaisie': sizeSaisie,
                 'matriceSaisie': matriceSaisie,
                 'dicBandeau': dicBandeau,
@@ -149,6 +150,7 @@ def SqlArticles(**kwd):
     dicOlv = kwd.pop('dicOlv',{})
     lstChamps = dicOlv['lstChamps']
     lstColonnes = dicOlv['lstColonnes']
+    withObsoletes = dicOlv.get('withObsoletes',True)
 
     # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
     limit = ''
@@ -156,9 +158,14 @@ def SqlArticles(**kwd):
         limit = "LIMIT %d" %LIMITSQL
 
     # intégration du filtre recherche via le where dans tous les champs
-    where = ''
-    if filtreTxt and len(filtreTxt) >0:
-            where = xformat.ComposeWhereFiltre(filtreTxt,lstChamps, lstColonnes = lstColonnes,lien='WHERE')
+    if withObsoletes:
+        where = ''
+        if filtreTxt and len(filtreTxt) > 0:
+            where = xformat.ComposeWhereFiltre(filtreTxt, lstChamps, lstColonnes=lstColonnes, lien='WHERE')
+    else:
+        where = 'WHERE (obsolete IS NULL)'
+        if filtreTxt and len(filtreTxt) >0:
+                where += xformat.ComposeWhereFiltre(filtreTxt,lstChamps, lstColonnes = lstColonnes,lien='AND')
 
     req = """FLUSH TABLES stArticles;"""
     retour = db.ExecuterReq(req, mess="UTILS_Stocks.SqlArticles Flush")
@@ -195,13 +202,19 @@ def SqlOneArticle(db,value,**kwds):
                 return recordset[0][0]
 
     # article non trouvé, on lance la gestion des articles pour un choix filtré sur value
-    cutend = kwds.pop('cutend',6)
+    cutend = kwds.pop('cutend',10)
     dicOlv = GetMatriceArticles(cutend=cutend)
+    dicOlv['withObsoletes'] = False
+    del dicOlv['lstNomsBtns']
     dlg = DLG_articles(db=db,value=value,dicOlv=dicOlv)
     ret = dlg.ShowModal()
+    IDarticle = None
     if ret == wx.OK:
-        IDarticle = dlg.GetSelection().IDarticle
-    else: IDarticle = None
+        selection = dlg.GetSelection()
+        if not selection and len(dlg.ctrlOlv.innerList) >0:
+            selection = dlg.ctrlOlv.innerList[0]
+        if selection:
+            IDarticle = selection.IDarticle
     dlg.Destroy()
     return IDarticle
 
@@ -590,14 +603,14 @@ def GetAnterieur(dlg,db=None):
 # gestion des articles via tableau de recherche ---------------------------------------------------------
 
 class DLG_articles(xgtr.DLG_tableau):
-    def __init__(self,*args,**kwds):
+    def __init__(self,**kwds):
         value = kwds.pop('value',None)
-
-        super().__init__(None, **kwds)
         db = kwds.pop('db',None)
         if db == None:
             import xpy.xUTILS_DB as xdb
             db = xdb.DB()
+        kwds['db'] = db
+        super().__init__(None, **kwds)
         self.db = db
 
         if  isinstance(value,str):
@@ -605,8 +618,10 @@ class DLG_articles(xgtr.DLG_tableau):
         # enlève le filtre si pas de réponse
         if len(self.ctrlOlv.innerList) == 0:
             self.pnlOlv.ctrlOutils.barreRecherche.SetValue('')
+        self.pnlOlv.ctrlOutils.barreRecherche.OnSearch(None)
 
-    def FmtDonneesDB(self,nomsCol,donnees,complete = True):
+
+    def FmtDonneesDB(self,nomsCol,donnees,complete=True):
         table = DB_schema.DB_TABLES['stArticles']
         lstNomsColonnes = xformat.GetLstChamps(table)
         lstChamps = xformat.GetLstChamps(table)
@@ -616,7 +631,6 @@ class DLG_articles(xgtr.DLG_tableau):
             lstDonnees.append((lstChamps[lstNomsColonnes.index(col)],donnees[nomsCol.index(col)]))
         if len(donnees) < len(lstNomsColonnes) and complete:
             # tous les champs n'ont pas été saisis, complementation avec des valeurs par défaut
-            altDonnees = []
             lstTypes = xformat.GetLstTypes(table)
             lstValDef = xformat.ValeursDefaut(lstNomsColonnes,lstTypes)
             champsNonSaisis = [ lstChamps[lstNomsColonnes.index(x)] for x in lstNomsColonnes if x not in nomsCol]
@@ -660,6 +674,6 @@ if __name__ == '__main__':
     obj = MonObjet(None)
     ret = GetAnterieur(obj)
     """
-    dlg = DLG_articles(None,dicOlv=GetMatriceArticles())
+    dlg = DLG_articles(dicOlv=GetMatriceArticles())
     ret = dlg.ShowModal()
     print(ret)

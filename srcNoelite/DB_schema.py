@@ -259,8 +259,8 @@ DB_TABLES = {
 
     'stArticles':[
                 ('IDarticle', 'VARCHAR(32)', "PK Désignation du produit"),
+                ('obsolete', 'TINYINT(1)', "0/1 si 1 n'est plus utilisé"),
                 ('rations', 'FLOAT', "Nombre de ration pour une unité"),
-                ('obsolete', 'TINYINT', "0/1 si 1 n'est plus utilisé"),
                 ('fournisseur', 'VARCHAR(32)', "Fournisseur habituel"),
                 ('txTva', 'FLOAT', "tx de TVA en %"),
                 ('magasin', 'VARCHAR(32)', "Lieu de stockage: réserve, congel,frigo"),

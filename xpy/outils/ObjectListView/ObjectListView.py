@@ -4245,7 +4245,8 @@ class BarreRecherche(wx.SearchCtrl):
 
     def OnSearch(self, evt):
         self.Recherche()
-        evt.Skip()
+        if evt:
+            evt.Skip()
 
     def OnCancel(self, evt):
         self.SetValue("")

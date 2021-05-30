@@ -158,6 +158,10 @@ class ListView(ObjectListView):
         # Binds perso
         self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
         self.Bind(wx.EVT_LEFT_DCLICK, self.parent.OnDblClick)
+        self.Bind(wx.EVT_CHAR, self.OnChar)
+
+    def OnChar(self,event):
+            wx.MessageBox("Quelle touche?")
 
     def InitObjectListView(self):
         # Couleur en alternance des lignes
@@ -659,6 +663,9 @@ class DLG_tableau(xusp.DLG_vide):
     def __init__(self,parent,dicParams={},dicOlv={},dicPied={}, **kwds):
         self.db = kwds.pop('db',None) #purge d'éventuels arguments db à ne pas envoyer à super()
         autoSizer =     kwds.pop('autoSizer', True)
+        size = kwds.get('size',None)
+        if not size and dicOlv.get('size',None):
+            kwds['size'] = dicOlv.pop('size',None)
         dicBandeau = dicParams.pop('bandeau',None)
         super().__init__(parent,**kwds)
         if dicBandeau:

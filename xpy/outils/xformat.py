@@ -155,13 +155,14 @@ def LargeursDefaut(lstNomsColonnes,lstTypes,IDcache=True):
         elif tip[:5] == 'float': lstLargDef.append(max(lgtitle,60))
         elif tip[:4] == 'date': lstLargDef.append(max(lgtitle,80))
         elif tip[:7] == 'varchar':
-            # passé de 4 à 6
-            lgdef = int(tip[8:-1])*6
+            # passé de 6 à 4
+            lgdef = int(tip[8:-1])*4
             lg = max(lgtitle,lgdef)
             if lg <= 24: lg=24
             if lg > 200:
                 lg = -1
             lstLargDef.append(lg)
+        elif tip[:4] == 'tiny': lstLargDef.append(max(lgtitle, 30))
         else:
             lstLargDef.append(-1)
     return lstLargDef
