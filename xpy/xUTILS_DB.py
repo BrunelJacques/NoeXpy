@@ -716,14 +716,15 @@ class DB():
             indexExists = True
         return indexExists
 
-    def CtrlTables(self, dicTables={}, parent=None):
+    def CtrlTables(self, parent, dicTables, tables):
         # création de table ou ajout|modif des champs selon description fournie
-        for nomTable in dicTables.keys():
+        if not tables:
+            tables = dicTables.keys()
+        for nomTable in tables:
             # les possibles vues sont préfixées v_ donc ignorées
             if nomTable[:2] == "v_":
                 continue
             mess = None
-            print("table: ",nomTable)
             if not self.IsTableExists(nomTable):
                 ret = self.CreationUneTable(dicTables=dicTables,nomTable=nomTable)
                 mess = "Création de la table de données %s: %s" %(nomTable,ret)
@@ -790,8 +791,10 @@ class DB():
         return retour
         #fin CreationUneTable
 
-    def CreationTables(self, dicTables={}, parent=None):
-        for nomTable in dicTables.keys():
+    def CreationTables(self, parent,dicTables, tables):
+        if not tables:
+            tables = dicTables.keys()
+        for nomTable in tables:
             if self.IsTableExists(nomTable):
                 continue
             ret = self.CreationUneTable(dicTables=dicTables,nomTable=nomTable)
@@ -824,9 +827,11 @@ class DB():
                     self.Commit()
         return retour
 
-    def CreationTousIndex(self,dicIndex,parent=None):
+    def CreationTousIndex(self,parent,dicIndex,tables):
         """ Création de tous les index """
-        for nomIndex, temp in dicIndex.items() :
+        for nomIndex, dic in dicIndex.items() :
+            if not dic['table'] in tables:
+                continue
             if not self.IsIndexExists(nomIndex) :
                 ret = self.CreationIndex(nomIndex,dicIndex)
                 mess = "Création de l'index %s: %s" %(nomIndex,ret)
@@ -925,7 +930,7 @@ class DB():
         cnx = mysql.connector.connect(host='192.168.1.43', user='root', database='matthania_data',password='xxxxx')
         cursor = cnx.cursor()
 
-        query = ("SELECT * FROM caisses")
+        query = ("SELECT * FROM utilisateurs")
 
         cursor.execute(query)
 
@@ -950,7 +955,7 @@ class DB():
         try:
             with connection.cursor() as cursor:
                 # Read a single record
-                sql = "SELECT * FROM `caisses` "
+                sql = "SELECT * FROM `utilisateurs` "
                 cursor.execute(sql,)
                 for ligne in cursor:
                     print(ligne)
@@ -961,8 +966,8 @@ class DB():
 
             with connection.cursor() as cursor:
                 # Create a new record
-                sql = "SELECT IDcaisse FROM caisses;"
-                cursor.execute(sql, ('IDcaisse',))
+                sql = "SELECT IDutilisateur FROM utilisateurs;"
+                cursor.execute(sql, ('IDutilisateur',))
                 result = cursor.fetchone()
                 print(result)
 
@@ -980,7 +985,14 @@ class DB():
         finally:
             connection.close()
 
-def Init_tables(parent=None, mode="creat"):
+def Init_tables(parent=None, mode="creation",tables=None):
+    # actualise la structure des tables
+    if not tables:
+        md = wx.MessageDialog(parent,
+                "%s de toutes les tables\n\ny compris la structure des tables Noethys existantes"%mode.capitalize(),
+                style=wx.YES_NO)
+        if md.ShowModal() != wx.ID_YES:
+            return
     db = DB()
     del db.cursor
     db.cursor = db.connexion.cursor(buffered=False)
@@ -990,7 +1002,7 @@ def Init_tables(parent=None, mode="creat"):
         parent.mess = "Lancement créations: "
         parent.SetStatusText(parent.mess)
     if mode == "creation":
-        db.CreationTables(dicTables=DB_TABLES,parent=parent)
+        db.CreationTables(parent,DB_TABLES,tables)
 
         # réinit complet de db pour prendre en compte les nouvelles tables
         del db.cursor
@@ -998,10 +1010,12 @@ def Init_tables(parent=None, mode="creat"):
         db = DB()
         db.cursor = db.connexion.cursor(buffered=False)
 
-        db.CreationTousIndex(DB_IX, parent=parent)
-        db.CreationTousIndex(DB_PK, parent=parent)
+        db.CreationTousIndex(parent,DB_IX, tables)
+        db.CreationTousIndex(parent,DB_PK, tables)
+
     elif mode == "ctrl":
-        db.CtrlTables(dicTables=DB_TABLES, parent=parent)
+        db.CtrlTables(parent,DB_TABLES,tables)
+
     db.Close() # fermeture pour prise en compte de la création
 
 if __name__ == "__main__":

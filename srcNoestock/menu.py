@@ -12,6 +12,9 @@ import wx
 from xpy import xUTILS_Identification, xGestionConfig, xUTILS_DB
 from srcNoestock import DLG_Mouvements,UTILS_Stocks
 
+# liste de tables de DB_schema à contrôler et à créer si inexistantes
+LST_TABLES = ['utilisateurs','droits','cpta_analytiques','stArticles','stEffectifs','stMouvements','stInventaires']
+
 """ Paramétrage de la construction de la barre de menus """
 class MENU():
     def __init__(self,parent):
@@ -165,10 +168,10 @@ class MENU():
         del dlg
 
     def On_gesTables(self,event):
-        xUTILS_DB.Init_tables(parent=self.parent,mode="creation")
+        xUTILS_DB.Init_tables(parent=self.parent,mode="creation",tables=LST_TABLES)
 
     def On_ctrlTables(self,event):
-        xUTILS_DB.Init_tables(parent=self.parent,mode="ctrl")
+        xUTILS_DB.Init_tables(parent=self.parent,mode="ctrl",tables=LST_TABLES)
 
     def On_sauve(self,event):
         pass

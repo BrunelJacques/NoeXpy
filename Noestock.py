@@ -23,7 +23,7 @@ dictAPPLI = {
                              ('Donnees', "Base de travail, peut être la centrale  en mode connecté")]
             }
 
-class MyFrame(xAppli.MainFrame):
+class StFrame(xAppli.MainFrame):
     def __init__(self, *args, **kw):
         kw['size'] = (750,520)
         super().__init__( *args, **kw)
@@ -87,7 +87,7 @@ class MyApp(wx.App):
     def OnInit(self):
         xAppli.CrashReport(dictAPPLI)
         # Création de la frame principale
-        myframe = MyFrame(None)
+        myframe = StFrame(None)
         self.SetTopWindow(myframe)
         return True
 
