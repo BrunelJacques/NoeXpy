@@ -13,6 +13,7 @@ from srcNoelite     import DB_schema
 from xpy.outils     import xformat
 
 LIMITSQL =100
+CHOIX_REPAS = ['PtDej','Midi','Soir','Tous']
 
 def ValideParams(pnl,dicParams,mute=False):
     # vérifie la saisie des paramètres
@@ -138,7 +139,10 @@ def SqlMouvements(db,dParams=None):
         for record in recordset:
             dMouvement = {}
             for ix  in range(len(lstChamps)):
-                dMouvement[lstChamps[ix]] = record[ix]
+                if lstChamps[ix] == 'repas' and record[ix]:
+                    dMouvement[lstChamps[ix]] = CHOIX_REPAS[record[ix]]
+                else:
+                    dMouvement[lstChamps[ix]] = record[ix]
             ldMouvements.append(dMouvement)            
     return ldMouvements
 
@@ -321,6 +325,7 @@ def CalculeLigne(dlg,track):
     track.qteStock = track.dicArticle['qteStock']
 
 def ValideLigne(db,track):
+    # validation de la ligne de mouvement
     track.valide = True
     track.messageRefus = "Saisie incomplète\n\n"
 
@@ -331,6 +336,10 @@ def ValideLigne(db,track):
     # article manquant
     if track.IDarticle in (None,0,'') :
         track.messageRefus += "L'article n'est pas saisi\n"
+
+    # repas manquant
+    if track.repas in (None,'') :
+        track.messageRefus += "Le repas concerné n'est pas saisi\n"
 
     # qte null
     try:
@@ -355,15 +364,18 @@ def ValideLigne(db,track):
     return
 
 def SauveLigne(db,dlg,track):
-    # --- Sauvegarde des différents éléments associés à la ligne ---
+    # --- Sauvegarde des différents éléments associés à la ligne de mouvement
     if not track.valide:
         return False
     if not dlg.analytique or len(dlg.analytique.strip()) == 0:
         dlg.analytique = ''
-
+    repas = None
+    if len(track.repas) > 0:
+        repas = CHOIX_REPAS.index(track.repas)
     lstDonnees = [  ('date',dlg.date),
                     ('fournisseur',dlg.fournisseur),
                     ('origine',dlg.origine),
+                    ('repas', repas),
                     ('IDarticle', track.IDarticle),
                     ('qte', track.qte),
                     ('prixUnit', track.prixTTC),
@@ -619,6 +631,7 @@ class DLG_articles(xgtr.DLG_tableau):
         if len(self.ctrlOlv.innerList) == 0:
             self.pnlOlv.ctrlOutils.barreRecherche.SetValue('')
         self.pnlOlv.ctrlOutils.barreRecherche.OnSearch(None)
+        self.pnlOlv.ctrlOlv.SetFocus()
 
 
     def FmtDonneesDB(self,nomsCol,donnees,complete=True):

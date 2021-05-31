@@ -161,7 +161,9 @@ class ListView(ObjectListView):
         self.Bind(wx.EVT_CHAR, self.OnChar)
 
     def OnChar(self,event):
-            wx.MessageBox("Quelle touche?")
+        if event.GetKeyCode() == wx.WXK_RETURN:
+            self.parent.OnDblClick(event)
+        else: event.Skip()
 
     def InitObjectListView(self):
         # Couleur en alternance des lignes
@@ -673,6 +675,7 @@ class DLG_tableau(xusp.DLG_vide):
         else: self.bandeau = None
 
         # Création des différentes parties de l'écran
+        self.dicOlv = xformat.CopyDic(dicOlv)
         self.pnlParams = PNL_params(self, **dicParams)
         kwds['db'] = self.db
         self.pnlOlv = PNL_corps(self, dicOlv,  **kwds )
@@ -714,8 +717,11 @@ class DLG_tableau(xusp.DLG_vide):
         self.ctrlOlv.MAJ(ixLigne)
 
     def OnDblClick(self,event):
-        event.Skip()
-        self.OnFermer(event)
+        if 'lstNomsBtns' in self.dicOlv.keys():
+            self.pnlOlv.OnModifier(event)
+        else:
+            event.Skip()
+            self.OnFermer(event)
 
     def OnFermer(self, *arg, **kwd):
         end = kwd.pop('end',wx.OK)

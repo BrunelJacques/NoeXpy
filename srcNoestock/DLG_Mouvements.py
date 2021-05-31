@@ -16,7 +16,7 @@ import xpy.xGestion_TableauEditor      as xgte
 import xpy.xUTILS_Identification       as xuid
 import xpy.xUTILS_SaisieParams         as xusp
 import xpy.xUTILS_DB                   as xdb
-from xpy.outils.ObjectListView  import ColumnDefn
+from xpy.outils.ObjectListView  import ColumnDefn, CellEditor
 from xpy.outils                 import xformat,xbandeau,xboutons
 
 #---------------------- Matrices de paramétres -------------------------------------
@@ -160,18 +160,20 @@ def GetOlvColonnes(dlg):
     return [
             ColumnDefn("ID", 'centre', 0, 'IDmouvement',
                        isEditable=False),
+            ColumnDefn("Repas", 'left', 60, 'repas', valueSetter=0,
+                                cellEditorCreator=CellEditor.ChoiceEditor),
             ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",isSpaceFilling=True),
-            ColumnDefn("Quantité", 'right', 110, 'qte', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Quantité", 'right', 80, 'qte', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal),
-            ColumnDefn(titlePrix, 'right', 110, 'pxUn', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn(titlePrix, 'right', 80, 'pxUn', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal),
-            ColumnDefn("Mtt HT", 'right', 110, 'mttHT', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Mtt HT", 'right', 80, 'mttHT', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Mtt TTC", 'right', 110, 'mttTTC', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Mtt TTC", 'right', 80, 'mttTTC', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Qté stock", 'right', 110, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Qté stock", 'right', 80, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Nbre Rations", 'right', 110, 'nbRations', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Nbre Rations", 'right', 80, 'nbRations', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
             ]
 
@@ -257,6 +259,18 @@ class PNL_corps(xgte.PNL_corps):
             self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
 
         # travaux avant saisie
+        if code == 'repas':
+            editor.Set(nust.CHOIX_REPAS)
+            # choix par défaut selon l'heure
+            h = datetime.datetime.now().hour
+            ch=2
+            if h < 8: ch=0
+            if h < 14: ch=1
+            if self.parent.sens == 'entrees':
+                ch = 3
+            if track.repas == None:
+                editor.SetSelection(ch)
+
         if code == 'qte':
             if not hasattr(track,'oldQte'):
                 track.oldQte = track.qte

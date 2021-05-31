@@ -259,7 +259,6 @@ DB_TABLES = {
 
     'stArticles':[
                 ('IDarticle', 'VARCHAR(32)', "PK Désignation du produit"),
-                ('obsolete', 'TINYINT(1)', "0/1 si 1 n'est plus utilisé"),
                 ('rations', 'FLOAT', "Nombre de ration pour une unité"),
                 ('fournisseur', 'VARCHAR(32)', "Fournisseur habituel"),
                 ('txTva', 'FLOAT', "tx de TVA en %"),
@@ -268,6 +267,7 @@ DB_TABLES = {
                 ('qteStock', 'INTEGER', "Stock en live"),
                 ('qteMini', 'INTEGER', "Seuil déclenchant une alerte rouge"),
                 ('qteSaison', 'INTEGER', "Seuil souhaitable en haute saison"),
+                ('obsolete', 'TINYINT(1)', "0/1 si 1 n'est plus utilisé"),
                 ('prixMoyen', 'FLOAT', "Prix unitaire moyen historique du stock"),
                 ('prixActuel', 'FLOAT', "Dernier prix TTC unitaire livré ou de réappro"),
                 ('dernierAchat', 'DATE', "Date de dernière entrée avec prix saisi"),],# stocks: articles en stock
@@ -291,7 +291,7 @@ DB_TABLES = {
                 ('IDarticle', 'VARCHAR(32)', "clé dans gstArticles"),
                 ('qte', 'INTEGER', "Quantitée mouvementée signée"),
                 ('prixUnit', 'FLOAT', "Prix moyen pour sorties et retour, Prix revient pour achats"),
-                ('repas', 'INTEGER', "1 midi, 2 soir et matin j+1"),
+                ('repas', 'INTEGER', "0 matin, 1 midi, 2 soir, 3 tous"),
                 ('IDanalytique', 'VARCHAR(8)', "Section analytique du camp à facturer"),
                 ('ordi', 'VARCHAR(16)', "Nom de l'ordi utilisé pour l'entrée ou la modif"),
                 ('dateSaisie', 'DATE', "Date de l'entrée ou la modif"),
