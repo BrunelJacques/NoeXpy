@@ -385,6 +385,7 @@ class DLG(xusp.DLG_vide):
         self.pnlParams.SetOneSet('fournisseur',values=nust.SqlFournisseurs(self.db),codeBox='param2')
         self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
         self.valuesAnalytique = [nust.MakeChoiceActivite(x) for x in self.lstAnalytiques]
+        self.valuesAnalytique.append("")
         self.pnlParams.SetOneSet('analytique',values=self.valuesAnalytique,codeBox='param2')
         self.pnlParams.SetOneValue('origine',valeur=DICORIGINES[self.sens]['values'][0],codeBox='param1')
         self.OnOrigine(None)
@@ -419,6 +420,13 @@ class DLG(xusp.DLG_vide):
         ixo = DICORIGINES[self.sens]['values'].index(lblOrigine)
         return DICORIGINES[self.sens]['codes'][ixo]
 
+    def GetDate(self,fr=False):
+        saisie = self.pnlParams.GetOneValue('date',codeBox='param1')
+        saisie = xformat.FmtDate(saisie)
+        self.date = xformat.DateFrToSql(saisie)
+        if fr: return saisie
+        else: return self.date
+
     def OnOrigine(self,event):
         self.origine = self.GetOrigine()
 
@@ -432,11 +440,15 @@ class DLG(xusp.DLG_vide):
         if 'achat' in self.origine:
             setEnable('fournisseur',True)
             setEnable('analytique',False)
+            self.pnlParams.SetOneValue('analytique',"", codeBox='param2')
         elif ('retour' in self.origine) or ('camp' in self.origine)  :
             setEnable('fournisseur',False)
+            self.pnlParams.SetOneValue('fournisseur',"", codeBox='param2')
             setEnable('analytique',True)
         elif ('od' in self.origine) or ('repas' in self.origine) :
+            self.pnlParams.SetOneValue('fournisseur',"", codeBox='param2')
             setEnable('fournisseur',False)
+            self.pnlParams.SetOneValue('analytique',"", codeBox='param2')
             setEnable('analytique',False)
         else:
             setEnable('fournisseur',True)
@@ -444,13 +456,6 @@ class DLG(xusp.DLG_vide):
 
         self.pnlParams.Refresh()
         if event: event.Skip()
-
-    def GetDate(self,fr=False):
-        saisie = self.pnlParams.GetOneValue('date',codeBox='param1')
-        saisie = xformat.FmtDate(saisie)
-        self.date = xformat.DateFrToSql(saisie)
-        if fr: return saisie
-        else: return self.date
 
     def OnDate(self,event):
         saisie = self.GetDate(fr=True)

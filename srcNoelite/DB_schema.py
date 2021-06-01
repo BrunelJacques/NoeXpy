@@ -267,7 +267,7 @@ DB_TABLES = {
                 ('qteStock', 'INTEGER', "Stock en live"),
                 ('qteMini', 'INTEGER', "Seuil déclenchant une alerte rouge"),
                 ('qteSaison', 'INTEGER', "Seuil souhaitable en haute saison"),
-                ('obsolete', 'TINYINT(1)', "0/1 si 1 n'est plus utilisé"),
+                ('obsolete', 'TINYINT(1)', "0/1 : 1 n'est plus utilisé"),
                 ('prixMoyen', 'FLOAT', "Prix unitaire moyen historique du stock"),
                 ('prixActuel', 'FLOAT', "Dernier prix TTC unitaire livré ou de réappro"),
                 ('dernierAchat', 'DATE', "Date de dernière entrée avec prix saisi"),],# stocks: articles en stock

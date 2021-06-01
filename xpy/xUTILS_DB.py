@@ -720,7 +720,7 @@ class DB():
         # création de table ou ajout|modif des champs selon description fournie
         if not tables:
             tables = dicTables.keys()
-        for nomTable in tables:
+        for nomTable in tables[2:]:
             # les possibles vues sont préfixées v_ donc ignorées
             if nomTable[:2] == "v_":
                 continue
@@ -762,9 +762,17 @@ class DB():
         parent.mess += "- CtrlTables Terminé"
         parent.SetStatusText(parent.mess[-200:])
 
+    def DropUneTable(self,nomTable=None):
+        if nomTable == None : return "Absence de nom de table!!!"
+        req = "DROP TABLE %s " % nomTable
+        retour = self.ExecuterReq(req)
+        if retour == "ok":
+                self.Commit()
+        print(retour)
+        return retour
+        #fin DropUneTable
+
     def CreationUneTable(self, dicTables={},nomTable=None):
-        #dicTables = DB_schema.DB_TABLES
-        retour = None
         if nomTable == None : return "Absence de nom de table!!!"
         req = "CREATE TABLE IF NOT EXISTS %s (" % nomTable
         for nomChamp, typeChamp, comment in dicTables[nomTable]:
@@ -1021,7 +1029,7 @@ def Init_tables(parent=None, mode="creation",tables=None):
 if __name__ == "__main__":
     app = wx.App()
     os.chdir("..")
-    #db = DB()
+    db = DB()
     #from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
     #db.CreationTables(dicTables=DB_TABLES)
     #db.CreationTousIndex(DB_IX)

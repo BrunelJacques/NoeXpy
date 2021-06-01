@@ -10,7 +10,7 @@
 
 import wx
 from xpy import xUTILS_Identification, xGestionConfig, xUTILS_DB
-from srcNoestock import DLG_Mouvements,UTILS_Stocks
+from srcNoestock import DLG_Mouvements, DLG_Effectifs, DLG_PrixJour, DLG_Inventaires, UTILS_Stocks
 
 # liste de tables de DB_schema à contrôler et à créer si inexistantes
 LST_TABLES = ['utilisateurs','droits','cpta_analytiques','stArticles','stEffectifs','stMouvements','stInventaires']
@@ -189,11 +189,22 @@ class MENU():
         del dlg
 
     def On_effectifs(self,event):
-        pass
+        dlg = DLG_Effectifs.DLG()
+        ret = dlg.ShowModal()
+        dlg.Destroy()
+        del dlg
+
     def On_inventaires(self,event):
-        pass
+        dlg = DLG_Inventaires.DLG()
+        ret = dlg.ShowModal()
+        dlg.Destroy()
+        del dlg
+
     def On_prixJournee(self,event):
-        pass
+        dlg = DLG_PrixJour.DLG()
+        ret = dlg.ShowModal()
+        dlg.Destroy()
+        del dlg
 
 if __name__ == "__main__":
     """ Affichage du menu"""
