@@ -206,7 +206,7 @@ def SqlOneArticle(db,value,**kwds):
                 return recordset[0][0]
 
     # article non trouvé, on lance la gestion des articles pour un choix filtré sur value
-    cutend = kwds.pop('cutend',10)
+    cutend = kwds.pop('cutend',11)
     dicOlv = GetMatriceArticles(cutend=cutend)
     dicOlv['withObsoletes'] = False
     del dicOlv['lstNomsBtns']
@@ -269,9 +269,36 @@ def SqlFournisseurs(db=None, **kwd):
     if retour == "ok":
         recordset = db.ResultatReq()
         lstDonnees = [x[0] for x in recordset if x[0]]
-    for nom in ('Boulanger', 'NoName'):
+
+    # complémentation par les fournisseurs utilisés dans les articles, non approximativement présent (7 caractères)
+    lstMots = [x[:7] for x in lstDonnees]
+    req = """   
+            SELECT fournisseur
+            FROM stArticles
+            GROUP BY fournisseur
+            ORDER BY fournisseur;
+            """
+    retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlFournisseurs2')
+
+    def fournisseur(record):
+        # extrait le fournisseur et stocke le mot début
+        if not record[0]: return None
+        mot = record[0].split()[0]
+        if len(mot) > 7: mot = mot[:7]
+        if mot in lstMots: return None
+        lstMots.append(mot)
+        return record[0]
+
+    if retour == "ok":
+        recordset = db.ResultatReq()
+        for record in recordset:
+            if fournisseur(record):
+                lstDonnees.append(record[0])
+
+    for nom in ('NONAME',):
         if not nom in lstDonnees:
             lstDonnees.append(nom)
+    lstDonnees.sort()
     return lstDonnees
 
 def SqlAnalytiques(db, axe="%%"):
@@ -337,10 +364,6 @@ def ValideLigne(db,track):
     if track.IDarticle in (None,0,'') :
         track.messageRefus += "L'article n'est pas saisi\n"
 
-    # repas manquant
-    if track.repas in (None,'') :
-        track.messageRefus += "Le repas concerné n'est pas saisi\n"
-
     # qte null
     try:
         track.qte = float(track.qte)
@@ -370,8 +393,9 @@ def SauveLigne(db,dlg,track):
     if not dlg.analytique or len(dlg.analytique.strip()) == 0:
         dlg.analytique = ''
     repas = None
-    if len(track.repas) > 0:
-        repas = CHOIX_REPAS.index(track.repas)
+    if hasattr(track,'repas'):
+        if len(track.repas) > 0:
+            repas = CHOIX_REPAS.index(track.repas)
     lstDonnees = [  ('date',dlg.date),
                     ('fournisseur',dlg.fournisseur),
                     ('origine',dlg.origine),
@@ -632,7 +656,6 @@ class DLG_articles(xgtr.DLG_tableau):
             self.pnlOlv.ctrlOutils.barreRecherche.SetValue('')
         self.pnlOlv.ctrlOutils.barreRecherche.OnSearch(None)
         self.pnlOlv.ctrlOlv.SetFocus()
-
 
     def FmtDonneesDB(self,nomsCol,donnees,complete=True):
         table = DB_schema.DB_TABLES['stArticles']

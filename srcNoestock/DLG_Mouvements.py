@@ -32,6 +32,7 @@ DICORIGINES = {
                 'sorties': {'codes': ['repas', 'camp', 'od_out'],
                            'label':"Nature  sortie",
                            'values': ['vers cuisine', 'camp exterieur', 'od sortie']}}
+
 DICDATE = {     'entrees':{'label':"Date d' entrée"},
                 'sorties':{'label':"Date de sortie",}}
 
@@ -91,7 +92,7 @@ MATRICE_PARAMS = {
     ],
 ("param2", "Comptes"): [
     {'name': 'fournisseur', 'genre': 'Combo', 'label': 'Fournisseur',
-                    'help': "Il s'agit de la provenance de la marchandise qui déterminera le compte crédité, ce peut être un camp",
+                    'help': "La saisie d'un fournisseur permet les commandes par fournisseur, on peut mettre 'NoName'",
                     'value':0,'values':[''],
                     'ctrlAction':'OnFournisseur',
                      'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un compte pour l'origine",
@@ -157,7 +158,7 @@ def GetOlvColonnes(dlg):
     if dlg.sens == 'entrees':
         titlePrix = "Prix Unit."
     else: titlePrix = "Prix Stock"
-    return [
+    lstCol = [
             ColumnDefn("ID", 'centre', 0, 'IDmouvement',
                        isEditable=False),
             ColumnDefn("Repas", 'left', 60, 'repas', valueSetter=0,
@@ -176,6 +177,10 @@ def GetOlvColonnes(dlg):
             ColumnDefn("Nbre Rations", 'right', 80, 'nbRations', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
             ]
+    if dlg.sens == 'entrees':
+        # supprime la saisie du repas
+        del lstCol[1]
+    return lstCol
 
 def GetOlvCodesSup():
     # codes dans les données olv, mais pas dans les colonnes, attributs des tracks non visibles en tableau
