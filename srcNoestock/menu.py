@@ -3,14 +3,14 @@
 
 #------------------------------------------------------------------------
 # Application :    Projet XPY, atelier de développement
-# Auteurs:          Jacques BRUNEL,
-# Copyright:       (c) 2020-03    Matthania
+# Auteurs:         Jacques BRUNEL,
+# Copyright:       (c) 2021-01    Matthania
 # Licence:         Licence GNU GPL
 #------------------------------------------------------------------------
 
 import wx
 from xpy import xUTILS_Identification, xGestionConfig, xUTILS_DB
-from srcNoestock import DLG_Mouvements, DLG_Effectifs, DLG_PrixJour, DLG_Inventaires, UTILS_Stocks
+from srcNoestock import DLG_Articles, DLG_Mouvements, DLG_Effectifs, DLG_PrixJour, DLG_Inventaires, UTILS_Stocks
 
 # liste de tables de DB_schema à contrôler et à créer si inexistantes
 LST_TABLES = ['utilisateurs','droits','cpta_analytiques','stArticles','stEffectifs','stMouvements','stInventaires']
@@ -147,9 +147,9 @@ class MENU():
         #CTRL_Identification.AfficheUsers()
 
     def On_articles(self,event):
-        dicOlv = UTILS_Stocks.GetMatriceArticles()
+        dicOlv = DLG_Articles.GetMatriceArticles()
         db = xUTILS_DB.DB()
-        dlg = UTILS_Stocks.DLG_articles(db=db, dicOlv=dicOlv)
+        dlg = DLG_Articles.DLG_articles(db=db, dicOlv=dicOlv)
         ret = dlg.ShowModal()
         del dlg
 

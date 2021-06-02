@@ -13,9 +13,11 @@ import datetime
 import srcNoestock.UTILS_Stocks        as nust
 import srcNoelite.UTILS_Noegest        as nung
 import xpy.xGestion_TableauEditor      as xgte
+import xpy.xGestion_TableauRecherche   as xgtr
 import xpy.xUTILS_Identification       as xuid
 import xpy.xUTILS_SaisieParams         as xusp
 import xpy.xUTILS_DB                   as xdb
+from srcNoestock                import DLG_Articles
 from xpy.outils.ObjectListView  import ColumnDefn, CellEditor
 from xpy.outils                 import xformat,xbandeau,xboutons
 
@@ -31,18 +33,20 @@ DICORIGINES = {
                            'values': ['achat livraison', 'retour camp', 'od entrée']},
                 'sorties': {'codes': ['repas', 'camp', 'od_out'],
                            'label':"Nature  sortie",
-                           'values': ['vers cuisine', 'camp exterieur', 'od sortie']}}
+                           'values': ['vers cuisine', 'revente ou camp', 'od sortie']}}
 
 DICDATE = {     'entrees':{'label':"Date d' entrée"},
                 'sorties':{'label':"Date de sortie",}}
 
 DIC_INFOS = {
             'IDarticle': "<F4> Choix d'un article, ou saisie directe de son code",
-            'qte': "L'unité est précisée dans le nom de l'article",
-            'pxUn': "HT ou TTC selon le choix en haut d'écran\nEn sortie il sert au calcul du prix de journée, en entrée pour la valeur en stock",
+            'qte': "L'unité est en général précisée dans le nom de l'article\nNbre dans le plus petit conditionnements, pas par carton complet",
+            'pxUn': "HT ou TTC selon le choix en haut d'écran\nPrix d'une unité telle qu'on la sort du stock, pas celui du carton complet",
              }
 
 INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
+
+# Choix des params  pour reprise de mouvements antérieurs------------------------------------------------
 
 class CtrlAnterieur(wx.Panel):
     # controle inséré dans la matrice_params qui suit. De genre AnyCtrl pour n'utiliser que le bind bouton
@@ -71,7 +75,37 @@ class CtrlAnterieur(wx.Panel):
         # valeurs multiples
         return
 
-# Description des paramètres à choisir en haut d'écran
+def GetMatriceAnterieurs(dlg):
+    dicBandeau = {'titre': "Rappel d'un anterieur existant",
+                  'texte': "les mots clés du champ en bas permettent de filtrer d'autres lignes et d'affiner la recherche",
+                  'hauteur': 15, 'nomImage': "xpy/Images/32x32/Zoom_plus.png"}
+
+    # Composition de la matrice de l'OLV anterieurs, retourne un dictionnaire
+
+    lstChamps = ['origine', 'date', 'fournisseur', 'IDanalytique', 'COUNT(IDmouvement)']
+
+    lstNomsColonnes = ['origine', 'date', 'fournisseur', 'analytique', 'nbLignes']
+
+    lstTypes = ['VARCHAR(8)', 'DATE', 'VARCHAR(32)', 'VARCHAR(32)', 'INT']
+    lstCodesColonnes = [xformat.SupprimeAccents(x).lower() for x in lstNomsColonnes]
+    lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
+    lstLargeurColonnes = [100,100,180,180,200]
+    lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
+    return {
+        'codesOrigines': dlg.origines,
+        'lstColonnes': lstColonnes,
+        'lstChamps': lstChamps,
+        'listeNomsColonnes': lstNomsColonnes,
+        'listeCodesColonnes': lstCodesColonnes,
+        'getDonnees': nust.SqlAnterieurs,
+        'dicBandeau': dicBandeau,
+        'sortColumnIndex': 2,
+        'sensTri': False,
+        'style': wx.LC_SINGLE_SEL | wx.LC_HRULES | wx.LC_VRULES,
+        'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
+        'size': (650, 400)}
+
+# Description des paramètres de la gestion des mouvements
 
 MATRICE_PARAMS = {
 ("param1", "Paramètres"): [
@@ -92,7 +126,7 @@ MATRICE_PARAMS = {
     ],
 ("param2", "Comptes"): [
     {'name': 'fournisseur', 'genre': 'Combo', 'label': 'Fournisseur',
-                    'help': "La saisie d'un fournisseur permet les commandes par fournisseur, on peut mettre 'NoName'",
+                    'help': "La saisie d'un fournisseurfacilite les commandes par fournisseur, on peut mettre 'NONAME'",
                     'value':0,'values':[''],
                     'ctrlAction':'OnFournisseur',
                      'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un compte pour l'origine",
@@ -112,7 +146,7 @@ MATRICE_PARAMS = {
 ("param3", "saisie"): [
     {'name': 'ht_ttc', 'genre': 'Choice', 'label': 'Saisie',
                     'help': "Choix du mode de saisie HT ou TTC selon le plus facile pour vous",
-                    'value': 0, 'values': ['TTC', 'HT'],
+                    'value': 1, 'values': ['TTC', 'HT'],
                     'ctrlAction': 'OnHt_ttc',
                     'txtSize': 40,
                     'ctrlMaxSize': (130,30),
@@ -131,6 +165,9 @@ MATRICE_PARAMS = {
 
 def GetDicParams(dlg):
     matrice = xformat.CopyDic(MATRICE_PARAMS)
+    if dlg.sens == 'sorties':
+        # force la saisie en TTC par défaut
+        matrice[("param3", "saisie")][0]['value'] = 0
     xformat.SetItemInMatrice(matrice,'origine','values', DICORIGINES[dlg.sens]['values'])
     xformat.SetItemInMatrice(matrice,'origine','label', DICORIGINES[dlg.sens]['label'])
     xformat.SetItemInMatrice(matrice,'date','label', DICDATE[dlg.sens]['label'])
@@ -156,12 +193,12 @@ def GetBoutons(dlg):
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
     if dlg.sens == 'entrees':
-        titlePrix = "Prix Unit."
-    else: titlePrix = "Prix Stock"
+        titlePrix = "PxParPièce"
+    else: titlePrix = "Prix Unit."
     lstCol = [
             ColumnDefn("ID", 'centre', 0, 'IDmouvement',
                        isEditable=False),
-            ColumnDefn("Repas", 'left', 60, 'repas', valueSetter=0,
+            ColumnDefn("Repas", 'left', 60, 'repas', valueSetter="",
                                 cellEditorCreator=CellEditor.ChoiceEditor),
             ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",isSpaceFilling=True),
             ColumnDefn("Quantité", 'right', 80, 'qte', isSpaceFilling=False, valueSetter=0.0,
@@ -210,6 +247,166 @@ def GetDlgOptions(dlg):
 
     #----------------------- Parties de l'écrans -----------------------------------------
 
+def GetAnterieur(dlg,db=None):
+    # retourne un dict de params après lancement d'un tableau de choix de l'existants pour reprise
+    dicParams = {}
+    dicOlv = GetMatriceAnterieurs(dlg)
+    dlg = xgtr.DLG_tableau(dlg, dicOlv=dicOlv, db=db)
+    ret = dlg.ShowModal()
+    if ret == wx.OK and dlg.GetSelection():
+        donnees = dlg.GetSelection().donnees
+        for ix in range(len(donnees)):
+            dicParams[dicOlv['listeCodesColonnes'][ix]] = donnees[ix]
+    dlg.Destroy()
+    return dicParams
+
+def ValideParams(pnl,dicParams,mute=False):
+    # vérifie la saisie des paramètres
+    pnlFournisseur = pnl.GetPnlCtrl('fournisseur', codebox='param2')
+    pnlAnalytique = pnl.GetPnlCtrl('analytique', codebox='param2')
+    valide = True
+
+    # normalisation none ''
+    if dicParams['fournisseur']  == None:
+        dicParams['fournisseur'] = ''
+    if dicParams['analytique'] == None:
+        dicParams['analytique'] = ''
+
+    if 'achat' in dicParams['origine']:
+        if (not dicParams['fournisseur']):
+            if not mute:
+                wx.MessageBox("Veuillez saisir un fournisseur!")
+                pnlFournisseur.SetFocus()
+            valide = False
+    elif 'retour' in dicParams['origine']:
+        if (not dicParams['analytique']):
+            if not mute:
+                wx.MessageBox("Veuillez saisir un camp pour le retour de marchandise!")
+                pnlAnalytique.SetFocus()
+            valide = False
+    return valide
+
+def GetMouvements(dlg, dParams):
+    # retourne la liste des données de l'OLv de DlgEntree
+    ctrlOlv = dlg.ctrlOlv
+
+    ldMouvements = nust.SqlMouvements(dlg.db,dParams)
+    # appel des dicArticles des mouvements
+    ddArticles = {}
+    for dMvt in ldMouvements:
+        ddArticles[dMvt['IDarticle']] = nust.SqlDicArticle(dlg.db,dlg.ctrlOlv,dMvt['IDarticle'])
+
+    # composition des données
+    lstDonnees = []
+    lstCodesCol = ctrlOlv.GetLstCodesColonnes()
+
+    # autant de lignes dans l'olv que de mouvements remontés
+    for dMvt in ldMouvements:
+        donnees = []
+        dArticle = ddArticles[dMvt['IDarticle']]
+        # alimente les premières données des colonnes
+        for code in lstCodesCol:
+            # ajout de la donnée dans le mouvement
+            if code in dMvt.keys():
+                donnees.append(dMvt[code])
+                continue
+            # ajout de l'article associé
+            if code in dArticle.keys():
+                donnees.append(dArticle)
+                continue
+            if code in ('pxUn','mttHT','mttTTC','nbRations'):
+                convTva = (1+(dArticle['txTva'] / 100))
+                if code == 'pxUn':
+                    if dlg.ht_ttc == 'HT':
+                        donnees.append(round( dMvt['prixUnit'] / convTva,6))
+                    else:
+                        donnees.append(dMvt['prixUnit'])
+
+                elif code == 'mttHT':
+                    donnees.append(round(dMvt['prixUnit'] * dMvt['qte'] / convTva ,2))
+                elif code == 'mttTTC':
+                    donnees.append(dMvt['prixUnit'] * dMvt['qte'])
+                elif code == 'nbRations':
+                    donnees.append(dArticle['rations'] * dMvt['qte'])
+                else:
+                    raise("code: %s Erreur de programmation en UTILS_Stocks.GetMouvements"%code)
+                continue
+
+        # codes supplémentaires ('prixTTC','IDmouvement','dicArticle') dlg.dicOlv['lstCodesSup']
+        donnees += [dMvt['prixUnit'],
+                    dMvt['IDmouvement'],
+                    dArticle]
+        lstDonnees.append(donnees)
+    return lstDonnees
+
+def CalculeLigne(dlg,track):
+    if not hasattr(track,'dicArticle'): return
+    try: qte = float(track.qte)
+    except: qte = 0.0
+    if not hasattr(track,'oldQte'):
+        track.oldQte = track.qte
+    try: pxUn = float(track.pxUn)
+    except: pxUn = 0.0
+    try: txTva = track.dicArticle['txTva']
+    except: txTva = 0.0
+    try: rations = track.dicArticle['rations']
+    except: rations = 1
+    if dlg.ht_ttc == 'HT':
+        mttHT = qte * pxUn
+        mttTTC = round(mttHT * (1 + (txTva / 100)),2)
+        prixTTC = round(pxUn * (1 + (txTva / 100)),6)
+    elif dlg.ht_ttc == 'TTC':
+        mttTTC = qte * pxUn
+        mttHT = round(mttTTC / (1 + (txTva / 100)),2)
+        prixTTC = pxUn
+    else: raise("Taux TVA de l'article non renseigné")
+    track.mttHT = mttHT
+    track.mttTTC = mttTTC
+    track.prixTTC = prixTTC
+    track.nbRations = track.qte * rations
+    track.qteStock = track.dicArticle['qteStock']
+
+def ValideLigne(dlg,track):
+    # validation de la ligne de mouvement
+    track.valide = True
+    track.messageRefus = "Saisie incomplète\n\n"
+
+    # IDmouvement manquant
+    if track.IDmouvement in (None,0) :
+        track.messageRefus += "L'IDmouvement n'a pas été déterminé\n"
+
+    # Repas non renseigné
+    if dlg.sens == 'sorties' and track.repas in (None,0,'') :
+        track.messageRefus += "Le repas pour imputer la sortie n'est pas saisi\n"
+
+    # article manquant
+    if track.IDarticle in (None,0,'') :
+        track.messageRefus += "L'article n'est pas saisi\n"
+
+    # qte null
+    try:
+        track.qte = float(track.qte)
+    except:
+        track.qte = None
+    if not track.qte or track.qte == 0.0:
+        track.messageRefus += "La quantité est à zéro, ligne inutile à supprimer\n"
+
+    # pxUn null
+    try:
+        track.pxUn = float(track.pxUn)
+    except:
+        track.pxUn = None
+    if not track.pxUn or track.pxUn == 0.0:
+        track.messageRefus += "Le pxUn est à zéro\n"
+
+    # envoi de l'erreur
+    if track.messageRefus != "Saisie incomplète\n\n":
+        track.valide = False
+    else: track.messageRefus = ""
+
+    CalculeLigne(dlg,track)
+    return
+
 class PNL_params(xgte.PNL_params):
     #panel de paramètres de l'application
     def __init__(self, parent, **kwds):
@@ -233,6 +430,7 @@ class PNL_corps(xgte.PNL_corps):
 
     def InitTrackVierge(self,track,modelObject):
         track.creer = True
+        track.repas = None
 
     def ValideParams(self):
         pnl = self.parent.pnlParams
@@ -241,7 +439,7 @@ class PNL_corps(xgte.PNL_corps):
                      'fournisseur': pnl.GetOneValue('fournisseur',codeBox='param2'),
                      'analytique': pnl.GetOneValue('analytique',codeBox='param2'),
                      'ht_ttc': pnl.GetOneValue('ht_ttc',codeBox='param3')}
-        ret = nust.ValideParams(pnl,dicParams)
+        ret = ValideParams(pnl,dicParams)
 
     def OnCtrlV(self,track):
         # avant de coller une track, raz de certains champs et recalcul
@@ -264,24 +462,28 @@ class PNL_corps(xgte.PNL_corps):
             self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
 
         # travaux avant saisie
-        if code == 'repas':
-            editor.Set(nust.CHOIX_REPAS)
+
+        if self.parent.sens == 'sorties' and track.repas == None :
             # choix par défaut selon l'heure
             h = datetime.datetime.now().hour
             ch=2
             if h < 8: ch=0
-            if h < 14: ch=1
-            if self.parent.sens == 'entrees':
-                ch = 3
-            if track.repas == None:
-                editor.SetSelection(ch)
+            if h < 17: ch=1
+            track.repas = nust.CHOIX_REPAS[ch]
+            editor.Set(nust.CHOIX_REPAS)
+            editor.SetStringSelection(track.repas)
+
+        if code == 'repas':
+            editor.Set(nust.CHOIX_REPAS)
+            editor.SetStringSelection(track.repas)
 
         if code == 'qte':
             if not hasattr(track,'oldQte'):
                 track.oldQte = track.qte
+
         if code == 'pxUn':
             if not hasattr(track, 'oldPu'):
-                nust.CalculeLigne(self.parent,track)
+                CalculeLigne(self.parent,track)
                 track.oldPu = track.prixTTC
 
     def OnEditFinishing(self,code=None,value=None,editor=None):
@@ -295,9 +497,9 @@ class PNL_corps(xgte.PNL_corps):
 
         # Traitement des spécificités selon les zones
         if code == 'IDarticle':
-            value = nust.SqlOneArticle(self.db,value)
-            track.IDarticle = value
+            value = DLG_Articles.GetOneIDarticle(self.db,value)
             if value:
+                track.IDarticle = value
                 track.dicArticle = nust.SqlDicArticle(self.db,self.ctrlOlv,value)
                 track.nbRations = track.dicArticle['rations']
                 track.qteStock = track.dicArticle['qteStock']
@@ -313,21 +515,21 @@ class PNL_corps(xgte.PNL_corps):
         return value
 
     def ValideLigne(self,code,track):
-        # Appelé par cellEditor en sortie
-        nust.ValideLigne(self.db,track)
-        nust.CalculeLigne(self.Parent,track)
+        # Relais de l'appel par cellEditor à chaque colonne
+        ValideLigne(self.parent,track)
 
     def SauveLigne(self,track):
-        nust.SauveLigne(self.db,self.Parent,track)
+        nust.SauveMouvement(self.db,self.Parent,track)
 
     def OnEditFunctionKeys(self,event):
         row, col = self.ctrlOlv.cellBeingEdited
         code = self.ctrlOlv.lstCodesColonnes[col]
         if event.GetKeyCode() == wx.WXK_F4 and code == 'IDarticle':
             # Choix article
-            IDarticle = nust.SqlOneArticle(self.db,self.ctrlOlv.GetObjectAt(row).IDarticle)
+            IDarticle = DLG_Articles.GetOneIDarticle(self.db,self.ctrlOlv.GetObjectAt(row).IDarticle,f4=True)
             #self.ctrlOlv.GetObjectAt(row).IDarticle = IDarticle
-            ret = self.OnEditFinishing('IDarticle',IDarticle)
+            if IDarticle:
+                ret = self.OnEditFinishing('IDarticle',IDarticle)
 
 class PNL_pied(xgte.PNL_pied):
     #panel infos (gauche) et boutons sorties(droite)
@@ -450,6 +652,8 @@ class DLG(xusp.DLG_vide):
             setEnable('fournisseur',False)
             self.pnlParams.SetOneValue('fournisseur',"", codeBox='param2')
             setEnable('analytique',True)
+            if len(self.valuesAnalytique) >0:
+                self.pnlParams.SetOneValue('analytique',self.valuesAnalytique[0], codeBox='param2')
         elif ('od' in self.origine) or ('repas' in self.origine) :
             self.pnlParams.SetOneValue('fournisseur',"", codeBox='param2')
             setEnable('fournisseur',False)
@@ -505,7 +709,7 @@ class DLG(xusp.DLG_vide):
         # lancement de la recherche d'un lot antérieur, on enlève le cellEdit pour éviter l'écho des clics
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
         # choix d'un lot de lignes définies par des params
-        dicParams = nust.GetAnterieur(self,db = self.db)
+        dicParams = GetAnterieur(self,db=self.db)
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK        # gestion du retour du choix dépot
         if not 'date' in dicParams.keys(): return
         self.GetDonnees(dicParams)
@@ -518,11 +722,11 @@ class DLG(xusp.DLG_vide):
                          'fournisseur':self.fournisseur,
                          'analytique':self.analytique,
                          'ht_ttx':self.ht_ttc}
-        valide = nust.ValideParams(self.pnlParams,dicParams, mute=True)
+        valide = ValideParams(self.pnlParams,dicParams, mute=True)
         if not valide: return
 
         # appel des données de l'Olv principal à éditer
-        lstDonnees = nust.GetDonneesEntrees(self,dicParams)
+        lstDonnees = GetMouvements(self,dicParams)
         lstNoModif = [1 for rec in  lstDonnees if not (rec[-1])]
         # présence de lignes déjà transférées compta
         if len(lstNoModif) >0:
@@ -550,9 +754,9 @@ class DLG(xusp.DLG_vide):
         self.ctrlOlv.lstDonnees = lstDonnees
         self.InitOlv()
 
-        # les écritures reprises sont censées être valides, mais il fatu les compléter
+        # les écritures reprises sont censées être valides, mais il faut les compléter
         for track in self.ctrlOlv.modelObjects[:-1]:
-            nust.CalculeLigne(self,track)
+            CalculeLigne(self,track)
             track.valide = True
         self.ctrlOlv._FormatAllRows()
 
