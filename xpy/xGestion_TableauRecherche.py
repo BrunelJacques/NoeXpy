@@ -392,13 +392,14 @@ class ListView(ObjectListView):
 
 # Saisie ou gestion d'une ligne de l'olv dans un nouvel écran
 class DLG_saisie(xusp.DLG_vide):
-    def __init__(self,parent,dicOlv,mode='creation',**kwds):
+    def __init__(self,parent,dicOlv,**kwds):
         # récup de la matrice servant à la gestion des données, si non fournie elle est composée automatiquemetn
-        matrice = dicOlv.pop('matriceSaisie',None)
+        matrice = dicOlv.get('matriceSaisie',None)
+        mode = dicOlv.get('mode','ajout')
         if not matrice:
             key = ("saisie","")
             matrice = xformat.DicOlvToMatrice(key,dicOlv)
-        sizeSaisie = dicOlv.pop('sizeSaisie',None)
+        sizeSaisie = dicOlv.get('sizeSaisie',None)
 
         # Size de l'écran de saisie
         if not sizeSaisie:
@@ -407,6 +408,7 @@ class DLG_saisie(xusp.DLG_vide):
                 nblignes += len(lst)
             sizeSaisie = (200,max(80 + nblignes * 50,400))
         kwds['size'] = sizeSaisie
+        kwds['kwValideSaisie'] = dicOlv
         super().__init__(parent, **kwds)
 
         # construction de l'écran de saisie
@@ -414,7 +416,7 @@ class DLG_saisie(xusp.DLG_vide):
 
         # grise le champ ID
         ctrlID = self.pnl.GetPnlCtrl('ID')
-        if mode == 'creation' :
+        if mode in 'ajout' :
             titre = "Création d'une nouvelle ligne"
         else:
             titre = "Modification de la base de données"
@@ -582,13 +584,14 @@ class PNL_corps(wx.Panel):
         if ligne:
             ixLigne = olv.modelObjects.index(ligne)
         else: ixLigne = len(olv.lstDonnees)
-        dlgSaisie = DLG_saisie(self.lanceur,self.dicOlv)
+        self.dicOlv['mode'] = 'ajout'
+        dlgSaisie = DLG_saisie(self.lanceur,self.dicOlv, kwValideSaisie=self.dicOlv)
         ret = dlgSaisie.ShowModal()
         if ret == wx.OK:
             #récupération des valeurs saisies puis ajout dans les données avant reinit olv
             ddDonnees = dlgSaisie.pnl.GetValues()
             nomsCol, donnees = xformat.DictToList(ddDonnees)
-            self.parent.GereDonnees(mode='ajout',nomsCol=nomsCol, donnees=donnees, ixLigne=ixLigne)
+            self.parent.GereDonnees(mode='ajout',nomsCol=nomsCol, donnees=donnees, ixLigne=ixLigne,dicOlv=self.dicOlv)
             self.ctrlOutils.barreRecherche.SetValue('')
             olv.Filtrer('')
         olv.Select(ixLigne)
@@ -597,6 +600,7 @@ class PNL_corps(wx.Panel):
         if not self.EstAdmin(): return
         # Action du clic sur l'icone sauvegarde renvoie au parent
         olv = self.ctrlOlv
+
         if olv.GetSelectedItemCount() == 0:
             wx.MessageBox("Pas de sélection faite, pas de modification possible !" ,
                                 'La vie est faite de choix', wx.OK | wx.ICON_INFORMATION)
@@ -606,7 +610,8 @@ class PNL_corps(wx.Panel):
         ixLigne = olv.modelObjects.index(ligne)
 
         dDonnees = xformat.TrackToDdonnees(ligne,olv)
-        dlgSaisie = DLG_saisie(self.lanceur,self.dicOlv)
+        self.dicOlv['mode'] = 'modif'
+        dlgSaisie = DLG_saisie(self.lanceur,self.dicOlv,kwValideSaisie=self.dicOlv)
         dlgSaisie.pnl.SetValues(dDonnees,)
         self.EnableID(dlgSaisie.pnl, enable=False)
         ret = dlgSaisie.ShowModal()
@@ -614,7 +619,7 @@ class PNL_corps(wx.Panel):
             #récupération des valeurs saisies puis ajout dans les données avant reinit olv
             ddDonnees = dlgSaisie.pnl.GetValues()
             nomsCol, donnees = xformat.DictToList(ddDonnees)
-            self.parent.GereDonnees(mode='modif',nomsCol=nomsCol, donnees=donnees, ixLigne=ixLigne)
+            self.parent.GereDonnees(mode='modif',nomsCol=nomsCol, donnees=donnees, ixLigne=ixLigne,dicOlv=self.dicOlv)
             olv.Filtrer()
         olv.Select(ixLigne)
 
@@ -628,7 +633,8 @@ class PNL_corps(wx.Panel):
         ligne = olv.GetSelectedObject()
         ixLigne = olv.modelObjects.index(ligne)
         olv.modelObjects.remove(ligne)
-        self.parent.GereDonnees(mode='suppr', ixLigne=ixLigne)
+        self.dicOlv['mode'] = 'suppr'
+        self.parent.GereDonnees(mode='suppr', ixLigne=ixLigne,dicOlv=self.dicOlv)
         olv.RepopulateList()
 
 class PNL_pied(wx.Panel):
@@ -668,7 +674,9 @@ class DLG_tableau(xusp.DLG_vide):
         size = kwds.get('size',None)
         if not size and dicOlv.get('size',None):
             kwds['size'] = dicOlv.pop('size',None)
-        dicBandeau = dicParams.pop('bandeau',None)
+        dicBandeau = dicParams.pop('dicBandeau',None)
+        if not dicBandeau:
+            dicBandeau = dicOlv.pop('dicBandeau',None)
         super().__init__(parent,**kwds)
         if dicBandeau:
             self.bandeau = xbandeau.Bandeau(self,**dicBandeau)

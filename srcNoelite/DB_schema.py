@@ -270,7 +270,9 @@ DB_TABLES = {
                 ('obsolete', 'TINYINT(1)', "0/1 : 1 n'est plus utilisé"),
                 ('prixMoyen', 'FLOAT', "Prix unitaire moyen historique du stock"),
                 ('prixActuel', 'FLOAT', "Dernier prix TTC unitaire livré ou de réappro"),
-                ('dernierAchat', 'DATE', "Date de dernière entrée avec prix saisi"),],# stocks: articles en stock
+                ('dernierAchat', 'DATE', "Date de dernière entrée avec prix saisi"),
+                ('ordi', 'VARCHAR(16)', "Nom de l'ordi utilisé pour l'entrée ou la modif"),
+                ('dateSaisie', 'DATE', "Date de l'entrée ou la modif"),],# stocks: articles en stock
 
     'stEffectifs':[
                 ('IDdate', 'DATE', "PK Date de la situation de l'effectif"),
@@ -281,7 +283,8 @@ DB_TABLES = {
                 ('soirRepas', 'INTEGER', "Nbre de repas pour le staff et les clients le soir"),
                 ('prevuClients', 'INTEGER', "Nbre d'inscrits payants "),
                 ('prevuRepas', 'INTEGER', "Nbre d'inscrits staff inclus"),
-                ('modifiable', 'TINYINT', "0/1 Marque un transfert export  réussi ou import"),],# stocks: repas servis
+                ('ordi', 'VARCHAR(16)', "Nom de l'ordi utilisé pour l'entrée ou la modif"),
+                ('dateSaisie', 'DATE', "Date de l'entrée ou la modif"),],# stocks: repas servis
 
     'stMouvements':[
                 ('IDmouvement', 'INTEGER PRIMARY KEY AUTOINCREMENT', "Clé primaire"),
@@ -295,7 +298,7 @@ DB_TABLES = {
                 ('IDanalytique', 'VARCHAR(8)', "Section analytique du camp à facturer"),
                 ('ordi', 'VARCHAR(16)', "Nom de l'ordi utilisé pour l'entrée ou la modif"),
                 ('dateSaisie', 'DATE', "Date de l'entrée ou la modif"),
-                ('modifiable', 'INTEGER', "0/1 Marque un transfert export  réussi ou import"),],# stocks: entrées sorties
+                ('modifiable', 'TINYINT', "0/1 Marque un transfert export  réussi ou import"),],# stocks: entrées sorties
 
     'stInventaires':[
                 ('IDdate', 'DATE', "PK Date de l'inventaire copie des stocks"),
@@ -304,14 +307,16 @@ DB_TABLES = {
                 ('qteConstat', 'INTEGER', "Qté constatée"),
                 ('prixActuel', 'FLOAT', "Dernier prix unitaire livré ou de réappro"),
                 ('prixMoyen', 'FLOAT', "Prix unitaire moyen historique du stock"),
+                ('ordi', 'VARCHAR(16)', "Nom de l'ordi utilisé pour l'entrée ou la modif"),
+                ('dateSaisie', 'DATE', "Date de l'entrée ou la modif"),
                 ('modifiable', 'INTEGER', "0/1 Marque un transfert export  réussi ou import"),], # stocks: inventaire à une date
     }
 
-# index clé unique
+# PK index clé unique, PRIMARY primary key
 DB_PK = {
         'PK_vehiculesCouts_IDanalytique_cloture': {'table': 'vehiculesCouts', 'champ': 'IDanalytique, cloture'},
         'PK_stArticles_IDarticle': {'table': 'stArticles', 'champ': 'IDarticle'},
-        'PK_stEffectifs_IDdate_IDanalytique': {'table': 'stEffectifs', 'champ': 'IDdate,IDanalytique'},
+        'PRIMARY_stEffectifs_IDdate_IDanalytique': {'table': 'stEffectifs', 'champ': 'IDdate,IDanalytique'},
         'PK_stInventaires_IDdate_IDarticle': {'table': 'stInventaires', 'champ': 'IDdate,IDarticle'},
         }
 

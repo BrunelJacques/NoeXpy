@@ -322,7 +322,7 @@ class DLG(xgtr.DLG_tableau):
 
     def OnBtnSynchro(self,event):
         # lancement de la synchronisation entre base LAN et Wan
-        mess = "C'est prévu...\n\nla vie est faite d'espérance"
+        mess = "C'est prévu...\n\nle contentement se nourrit d'espérance"
         wx.MessageBox(mess,"Pas encore fait")
         if event: event.Skip()
 
@@ -349,7 +349,7 @@ class DLG(xgtr.DLG_tableau):
 
     def GereDonnees(self,**kwd):
         kwd['db'] = self.db
-        nust.SetEffectifs(self,**kwd)
+        nust.SauveEffectif(self,**kwd)
 
     def ValideSaisie(self,dlgSaisie,*args,**kwd):
         dDonnees = dlgSaisie.pnl.GetValues(fmtDD=False)

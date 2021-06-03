@@ -198,7 +198,7 @@ def GetOlvColonnes(dlg):
     lstCol = [
             ColumnDefn("ID", 'centre', 0, 'IDmouvement',
                        isEditable=False),
-            ColumnDefn("Repas", 'left', 60, 'repas', valueSetter="",
+            ColumnDefn("Repas", 'left', 60, 'repas',
                                 cellEditorCreator=CellEditor.ChoiceEditor),
             ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",isSpaceFilling=True),
             ColumnDefn("Quantité", 'right', 80, 'qte', isSpaceFilling=False, valueSetter=0.0,
@@ -448,7 +448,7 @@ class PNL_corps(xgte.PNL_corps):
         self.SauveLigne(track)
 
     def OnDelete(self,track):
-        nust.DeleteLigne(self.parent.db,self.ctrlOlv,track)
+        nust.DelMouvement(self.parent.db,self.ctrlOlv,track)
 
     def OnNewRow(self,row,track):
         pass
@@ -470,8 +470,6 @@ class PNL_corps(xgte.PNL_corps):
             if h < 8: ch=0
             if h < 17: ch=1
             track.repas = nust.CHOIX_REPAS[ch]
-            editor.Set(nust.CHOIX_REPAS)
-            editor.SetStringSelection(track.repas)
 
         if code == 'repas':
             editor.Set(nust.CHOIX_REPAS)

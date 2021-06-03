@@ -826,7 +826,10 @@ class DB():
         retour = "Absence de table: %s"%nomTable
         if self.IsTableExists(nomTable) :
             #print "Creation de l'index : %s" % nomIndex
-            if nomIndex[:2] == "PK":
+            if nomIndex[:7] == "PRIMARY":
+                #ALTER TABLE `matthania_data`.`stEffectifs` DROP PRIMARY KEY, ADD PRIMARY KEY (`IDdate`, `IDanalytique`) COMMENT '';
+                req = "ALTER TABLE %s ADD PRIMARY KEY (%s);" % (nomTable, nomChamp)
+            elif nomIndex[:2] == "PK":
                 req = "CREATE UNIQUE INDEX %s ON %s (%s);" % (nomIndex, nomTable, nomChamp)
             else :
                 req = "CREATE INDEX %s ON %s (%s);" % (nomIndex, nomTable, nomChamp)
@@ -1030,7 +1033,8 @@ if __name__ == "__main__":
     app = wx.App()
     os.chdir("..")
     db = DB()
-    #from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
+    #db.DropUneTable('stEffectifs')
+    from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
+    db.CreationUneTable(DB_TABLES,'stEffectifs')
     #db.CreationTables(dicTables=DB_TABLES)
-    #db.CreationTousIndex(DB_IX)
-    #db.CreationTousIndex(DB_PK)
+    db.CreationTousIndex(None,DB_PK,DB_TABLES)

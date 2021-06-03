@@ -13,8 +13,7 @@ import datetime
 import srcNoestock.UTILS_Stocks        as nust
 import srcNoelite.UTILS_Noegest        as nung
 import xpy.xGestion_TableauRecherche   as xgtr
-#import xpy.xUTILS_Identification       as xuid
-#import xpy.xUTILS_SaisieParams         as xusp
+import xpy.xUTILS_Identification       as xuid
 import xpy.xUTILS_DB                   as xdb
 from xpy.outils.ObjectListView  import ColumnDefn
 from xpy.outils                 import xformat,xbandeau,xboutons,xdates
@@ -67,10 +66,10 @@ MATRICE_PARAMS = {
                     'ctrlMaxSize':(210,90)},
     ],
 ("param2", "Comptes"): [
-    {'name': 'repas', 'genre': 'Check', 'label': 'Repas préparés en cuisine',
+    {'name': 'cuisine', 'genre': 'Check', 'label': 'Repas préparés en cuisine',
                     'help': "Les repas préparés en cuisine ne sont pas différenciés par camp servi, seules les sorties identifiés sont affectées aux camps",
                     'value':True,
-                    'ctrlAction':'OnRepas',
+                    'ctrlAction':'OnCuisine',
                     'txtSize': 150,
                     'ctrlMaxSize': (210, 40)},
 
@@ -127,7 +126,7 @@ def GetOlvColonnes(dlg):
 
 def GetOlvCodesSup():
     # codes dans les tracks, mais pas dans les colonnes, ces attributs sont non visibles à l'écran
-    return ['IDanalytique','modifiable']
+    return ['IDanalytique']
 
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
@@ -164,51 +163,80 @@ def GetDlgOptions(dlg):
         'size': (650, 600),
         }
 
-#----------------------- Parties de l'écran -----------------------------------------
+def ValideSaisie(dlgSaisie,**kwd):
+    periode = kwd.get('periode',None)
+    mode = kwd.get('mode', None)
+    dDonnees = dlgSaisie.pnl.GetValues(fmtDD=False)
+    dateSaisie= dDonnees['ID']
+    kwd['periode'] = (dateSaisie,dateSaisie)
+    mess = "Incohérence relevée dans les données saisies\n"
+    lg = len(mess)
+    if mode == 'ajout':
+        lstEffectifs = nust.GetEffectifs(dlgSaisie.lanceur,**kwd)
+        if len(lstEffectifs)>0:
+            mess += "\n- La date '%s' est déjà renseignée passez en modification\n"%dateSaisie
+    nbresSaisis = 0
+    for champ in ('midiRepas','midiClients','soirRepas','soirClients','prevuRepas','prevuClients'):
+        nbresSaisis += dDonnees[champ]
+    if nbresSaisis == 0:
+        mess += "\n- Si vous ne saisissez aucun effectif, il est inutile de conserver la ligne!\n"
+    if not (dDonnees['ID'] >= periode[0] and dDonnees['ID'] <= periode[1]):
+        mess += "\n- La date saisie est hors période\n\nLa période a été choisie dans l'écran précédent. Corrigez\n"
+    if dDonnees['midiRepas']< dDonnees['midiClients']:
+        mess += "\n- S'il y a plus de clients payant que de nbre repas à midi, ceux qui jeunent ne sont pas à compter\n"
+    if dDonnees['soirRepas']< dDonnees['soirClients']:
+        mess += "\n- S'il y a plus de clients payant que de nbre de repas le soir, ceux qui jeunent ne sont pas à compter\n"
+    if dDonnees['prevuRepas']< dDonnees['prevuClients']:
+        mess += "\n- Plus de clients que d'inscrits, n'est pas cohérent! "
+    if len(mess) != lg:
+        wx.MessageBox(mess,"Entrée refusée!!!",style=wx.ICON_HAND)
+        return wx.NO
+    kwd['periode'] = periode
+    return wx.OK
 
-class Saisie(object):
+#----------------------- Lanceurs d'écran -----------------------------------------
+
+class ObjSaisie(object):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self):
+    def __init__(self,db=None,periode=None):
         # Lanceur de l'écran de saisie d'un nouvelle ligne d'effectif
+        if not db: db=xdb.DB()
+        self.db = db
         # Propriétés identiques au DLG de gestion pour simuler un passage via l'écran DLG
+        if not periode:
+            periode = xformat.PeriodeMois(datetime.date.today(),str)
+        self.periode = periode
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
         self.dicOlv.update(GetOlvOptions(self))
         self.dicOlv.update(GetMatriceSaisie(self))
-
+        self.dicOlv['mode'] = 'ajout'
+        self.cuisine = True
+        self.analytique = '00'
+        kw = xformat.CopyDic(self.dicOlv)
         # l'ajout d'une ligne nécessite d'appeler un écran avec les champs en lignes
-        dlgSaisie = xgtr.DLG_saisie(self,self.dicOlv)
+        dlgSaisie = xgtr.DLG_saisie(self,kw)
         ret = dlgSaisie.ShowModal()
         if ret == wx.OK:
             #récupération des valeurs saisies puis ajout dans les données
             ddDonnees = dlgSaisie.pnl.GetValues()
             nomsCol, donnees = xformat.DictToList(ddDonnees)
-            self.GereDonnees(nomsCol=nomsCol, donnees=donnees)
+            self.dicOlv['donnees'] = donnees
+            self.GereDonnees(**self.dicOlv)
 
     def GetDonnees(self,**kwd):
-        # censées être les données d'un OLV non créé
+        # doit rester, censé être les données d'un OLV virtuel
         return []
 
     def GereDonnees(self,**kwd):
-            # Appelé en retour de saisie, gère l'enregistrement
-            donnees = kwd.pop('donnees', None)
-            db = xdb.DB()
+        kwd['db'] = self.db
+        nust.SauveEffectif(self,**kwd)
 
-            lstDonnees = [('IDdate', donnees[0]),
-                          ('IDanalytique', self.analytique),
-                          ('midiRepas', donnees[1]),
-                          ('midiClients', donnees[2]),
-                          ('soirRepas', donnees[3]),
-                          ('soirClients', donnees[4]),
-                          ('prevuRepas', donnees[5]),
-                          ('prevuClients', donnees[6]),
-                          ]
-            ret = db.ReqInsert('stEffectifs', lstDonnees=lstDonnees, mess="Insert Effectifs")
-            if ret == 'ok':
-                if ixligne and ixligne < len(donneesOlv):
-                    self.ctrlOlv.lstDonnees = donneesOlv[:ixligne] + [donnees, ] + donneesOlv[ixligne:]
-                else:
-                    self.ctrlOlv.lstDonnees.append(donnees)
+    def ValideSaisie(self,dlgSaisie,*args,**kwd):
+        #Relais de l'appel de l'écran de saisie en sortie
+        kwd['periode'] = self.periode
+        kwd['cuisine'] = self.cuisine
+        return ValideSaisie(dlgSaisie,**kwd)
 
 
 class DLG(xgtr.DLG_tableau):
@@ -226,9 +254,9 @@ class DLG(xgtr.DLG_tableau):
         self.dicOlv.update(GetMatriceSaisie(self))
 
         # variables gérées par l'écran paramètres
+        self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
-        #self.periode = (None,None)
-        self.repas = True
+        self.cuisine = True
         self.analytique = '00'
 
         # Propriétés de l'écran global type Dialog
@@ -253,15 +281,16 @@ class DLG(xgtr.DLG_tableau):
         self.pnlBandeau.SetBackgroundColour(wx.Colour(220, 250, 220))
 
        # charger les valeurs de pnl_params
-        self.periode = xformat.PeriodeMois(self.today)
+        self.periode = xformat.PeriodeMois(self.today,str)
         self.pnlParams.SetOneValue('periode',self.periode,'param1')
-        self.pnlParams.SetOneValue('repas',self.repas,'param2')
+        self.pnlParams.SetOneValue('cuisine',self.cuisine,'param2')
         self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
         self.btnAnalytique = self.pnlParams.GetPnlCtrl('analytique','param2').btn
         self.btnAnalytique.Enable(False)
         self.txtAnalytique = self.pnlParams.GetPnlCtrl('analytique','param2').txt
         self.txtAnalytique.Enable(False)
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
+        self.ctrlOlv.SetFocus()
 
     def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
@@ -288,9 +317,9 @@ class DLG(xgtr.DLG_tableau):
         self.ctrlOlv.MAJ()
         if event: event.Skip()
 
-    def OnRepas(self,event):
-        self.repas =  self.pnlParams.GetOneValue('repas','param2')
-        if self.repas:
+    def OnCuisine(self,event):
+        self.cuisine =  self.pnlParams.GetOneValue('cuisine','param2')
+        if self.cuisine:
             self.pnlParams.SetOneValue('analytique','','param2')
             self.valuesAnalytique = ['', ]
             if event: event.Skip()
@@ -298,8 +327,8 @@ class DLG(xgtr.DLG_tableau):
             self.valuesAnalytique = ['', ] + [nust.MakeChoiceActivite(x) for x in self.lstAnalytiques]
             self.btnAnalytique.SetFocus()
         self.pnlParams.SetOneSet('analytique', values=self.valuesAnalytique, codeBox='param2')
-        self.btnAnalytique.Enable(not self.repas)
-        self.txtAnalytique.Enable(not self.repas)
+        self.btnAnalytique.Enable(not self.cuisine)
+        self.txtAnalytique.Enable(not self.cuisine)
         self.analytique = '00'
         self.ctrlOlv.MAJ()
 
@@ -322,7 +351,7 @@ class DLG(xgtr.DLG_tableau):
 
     def OnBtnSynchro(self,event):
         # lancement de la synchronisation entre base LAN et Wan
-        mess = "C'est prévu...\n\nla vie est faite d'espérance"
+        mess = "C'est prévu...\n\nle contentement se nourrit d'espérance"
         wx.MessageBox(mess,"Pas encore fait")
         if event: event.Skip()
 
@@ -349,24 +378,13 @@ class DLG(xgtr.DLG_tableau):
 
     def GereDonnees(self,**kwd):
         kwd['db'] = self.db
-        nust.SetEffectifs(self,**kwd)
+        nust.SauveEffectif(self,**kwd)
 
     def ValideSaisie(self,dlgSaisie,*args,**kwd):
-        dDonnees = dlgSaisie.pnl.GetValues(fmtDD=False)
-        mess = "Incohérence relevée dans les données saisies\n"
-        lg = len(mess)
-        if not (dDonnees['ID'] >= self.periode[0] and dDonnees['ID'] <= self.periode[1]):
-            mess += "\n- La date saisie est hors période\n\nLa période a été choisie dans l'écran précédent. Corrigez\n"
-        if dDonnees['midiRepas']< dDonnees['midiClients']:
-            mess += "\n- S'il y a plus de clients que de repas à midi, ceux qui jeunent ne sont pas à compter\n"
-        if dDonnees['soirRepas']< dDonnees['soirClients']:
-            mess += "\n- S'il y a plus de clients que de repas le soir, ceux qui jeunent ne sont pas à compter\n"
-        if dDonnees['prevuRepas']< dDonnees['prevuClients']:
-            mess += "\n- Plus de clients que d'inscrits, n'est pas cohérent! "
-        if len(mess) != lg:
-            wx.MessageBox(mess,"Entrée refusée!!!",style=wx.ICON_HAND)
-            return wx.NO
-        return wx.OK
+        #Relais de l'appel de l'écran de saisie en sortie
+        kwd['periode'] = self.periode
+        kwd['cuisine'] = self.cuisine
+        return ValideSaisie(dlgSaisie,**kwd)
 
     def OnImprimer(self,event):
         # test de présence d'un filtre
@@ -389,5 +407,5 @@ if __name__ == '__main__':
     os.chdir("..")
     dlg = DLG()
     dlg.ShowModal()
-    Saisie()
+    ObjSaisie()
     app.MainLoop()

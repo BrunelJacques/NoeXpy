@@ -535,7 +535,9 @@ class PNL_ctrl(wx.Panel):
         elif self.genre in ('datetime','date'):
             value = xformat.DatetimeToStr(value)
         elif self.genre in ('str','string','texte','txt'):
-            value = str(value)
+            if value:
+                value = str(value)
+            else: value = ''
             if len(value) > 1: value = value.strip()
         elif value == None:
             value = ''
@@ -674,14 +676,14 @@ class PNL_listCtrl(wx.Panel):
     def OnModifier(self, event):
         # Action du clic sur l'icone sauvegarde renvoie au parent
         if self.ctrl.GetSelectedItemCount() == 0:
-            wx.MessageBox("Pas de sélection faite, pas de modification possible !" ,
+            wx.MessageBox("Selection non faite, pas de modification possible !!!" ,
                                 'La vie est faite de choix', wx.OK | wx.ICON_INFORMATION)
             return
         self.parent.OnModifier(event,self.ctrl.GetFirstSelected())
 
     def OnSupprimer(self, event):
         if self.ctrl.GetSelectedItemCount() == 0:
-            wx.MessageBox("Pas de sélection faite, pas de suppression possible !",
+            wx.MessageBox("Selection non faite, pas de suppression possible !!!",
                       'La vie est faite de choix', wx.OK | wx.ICON_INFORMATION)
             return
         # Action du clic sur l'icone sauvegarde renvoie au parent
@@ -689,7 +691,7 @@ class PNL_listCtrl(wx.Panel):
 
     def OnDupliquer(self, event):
         if self.ctrl.GetSelectedItemCount() == 0:
-            wx.MessageBox("Pas de sélection faite, pas de duplication possible !",
+            wx.MessageBox("Selection non faite, pas de duplication possible !!!",
                       'La vie est faite de choix', wx.OK | wx.ICON_INFORMATION)
             return
         # Action du clic sur l'icone sauvegarde renvoie au parent
@@ -1152,7 +1154,6 @@ class DLG_listCtrl(wx.Dialog):
             self.lddDonnees, self.ltColonnes, self.llItems = Transpose(self.dldMatrice, self.dlColonnes, self.lddDonnees)
             self.pnl.SetValues(self.llItems, self.ltColonnes)
         self.pnl.ctrl.Select(items)
-        #self.dlgGest.Destroy()
 
     def OnSupprimer(self,event,items):
         # retire la ligne d'items de la liste de données
@@ -1209,6 +1210,7 @@ class DLG_vide(wx.Dialog):
         minSize =   kwds.pop('minSize',(300, 250))
         marge =     kwds.pop('marge',10)
         couleur =   kwds.pop('couleur',wx.WHITE)
+        self.kwValideSaisie = kwds.pop('kwValideSaisie',None)
 
         super().__init__(None, wx.ID_ANY, *args, title=title, style=style, pos=pos, **kwds)
         self.marge = marge
@@ -1270,9 +1272,9 @@ class DLG_vide(wx.Dialog):
         if event and not event.EventObject.ClassName == 'wxDialog':
             valide = wx.OK
             if self.lanceur and hasattr(self.lanceur,'ValideSaisie'):
-                    valide = self.lanceur.ValideSaisie(self)
+                    valide = self.lanceur.ValideSaisie(self,**self.kwValideSaisie)
             elif hasattr(self, 'ValideSaisie'):
-                valide = self.ValideSaisie(None)
+                valide = self.ValideSaisie()
             if valide != wx.OK:
                 event.Skip()
                 return

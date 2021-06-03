@@ -87,14 +87,17 @@ def SqlArticles(**kwd):
         lstDonnees.append(ligne)
     return lstDonnees
 
-def SqlOneArticle(db,value,**kwds):
+def SqlOneArticle(db,value,flou=True):
     # test de présence de l'article
     recordset = []
+    if flou:
+        match = "LIKE '%%%s%%'"%value
+    else: match = "= '%s'"%value
     if value and len(value)>0:
         req = """   SELECT IDarticle
                     FROM stArticles
-                    WHERE IDarticle LIKE '%%%s%%'
-                    ;""" % (value)
+                    WHERE IDarticle %s
+                    ;""" % (match)
         retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlOneArticle req1')
         if retour == "ok":
             recordset = db.ResultatReq()
@@ -262,7 +265,7 @@ def SauveMouvement(db,dlg,track):
 
     try: IDmouvement = int(track.IDmouvement)
     except: IDmouvement = None
-    SauveArticle(db,dlg,track)
+    MAJarticle(db,dlg,track)
 
     if IDmouvement :
         ret = db.ReqMAJ("stMouvements", lstDonnees, "IDmouvement", IDmouvement,mess="UTILS_Stocks.SauveLigne Modif: %d"%IDmouvement)
@@ -270,8 +273,16 @@ def SauveMouvement(db,dlg,track):
         ret = db.ReqInsert("stMouvements",lstDonnees= lstDonnees, mess="UTILS_Stocks.SauveLigne Insert")
         if ret == 'ok':
             track.IDmouvement = db.newID
-  
-def SauveArticle(db,dlg,track):
+
+def DelMouvement(db,olv,track):
+    # --- Supprime les différents éléments associés à la ligne --
+    if not track.IDmouvement in (None,0, ''):
+        track.qte = 0
+        MAJarticle(db, olv.lanceur, track)
+        ret = db.ReqDEL("stMouvements", "IDmouvement", track.IDmouvement,affichError=True)
+    return
+
+def MAJarticle(db,dlg,track):
     # sauve dicArticle bufférisé dans ctrlOlv.bffArticles, pointé par les track.dicArticle)
     if not track.IDarticle or track.IDarticle in ('',0): return
     if not track.valide: return
@@ -311,75 +322,179 @@ def SauveArticle(db,dlg,track):
         lstDonnees += [
                     ('dernierAchat', xformat.DateFrToSql(dlg.date)),
                     ('prixMoyen', dicArticle['prixMoyen']),
-                    ('prixActuel', dicArticle['prixActuel']),]
-    ret = db.ReqMAJ("stArticles", lstDonnees, "IDarticle", IDarticle,mess="UTILS_Stocks.SauveArticle Modif: %s"%IDarticle)
+                    ('prixActuel', dicArticle['prixActuel']),
+                    ('ordi', dlg.ordi),
+                    ('dateSaisie', dlg.today),]
+
+    ret = db.ReqMAJ("stArticles", lstDonnees, "IDarticle", IDarticle,mess="UTILS_Stocks.MAJarticle Modif: %s"%IDarticle)
     if ret == 'ok':
         track.oldQte = track.qte
         track.qteStock = dicArticle['qteStock']
         track.oldPu = track.prixTTC
 
-def DeleteLigne(db,olv,track):
-    # --- Supprime les différents éléments associés à la ligne --
-    if not track.IDmouvement in (None,0, ''):
-        track.qte = 0
-        SauveArticle(db, olv.lanceur, track)
-        ret = db.ReqDEL("stMouvements", "IDmouvement", track.IDmouvement,affichError=True)
-    return
-
-def SetEffectifs(dlg,**kwd):
+def SauveEffectif(dlg,**kwd):
     # Appelé en retour de saisie, gère l'enregistrement
     mode = kwd.pop('mode',None)
     donnees = kwd.pop('donnees',None)
-    if dlg and 'lstCodesSup' in dlg.dicOlv:
+    if donnees and dlg and 'lstCodesSup' in dlg.dicOlv:
         # pour aligner le nbre de données sur le nbre de colonnes de l'olv décrit dans dicOlv
         donnees += ['']*len(dlg.dicOlv['lstCodesSup'])
-    ixLigne = kwd.pop('ixLigne',None)
-    db = kwd.pop('db',None)
-    donneesOlv = dlg.ctrlOlv.lstDonnees
 
-    lstDonnees = [('IDdate',donnees[0]),
-                  ('IDanalytique',dlg.analytique),
-                  ('midiRepas',donnees[1]),
-                  ('midiClients', donnees[2]),
-                  ('soirRepas',donnees[3]),
-                  ('soirClients', donnees[4]),
-                  ('prevuRepas',donnees[5]),
-                  ('prevuClients', donnees[6]),
-                  ]
+    db = kwd.pop('db',None)
+    lstDonnees = []
+    IDdate = None
+    condPK = ''
+
+    ixLigne = kwd.pop('ixLigne',None)
+    if ixLigne:
+        donneesOlv = dlg.ctrlOlv.lstDonnees
+        ixLigne = min(ixLigne,len(donneesOlv))
+        IDdate = donneesOlv[ixLigne][0]
+        condPK = 'IDanalytique = %s' % dlg.analytique
+    else:
+        if mode in ('modif','suppr'):
+            wx.MessageBox('Impossible de pointer la ligne sans ixLigne')
+            return
+
+    if mode == 'suppr':
+        ret = db.ReqDEL('stEffectifs','IDdate',IDdate,condPK, mess="Suppression Effectifs")
+        if ret == 'ok' and ixLigne:
+            del donneesOlv[ixLigne]
+    else:
+        lstDonnees = [('IDdate',donnees[0]),
+                    ('IDanalytique',dlg.analytique),
+                    ('midiRepas',donnees[1]),
+                    ('midiClients', donnees[2]),
+                    ('soirRepas',donnees[3]),
+                    ('soirClients', donnees[4]),
+                    ('prevuRepas',donnees[5]),
+                    ('prevuClients', donnees[6]),
+                    ('ordi', dlg.ordi),
+                    ('dateSaisie', dlg.today),]
+
     if mode == 'ajout':
-        ret = db.ReqInsert('stEffectifs',lstDonnees=lstDonnees,mess="Insert Effectifs")
+        ret = db.ReqInsert('stEffectifs',lstDonnees=lstDonnees,mess="Insert Effectifs",affichError=True)
         if ret == 'ok':
             if ixLigne and ixLigne < len(donneesOlv):
                 dlg.ctrlOlv.lstDonnees = donneesOlv[:ixLigne] + [donnees,] + donneesOlv[ixLigne:]
             else: dlg.ctrlOlv.lstDonnees.append(donnees)
 
     elif mode == 'modif':
-        ret = db.ReqMAJ('stEffectifs',lstDonnees[1:],'IDdate',donnees[0],mess="MAJ Effectifs")
-        if ret == 'ok':
+        ret = db.ReqMAJ('stEffectifs',lstDonnees[2:],'IDdate',IDdate,condPK, mess="MAJ Effectifs")
+        if ret == 'ok' and ixLigne:
             donneesOlv[ixLigne] = donnees
 
-    elif mode == 'suppr':
-        ret = db.ReqDEL('stEffectifs','IDdate',donnees[0],mess="Suppression Effectifs")
-        if ret == 'ok':
+def SauveArticle(dlg,**kwd):
+    # Appelé en retour de saisie, gère l'enregistrement
+    mode = kwd.pop('mode',None)
+    donnees = kwd.pop('donnees',None)
+    dicOlv = kwd.get('dicOlv',{})
+    if donnees and dlg and 'lstCodesSup' in dlg.dicOlv:
+        # pour aligner le nbre de données sur le nbre de colonnes de l'olv décrit dans dicOlv
+        donnees += ['']*len(dlg.dicOlv['lstCodesSup'])
+
+    db = kwd.pop('db',None)
+    lstDonnees = []
+
+    ixLigne = kwd.pop('ixLigne',None)
+    if ixLigne != None:
+        donneesOlv = dlg.ctrlOlv.lstDonnees
+        ixLigne = min(ixLigne,len(donneesOlv))
+        if mode in ('modif', 'suppr'):
+            IDarticle = donneesOlv[ixLigne][0]
+    else:
+        if mode in ('modif','suppr'):
+            wx.MessageBox('Impossible de pointer la ligne sans ixLigne')
+            return
+
+    if mode == 'suppr':
+        ret = db.ReqDEL('stArticles','IDarticle',IDarticle, mess="Suppression Article")
+        if ret == 'ok' and ixLigne:
             del donneesOlv[ixLigne]
+    else:
+        lstDonnees = []
+        for ix in range(len(donnees)-2):
+            lstDonnees.append((dicOlv['lstChamps'][ix],donnees[ix]))
+        lstDonnees +=    [('ordi', dlg.ordi),
+                        ('dateSaisie', dlg.today),]
+
+    if mode == 'ajout':
+        ret = db.ReqInsert('stArticles',lstDonnees=lstDonnees,mess="Insert Article",affichError=True)
+        if ret == 'ok':
+            if ixLigne and ixLigne < len(donneesOlv):
+                dlg.ctrlOlv.lstDonnees = donneesOlv[:ixLigne] + [donnees,] + donneesOlv[ixLigne:]
+            else: dlg.ctrlOlv.lstDonnees.append(donnees)
+
+    elif mode == 'modif':
+        ret = db.ReqMAJ('stArticles',lstDonnees[1:],'IDarticle',IDarticle, mess="MAJ Article")
+        if ret == 'ok' and ixLigne:
+            donneesOlv[ixLigne] = donnees
 
 def GetEffectifs(dlg,**kwd):
     # retourne les effectifs dans la table stEffectifs
-    db = kwd.get('db',None)
+    db = kwd.get('db',dlg.db)
     nbreFiltres = kwd.get('nbreFiltres', 0)
+    periode = kwd.get('periode',dlg.periode)
+    cuisine = kwd.get('cuisine',dlg.cuisine)
     # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
     limit = ''
     if nbreFiltres == 0:
         limit = "LIMIT %d" % LIMITSQL
 
     where = """
-                WHERE (IDdate >= '%s' AND IDdate <= '%s')"""%(dlg.periode[0],dlg.periode[1])
-    if dlg.repas: where += """
+                WHERE (IDdate >= '%s' AND IDdate <= '%s')"""%(periode[0],periode[1])
+    if cuisine: where += """
                         AND ( IDanalytique = '00' )"""
     else: where += """
                         AND ( IDanalytique = '%s')"""%dlg.analytique
 
     table = DB_schema.DB_TABLES['stEffectifs']
+    lstChamps = xformat.GetLstChamps(table)
+    req = """   SELECT %s
+                FROM stEffectifs
+                %s 
+                ORDER BY IDdate DESC
+                %s ;""" % (",".join(lstChamps), where, limit)
+    retour = db.ExecuterReq(req, mess='GetEffectifs')
+    recordset = ()
+    if retour == "ok":
+        recordset = db.ResultatReq()
+
+    # composition des données du tableau à partir du recordset
+    lstDonnees = []
+    for record in recordset:
+        dic = xformat.ListToDict(lstChamps,record)
+        ligne = [
+            dic['IDdate'],
+            dic['midiRepas'],
+            dic['midiClients'],
+            dic['soirRepas'],
+            dic['soirClients'],
+            dic['prevuRepas'],
+            dic['prevuClients'],
+            dic['IDanalytique'],]
+        lstDonnees.append(ligne)
+    return lstDonnees
+
+def GetPrixJours(dlg,**kwd):
+    # retourne les effectifs dans la table stEffectifs
+    db = kwd.get('db',dlg.db)
+    nbreFiltres = kwd.get('nbreFiltres', 0)
+    periode = kwd.get('periode',dlg.periode)
+    cuisine = kwd.get('cuisine',dlg.cuisine)
+    # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
+    limit = ''
+    if nbreFiltres == 0:
+        limit = "LIMIT %d" % LIMITSQL
+
+    where = """
+                WHERE (IDdate >= '%s' AND IDdate <= '%s')"""%(periode[0],periode[1])
+    if cuisine: where += """
+                        AND ( IDanalytique = '00' )"""
+    else: where += """
+                        AND ( IDanalytique = '%s')"""%dlg.analytique
+
+    table = DB_schema.DB_TABLES['stMouvements']
     lstChamps = xformat.GetLstChamps(table)
     req = """   SELECT %s
                 FROM stEffectifs

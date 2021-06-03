@@ -81,7 +81,7 @@ class MENU():
              "image": "Images/16x16/Conversion.png", "action": "On_sauve"},
             {"code": "articles", "label": ("Gestion des articles"),
              "infobulle": ("La gestion des articles permet de compléter ou corriger toutes les données de la table"),
-             "image": "Images/16x16/Depannage.png",
+             "image": "Images/80x80/Legumes.png",
              "action": "On_articles"},
         ]},
 
@@ -147,9 +147,7 @@ class MENU():
         #CTRL_Identification.AfficheUsers()
 
     def On_articles(self,event):
-        dicOlv = DLG_Articles.GetMatriceArticles()
-        db = xUTILS_DB.DB()
-        dlg = DLG_Articles.DLG_articles(db=db, dicOlv=dicOlv)
+        dlg = DLG_Articles.DLG_articles()
         ret = dlg.ShowModal()
         del dlg
 

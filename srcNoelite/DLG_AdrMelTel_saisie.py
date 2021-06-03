@@ -311,7 +311,7 @@ class DlgAdrMelTel(xusp.DLG_vide):
     def GetRetourInd(self):
         return (self.nele,self.teldomicile,self.telmobile,self.mail1)
 
-    def ValideSaisie(self,*arg):
+    def ValideSaisie(self,*arg,**kwds):
         if len(self.ctrl.lstDonnees) == 0: return
         lstChamps = ["date_naiss","tel_domicile", "tel_mobile", "travail_tel",
                     "mail", "travail_mail", "refus_pub", "refus_mel"]

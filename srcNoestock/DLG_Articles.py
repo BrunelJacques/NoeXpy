@@ -8,16 +8,22 @@
 #------------------------------------------------------------------------
 
 import wx
+import datetime
 import xpy.xGestion_TableauRecherche    as xgtr
-from srcNoestock    import UTILS_Stocks as nust
+import xpy.xUTILS_Identification        as xuid
+import srcNoestock.UTILS_Stocks         as nust
 from srcNoelite     import DB_schema
-from xpy.outils     import xformat
+from xpy.outils     import xformat, xbandeau
+
+TITRE2 = "Recherche d'un article"
+INTRO2 = "les mots clés du champ en bas permettent de filtrer d'autres lignes et d'affiner la recherche"
+TITRE = "Gestion des articles en stock"
+INTRO = "La saisie des articles permet aussi d'ajuster les quantités en stock et les prix de référence"
 
 def GetMatriceArticles(cutend=None):
-    dicBandeau = {'titre':"Recherche d'un article",
-                  'texte':"les mots clés du champ en bas permettent de filtrer d'autres lignes et d'affiner la recherche",
-                  'hauteur':15, 'nomImage':"xpy/Images/32x32/Matth.png"}
-
+    dicBandeau = {'titre':TITRE2,
+                  'texte':INTRO2,
+                  'hauteur':20, 'nomImage':"xpy/Images/80x80/Legumes.png"}
     # Composition de la matrice de l'OLV articles, retourne un dictionnaire
     nbcol = len(DB_schema.DB_TABLES['stArticles'])
     if cutend:
@@ -32,7 +38,7 @@ def GetMatriceArticles(cutend=None):
     # Personnalisation
     lgSize = 150
     for lg in lstLargeurColonnes: lgSize += max(lg,50)
-    sizeSaisie = (600, max(len(lstColonnes) * 50, 400))
+    sizeSaisie = (500, max(len(lstColonnes) * 50, 400))
     return   {
                 'lstColonnes': lstColonnes,
                 'lstChamps':lstChamps,
@@ -40,6 +46,7 @@ def GetMatriceArticles(cutend=None):
                 'lstNomsBtns': ['creer','modifier'],
                 'size':(lgSize,700),
                 'sizeSaisie': sizeSaisie,
+                'ctrlSize': (150,30),
                 'matriceSaisie': matriceSaisie,
                 'dicBandeau': dicBandeau,
                 'sortColumnIndex': 0,
@@ -85,13 +92,24 @@ def GetOneIDarticle(db,value,**kwds):
 class DLG_articles(xgtr.DLG_tableau):
     def __init__(self,**kwds):
         value = kwds.pop('value',None)
+        dicOlv = kwds.pop('dicOlv',None)
+        if not dicOlv:
+            dicOlv = GetMatriceArticles(cutend=2)
+            dicOlv['dicBandeau']['titre'] = TITRE
+            dicOlv['dicBandeau']['texte'] = INTRO
+
+        kwds['dicOlv'] = dicOlv
         db = kwds.pop('db',None)
         if db == None:
             import xpy.xUTILS_DB as xdb
             db = xdb.DB()
         kwds['db'] = db
+
+        #kwds['dicParams'] = {'bandeau': dicBandeau}
         super().__init__(None, **kwds)
         self.db = db
+        self.ordi = xuid.GetNomOrdi()
+        self.today = datetime.date.today()
 
         if  isinstance(value,str):
             self.pnlOlv.ctrlOutils.barreRecherche.SetValue(value)
@@ -118,32 +136,45 @@ class DLG_articles(xgtr.DLG_tableau):
                 lstDonnees.append((champ,lstValDef[lstChamps.index(champ)]))
         return lstDonnees
 
-    def GereDonnees(self, mode=None, nomsCol=[], donnees=[], ixLigne=0):
-        # à vocation a être substitué par des accès base de données
+    def GereDonnees(self,**kwd):
+        kwd['db'] = self.db
+        nust.SauveArticle(self,**kwd)
+
+    def ValideSaisie(self,dlgSaisie,*args,**kwd):
+        #appel de l'écran de saisie en sortie
+        mode = kwd.get('mode', None)
+        dDonnees = dlgSaisie.pnl.GetValues(fmtDD=False)
+        mess = "Incohérence relevée dans les données saisies\n"
+        lg = len(mess)
+        IDarticle = dDonnees['IDarticle']
         if mode == 'ajout':
-            self.donnees = self.donnees[:ixLigne] + [donnees, ] + self.donnees[ixLigne:]
-            lstDonnees = self.FmtDonneesDB(nomsCol,donnees,complete=True)
-            mess="DLG_articles.GereDonnees Ajout"
-            self.db.ReqInsert('stArticles',lstDonnees=lstDonnees,mess=mess)
+            lstArticles = nust.SqlOneArticle(IDarticle, flou = False)
+            if len(lstArticles) > 0:
+                mess += "\n- L'article '%s' est déjà présent, passez en modification\n" % IDarticle
+        for champ in ('IDarticle','magasin'):
+            if not (dDonnees[champ]) or len(dDonnees[champ]) == 0:
+                    mess += "\n- La saisie de '%s' est obligatoire\n"%champ
+        for champ in ('txTva','prixMoyen'):
+            if not(dDonnees[champ]) or float(dDonnees[champ]) == 0.0:
+                mess += "\n- La saisie de '%s' est obligatoire\n"%champ
+        if len(mess) != lg:
+            wx.MessageBox(mess, "Entrée refusée!!!", style=wx.ICON_HAND)
+            return wx.NO
 
-        elif mode == 'modif':
-            self.ctrlOlv.lstDonnees[ixLigne] = donnees
-            lstDonnees = self.FmtDonneesDB(nomsCol,donnees,complete=False)
-            mess="DLG_articles.GereDonnees Modif"
-            ret = self.db.ReqMAJ('stArticles',lstDonnees,nomChampID=lstDonnees[0][0],ID=lstDonnees[0][1],mess=mess)
-            if ret != 'ok':
-                pass
+        # formatage
+        for champ in ('IDarticle','fournisseur'):
+            if (dDonnees[champ]): dDonnees[champ] = dDonnees[champ].upper()
+        for champ in ('magasin','rayon'):
+            if (dDonnees[champ]): dDonnees[champ] = dDonnees[champ].capitalize()
 
-        elif mode == 'suppr':
-            del self.donnees[ixLigne]
-            mess="DLG_articles.GereDonnees Suppr"
-            self.db.ReqDel()
+        return wx.OK
+
 
 # Pour tests ------------------------------------------------------------
 if __name__ == '__main__':
     import os
     os.chdir("..")
     app = wx.App(0)
-    dlg = DLG_articles(dicOlv=GetMatriceArticles())
+    dlg = DLG_articles()
     ret = dlg.ShowModal()
     print(ret)
