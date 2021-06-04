@@ -386,6 +386,8 @@ class PNL_ctrl(wx.Panel):
         GetValue retourne la valeur choisie dans le ctrl avec action possible par bouton à droite"""
     def __init__(self, parent, *args, genre='string', name=None, label='', value= None, labels=[], values=[],
                  help=None, btnLabel=None, btnImage=None, btnHelp=None,  txtSize=100, ctrl=None, **kwds):
+        self.parent = parent
+        self.flagSkipEdit = False
         if not label: label = ''
         if 'ctrlSize' in kwds:
             kwds['size'] = kwds['ctrlSize']
@@ -490,6 +492,50 @@ class PNL_ctrl(wx.Panel):
             mess += "Le retour d'erreur est : \n%s\n\nSur commande : %s"%(err, commande)
             wx.MessageBox( mess, 'PNL_ctrl.__init__() : Paramètre de ligne indigeste !', wx.OK | wx.ICON_STOP
             )
+
+    def Proprietes(self,ligne):
+        if ligne['genre']:
+            self.codename = self.parent.code + '.' + ligne['name']
+            self.ctrl.genreCtrl = ligne['genre'].lower()
+            self.ctrl.nameCtrl = self.codename
+            self.ctrl.name = ligne['name']
+            self.ctrl.labelCtrl = ligne['label']
+            self.ctrl.actionCtrl = ligne['ctrlAction']
+            self.ctrl.valueCtrl = ligne['value']
+            self.ctrl.valOrigine = ligne['value']
+            self.ctrl.valuesCtrl = ligne['values']
+            self.ctrl.labelsCtrl = ligne['labels']
+            if ligne['enable'] == False:
+                self.ctrl.Enable(False)
+                self.txt.Enable(False)
+            if self.avecBouton and ligne['genre'].lower()[:3] != 'dir':
+                self.btn.nameBtn = self.codename
+                self.btn.labelBtn = ligne['btnLabel']
+                self.btn.actionBtn = ligne['btnAction']
+                self.btn.Bind(wx.EVT_BUTTON, self.OnBtnAction)
+            if self.ctrl.actionCtrl:
+                self.ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnCtrlAction)
+                self.ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnCtrlAction)
+                if self.ctrl.genreCtrl in ['anyctrl']:
+                    self.ctrl.Bind(wx.EVT_BUTTON, self.OnCtrlAction)
+                if self.ctrl.genreCtrl in ['check']:
+                    self.ctrl.Bind(wx.EVT_CHECKBOX, self.OnCtrlAction)
+                if self.ctrl.genreCtrl in ['enum', 'combo', 'multichoice', 'choice']:
+                    self.ctrl.Bind(wx.EVT_COMBOBOX, self.OnCtrlAction)
+                    self.ctrl.Bind(wx.EVT_CHECKBOX, self.OnCtrlAction)
+
+    def OnCtrlAction(self,event):
+        if self.flagSkipEdit == True or hasattr(self.ctrl, 'actionCtrl'):
+            event.Skip()
+            return
+        self.flagSkipEdit = True
+        self.parent.OnCtrlAction(event)
+        event.Skip()
+        self.flagSkipEdit = False
+
+    def OnBtnAction(self,event):
+        self.parent.OnBtnAction(event)
+        event.Skip()
 
     def PnlSizer(self):
         topbox = wx.BoxSizer(wx.HORIZONTAL)
@@ -747,35 +793,16 @@ class BoxPanel(wx.Panel):
                         if not cle in ligne:
                             ligne[cle]=None
                     self.ssbox.Add(panel,1,wx.EXPAND, wx.ALL,0)
-                    codename = self.code + '.' + ligne['name']
-                    if ligne['genre']:
-                        panel.ctrl.genreCtrl = ligne['genre'].lower()
-                        panel.ctrl.nameCtrl = codename
-                        panel.ctrl.name = ligne['name']
-                        panel.ctrl.labelCtrl = ligne['label']
-                        panel.ctrl.actionCtrl = ligne['ctrlAction']
-                        panel.ctrl.valueCtrl = ligne['value']
-                        panel.ctrl.valOrigine = ligne['value']
-                        panel.ctrl.valuesCtrl = ligne['values']
-                        panel.ctrl.labelsCtrl = ligne['labels']
-                        if ligne['enable'] == False:
-                            panel.ctrl.Enable(False)
-                            panel.txt.Enable(False)
-                        if panel.avecBouton and ligne['genre'].lower()[:3] != 'dir' :
-                            panel.btn.nameBtn = codename
-                            panel.btn.labelBtn = ligne['btnLabel']
-                            panel.btn.actionBtn = ligne['btnAction']
-                            panel.btn.Bind(wx.EVT_BUTTON,self.parent.OnBtnAction)
-                        if panel.ctrl.actionCtrl:
-                            panel.ctrl.Bind(wx.EVT_TEXT_ENTER, self.parent.OnCtrlAction)
-                            panel.ctrl.Bind(wx.EVT_KILL_FOCUS, self.parent.OnCtrlAction)
-                            if panel.ctrl.genreCtrl in ['anyctrl']:
-                                panel.ctrl.Bind(wx.EVT_BUTTON,self.parent.OnCtrlAction)
-                            if panel.ctrl.genreCtrl in ['enum','combo','multichoice','choice']:
-                                panel.ctrl.Bind(wx.EVT_COMBOBOX,self.parent.OnCtrlAction)
-                                panel.ctrl.Bind(wx.EVT_CHECKBOX, self.parent.OnCtrlAction)
+                    panel.Proprietes(ligne)
                     self.lstPanels.append(panel)
         self.SetSizer(self.ssbox)
+
+    def OnCtrlAction(self,event):
+        self.parent.OnCtrlAction(event)
+
+    def OnBtnAction(self,event):
+        self.parent.OnBtnAction(event)
+        event.Skip()
 
     # Get de tous les ctrl, mis dans un dictionnaire de données
     def GetValues(self):
@@ -901,16 +928,9 @@ class TopBoxPanel(wx.Panel):
                 self.topbox.Add(box, width, wx.EXPAND|wx.ALL,3)
                 ixBox +=1
         self.SetSizer(self.topbox)
-        self.flagSkipEdit = False
 
     def OnCtrlAction(self,event):
-        if self.flagSkipEdit == True:
-            event.Skip()
-            return
-        self.flagSkipEdit = True
         self.parent.OnChildCtrlAction(event)
-        event.Skip()
-        self.flagSkipEdit = False
 
     def OnBtnAction(self,event):
         self.parent.OnChildBtnAction(event)
@@ -1313,7 +1333,9 @@ class DLG_vide(wx.Dialog):
         elif hasattr(event.EventObject.Parent,'actionCtrl'):
             actionCtrl = event.EventObject.Parent.actionCtrl
         else:
-            actionCtrl = "print('!!!! actionCtrl de <%s> non trouvée,wx.BELL()"%event.EventObject.Name
+            print("!!!! actionCtrl de <%s - %s> non trouvée"%(event.EventObject.Parent,event.EventObject.ClassName))
+            return
+
         # selon la nature texte ou pas
         if isinstance(actionCtrl,str):
             action = "self."+actionCtrl+"(event)"

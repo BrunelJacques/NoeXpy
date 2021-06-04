@@ -196,7 +196,7 @@ def ValideSaisie(dlgSaisie,**kwd):
 
 #----------------------- Lanceurs d'écran -----------------------------------------
 
-class ObjSaisie(object):
+class EffectifUnJour(object):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,db=None,periode=None):
         # Lanceur de l'écran de saisie d'un nouvelle ligne d'effectif
@@ -243,7 +243,7 @@ class DLG(xgtr.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self):
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
-        self.txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"
+        self.txtInfo =  "Pour gérer les lignes, utilisez les boutons à droite, \n...ou Double Clic pour modifier une ligne"
         lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),self.txtInfo]
         dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
 
@@ -287,8 +287,7 @@ class DLG(xgtr.DLG_tableau):
         self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
         self.btnAnalytique = self.pnlParams.GetPnlCtrl('analytique','param2').btn
         self.btnAnalytique.Enable(False)
-        self.txtAnalytique = self.pnlParams.GetPnlCtrl('analytique','param2').txt
-        self.txtAnalytique.Enable(False)
+        self.OnCuisine(None)
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
         self.ctrlOlv.SetFocus()
 
@@ -328,7 +327,8 @@ class DLG(xgtr.DLG_tableau):
             self.btnAnalytique.SetFocus()
         self.pnlParams.SetOneSet('analytique', values=self.valuesAnalytique, codeBox='param2')
         self.btnAnalytique.Enable(not self.cuisine)
-        self.txtAnalytique.Enable(not self.cuisine)
+        self.pnlParams.GetPnlCtrl('analytique','param2').txt.Enable(not self.cuisine)
+        self.pnlParams.GetPnlCtrl('analytique','param2').ctrl.Enable(not self.cuisine)
         self.analytique = '00'
         self.ctrlOlv.MAJ()
 
@@ -407,5 +407,6 @@ if __name__ == '__main__':
     os.chdir("..")
     dlg = DLG()
     dlg.ShowModal()
-    ObjSaisie()
+    # lancement pour un jour
+    #EffectifUnJour()
     app.MainLoop()

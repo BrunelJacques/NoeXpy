@@ -294,7 +294,7 @@ DB_TABLES = {
                 ('IDarticle', 'VARCHAR(32)', "clé dans gstArticles"),
                 ('qte', 'INTEGER', "Quantitée mouvementée signée"),
                 ('prixUnit', 'FLOAT', "Prix moyen pour sorties et retour, Prix revient pour achats"),
-                ('repas', 'INTEGER', "0 matin, 1 midi, 2 soir, 3 tous"),
+                ('repas', 'INTEGER', "code repas: 1 matin, 2 midi, 3 soir, 4 tous"),
                 ('IDanalytique', 'VARCHAR(8)', "Section analytique du camp à facturer"),
                 ('ordi', 'VARCHAR(16)', "Nom de l'ordi utilisé pour l'entrée ou la modif"),
                 ('dateSaisie', 'DATE', "Date de l'entrée ou la modif"),

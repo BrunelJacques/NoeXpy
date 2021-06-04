@@ -466,10 +466,10 @@ class PNL_corps(xgte.PNL_corps):
         if self.parent.sens == 'sorties' and track.repas == None :
             # choix par défaut selon l'heure
             h = datetime.datetime.now().hour
-            ch=2
-            if h < 8: ch=0
-            if h < 17: ch=1
-            track.repas = nust.CHOIX_REPAS[ch]
+            ch=3
+            if h < 8: ch=1
+            if h < 17: ch=2
+            track.repas = nust.CHOIX_REPAS[ch-1]
 
         if code == 'repas':
             editor.Set(nust.CHOIX_REPAS)

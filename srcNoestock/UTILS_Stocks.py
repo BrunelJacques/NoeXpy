@@ -35,7 +35,7 @@ def SqlMouvements(db,dParams=None):
             dMouvement = {}
             for ix  in range(len(lstChamps)):
                 if lstChamps[ix] == 'repas' and record[ix]:
-                    dMouvement[lstChamps[ix]] = CHOIX_REPAS[record[ix]]
+                    dMouvement[lstChamps[ix]] = CHOIX_REPAS[record[ix]-1]
                 else:
                     dMouvement[lstChamps[ix]] = record[ix]
             ldMouvements.append(dMouvement)            
@@ -246,11 +246,12 @@ def SauveMouvement(db,dlg,track):
     if not track.valide:
         return False
     if not dlg.analytique or len(dlg.analytique.strip()) == 0:
-        dlg.analytique = ''
+        analytique = '00'
+    else: analytique = dlg.analytique
     repas = None
     if dlg.sens == 'sorties' and hasattr(track,'repas'):
         if len(track.repas) > 0:
-            repas = CHOIX_REPAS.index(track.repas)
+            repas = CHOIX_REPAS.index(track.repas)+1
     lstDonnees = [  ('date',dlg.date),
                     ('fournisseur',dlg.fournisseur),
                     ('origine',dlg.origine),
@@ -258,7 +259,7 @@ def SauveMouvement(db,dlg,track):
                     ('IDarticle', track.IDarticle),
                     ('qte', track.qte),
                     ('prixUnit', track.prixTTC),
-                    ('IDanalytique', dlg.analytique),
+                    ('IDanalytique', analytique),
                     ('ordi', dlg.ordi),
                     ('dateSaisie', dlg.today),
                     ('modifiable', 1),]
@@ -479,48 +480,146 @@ def GetEffectifs(dlg,**kwd):
 def GetPrixJours(dlg,**kwd):
     # retourne les effectifs dans la table stEffectifs
     db = kwd.get('db',dlg.db)
-    nbreFiltres = kwd.get('nbreFiltres', 0)
-    periode = kwd.get('periode',dlg.periode)
-    cuisine = kwd.get('cuisine',dlg.cuisine)
-    # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
-    limit = ''
-    if nbreFiltres == 0:
-        limit = "LIMIT %d" % LIMITSQL
 
-    where = """
-                WHERE (IDdate >= '%s' AND IDdate <= '%s')"""%(periode[0],periode[1])
-    if cuisine: where += """
-                        AND ( IDanalytique = '00' )"""
-    else: where += """
+    # filtrage sur la date
+    dtFin = xformat.DateSqlToDatetime(dlg.periode[1])
+    dtDeb = xformat.DateSqlToDatetime(dlg.periode[0])
+    dtFinJ1 = xformat.DecaleDateTime(dtFin,+1) # pour inclure les ptDèj du lendemain
+
+    # filtrage sur les types de repas
+    lstRepasRetenus = []
+    if dlg.midi:
+        lstRepasRetenus.append(2)
+    if dlg.soir:
+        lstRepasRetenus.append(3)
+    if len(lstRepasRetenus) >0:
+        lstRepasRetenus += [0,4,]
+    if dlg.matin:   
+        lstRepasRetenus.append(1)
+    if lstRepasRetenus == []: return []
+
+    # compose le where sur date et analytique
+    def getWhere(nomDate, deb,fin):
+        wh = """
+                WHERE (%s >= '%s' AND %s <= '%s')
+                    """%(nomDate,deb,nomDate,fin)
+
+        # filtrage sur le code analytique
+        if dlg.cuisine: wh += """
+                        AND ( IDanalytique = '00' OR IDanalytique IS NULL )"""
+        else: wh += """
                         AND ( IDanalytique = '%s')"""%dlg.analytique
+        return wh
+    where = getWhere('date', dtDeb, dtFinJ1)
+    where += """
+                        AND
+                        origine in ('repas', 'camp')
+                        """
+    # ajoute la condition sur les codes repas choisis
+    if len(lstRepasRetenus) <5:
+        where += """
+                        AND (repas in (%s)
+                            OR (repas IS NULL))"""%str(lstRepasRetenus)[1:-1]
+    lstRepasRetenus.append(None)
 
-    table = DB_schema.DB_TABLES['stMouvements']
-    lstChamps = xformat.GetLstChamps(table)
-    req = """   SELECT %s
-                FROM stEffectifs
-                %s 
-                ORDER BY IDdate DESC
-                %s ;""" % (",".join(lstChamps), where, limit)
-    retour = db.ExecuterReq(req, mess='GetEffectifs')
+
+    #lstChamps = ['date', 'codeRepas', 'IDarticle', 'qteConso', 'prixUnit']
+    req = """
+            SELECT  Date, repas, IDarticle, qte, prixUnit
+            FROM stMouvements 
+            %s
+            ORDER BY stMouvements.Date DESC , stMouvements.repas
+            ; """%(where)
+
+    retour = db.ExecuterReq(req, mess='GetPrixJours')
     recordset = ()
     if retour == "ok":
         recordset = db.ResultatReq()
 
-    # composition des données du tableau à partir du recordset
-    lstDonnees = []
+    # création de dictionnaires de données à partir du recordset
+    dicLignes = {}
+    # Premier passage :Cumul des couts
+    for date, codeRepas, IDarticle, qteConso, prixUnit in recordset:
+        # on ne retient que les repas à inclure
+        if not codeRepas in lstRepasRetenus: continue
+        # seuls les pt dej au delà de date fin sont pris
+        if codeRepas == 1:
+            # Ptit dèj: reculer d'un jour pour se rattacher au soir
+            date = xformat.DecaleDateTime(date,-1)
+        if date > dtFin or date < dtDeb : continue
+
+        if not date in dicLignes.keys():
+            dicLignes[date] = {'IDdate': date, 
+                               'cout': {},
+                               }
+            # on garde le distingo par repas à cause des valeurs unitaires à calculer en final
+            for code in lstRepasRetenus:
+                dicLignes[date]['cout'][code] = 0.0
+        dicLignes[date]['cout'][codeRepas] += round(qteConso * prixUnit,2)
+
+    # Recherche des effectifs: ['date', 'nbMidiCli', 'nbMidiRep', 'nbSoirCli', 'nbSoirRep']
+    where = getWhere('IDdate', dtDeb,dtFin)
+
+    lstChamps = ['IDdate', 'midiClients', 'midiRepas', 'soirClients', 'soirRepas']
+    req = """
+            SELECT  %s 
+            FROM stEffectifs 
+            %s
+            ORDER BY IDdate DESC
+            ; """%(",".join(lstChamps),where)
+
+    retour = db.ExecuterReq(req, mess='GetPrixJours2')
+    recordset = ()
+    if retour == "ok":
+        recordset = db.ResultatReq()
+
+    # composition du dic des effectifs
+    dicEffectifs = {}
     for record in recordset:
-        dic = xformat.ListToDict(lstChamps,record)
-        ligne = [
-            dic['IDdate'],
-            dic['midiRepas'],
-            dic['midiClients'],
-            dic['soirRepas'],
-            dic['soirClients'],
-            dic['prevuRepas'],
-            dic['prevuClients'],
-            dic['IDanalytique'],
-            dic['modifiable'],]
-        lstDonnees.append(ligne)
+        dicEff = xformat.ListToDict(lstChamps,record)
+        dicEffectifs[dicEff['IDdate']] = dicEff
+
+    # Deuxième passage: Calcul des composants de la ligne regroupée par date
+    lstDonnees = []
+    for date,dic in dicLignes.items():
+        nbRepas = 0
+        nbClients = 0
+        cout = 0.0
+        for code, value in dic['cout'].items():
+            cout += value
+        # choix du diviseur
+        lstCodes = [x for x in dic['cout'].keys()]
+        soir = (1 in lstCodes or 3 in lstCodes) 
+        midi = (2 in lstCodes) 
+        tous = (4 in lstCodes or 0 in lstCodes or None in lstCodes)
+        if dlg.matin and not (soir or midi):
+            soir = True
+        if tous and not (soir or midi):
+            midi = True
+        diviseur = soir + midi
+        if diviseur == 0: diviseur = 1
+        if date in dicEffectifs.keys():
+            dicEff = dicEffectifs[date]
+            if midi:
+                nbRepas += xformat.Nz(dicEff['midiRepas'])
+                nbClients += xformat.Nz(dicEff['midiClients'])
+            if soir:
+                nbRepas += xformat.Nz(dicEff['soirRepas'])
+                nbClients += xformat.Nz(dicEff['soirClients'])
+        nbClients = nbClients / diviseur 
+        prixRepas = cout
+        prixClient = cout
+        if nbRepas > 0:
+            prixRepas = prixRepas / nbRepas
+        if nbClients > 0:
+            prixClient = prixClient / nbClients
+        ligne = [   date,
+                    nbRepas,
+                    nbClients,
+                    prixRepas,
+                    prixClient,
+                    cout]
+        lstDonnees.append(ligne)        
     return lstDonnees
 
 

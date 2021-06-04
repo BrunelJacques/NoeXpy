@@ -1131,6 +1131,7 @@ class CTRL_SaisieDate(wx.Panel):
     def OnChoixDate(self,event):
         # vérification de la validité de la date par passage en datetime et réaffichage
         if self.flagSkipEdit:
+            event.Skip()
             return
         self.flagSkipEdit = True
         dtDate = None
@@ -1146,8 +1147,8 @@ class CTRL_SaisieDate(wx.Panel):
             elif hasattr(self,'actionCtrl'):
                 eval('self.parent.lanceur.%s())'%self.actionCtrl)
             else: wx.MessageBox("xdate.CTRL_SaisieDate: pas de retour 'OnDate' géré!!!")
-        event.Skip()
         self.flagSkipEdit = False
+        event.Skip()
 
     def SetFocus(self):
         self.ctrlDate.SetFocus()
@@ -1209,6 +1210,7 @@ class CTRL_Periode(wx.Panel):
                 eval('self.parent.lanceur.%s(None)'% self.actionCtrl)
             else:
                 wx.MessageBox("xdate.CTRL_Periode: pas de retour 'OnPeriode' géré!!!")
+            event.Skip()
 
     def SetValue(self,tplDates):
         # le tuple correspond aux deux dates

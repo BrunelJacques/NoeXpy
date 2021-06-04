@@ -29,7 +29,7 @@ class CtrlEffectifs(wx.Panel):
     # controle inséré dans la matrice_params qui suit. De genre AnyCtrl pour n'utiliser que le bind bouton
     def __init__(self,parent):
         super().__init__(parent,wx.ID_ANY)
-        kwd = {'label':"Saisie des \neffectifs",
+        kwd = {'label':"Accès aux\neffectifs",
                'name':'effectifs',
                'image':wx.ArtProvider.GetBitmap(wx.ART_FIND,size=(24,24)),
                'help':"Pour saisir les effectifs présents indispensables au calcul des prix rations",
@@ -86,19 +86,19 @@ MATRICE_PARAMS = {
     {'name': 'midi', 'genre': 'Check', 'label': 'Midi',
                 'help': "Retenir les sorties pour le repas de midi",
                 'value':True,
-                'ctrlAction':'OnCircadien',
+                'ctrlAction':'OnMidi',
                 'txtSize': 40,
                 'ctrlMaxSize': (80, 25)},
     {'name': 'soir', 'genre': 'Check', 'label': 'Soir',
-                 'help': "Retenir les sorties pour le repas du soir",
+                 'help': "Les effectifs soir et matin(J+1) vont ensemble. \nCocher Retiens les sorties pour le repas du soir",
                  'value': True,
-                 'ctrlAction': 'OnCircadien',
+                 'ctrlAction': 'OnSoir',
                  'txtSize': 40,
                  'ctrlMaxSize': (80, 25)},
     {'name': 'matin', 'genre': 'Check', 'label': 'Matin',
-                 'help': "Retenir les sorties pour le petit-dej du lendemain (J+1)",
+                 'help': "Retenir les sorties pour le petit-dej du lendemain (J+1)\nen plus de celles du soir",
                  'value': True,
-                 'ctrlAction': 'OnCircadien',
+                 'ctrlAction': 'OnMatin',
                  'txtSize': 40,
                  'ctrlMaxSize': (80, 25)},
 
@@ -112,6 +112,8 @@ MATRICE_PARAMS = {
                      },
     ],
 }
+
+INFOS = ["Double clic sur une ligne pour accéder aux effectifs du jour.\nSeul les jours ayant des sorties de stock sont affichés",]
 
 def GetDicParams():
     return {
@@ -136,11 +138,12 @@ def GetBoutons(dlg):
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
     return [
-            ColumnDefn("Date", 'left', 90,      'ID', valueSetter=datetime.date.today(),stringConverter=xformat.FmtDate),
-            ColumnDefn("NbRations", 'right', 72, 'rations', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
-            ColumnDefn("NbClients", 'right', 72, 'clients', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
-            ColumnDefn("PrixRation", 'right', 72,'prixRation', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
-            ColumnDefn("PrixClient", 'right', 72, 'prixClient', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
+            ColumnDefn("Date", 'left', 90,     'IDdate', valueSetter=datetime.date.today(),stringConverter=xformat.FmtDate),
+            ColumnDefn("NbRepas", 'right', 80, 'nbRepas', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
+            ColumnDefn("NbClients", 'right', 80, 'nbClients', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
+            ColumnDefn("PrixParRepas", 'right', 100,'prixRepas', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=True),
+            ColumnDefn("PrixJourClient", 'right', 100, 'prixClient', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=True),
+            ColumnDefn("Coût global", 'right', 100, 'cout', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=True),
             ]
 
 def GetOlvCodesSup():
@@ -153,12 +156,13 @@ def GetOlvOptions(dlg):
             'checkColonne': False,
             'recherche': False,
             'getDonnees': dlg.GetDonnees,
-            'dictColFooter': {"date": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
-                              "rations": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
-                              "clients": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
-                              "PrixRation": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
-                              "PrixClient": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
-                                  },
+            'dictColFooter': {"IDdate": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
+                              "nbRepas": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
+                              "nbClients": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
+                              "prixRepas": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
+                              "prixClient": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
+                              "cout": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
+                              },
             'orientationImpression': wx.PORTRAIT,
             'lstNomsBtns': ['modifier'],
     }
@@ -173,12 +177,40 @@ def GetDlgOptions(dlg):
 
 #----------------------- Parties de l'écran -----------------------------------------
 
+class PNL_corps(xgtr.PNL_corps):
+    #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
+    def __init__(self, parent, dicOlv,*args, **kwds):
+        xgtr.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
+
+    def OnDblClick(self,event):
+        self.OnModifier(event)
+
+    def OnModifier(self, event):
+        if not self.EstAdmin(): return
+        # Action du clic sur l'icone sauvegarde renvoie au parent
+        olv = self.ctrlOlv
+
+        if olv.GetSelectedItemCount() == 0:
+            wx.MessageBox("Pas de sélection faite, pas de modification possible !" ,
+                                'La vie est faite de choix', wx.OK | wx.ICON_INFORMATION)
+            return
+
+        ligne = olv.GetSelectedObject()
+        ixLigne = olv.modelObjects.index(ligne)
+        dte = ligne.IDdate
+        analytique = self.parent.analytique
+        # test de l'existence d'un enregistrement effectif
+
+        # lancemetn de la gestion effectif
+
+        # refresh
+
 class DLG(xgtr.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self):
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
-        self.txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"
-        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),self.txtInfo]
+        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),]
+        lstInfos += INFOS
         dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
 
         # Propriétés du corps de l'écran
@@ -191,20 +223,27 @@ class DLG(xgtr.DLG_tableau):
         #self.periode = (None,None)
         self.cuisine = True
         self.analytique = '00'
+        self.midi = True
+        self.soir = True
+        self.matin = True
 
         # Propriétés de l'écran global type Dialog
         kwds = GetDlgOptions(self)
         kwds['autoSizer'] = False
         kwds['dicParams'] = GetDicParams()
-        kwds['dicOlv'] = self.dicOlv
+        #kwds['dicOlv'] = self.dicOlv
         kwds['dicPied'] = dicPied
         kwds['db'] = xdb.DB()
 
         super().__init__(None, **kwds)
+        self.pnlOlv = PNL_corps(self, self.dicOlv,  **kwds )
+        self.ctrlOlv = self.pnlOlv.ctrlOlv
+
         ret = self.Init()
         if ret == wx.ID_ABORT: self.Destroy()
         self.Sizer()
         self.ctrlOlv.MAJ()
+        self.ctrlOlv.SetFocus()
 
     def Init(self):
         # lancement de l'écran en blocs principaux
@@ -217,11 +256,13 @@ class DLG(xgtr.DLG_tableau):
         self.periode = xformat.PeriodeMois(self.today)
         self.pnlParams.SetOneValue('periode',self.periode,'param1')
         self.pnlParams.SetOneValue('cuisine',self.cuisine,'param2')
+        self.pnlParams.SetOneValue('midi',self.midi,'param3')
+        self.pnlParams.SetOneValue('soir',self.soir,'param3')
+        self.pnlParams.SetOneValue('matin',self.matin,'param3')
         self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
         self.btnAnalytique = self.pnlParams.GetPnlCtrl('analytique','param2').btn
         self.btnAnalytique.Enable(False)
-        self.txtAnalytique = self.pnlParams.GetPnlCtrl('analytique','param2').txt
-        self.txtAnalytique.Enable(False)
+        self.OnCuisine(None)
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
 
     def Sizer(self):
@@ -260,7 +301,8 @@ class DLG(xgtr.DLG_tableau):
             self.btnAnalytique.SetFocus()
         self.pnlParams.SetOneSet('analytique', values=self.valuesAnalytique, codeBox='param2')
         self.btnAnalytique.Enable(not self.cuisine)
-        self.txtAnalytique.Enable(not self.cuisine)
+        self.pnlParams.GetPnlCtrl('analytique','param2').txt.Enable(not self.cuisine)
+        self.pnlParams.GetPnlCtrl('analytique','param2').ctrl.Enable(not self.cuisine)
         self.analytique = '00'
         self.ctrlOlv.MAJ()
 
@@ -281,10 +323,29 @@ class DLG(xgtr.DLG_tableau):
         self.pnlParams.SetOneValue('analytique',codeAct,codeBox='param2')
         self.OnAnalytique(event)
 
+    def OnMidi(self,event):
+        self.midi =  self.pnlParams.GetOneValue('midi','param3')
+        self.ctrlOlv.MAJ()
+        if event: event.Skip()
+
+    def OnSoir(self,event):
+        self.soir =  self.pnlParams.GetOneValue('soir','param3')
+        self.matin = self.soir
+        self.pnlParams.SetOneValue('matin', self.soir,'param3')
+        ctrlMatin = self.pnlParams.GetPnlCtrl('midi','param3')
+        ctrlMatin.SetFocus()
+        self.ctrlOlv.MAJ()
+        if event: event.Skip()
+
+    def OnMatin(self,event):
+        self.matin =  self.pnlParams.GetOneValue('matin','param3')
+        self.ctrlOlv.MAJ()
+        if event: event.Skip()
+
     def OnBtnEffectifs(self,event):
-        # lancement de la synchronisation entre base LAN et Wan
-        mess = "C'est prévu...\n\nle contentement se nourrit d'espérance"
-        wx.MessageBox(mess,"Pas encore fait")
+        # lancement de l'écran des effectifs
+        dlg = DLG_Effectifs.DLG()
+        dlg.ShowModal()
         if event: event.Skip()
 
     def GetDonnees(self,**kwd):
@@ -294,12 +355,8 @@ class DLG(xgtr.DLG_tableau):
         if hasattr(self,'periode'):
             params = self.pnlParams.GetValues()
             kwd['db'] = self.db
-            lstDonnees = nust.PrixJours(self, **kwd)
+            lstDonnees = nust.GetPrixJours(self, **kwd)
         return lstDonnees
-
-    def OnDblClick(self,event):
-        event.Skip()
-        self.pnlOlv.OnModifier(event)
 
     def GetTitreImpression(self):
         datedeb = xformat.DateSqlToFr(self.periode[0])

@@ -435,7 +435,12 @@ def CalculeAge(dateReference=None, date_naiss=None):
         (dateReference.month, dateReference.day) < (date_naiss.month, date_naiss.day))
     return age
 
+def DecaleDateSql(dateIso,nbj=-1, iso=True):
+    dt = DateSqlToDatetime(dateIso) + datetime.timedelta(days=nbj)
+    return DatetimeToStr(dt,iso)
 
+def DecaleDateTime(date,nbj=-1):
+    return DateToDatetime(date) + datetime.timedelta(days=nbj)
 
 # Formatages pour OLV -------------------------------------------------------------------------------------
 

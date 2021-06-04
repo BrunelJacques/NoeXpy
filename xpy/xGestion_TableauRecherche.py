@@ -640,30 +640,58 @@ class PNL_corps(wx.Panel):
 class PNL_pied(wx.Panel):
     #panel infos (gauche) et boutons sorties(droite)
     def __init__(self, parent, dicPied, **kwds):
-        autoSizer =     dicPied.pop('autoSizer', True)
+        self.lanceur = parent
+        self.lstInfos = dicPied.pop('lstInfos',None)
         self.lstBtns =  dicPied.pop('lstBtns',None)
+        autoSizer =     dicPied.pop('autoSizer', True)
         if self.lstBtns == None:
             #force la présence d'un pied d'écran par défaut
             self.lstBtns = GetBtnsPied(self)
         wx.Panel.__init__(self, parent)
         self.parent = parent
-        self.lanceur = parent
         if autoSizer:
             self.Sizer()
 
     def Sizer(self):
         self.itemsBtns = xboutons.GetAddManyBtns(self,self.lstBtns)
-        nbcol=(len(self.itemsBtns)+1)
+        self.itemsInfos = self.CreateItemsInfos(self.lstInfos)
+        nbinfos = len(self.itemsInfos)
+        nbcol=(len(self.itemsBtns)+len(self.itemsInfos)+1)
         #composition de l'écran selon les composants
         sizerpied = wx.FlexGridSizer(rows=1, cols=nbcol, vgap=0, hgap=0)
-        sizerpied.Add((1,1),1,wx.EXPAND,0)
+        if self.lstInfos:
+            sizerpied.AddMany(self.itemsInfos)
+        sizerpied.Add((10,10),1,wx.ALL|wx.EXPAND,5)
         if self.lstBtns:
             sizerbtns = wx.BoxSizer(wx.HORIZONTAL)
             sizerbtns.AddMany(xboutons.GetAddManyBtns(self,self.itemsBtns))
             sizerpied.Add(sizerbtns, 0, 0, 0)
-        sizerpied.AddGrowableCol(0)
+        sizerpied.AddGrowableCol(nbinfos)
         self.SetSizer(sizerpied)
         self.Layout()
+
+    def CreateItemsInfos(self,lstInfos):
+        # images ou texte sont retenus
+        self.infosImage = None
+        self.infosTexte = None
+        lstItems = [(7,7)]
+        if not lstInfos: lstInfos = []
+        for item in lstInfos:
+            if isinstance(item,wx.Bitmap):
+                self.infosImage = wx.StaticBitmap(self, wx.ID_ANY, item)
+                lstItems.append((self.infosImage,0,wx.ALIGN_LEFT|wx.TOP,10))
+            elif isinstance(item,str):
+                self.infosTexte = wx.StaticText(self,wx.ID_ANY,item)
+                lstItems.append((self.infosTexte,10,wx.ALIGN_LEFT|wx.ALL|wx.EXPAND,5))
+            lstItems.append((7,7))
+        return lstItems
+
+    def SetItemsInfos(self,text=None,image=None,):
+        # après create  permet de modifier l'info du pied pour dernière image et dernier texte
+        if image:
+            self.infosImage.SetBitmap(image)
+        if text:
+            self.infosTexte.SetLabelText(text)
 
 # ------------- Ecran Dialog, Lancement des composantes -------------------------------------
 class DLG_tableau(xusp.DLG_vide):
@@ -683,11 +711,14 @@ class DLG_tableau(xusp.DLG_vide):
         else: self.bandeau = None
 
         # Création des différentes parties de l'écran
-        self.dicOlv = xformat.CopyDic(dicOlv)
         self.pnlParams = PNL_params(self, **dicParams)
         kwds['db'] = self.db
-        self.pnlOlv = PNL_corps(self, dicOlv,  **kwds )
-        self.ctrlOlv = self.pnlOlv.ctrlOlv
+        if dicOlv != {}:
+            self.dicOlv = xformat.CopyDic(dicOlv)
+            self.pnlOlv = PNL_corps(self, dicOlv,  **kwds )
+            self.ctrlOlv = self.pnlOlv.ctrlOlv
+        else:
+            autoSizer = False
         self.pnlPied = PNL_pied(self, dicPied,  **kwds )
 
         # permet un Sizer de substitution différé après l'init propre à l'instance
