@@ -1074,21 +1074,6 @@ class DLG_calendrier(wx.Dialog):
 
 # ---------------Ctrls de saisie de dates appelant un calendrier -------------------------------------
 
-class TxtDate(masked.TextCtrl):
-    """ Non Utilisé !!! sert d'exemple pour saisie masquée"""
-    def __init__(self, parent):
-        masked.TextCtrl.__init__(self, parent, -1, "", style=wx.TE_PROCESS_ENTER|wx.TE_CENTRE, mask = "##/##/####")
-        self.parent = parent
-        self.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
-
-    def OnKillFocus(self, event):
-        # Envoi un signal de changement de date au panel parent
-        try:
-            self.parent.OnDate(event)
-        except:
-            pass
-        event.Skip()
-
 # saisie date par le calendrier incorporé
 class CTRL_SaisieDate(wx.Panel):
     def __init__(self, parent, **kwds):
@@ -1096,7 +1081,6 @@ class CTRL_SaisieDate(wx.Panel):
         label = kwds.pop("label","")
         minSize = kwds.pop("minSize",(100 + len(label)*5, 25))
         self.OnDate = kwds.pop("OnDate",None)
-        self.flagSkipEdit = False
         wx.Panel.__init__(self, parent, id=-1, name=name)
         self.parent = parent
         # kwcal sera adressé au panel calendrier
@@ -1105,7 +1089,6 @@ class CTRL_SaisieDate(wx.Panel):
         self.kwdlg = kwds.pop('kwdlg',{'size':(350,350)})
 
         self.labelDate = wx.StaticText(self, -1, label)
-        #self.ctrlDate = TxtDate(self)
         self.ctrlDate = wx.TextCtrl(self, -1, "", style=wx.TE_PROCESS_ENTER|wx.TE_CENTRE)
         self.ctrlDate.Bind(wx.EVT_KILL_FOCUS, self.OnChoixDate)
         self.ctrlDate.Bind(wx.EVT_TEXT_ENTER, self.OnChoixDate)
@@ -1130,10 +1113,6 @@ class CTRL_SaisieDate(wx.Panel):
 
     def OnChoixDate(self,event):
         # vérification de la validité de la date par passage en datetime et réaffichage
-        if self.flagSkipEdit:
-            event.Skip()
-            return
-        self.flagSkipEdit = True
         dtDate = None
         try:
             dtDate = xformat.DateToDatetime(self.GetValue())
@@ -1144,11 +1123,6 @@ class CTRL_SaisieDate(wx.Panel):
             self.SetValue(xformat.DatetimeToStr(dtDate))
             if self.OnDate:
                 self.OnDate(event)
-            elif hasattr(self,'actionCtrl'):
-                eval('self.parent.lanceur.%s())'%self.actionCtrl)
-            else: wx.MessageBox("xdate.CTRL_SaisieDate: pas de retour 'OnDate' géré!!!")
-        self.flagSkipEdit = False
-        event.Skip()
 
     def SetFocus(self):
         self.ctrlDate.SetFocus()
@@ -1206,11 +1180,13 @@ class CTRL_Periode(wx.Panel):
             debut,fin = self.GetValue()
             if len(fin)>0 and fin < debut:
                 wx.MessageBox("La date fin est antérieure au début!!")
-            elif hasattr(self, 'actionCtrl'):
-                eval('self.parent.lanceur.%s(None)'% self.actionCtrl)
             else:
-                wx.MessageBox("xdate.CTRL_Periode: pas de retour 'OnPeriode' géré!!!")
-            event.Skip()
+                if event.EventType == wx.EVT_KILL_FOCUS.typeId:
+                    if hasattr(self,'actionCtrl'):
+                        event.EventObject = self
+                        self.Parent.OnCtrlAction(event)
+                        return
+                event.Skip()
 
     def SetValue(self,tplDates):
         # le tuple correspond aux deux dates

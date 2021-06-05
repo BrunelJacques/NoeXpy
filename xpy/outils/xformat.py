@@ -122,6 +122,9 @@ def GetLstTypes(dicTable):
 def GetValeursDefaut(dicTable):
     return ValeursDefaut(GetLstChamps(dicTable),GetLstTypes(dicTable))
 
+def GetCodesColonnes(lstColonnes):
+    return [x.valueGetter for x in lstColonnes]
+
 def ValeursDefaut(lstNomsColonnes,lstTypes,wxDates=False):
     # Détermine des valeurs par défaut selon le type des variables, précision pour les dates wx ou datetime
     # la valeur par défaut détermine le cellEditor

@@ -206,6 +206,9 @@ def DicFiltre(dic,options):
 #**********************************************************************************
 #                   GESTION des CONTROLES: Grilles ou composition en panel
 #**********************************************************************************
+
+
+
 class AnyCtrl(wx.Panel):
     # Exemple d'un controle pour s'insérer dans une matrice 'genre':'anyctrl', 'ctrl':'MyAnyCtrl'
     def __init__(self,parent):
@@ -412,11 +415,6 @@ class PNL_ctrl(wx.Panel):
         self.txt.SetMinSize((lg, 25))
         maxSize = kwds.pop('ctrlMaxSize',(300,50))
         self.SetMaxSize(maxSize)
-        """
-        minSize = (-1,-1)
-        if 'ctrlMinSize' in kwds:
-            minSize = kwds.pop('ctrlMinSize',(-1,-1))
-        self.SetMinSize(minSize)"""
 
         # seul le PropertyGrid gère le multichoices, pas le comboBox
         if genre == 'multichoice': genre = 'combo'
@@ -427,111 +425,124 @@ class PNL_ctrl(wx.Panel):
             labels = values
         self.genre = lgenre
         self.values = values
-        try:
-            commande = 'debut'
-            # construction des contrôles selon leur genre
-            if lgenre in ['enum','combo','multichoice','choice']:
-                if lgenre == 'choice':
-                    style = wx.TE_PROCESS_ENTER | wx.CB_READONLY
-                else: style = wx.TE_PROCESS_ENTER
-                self.ctrl = wx.ComboBox(self, wx.ID_ANY,style = style)
-                if labels:
-                    commande = 'Set in combo'
-                    for label in labels:
-                        if not isinstance(label,str):
-                            ix = labels.index(label)
-                            labels[ix] = str(label)
-                    self.ctrl.Set(labels)
-                    if isinstance(lvalue,list): lvalue=lvalue[0]
-                    if isinstance(lvalue,int): lvalue=labels[lvalue]
-                    self.ctrl.SetValue(lvalue)
-                else: lvalue = None
-            elif lgenre in ['bool', 'check']:
-                self.ctrl = wx.CheckBox(self, wx.ID_ANY)
-                self.UseCheckbox = 1
-            elif lgenre == 'anyctrl':
-                if isinstance(ctrl,str):
-                    action = "self.lanceur.%s()"%ctrl
-                    self.ctrl = eval(action)
-                else:
-                    self.ctrl = ctrl(self)
-            elif not lgenre:
-                self.ctrl = (10,10)
-            else:
-                style = wx.TE_PROCESS_ENTER | wx.TE_CENTRE
-                if lname:
-                    if 'pass' in lgenre:
-                        lgenre = 'str'
-                        style = wx.TE_PASSWORD | wx.TE_PROCESS_ENTER
-                self.ctrl = wx.TextCtrl(self, wx.ID_ANY, style=style)
-
-            if lvalue:
-                commande = 'Set Value'
-                if lgenre in ['int','float']:
-                    lvalue = str(lvalue)
-                if lgenre in ['date','time','datetime']:
-                    lvalue = DDwxdate2strdate(lvalue,iso=False)
+        #try:
+        commande = 'debut'
+        # construction des contrôles selon leur genre
+        if lgenre in ['enum','combo','multichoice','choice']:
+            if lgenre == 'choice':
+                style = wx.TE_PROCESS_ENTER | wx.CB_READONLY
+            else: style = wx.TE_PROCESS_ENTER
+            self.ctrl = wx.ComboBox(self, wx.ID_ANY,style = style)
+            if labels:
+                commande = 'Set in combo'
+                for label in labels:
+                    if not isinstance(label,str):
+                        ix = labels.index(label)
+                        labels[ix] = str(label)
+                self.ctrl.Set(labels)
+                if isinstance(lvalue,list): lvalue=lvalue[0]
+                if isinstance(lvalue,int): lvalue=labels[lvalue]
                 self.ctrl.SetValue(lvalue)
-            if help:
-                self.ctrl.SetToolTip(help)
-                self.txt.SetToolTip(help)
-            commande = "création Boutons"
-            if not btnLabel: btnLabel = ''
-            if lgenre in ('dir','dirfile'):
-                self.avecBouton = True
-                if lgenre == 'dirfile':
-                    onBtn = self.OnDirfile
-                else:
-                    onBtn = self.OnDir
-                self.btn = xboutons.Bouton(self,label=btnLabel, image=wx.ART_GO_DIR_UP,onBtn=onBtn)
-            elif self.avecBouton:
-                self.btn = xboutons.Bouton(self,label=btnLabel, image=btnImage,help=btnHelp)
-            self.PnlSizer()
+            else: lvalue = None
+        elif lgenre in ['bool', 'check']:
+            self.ctrl = wx.CheckBox(self, wx.ID_ANY)
+            self.UseCheckbox = 1
+        elif lgenre == 'anyctrl':
+            if isinstance(ctrl,str):
+                action = "self.lanceur.%s()"%ctrl
+                self.ctrl = eval(action)
+            else:
+                self.ctrl = ctrl(self)
+        elif not lgenre:
+            self.ctrl = (10,10)
+        else:
+            style = wx.TE_PROCESS_ENTER | wx.TE_CENTRE
+            if lname:
+                if 'pass' in lgenre:
+                    lgenre = 'str'
+                    style = wx.TE_PASSWORD | wx.TE_PROCESS_ENTER
+            self.ctrl = wx.TextCtrl(self, wx.ID_ANY, style=style)
+
+        if lvalue:
+            commande = 'Set Value'
+            if lgenre in ['int','float']:
+                lvalue = str(lvalue)
+            if lgenre in ['date','time','datetime']:
+                lvalue = DDwxdate2strdate(lvalue,iso=False)
+            self.ctrl.SetValue(lvalue)
+        if help:
+            self.ctrl.SetToolTip(help)
+            self.txt.SetToolTip(help)
+        commande = "création Boutons"
+        if not btnLabel: btnLabel = ''
+        if lgenre in ('dir','dirfile'):
+            self.avecBouton = True
+            if lgenre == 'dirfile':
+                onBtn = self.OnDirfile
+            else:
+                onBtn = self.OnDir
+            self.btn = xboutons.Bouton(self,label=btnLabel, image=wx.ART_GO_DIR_UP,onBtn=onBtn)
+        elif self.avecBouton:
+            self.btn = xboutons.Bouton(self,label=btnLabel, image=btnImage,help=btnHelp)
+        self.PnlSizer()
+        """
         except Exception as err:
             mess = "Echec sur PNL_ctrl de:\ngenre: %s\nname: %s\nvalue: %s (%s)\n\n"%(lgenre, name, value, type(value))
             mess += "Le retour d'erreur est : \n%s\n\nSur commande : %s"%(err, commande)
             wx.MessageBox( mess, 'PNL_ctrl.__init__() : Paramètre de ligne indigeste !', wx.OK | wx.ICON_STOP
-            )
+            )"""
 
     def Proprietes(self,ligne):
-        if ligne['genre']:
-            self.codename = self.parent.code + '.' + ligne['name']
-            self.ctrl.genreCtrl = ligne['genre'].lower()
-            self.ctrl.nameCtrl = self.codename
-            self.ctrl.name = ligne['name']
-            self.ctrl.labelCtrl = ligne['label']
-            self.ctrl.actionCtrl = ligne['ctrlAction']
-            self.ctrl.valueCtrl = ligne['value']
-            self.ctrl.valOrigine = ligne['value']
-            self.ctrl.valuesCtrl = ligne['values']
-            self.ctrl.labelsCtrl = ligne['labels']
-            if ligne['enable'] == False:
-                self.ctrl.Enable(False)
-                self.txt.Enable(False)
-            if self.avecBouton and ligne['genre'].lower()[:3] != 'dir':
-                self.btn.nameBtn = self.codename
-                self.btn.labelBtn = ligne['btnLabel']
-                self.btn.actionBtn = ligne['btnAction']
-                self.btn.Bind(wx.EVT_BUTTON, self.OnBtnAction)
-            if self.ctrl.actionCtrl:
-                self.ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnCtrlAction)
-                self.ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnCtrlAction)
-                if self.ctrl.genreCtrl in ['anyctrl']:
-                    self.ctrl.Bind(wx.EVT_BUTTON, self.OnCtrlAction)
-                if self.ctrl.genreCtrl in ['check']:
-                    self.ctrl.Bind(wx.EVT_CHECKBOX, self.OnCtrlAction)
-                if self.ctrl.genreCtrl in ['enum', 'combo', 'multichoice', 'choice']:
-                    self.ctrl.Bind(wx.EVT_COMBOBOX, self.OnCtrlAction)
-                    self.ctrl.Bind(wx.EVT_CHECKBOX, self.OnCtrlAction)
+        if not ligne['genre']:
+            return
+        self.codename = self.parent.code + '.' + ligne['name']
+        self.ctrl.genreCtrl = ligne['genre'].lower()
+        self.ctrl.nameCtrl = self.codename
+        self.ctrl.name = ligne['name']
+        self.ctrl.labelCtrl = ligne['label']
+        self.ctrl.actionCtrl = ligne['ctrlAction']
+        self.ctrl.valueCtrl = ligne['value']
+        self.ctrl.valOrigine = ligne['value']
+        self.ctrl.valuesCtrl = ligne['values']
+        self.ctrl.labelsCtrl = ligne['labels']
+        if ligne['enable'] == False:
+            self.ctrl.Enable(False)
+            self.txt.Enable(False)
+        if self.avecBouton and ligne['genre'].lower()[:3] != 'dir':
+            self.btn.nameBtn = self.codename
+            self.btn.labelBtn = ligne['btnLabel']
+            self.btn.actionBtn = ligne['btnAction']
+            self.btn.Bind(wx.EVT_BUTTON, self.OnBtnAction)
+        if self.ctrl.actionCtrl:
+            self.ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnCtrlAction)
+            self.ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnCtrlAction)
+            if self.ctrl.genreCtrl in ['anyctrl']:
+                self.ctrl.Bind(wx.EVT_BUTTON, self.OnCtrlAction)
+            if self.ctrl.genreCtrl in ['check']:
+                self.ctrl.Bind(wx.EVT_CHECKBOX, self.OnCtrlAction)
+            if self.ctrl.genreCtrl in ['enum', 'combo', 'multichoice', 'choice']:
+                self.ctrl.Bind(wx.EVT_COMBOBOX, self.OnCtrlAction)
+                self.ctrl.Bind(wx.EVT_CHECKBOX, self.OnCtrlAction)
 
     def OnCtrlAction(self,event):
-        if self.flagSkipEdit == True or hasattr(self.ctrl, 'actionCtrl'):
-            event.Skip()
+        #Recherche de l'action dans l'attribut du ctrl
+        if hasattr(event.EventObject,'actionCtrl'):
+            actionCtrl = event.EventObject.actionCtrl
+        # via le parent de l'objet
+        elif hasattr(event.EventObject.Parent,'actionCtrl'):
+            actionCtrl = event.EventObject.Parent.actionCtrl
+        elif hasattr(event.EventObject.GrandParent, 'actionCtrl'):
+            actionCtrl = event.EventObject.GrandParent.actionCtrl
+        else:
+            print("!!!! actionCtrl de <%s - %s> non trouvée"%(event.EventObject.Parent,event.EventObject.ClassName))
             return
-        self.flagSkipEdit = True
-        self.parent.OnCtrlAction(event)
+        # selon la nature texte ou pas
+        if isinstance(actionCtrl,str):
+            action = "self.lanceur."+actionCtrl+"(event)"
+            eval(action)
+        else:
+            actionCtrl(event)
         event.Skip()
-        self.flagSkipEdit = False
 
     def OnBtnAction(self,event):
         self.parent.OnBtnAction(event)
@@ -930,10 +941,10 @@ class TopBoxPanel(wx.Panel):
         self.SetSizer(self.topbox)
 
     def OnCtrlAction(self,event):
-        self.parent.OnChildCtrlAction(event)
+        self.parent.OnCtrlAction(event)
 
     def OnBtnAction(self,event):
-        self.parent.OnChildBtnAction(event)
+        self.parent.OnBtnAction(event)
 
     def GetLstValues(self,):
         # récupère deux listes nomsCtrl et données de tous les controles
@@ -1316,33 +1327,6 @@ class DLG_vide(wx.Dialog):
 
     # ------------------- Lancement des actions sur Bind -----------------------
 
-    def OnChildBtnAction(self, event):
-        # relais des actions sur les boutons du bas d'écran
-        if self.parent != self and hasattr(self.parent, 'OnChildBtnAction'):
-            self.parent.OnChildBtnAction(self,event)
-        else:
-            action = 'self.%s(event)' % event.EventObject.actionBtn
-            eval(action)
-
-    # relais des Binds sur contrôles.
-    def OnChildCtrlAction(self, event):
-        #Recherche de l'action dans l'attribut du ctrl
-        if hasattr(event.EventObject,'actionCtrl'):
-            actionCtrl = event.EventObject.actionCtrl
-        # via le parent de l'objet
-        elif hasattr(event.EventObject.Parent,'actionCtrl'):
-            actionCtrl = event.EventObject.Parent.actionCtrl
-        else:
-            print("!!!! actionCtrl de <%s - %s> non trouvée"%(event.EventObject.Parent,event.EventObject.ClassName))
-            return
-
-        # selon la nature texte ou pas
-        if isinstance(actionCtrl,str):
-            action = "self."+actionCtrl+"(event)"
-            eval(action)
-        else:
-            actionCtrl(event)
-
 #************************   Pour Test ou modèle  *********************************
 
 class xFrame(wx.Frame):
@@ -1354,7 +1338,7 @@ class xFrame(wx.Frame):
         wx.Frame.__init__(self,*args, title=titre, **kwds)
         self.topPnl = TopBoxPanel(self,wx.ID_ANY, matrice=matrice, donnees=donnees, dlChamps=None, lblTopBox=lblTopBox)
         self.btn0 = wx.Button(self, wx.ID_ANY, "Action Frame")
-        self.btn0.Bind(wx.EVT_BUTTON,self.OnBoutonAction)
+        self.btn0.Bind(wx.EVT_BUTTON,self.OnBtnAction)
         self.marge = 10
         sizer_1 = wx.BoxSizer(wx.VERTICAL)
         sizer_1.Add(self.topPnl, 0, wx.LEFT|wx.EXPAND,self.marge)
@@ -1367,14 +1351,10 @@ class xFrame(wx.Frame):
         print(event.EventObject.genreCtrl, event.EventObject.nameCtrl, event.EventObject.labelCtrl,)
         print('Action prévue : ',event.EventObject.actionCtrl)
 
-    def OnChildBtnAction(self,event):
+    def OnBtnAction(self,event):
         wx.MessageBox('Vous avez cliqué sur le bouton',event.EventObject.Name)
         print( event.EventObject.nameBtn, event.EventObject.labelBtn,)
         print('vous avez donc souhaité : ',event.EventObject.actionBtn)
-
-    def OnBoutonAction(self, event):
-        #Bouton Test
-        wx.MessageBox("Bonjour l'action OnBoutonAction de l'appli")
 
 class FramePanels(wx.Frame):
     def __init__(self, *args, **kwds):

@@ -536,7 +536,7 @@ class PNL_pied(xgte.PNL_pied):
 
 class DLG(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,sens='sorties'):
+    def __init__(self,sens='sorties',date=None,**kwd):
         self.sens = sens
         kwds = GetDlgOptions(self)
         super().__init__(None,**kwds)
@@ -547,7 +547,9 @@ class DLG(xusp.DLG_vide):
         self.origines = self.dicOlv.pop("codesOrigines",[])
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
-        self.date = self.today
+        if not date:
+            date = self.today
+        self.date = date
         self.analytique = ''
         self.fournisseur = ''
         self.ht_ttc = 'TTC'

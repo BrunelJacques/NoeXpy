@@ -14,7 +14,7 @@ import srcNoestock.UTILS_Stocks        as nust
 import srcNoelite.UTILS_Noegest        as nung
 import xpy.xGestion_TableauRecherche   as xgtr
 import xpy.xUTILS_DB                   as xdb
-from srcNoestock                import DLG_Effectifs
+from srcNoestock                import DLG_Effectifs, DLG_Mouvements
 from xpy.outils.ObjectListView  import ColumnDefn
 from xpy.outils                 import xformat,xbandeau,xboutons,xdates
 
@@ -25,32 +25,41 @@ TITRE = "Suivi des Prix de journée"
 INTRO = "Ce tableau fait ressortir le prix des repas selon les sorties de stock " \
         + "rapproché des effectifs servis ou payants seuls, à compléter par le bouton 'saisie'. Le matin se rattache au soir de la veille"
 
+BTN_EFFECTIFS = {'label':"Effectifs",
+                'name':'effectifs',
+                'help':"Pour saisir les effectifs présents indispensables au calcul des prix rations",
+                'sizeFont': 12,
+                'size' : (120,35)}
+
+BTN_MOUVEMENTS = {'label':"Sorties",
+                'name':'mouvements',
+                'help':"Pour saisir les sorties de stock, consommations des repas",
+                'sizeFont': 12,
+                'size' : (120,35)}
+
 class CtrlEffectifs(wx.Panel):
     # controle inséré dans la matrice_params qui suit. De genre AnyCtrl pour n'utiliser que le bind bouton
     def __init__(self,parent):
         super().__init__(parent,wx.ID_ANY)
-        kwd = {'label':"Accès aux\neffectifs",
-               'name':'effectifs',
-               'image':wx.ArtProvider.GetBitmap(wx.ART_FIND,size=(24,24)),
-               'help':"Pour saisir les effectifs présents indispensables au calcul des prix rations",
-               'size' : (150,40)}
+        kwd = {'image':wx.ArtProvider.GetBitmap(wx.ART_FIND,size=(20,20)),}
+        kwd.update(BTN_EFFECTIFS)
         self.btn = xboutons.BTN_action(self,**kwd)
-        self.Sizer()
-
-    def Sizer(self):
-        box = wx.BoxSizer(wx.HORIZONTAL)
-        box.Add(self.btn,1,wx.EXPAND, 0)
-        self.SetSizer(box)
-
     def SetValue(self,value):
         return
-
     def GetValue(self):
         return None
 
-    def Set(self,values):
-        # valeurs multiples
+class CtrlMouvements(wx.Panel):
+    # controle inséré dans la matrice_params qui suit. De genre AnyCtrl pour n'utiliser que le bind bouton
+    def __init__(self,parent):
+        super().__init__(parent,wx.ID_ANY)
+        kwd = {'image':wx.ArtProvider.GetBitmap(wx.ART_FIND,size=(20,20)),}
+        kwd.update(BTN_MOUVEMENTS)
+        self.btn = xboutons.BTN_action(self,**kwd)
+    def SetValue(self,value):
         return
+    def GetValue(self):
+        return None
 
 # Description des paramètres à choisir en haut d'écran
 
@@ -106,9 +115,15 @@ MATRICE_PARAMS = {
 ("param4", "Boutons actions"): [
     {'name': 'rappel', 'genre': 'anyctrl','label': ' ',
                      'txtSize': 1,
-                        'ctrlMaxSize':(200,50),
+                     'ctrlMaxSize':(150,40),
                      'ctrl': CtrlEffectifs,
                      'ctrlAction': 'OnBtnEffectifs',
+                     },
+    {'name': 'rappel2', 'genre': 'anyctrl','label': ' ',
+                     'txtSize': 1,
+                     'ctrlMaxSize':(150,50),
+                     'ctrl': CtrlMouvements,
+                     'ctrlAction': 'OnBtnMouvements',
                      },
     ],
 }
@@ -186,24 +201,20 @@ class PNL_corps(xgtr.PNL_corps):
         self.OnModifier(event)
 
     def OnModifier(self, event):
-        if not self.EstAdmin(): return
         # Action du clic sur l'icone sauvegarde renvoie au parent
         olv = self.ctrlOlv
-
         if olv.GetSelectedItemCount() == 0:
             wx.MessageBox("Pas de sélection faite, pas de modification possible !" ,
-                                'La vie est faite de choix', wx.OK | wx.ICON_INFORMATION)
+                                'Problème de double clic?', wx.OK | wx.ICON_INFORMATION)
             return
 
         ligne = olv.GetSelectedObject()
         ixLigne = olv.modelObjects.index(ligne)
         dte = ligne.IDdate
         analytique = self.parent.analytique
-        # test de l'existence d'un enregistrement effectif
-
         # lancemetn de la gestion effectif
-
-        # refresh
+        DLG_Effectifs.EffectifUnJour(self.db,dte,analytique)
+        self.ctrlOlv.MAJ(ixLigne)
 
 class DLG(xgtr.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
@@ -345,6 +356,14 @@ class DLG(xgtr.DLG_tableau):
     def OnBtnEffectifs(self,event):
         # lancement de l'écran des effectifs
         dlg = DLG_Effectifs.DLG()
+        dlg.ShowModal()
+        if event: event.Skip()
+
+    def OnBtnMouvements(self,event):
+        # lancement de l'écran des effectifs
+        if self.ctrlOlv.GetSelectedObject() != None:
+            date = self.ctrlOlv.GetSelectedObject().IDdate
+        dlg = DLG_Mouvements.DLG(sens='sorties',date=date)
         dlg.ShowModal()
         if event: event.Skip()
 

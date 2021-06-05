@@ -117,8 +117,8 @@ def GetOlvColonnes(dlg):
     return [
             ColumnDefn("Date", 'left', 90,      'ID', valueSetter=datetime.date.today(),stringConverter=xformat.FmtDate),
             ColumnDefn("RepasMidi", 'right', 72, 'midiRepas', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
-            ColumnDefn("ClientsMidi", 'right', 72,'midiClients', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
             ColumnDefn("RepasSoir", 'right', 72,   'soirRepas', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
+            ColumnDefn("ClientsMidi", 'right', 72,'midiClients', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
             ColumnDefn("ClientsSoir", 'right', 72, 'soirClients', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
             ColumnDefn("PrévuInscrits", 'right', 72, 'prevuRepas', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
             ColumnDefn("PrévuClients", 'right', 72, 'prevuClients', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
@@ -164,7 +164,7 @@ def GetDlgOptions(dlg):
         }
 
 def ValideSaisie(dlgSaisie,**kwd):
-    periode = kwd.get('periode',None)
+    periode = kwd.get('periode',dlgSaisie.parent.periode)
     mode = kwd.get('mode', None)
     dDonnees = dlgSaisie.pnl.GetValues(fmtDD=False)
     dateSaisie= dDonnees['ID']
@@ -179,8 +179,8 @@ def ValideSaisie(dlgSaisie,**kwd):
     for champ in ('midiRepas','midiClients','soirRepas','soirClients','prevuRepas','prevuClients'):
         nbresSaisis += dDonnees[champ]
     if nbresSaisis == 0:
-        mess += "\n- Si vous ne saisissez aucun effectif, il est inutile de conserver la ligne!\n"
-    if not (dDonnees['ID'] >= periode[0] and dDonnees['ID'] <= periode[1]):
+        mess += "\n- Si vous ne saisissez aucun effectif, choisissez d'abandonner la saisie!\n"
+    if not (dDonnees['ID'] >= str(periode[0]) and dDonnees['ID'] <= str(periode[1])):
         mess += "\n- La date saisie est hors période\n\nLa période a été choisie dans l'écran précédent. Corrigez\n"
     if dDonnees['midiRepas']< dDonnees['midiClients']:
         mess += "\n- S'il y a plus de clients payant que de nbre repas à midi, ceux qui jeunent ne sont pas à compter\n"
@@ -198,24 +198,36 @@ def ValideSaisie(dlgSaisie,**kwd):
 
 class EffectifUnJour(object):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,db=None,periode=None):
-        # Lanceur de l'écran de saisie d'un nouvelle ligne d'effectif
-        if not db: db=xdb.DB()
+    def __init__(self,db=xdb.DB(),date=None,analytique='00'):
+        # Lanceur de l'écran de saisie d'une ligne d'effectif
         self.db = db
-        # Propriétés identiques au DLG de gestion pour simuler un passage via l'écran DLG
-        if not periode:
-            periode = xformat.PeriodeMois(datetime.date.today(),str)
-        self.periode = periode
+        self.analytique = analytique
+        if not date:
+            date = datetime.date.today()
+        self.date = date
+        self.periode = (date,date)
+        self.ordi = xuid.GetNomOrdi()
+        self.today = datetime.date.today()
+
+        # appel des propriétés contructrice de l'écran
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
         self.dicOlv.update(GetOlvOptions(self))
         self.dicOlv.update(GetMatriceSaisie(self))
-        self.dicOlv['mode'] = 'ajout'
-        self.cuisine = True
-        self.analytique = '00'
+        self.lstEffectifs = self.GetDonnees()
+        self.dicOlv['mode'] = self.GetMode()
+        if self.GetMode() == 'modif':
+            ligne = self.lstEffectifs[0]
+            lstCodes = xformat.GetCodesColonnes(GetOlvColonnes(self))
+            dDonnees = xformat.ListToDict(lstCodes, ligne)
+        else:
+            ligne = None
+            dDonnees = {}
+
         kw = xformat.CopyDic(self.dicOlv)
-        # l'ajout d'une ligne nécessite d'appeler un écran avec les champs en lignes
+        # appeler un écran avec les champs en lignes
         dlgSaisie = xgtr.DLG_saisie(self,kw)
+        dlgSaisie.pnl.SetValues(dDonnees)
         ret = dlgSaisie.ShowModal()
         if ret == wx.OK:
             #récupération des valeurs saisies puis ajout dans les données
@@ -224,9 +236,14 @@ class EffectifUnJour(object):
             self.dicOlv['donnees'] = donnees
             self.GereDonnees(**self.dicOlv)
 
+    def GetMode(self):
+        # Détermination du mode creation ou modif
+        if len(self.lstEffectifs) == 1: return 'modif'
+        if len(self.lstEffectifs) == 0: return 'ajout'
+
     def GetDonnees(self,**kwd):
-        # doit rester, censé être les données d'un OLV virtuel
-        return []
+        # appel de l'enregistrement éventuellement existant
+        return nust.GetEffectifs(self,db=self.db)
 
     def GereDonnees(self,**kwd):
         kwd['db'] = self.db
@@ -234,8 +251,6 @@ class EffectifUnJour(object):
 
     def ValideSaisie(self,dlgSaisie,*args,**kwd):
         #Relais de l'appel de l'écran de saisie en sortie
-        kwd['periode'] = self.periode
-        kwd['cuisine'] = self.cuisine
         return ValideSaisie(dlgSaisie,**kwd)
 
 
@@ -360,7 +375,6 @@ class DLG(xgtr.DLG_tableau):
         # periode est construite dans DLG.Init les accès en cours de construction sont ignorés
         lstDonnees = []
         if hasattr(self,'periode'):
-            params = self.pnlParams.GetValues()
             kwd['db'] = self.db
             lstDonnees = nust.GetEffectifs(self, **kwd)
         return lstDonnees
@@ -408,5 +422,5 @@ if __name__ == '__main__':
     dlg = DLG()
     dlg.ShowModal()
     # lancement pour un jour
-    #EffectifUnJour()
+    EffectifUnJour(date=datetime.date.today())
     app.MainLoop()

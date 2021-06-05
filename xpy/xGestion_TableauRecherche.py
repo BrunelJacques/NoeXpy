@@ -415,11 +415,11 @@ class DLG_saisie(xusp.DLG_vide):
         self.pnl = xusp.TopBoxPanel(self, matrice=matrice, lblTopBox=None)
 
         # grise le champ ID
-        ctrlID = self.pnl.GetPnlCtrl('ID')
         if mode in 'ajout' :
             titre = "Création d'une nouvelle ligne"
         else:
             titre = "Modification de la base de données"
+            self.pnl.GetPnlCtrl('ID').Enable(False)
         texte = "Définissez les valeurs souhaitées pour la ligne"
 
         # personnalisation des éléments de l'écran
@@ -429,6 +429,7 @@ class DLG_saisie(xusp.DLG_vide):
 
         # layout
         self.Sizer(self.pnl)
+
 
     def Boutons(self,dlg):
         btnEsc = xboutons.BTN_esc(dlg,label='',size=(35,35))
@@ -554,11 +555,6 @@ class PNL_corps(wx.Panel):
             sizerbase.Add(sizeractions, 0, wx.TOP, 10)
         self.SetSizer(sizerbase)
 
-    def EnableID(self,pnl,enable=True):
-        ctrlID = pnl.GetPnlCtrl('ID')
-        if ctrlID:
-            ctrlID.Enable(enable)
-
     def EstAdmin(self):
         dicUser = {'utilisateur':'User inconnu!','profil':'inconnu'}
         if self.estAdmin == None:
@@ -613,7 +609,6 @@ class PNL_corps(wx.Panel):
         self.dicOlv['mode'] = 'modif'
         dlgSaisie = DLG_saisie(self.lanceur,self.dicOlv,kwValideSaisie=self.dicOlv)
         dlgSaisie.pnl.SetValues(dDonnees,)
-        self.EnableID(dlgSaisie.pnl, enable=False)
         ret = dlgSaisie.ShowModal()
         if ret == wx.OK:
             #récupération des valeurs saisies puis ajout dans les données avant reinit olv

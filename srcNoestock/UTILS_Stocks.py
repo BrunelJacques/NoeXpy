@@ -19,13 +19,14 @@ CHOIX_REPAS = ['PtDej','Midi','Soir','Tous']
 
 def SqlMouvements(db,dParams=None):
     lstChamps = xformat.GetLstChamps(DB_schema.DB_TABLES['stMouvements'])
+
     # Appelle les mouvements associés à un dic de choix de param et retour d'une liste de dic
     req = """   SELECT %s
                 FROM stMouvements 
                 WHERE ((date = '%s' )
                         AND (origine = '%s' )
                         AND (fournisseur IS NULL  OR fournisseur = '%s' )
-                        AND (IDanalytique IS NULL  OR IDanalytique = '%s' ))
+                        AND (IDanalytique IS NULL  OR IDanalytique ='00'  OR IDanalytique = '%s' ))
                 ;""" % (",".join(lstChamps),dParams['date'],dParams['origine'],dParams['fournisseur'],dParams['analytique'])
     retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetMouvements')
     ldMouvements = []
@@ -343,19 +344,16 @@ def SauveEffectif(dlg,**kwd):
 
     db = kwd.pop('db',None)
     lstDonnees = []
-    IDdate = None
-    condPK = ''
+    if hasattr(dlg,'date'):
+        IDdate = dlg.date
+
+    condPK = 'IDanalytique = %s' % dlg.analytique
 
     ixLigne = kwd.pop('ixLigne',None)
-    if ixLigne:
+    if ixLigne != None:
         donneesOlv = dlg.ctrlOlv.lstDonnees
         ixLigne = min(ixLigne,len(donneesOlv))
         IDdate = donneesOlv[ixLigne][0]
-        condPK = 'IDanalytique = %s' % dlg.analytique
-    else:
-        if mode in ('modif','suppr'):
-            wx.MessageBox('Impossible de pointer la ligne sans ixLigne')
-            return
 
     if mode == 'suppr':
         ret = db.ReqDEL('stEffectifs','IDdate',IDdate,condPK, mess="Suppression Effectifs")
@@ -365,8 +363,8 @@ def SauveEffectif(dlg,**kwd):
         lstDonnees = [('IDdate',donnees[0]),
                     ('IDanalytique',dlg.analytique),
                     ('midiRepas',donnees[1]),
-                    ('midiClients', donnees[2]),
-                    ('soirRepas',donnees[3]),
+                    ('soirRepas',donnees[2]),
+                    ('midiClients', donnees[3]),
                     ('soirClients', donnees[4]),
                     ('prevuRepas',donnees[5]),
                     ('prevuClients', donnees[6]),
@@ -436,7 +434,6 @@ def GetEffectifs(dlg,**kwd):
     db = kwd.get('db',dlg.db)
     nbreFiltres = kwd.get('nbreFiltres', 0)
     periode = kwd.get('periode',dlg.periode)
-    cuisine = kwd.get('cuisine',dlg.cuisine)
     # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
     limit = ''
     if nbreFiltres == 0:
@@ -444,9 +441,9 @@ def GetEffectifs(dlg,**kwd):
 
     where = """
                 WHERE (IDdate >= '%s' AND IDdate <= '%s')"""%(periode[0],periode[1])
-    if cuisine: where += """
-                        AND ( IDanalytique = '00' )"""
-    else: where += """
+
+    if not dlg.analytique: dlg.IDanalytique = '00'
+    where += """
                         AND ( IDanalytique = '%s')"""%dlg.analytique
 
     table = DB_schema.DB_TABLES['stEffectifs']
@@ -468,8 +465,8 @@ def GetEffectifs(dlg,**kwd):
         ligne = [
             dic['IDdate'],
             dic['midiRepas'],
-            dic['midiClients'],
             dic['soirRepas'],
+            dic['midiClients'],
             dic['soirClients'],
             dic['prevuRepas'],
             dic['prevuClients'],
@@ -560,7 +557,7 @@ def GetPrixJours(dlg,**kwd):
     # Recherche des effectifs: ['date', 'nbMidiCli', 'nbMidiRep', 'nbSoirCli', 'nbSoirRep']
     where = getWhere('IDdate', dtDeb,dtFin)
 
-    lstChamps = ['IDdate', 'midiClients', 'midiRepas', 'soirClients', 'soirRepas']
+    lstChamps = ['IDdate', 'midiRepas', 'soirRepas', 'midiClients', 'soirClients']
     req = """
             SELECT  %s 
             FROM stEffectifs 
