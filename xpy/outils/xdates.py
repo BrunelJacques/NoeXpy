@@ -1081,12 +1081,12 @@ class CTRL_SaisieDate(wx.Panel):
         label = kwds.pop("label","")
         minSize = kwds.pop("minSize",(100 + len(label)*5, 25))
         self.OnDate = kwds.pop("OnDate",None)
-        wx.Panel.__init__(self, parent, id=-1, name=name)
-        self.parent = parent
         # kwcal sera adressé au panel calendrier
         self.kwcal = kwds.pop('kwcal',{'typeCalendrier':'mensuel'})
         # kwdlg sera adressé au Dialog d'affichage conteneur fenêtre du calendrier
         self.kwdlg = kwds.pop('kwdlg',{'size':(350,350)})
+        wx.Panel.__init__(self, parent, id=-1, name=name)
+        self.parent = parent
 
         self.labelDate = wx.StaticText(self, -1, label)
         self.ctrlDate = wx.TextCtrl(self, -1, "", style=wx.TE_PROCESS_ENTER|wx.TE_CENTRE)
@@ -1121,7 +1121,7 @@ class CTRL_SaisieDate(wx.Panel):
             self.SetFocus()
         if dtDate:
             self.SetValue(xformat.DatetimeToStr(dtDate))
-            if self.OnDate:
+            if hasattr(self,'OnDate'):
                 self.OnDate(event)
 
     def SetFocus(self):
@@ -1146,6 +1146,23 @@ class CTRL_SaisieDate(wx.Panel):
     def GetValue(self):
         #date retournée en ansi
         return xformat.DateFrToSql(self.ctrlDate.GetValue())
+
+class CTRL_SaisieDateAnnuel(CTRL_SaisieDate):
+    def __init__(self,parent, **kwds):
+        name = kwds.pop("name","CTRL_SaisieDate")
+        kwds['OnDate']= self.OnDate
+        # kwcal sera adressé au panel calendrier
+        kwds['kwcal']={'typeCalendrier':'annuel'}
+        super().__init__(parent,**kwds)
+
+    def OnDate(self,event):
+        dte = self.GetValue()
+        if hasattr(self,'actionCtrl'):
+            event.EventObject = self
+            self.Parent.OnCtrlAction(event)
+            return
+        event.Skip()
+
 
 # saisie de deux dates définissant une période
 class CTRL_Periode(wx.Panel):
@@ -1222,10 +1239,14 @@ if __name__ == '__main__':
     frame_2.Show()
     """
 
+    """
     frame_3 = TestFrame(title='CTRL_SaisieDate', pos=(100,300),size=(230,120))
     frame_3.ctrl = CTRL_Periode(frame_3)
-    #frame_3.ctrl = CTRL_SaisieDate(frame_3,label="Du:")
-    frame_3.Show()
+    frame_3.Show()"""
+
+    frame_1 = TestFrame(title='CTRL_SaisieDate', pos=(400,300),size=(230,120))
+    frame_1.ctrl = CTRL_SaisieDateAnnuel(frame_1,label="Du:")
+    frame_1.Show()
 
 
     app.MainLoop()

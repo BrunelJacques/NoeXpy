@@ -22,7 +22,7 @@ class MyHtml(html.HtmlWindow):
         self.SetPage("<FONT SIZE=%d>%s</FONT>""" %(fontsize ,texte))
 
 class Bandeau(wx.Panel):
-    def __init__(self, parent, titre="", texte="", hauteur=15, nomImage=None,sizeImage=None):
+    def __init__(self, parent, titre="", texte="", hauteur=15, nomImage=None,sizeImage=None,bgColor = None):
         wx.Panel.__init__(self, parent, id=-1, style=wx.TAB_TRAVERSAL)
         self.hauteur = hauteur
         self.ctrlImage = (2,2)
@@ -34,6 +34,8 @@ class Bandeau(wx.Panel):
         self.ligne = wx.StaticLine(self, -1)
 
         self.__set_properties()
+        if bgColor:
+            self.SetBackgroundColour(wx.Colour(bgColor))
         self.__do_layout()
 
     def __set_properties(self):

@@ -371,7 +371,8 @@ class ObjectListView(wx.ListCtrl):
             ix +=1
         # Try to preserve the column column
         sortCol = self.GetSortColumn()
-        self.SetSortColumn(sortCol,resortNow=True)
+        if sortCol:
+            self.SetSortColumn(sortCol,resortNow=True)
         if repopulate:
             self.RepopulateList()
 

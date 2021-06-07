@@ -13,10 +13,10 @@ import os
 import datetime
 import xpy.xUTILS_SaisieParams as xusp
 from xpy.outils                 import xbandeau,xformat, xboutons
-from xpy.outils.ObjectListView  import FastObjectListView, ObjectListView, ColumnDefn, Footer, CTRL_Outils, OLVEvent,CellEditor
+from xpy.outils.ObjectListView  import  ObjectListView,ObjectListView, ColumnDefn, Footer, CTRL_Outils, OLVEvent,CellEditor
 from xpy.outils.xconst          import *
 
-# ----------  Objets FastObjectListView --------------------------------------------------------
+# ----------  Objets  ObjectListView --------------------------------------------------------
 
 class TrackGeneral(object):
     #    Cette classe va transformer une ligne en objet selon les listes de colonnes et valeurs par défaut(setter)
@@ -56,7 +56,7 @@ class TrackGeneral(object):
             self.__setattr__((codesSup)[ixrel],donnees[ixabs])
         self.donnees = donnees
 
-class ListView(FastObjectListView):
+class ListView( ObjectListView):
     """
     Lors de l'instanciation de cette classe vous pouvez y passer plusieurs parametres :
 
@@ -127,7 +127,8 @@ class ListView(FastObjectListView):
         # Initialisation du listCtrl
         if not 'autoAddRow' in kwds: kwds['autoAddRow']=True
         if not 'sortable' in kwds: kwds['sortable']=True
-        FastObjectListView.__init__(self, *args,**kwds)
+        ObjectListView.__init__(self, *args,**kwds)
+        self.InitObjectListView()
         self.Proprietes()
 
     def Proprietes(self):
@@ -135,7 +136,7 @@ class ListView(FastObjectListView):
         self.Bind(OLVEvent.EVT_ITEM_CHECKED, self.MAJ_footer)
         self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
         if self.editMode:
-            self.cellEditMode = ObjectListView.CELLEDIT_SINGLECLICK
+            self.cellEditMode =  ObjectListView.CELLEDIT_SINGLECLICK
         self.Bind(wx.EVT_SET_FOCUS,self.OnSetFocus)
         self.flagSkipEdit = False
 
@@ -585,7 +586,7 @@ class PanelListView(wx.Panel):
 class PNL_params(xusp.TopBoxPanel):
     def __init__(self, parent, *args, **kwds):
         kwdsTopBox = {}
-        for key in ('pos','size','style','name','matrice','donnees','lblTopBox','lblBox'):
+        for key in xusp.OPTIONS_TOPBOX:
             if key in kwds.keys(): kwdsTopBox[key] = kwds[key]
         super().__init__(parent, *args, **kwdsTopBox)
         self.parent = parent
@@ -596,6 +597,7 @@ class PNL_corps(wx.Panel):
         # size inutile car SizerAndFit l'ajustera
         minSize =       dicOlv.pop('minSize',(400,150))
         getBtnActions =    dicOlv.pop('getBtnActions',None)
+        self.db = kwds.pop('db',None) #d'éventuels arguments db seront envoyés à olv pour les get données
         self.avecRecherche= dicOlv.pop('recherche',True)
         self.parent = parent
         self.lanceur = parent
@@ -606,8 +608,7 @@ class PNL_corps(wx.Panel):
         else: self.lstBtnActions = None
 
         # init du super()
-        wx.Panel.__init__(self, parent, *args,  **kwds)
-
+        wx.Panel.__init__(self, parent, *args)
 
         #ci dessous l'ensemble des autres paramètres possibles pour OLV
         lstParamsOlv = ['id',
@@ -675,7 +676,7 @@ class PNL_corps(wx.Panel):
 
 class PNL_pied(wx.Panel):
     #panel infos (gauche) et boutons sorties(droite)
-    def __init__(self, parent, dicPied, **kwds):
+    def __init__(self, parent, dicPied, *args, **kwds):
         self.lanceur = dicPied.pop('lanceur',None)
         self.lstInfos = dicPied.pop('lstInfos',None)
         self.lstBtns = dicPied.pop('lstBtns',None)
@@ -683,7 +684,7 @@ class PNL_pied(wx.Panel):
             #force la présence d'un pied d'écran par défaut
             self.lstBtns = [('BtnOK', wx.OK, wx.Bitmap('xpy/Images/100x30/Bouton_ok.png', wx.BITMAP_TYPE_ANY),
                            "Cliquez ici pour fermer la fenêtre et quitter")]
-        wx.Panel.__init__(self, parent,  **kwds)
+        wx.Panel.__init__(self, parent, *args)
         self.parent = parent
         self.Sizer()
 
@@ -732,29 +733,54 @@ class PNL_pied(wx.Panel):
 class DLG_tableau(xusp.DLG_vide):
     # minimum fonctionnel dans dialog tout est dans les trois pnl
     def __init__(self,parent,dicParams={},dicOlv={},dicPied={}, **kwds):
-        dicBandeau = dicParams.pop('bandeau',None)
+        self.db = kwds.pop('db',None) #purge d'éventuels arguments db à ne pas envoyer à super()
+        autoSizer =     kwds.pop('autoSizer', True)
+        size = kwds.get('size',None)
+        # si size pas dans kwds, on pique celle de l'olv qui serait contrainte
+        if not size and dicOlv.get('size',None):
+            kwds['size'] = dicOlv.pop('size',None)
+        # recherche d'un dicBandeau
+        for dic in (kwds, dicParams, dicOlv):
+            dicBandeau = dic.pop('dicBandeau',None)
+            if dicBandeau != None:
+                break
+
         super().__init__(parent,**kwds)
         if dicBandeau:
             self.bandeau = xbandeau.Bandeau(self,**dicBandeau)
         else: self.bandeau = None
-        self.pnlParams = PNL_params(self, matrice=dicParams)
-        self.pnlOlv = PNL_corps(self, dicOlv,  **kwds )
-        self.ctrlOlv = self.pnlOlv.ctrlOlv
+
+        # Création des différentes parties de l'écran
+        self.pnlParams = PNL_params(self, **dicParams)
+        kwds['db'] = self.db
+        if dicOlv != {}:
+            self.dicOlv = xformat.CopyDic(dicOlv)
+            self.pnlOlv = PNL_corps(self, dicOlv,  **kwds )
+            self.ctrlOlv = self.pnlOlv.ctrlOlv
+        else:
+            autoSizer = False
         self.pnlPied = PNL_pied(self, dicPied,  **kwds )
-        self.Sizer()
+
+        # permet un Sizer de substitution différé après l'init propre à l'instance
+        if autoSizer:
+            self.ctrlOlv.MAJ()
+            self.Sizer()
 
     def Sizer(self):
-        sizer_base = wx.FlexGridSizer(rows=3, cols=1, vgap=0, hgap=0)
+        sizer_base = wx.FlexGridSizer(rows=6, cols=1, vgap=0, hgap=0)
+        # haut d'écran
+        growRow = 1
         if self.bandeau:
+            growRow += 1
             sizer_base.Add(self.bandeau, 0, wx.EXPAND, 0)
         sizer_base.Add(self.pnlParams, 1, wx.TOP| wx.EXPAND, 3)
         sizer_base.Add(self.pnlOlv, 1, wx.TOP| wx.EXPAND, 3)
-        sizer_base.Add(self.pnlPied, 0,wx.ALL|wx.EXPAND, 3)
+        sizer_base.Add(wx.StaticLine(self),1,wx.EXPAND,0)
+        sizer_base.Add(self.pnlPied, 0,wx.EXPAND, 0)
         sizer_base.AddGrowableCol(0)
-        sizer_base.AddGrowableRow(2)
+        sizer_base.AddGrowableRow(growRow)
         self.CenterOnScreen()
-        #self.Layout()
-        self.SetSizerAndFit(sizer_base)
+        self.SetSizer(sizer_base)
 
 # ------------ Pour tests ------------------------------------------------------------------
 if __name__ == '__main__':
@@ -807,14 +833,14 @@ if __name__ == '__main__':
 
     # cadre des paramètres
     import datetime
-    dicParams = {
+    dicParams = {'matrice':{
             ('ident',"Vos paramètres"):[
             {'name': 'date', 'genre': 'Date', 'label': 'Début de période', 'value': datetime.date.today(),
                                     'help': 'Ce préfixe à votre nom permet de vous identifier'},
             {'name': 'utilisateur', 'genre': 'String', 'label': 'Votre identifiant', 'value': "NomSession",
                                     'help': 'Confirmez le nom de sesssion de l\'utilisateur'},
                 ],
-            }
+            }}
 
     exempleframe = DLG_tableau(None,dicParams,dicOlv=dicOlv,dicPied=dicPied)
     app.SetTopWindow(exempleframe)

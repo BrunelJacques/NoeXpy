@@ -301,12 +301,12 @@ DB_TABLES = {
                 ('modifiable', 'TINYINT', "0/1 Marque un transfert export  réussi ou import"),],# stocks: entrées sorties
 
     'stInventaires':[
-                ('IDdate', 'DATE', "PK Date de l'inventaire copie des stocks"),
+                ('IDdate', 'DATE', "PK Date de l'inventaire copie des stocks confirmée"),
                 ('IDarticle', 'VARCHAR(32)', "PK Désignation du produit"),
-                ('qteStock', 'INTEGER', "Qté reportée"),
-                ('qteConstat', 'INTEGER', "Qté constatée"),
-                ('prixActuel', 'FLOAT', "Dernier prix unitaire livré ou de réappro"),
+                ('qteStock', 'INTEGER', "Qté reportée par calcul depuis dernier constat"),
+                ('qteConstat', 'INTEGER', "Qté constatée, lors d'un inventaire"),
                 ('prixMoyen', 'FLOAT', "Prix unitaire moyen historique du stock"),
+                ('prixActuel', 'FLOAT', "Prix forcé pour valorisation de l'inventaire"),
                 ('ordi', 'VARCHAR(16)', "Nom de l'ordi utilisé pour l'entrée ou la modif"),
                 ('dateSaisie', 'DATE', "Date de l'entrée ou la modif"),
                 ('modifiable', 'INTEGER', "0/1 Marque un transfert export  réussi ou import"),], # stocks: inventaire à une date

@@ -16,6 +16,7 @@ import xpy.xUTILS_DB as xdb
 from copy                      import deepcopy
 from xpy.outils                import xformat,xboutons
 
+OPTIONS_TOPBOX = ('pos','size','style','name','matrice','donnees','lblTopBox','lblBox','boxesSizes')
 
 OPTIONS_CTRL = ('name', 'label', 'ctrlAction', 'btnLabel', 'btnImage','btnAction', 'value', 'labels', 'values', 'enable',
                 'genre', 'help','ctrlSize','ctrlMinSize','ctrlMaxSize','txtSize', 'btnHelp','boxMaxSize','boxMinSize','boxSize','ctrl')
@@ -906,8 +907,7 @@ class TopBoxPanel(wx.Panel):
             cadre_staticbox = wx.StaticBox(self,wx.ID_ANY,label=lblTopBox)
             self.topbox = wx.StaticBoxSizer(cadre_staticbox,wx.HORIZONTAL)
         else:
-            self.topbox = wx.BoxSizer(wx.HORIZONTAL)
-
+            self.topbox = wx.FlexGridSizer(rows=1, cols=len(self.matrice), vgap=0, hgap=0)
 
         kwdBox = {}
         for nom, valeur in kwds.items():
@@ -921,7 +921,17 @@ class TopBoxPanel(wx.Panel):
         self.lstBoxes = []
         ixBox = 0
         width = 1
+
         for code, label in self.matrice:
+            # détermination des colonnes à étendre lors des agrandissements
+            grow = True
+            if boxesSizes and len(boxesSizes) > ixBox:
+                # si une boxSize est nulle elle inhibe la croissance des non nulles
+                if None in boxesSizes:
+                    grow = False
+                    if boxesSizes[ixBox] == None:
+                        grow = True
+
             if isinstance(code,str):
                 if not code in self.ddDonnees:
                      self.ddDonnees[code] = {}
@@ -929,14 +939,18 @@ class TopBoxPanel(wx.Panel):
                 if not lblBox: titre = False
                 if boxesSizes and len(boxesSizes) > ixBox:
                     kwdBox['boxSize'] = boxesSizes[ixBox]
-                    width = boxesSizes[ixBox][0]
+                    if boxesSizes[ixBox]:
+                        width = boxesSizes[ixBox][0]
+                    else: width = 100
                 box = BoxPanel(self, wx.ID_ANY, lblBox= titre,
                                code = code,
                                lignes=self.matrice[(code,label)],
                                dictDonnees=self.ddDonnees[code],
                                **kwdBox)
                 self.lstBoxes.append(box)
-                self.topbox.Add(box, width, wx.EXPAND|wx.ALL,3)
+                self.topbox.Add(box, width,wx.ALL,3)
+                if grow:
+                    self.topbox.AddGrowableCol(ixBox,width)
                 ixBox +=1
         self.SetSizer(self.topbox)
 

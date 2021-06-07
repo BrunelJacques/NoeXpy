@@ -97,7 +97,7 @@ def GetMatriceAnterieurs(dlg):
         'lstChamps': lstChamps,
         'listeNomsColonnes': lstNomsColonnes,
         'listeCodesColonnes': lstCodesColonnes,
-        'getDonnees': nust.SqlAnterieurs,
+        'getDonnees': nust.SqlMvtsAnte,
         'dicBandeau': dicBandeau,
         'sortColumnIndex': 2,
         'sensTri': False,
@@ -411,7 +411,6 @@ class PNL_params(xgte.PNL_params):
     #panel de paramètres de l'application
     def __init__(self, parent, **kwds):
         self.parent = parent
-        #('pos','size','style','name','matrice','donnees','lblBox')
         kwds = GetDicParams(parent)
         super().__init__(parent, **kwds)
         if hasattr(parent,'lanceur'):

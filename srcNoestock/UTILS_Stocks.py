@@ -17,6 +17,53 @@ CHOIX_REPAS = ['PtDej','Midi','Soir','Tous']
 
 # Select de données  ------------------------------------------------------------------
 
+
+def SqlInventaire(**kwd):
+    db = kwd.get('db',None)
+    # appel des données d'un olv
+    filtreTxt = kwd.pop('filtreTxt', '')
+    nbreFiltres = kwd.pop('nbreFiltres', 0)
+    dicOlv = kwd.pop('dicOlv',{})
+    lstChamps = dicOlv['lstChamps']
+    lstColonnes = dicOlv['lstColonnes']
+    withObsoletes = dicOlv.get('withObsoletes',True)
+
+    # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
+    limit = ''
+    if nbreFiltres == 0:
+        limit = "LIMIT %d" %LIMITSQL
+
+    # intégration du filtre recherche via le where dans tous les champs
+    if withObsoletes:
+        where = ''
+        if filtreTxt and len(filtreTxt) > 0:
+            where = xformat.ComposeWhereFiltre(filtreTxt, lstChamps, lstColonnes=lstColonnes, lien='WHERE')
+    else:
+        where = 'WHERE (obsolete IS NULL)'
+        if filtreTxt and len(filtreTxt) >0:
+                where += xformat.ComposeWhereFiltre(filtreTxt,lstChamps, lstColonnes = lstColonnes,lien='AND')
+
+    req = """FLUSH TABLES stArticles;"""
+    retour = db.ExecuterReq(req, mess="UTILS_Stocks.SqlArticles Flush")
+
+    req = """   SELECT %s 
+                FROM stArticles 
+                %s
+                %s ;""" % (",".join(lstChamps),where,limit)
+
+    retour = db.ExecuterReq(req, mess="UTILS_Stocks.SqlArticles Select" )
+    recordset = ()
+    if retour == "ok":
+        recordset = db.ResultatReq()
+    # composition des données du tableau à partir du recordset, regroupement par article
+    lstDonnees = []
+    for record in recordset:
+        ligne = []
+        for val in record:
+            ligne.append(val)
+        lstDonnees.append(ligne)
+    return lstDonnees
+
 def SqlMouvements(db,dParams=None):
     lstChamps = xformat.GetLstChamps(DB_schema.DB_TABLES['stMouvements'])
 
@@ -197,7 +244,7 @@ def SqlAnalytiques(db, axe="%%"):
     return lstDonnees
 
 # Appel des mouvements antérieurs
-def SqlAnterieurs(**kwd):
+def SqlMvtsAnte(**kwd):
     # ajoute les données à la matrice pour la recherche d'un anterieur
     dicOlv = kwd.get('dicOlv',None)
     db = kwd.get('db',None)
@@ -225,7 +272,44 @@ def SqlAnterieurs(**kwd):
                 GROUP BY origine, date, fournisseur, IDanalytique
                 ORDER BY date DESC
                 %s ;""" % (",".join(lstChamps), where, limit)
-    retour = db.ExecuterReq(req, mess='SqlAnterieurs')
+    retour = db.ExecuterReq(req, mess='SqlMvtsAnte')
+    lstDonnees = []
+    if retour == 'ok':
+        recordset = db.ResultatReq()
+        for record in recordset:
+            lstDonnees.append([x for x in record])
+    return lstDonnees
+
+# Appel des inventaires antérieurs
+def SqlInvAnte(**kwd):
+    # ajoute les données à la matrice pour la recherche d'un anterieur
+    dicOlv = kwd.get('dicOlv',None)
+    db = kwd.get('db',None)
+    filtre = kwd.pop('filtreTxt', '')
+    nbreFiltres = kwd.pop('nbreFiltres', 0)
+
+    # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
+    limit = ''
+    if nbreFiltres == 0:
+        limit = """
+                LIMIT %d""" % LIMITSQL
+    origines = dicOlv['codesOrigines']
+    where = """                    WHERE origine in ( %s ) """ % str(origines)[1:-1]
+    if filtre:
+        where += """
+                AND (date LIKE '%%%s%%'
+                        OR fournisseur LIKE '%%%s%%'
+                        OR IDanalytique LIKE '%%%s%% )'""" % (filtre, filtre, filtre,)
+
+    lstChamps = dicOlv['lstChamps']
+
+    req = """   SELECT %s
+                FROM stMouvements
+                %s 
+                GROUP BY origine, date, fournisseur, IDanalytique
+                ORDER BY date DESC
+                %s ;""" % (",".join(lstChamps), where, limit)
+    retour = db.ExecuterReq(req, mess='SqlMvtsAnte')
     lstDonnees = []
     if retour == 'ok':
         recordset = db.ResultatReq()

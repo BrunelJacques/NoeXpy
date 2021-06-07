@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # ------------------------------------------------------------------
 # Application:     NoeStock, gestion des stocks et prix de journée
-# Module:          Gestion des inventaires
-# Auteur:          Jacques BRUNEL 2021-04
+# Module:          Gestion des inventaires (dérivé de mouvements)
+# Auteur:          Jacques BRUNEL 2021-06
 # Licence:         Licence GNU GPL
 # ------------------------------------------------------------------
 
@@ -11,30 +11,46 @@ import wx
 import os
 import datetime
 import srcNoestock.UTILS_Stocks        as nust
-import srcNoelite.UTILS_Noegest        as nung
+import xpy.xGestion_TableauEditor      as xgte
 import xpy.xGestion_TableauRecherche   as xgtr
-#import xpy.xUTILS_Identification       as xuid
-#import xpy.xUTILS_SaisieParams         as xusp
+import xpy.xUTILS_Identification       as xuid
+import xpy.xUTILS_SaisieParams         as xusp
 import xpy.xUTILS_DB                   as xdb
-from xpy.outils.ObjectListView  import ColumnDefn
-from xpy.outils                 import xformat,xbandeau,xboutons,xdates
+from srcNoestock                import DLG_Articles
+from xpy.outils.ObjectListView  import ColumnDefn, CellEditor
+from xpy.outils                 import xformat,xbandeau,xboutons, xdates
 
 #---------------------- Matrices de paramétres -------------------------------------
 
-LIMITSQL = 100
-TITRE = "Suivi des inventaires:'A FAIRE' selon évolution Effectifs"
-INTRO = "La saisie des effectifs quotidiens réels permet de déterminer le prix de journée, il est rapprocché " \
-        + "du nombre d'inscrits payants et non payants"
+DIC_BANDEAU = {'titre': "Suivi et ajustement de l'inventaire",
+        'texte': "La saisie dans le tableau modifie la table article, voire crée un mouvement correctif de quantité",
+        'hauteur': 20,
+        'sizeImage': (60, 60),
+        'nomImage':"xpy/Images/80x80/Inventaire.png",
+        'bgColor': (220, 250, 220), }
 
-class CtrlSynchro(wx.Panel):
+DIC_INFOS = {
+        'magasin': "<F4> Choix d'un magasin",
+        'rayon': "<F4> Choix d'un rayon",
+        'qte': "L'unité est en général précisée dans le nom de l'article\nNbre dans le plus petit conditionnements",
+        'pxUn': "TTC selon le choix en haut d'écran\nPrix d'une unité telle qu'on la sort du stock, pas celui du carton complet",
+         }
+
+INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
+
+SAISONS = ['Saison normale', 'Saison haute','Hors saison']
+
+# Choix des params  pour reprise de inventaires antérieurs------------------------------------------------
+
+class CtrlAnterieur(wx.Panel):
     # controle inséré dans la matrice_params qui suit. De genre AnyCtrl pour n'utiliser que le bind bouton
     def __init__(self,parent):
         super().__init__(parent,wx.ID_ANY)
-        kwd = {'label':"Synchroniser\nle prévu",
-               'name':'synchro',
+        kwd = {'label':"Rappeler\nl'antérieur",
+               'name':'rappel',
                'image':wx.ArtProvider.GetBitmap(wx.ART_FIND,size=(24,24)),
-               'help':"Pour reprendre les effectifs prévus par synchronisation avec les incriptions",
-               'size' : (150,40)}
+               'help':"Pour reprendre une saisie antérieurement validée",
+               'size' : (130,40)}
         self.btn = xboutons.BTN_action(self,**kwd)
         self.Sizer()
 
@@ -53,227 +69,429 @@ class CtrlSynchro(wx.Panel):
         # valeurs multiples
         return
 
-# Description des paramètres à choisir en haut d'écran
+def GetMatriceAnterieurs(dlg):
+    dicBandeau = {'titre': "Rappel d'un anterieur existant",
+                  'texte': "les mots clés du champ en bas permettent de filtrer d'autres lignes et d'affiner la recherche",
+                  'hauteur': 15, 'nomImage': "xpy/Images/32x32/Zoom_plus.png",
+                  'bgColor':(220, 250, 220),}
+
+    # Composition de la matrice de l'OLV anterieurs, retourne un dictionnaire
+
+    lstChamps = ['origine', 'date', 'fournisseur', 'IDanalytique', 'COUNT(IDinventaire)']
+
+    lstNomsColonnes = ['origine', 'date', 'fournisseur', 'analytique', 'nbLignes']
+
+    lstTypes = ['VARCHAR(8)', 'DATE', 'VARCHAR(32)', 'VARCHAR(32)', 'INT']
+    lstCodesColonnes = [xformat.SupprimeAccents(x).lower() for x in lstNomsColonnes]
+    lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
+    lstLargeurColonnes = [100,100,180,180,200]
+    lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
+    return {
+        'lstSaisons': dlg.lstSaisons,
+        'lstColonnes': lstColonnes,
+        'lstChamps': lstChamps,
+        'listeNomsColonnes': lstNomsColonnes,
+        'listeCodesColonnes': lstCodesColonnes,
+        'getDonnees': nust.SqlMvtsAnte,
+        'dicBandeau': dicBandeau,
+        'sortColumnIndex': 2,
+        'sensTri': False,
+        'style': wx.LC_SINGLE_SEL | wx.LC_HRULES | wx.LC_VRULES,
+        'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
+        'size': (650, 400)}
+
+# Description des paramètres de la gestion des inventaires
 
 MATRICE_PARAMS = {
-("param1", "Paramètres période"): [
-    {'name': 'periode', 'genre': 'anyctrl', 'label': "",
+("param1", "Période"): [
+    {'name': 'saison', 'genre': 'Choice', 'label': "Couleur saison",
+                    'help': "Le choix de la saison détermine la couleur des lignes selon les minimums prévus par article",
+                    'value':0, 'values': SAISONS,
+                    'ctrlAction': 'OnSaison',
+                    'size':(120,30),
+                    'ctrlMaxSize': (260, 40),
+                    'txtSize': 110},
+
+    {'name': 'date', 'genre': 'anyctrl', 'label': "Date d'inventaire",
                     'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
                                           "Les séparateurs ne sont pas obligatoires en saisie.",
-                                          "Saisissez début et fin de la période, "),
-                    'ctrl':xdates.CTRL_Periode,
-                    'ctrlAction': 'OnPeriode',
-                    'txtSize':0,
-                    'ctrlMaxSize':(210,90)},
-    ],
-("param2", "Comptes"): [
-    {'name': 'repas', 'genre': 'Check', 'label': 'Repas préparés en cuisine',
-                    'help': "Les repas préparés en cuisine ne sont pas différenciés par camp servi, seules les sorties identifiés sont affectées aux camps",
-                    'value':True,
-                    'ctrlAction':'OnRepas',
-                    'txtSize': 150,
-                    'ctrlMaxSize': (210, 40)},
-
-    {'name': 'analytique', 'genre': 'Choice', 'label': 'Activité',
-                    'ctrlAction':'OnAnalytique',
-                    'help': "Il s'agit de l'activité qui a endossé la charge de la sortie",
-                    'value':'','values':[''],
-                    'btnLabel': "...", 'btnHelp': "Cliquez pour choisir l'activité de destination des mouvements",
-                    'btnAction': 'OnBtnAnalytique',
-                    'txtSize': 50,
-                    'ctrlMaxSize': (310, 35)}
+                                          "Saisissez la date de l'inventaire, "),
+                    'ctrl': xdates.CTRL_SaisieDateAnnuel,
+                    'value':xformat.DatetimeToStr(datetime.date.today()),
+                    'ctrlAction': 'OnDate',
+                    'size':(150,30),
+                    'ctrlMaxSize': (270, 40),
+                    'txtSize': 105,},
 ],
-("param4", "Boutons actions"): [
+
+("param2", "Quantités"): [
+    {'name': 'qteZero', 'genre': 'Check', 'label': 'Avec quantités à zéro',
+                    'help': "La coche fait apparaître les quantité en stock à zéro",
+                    'value':True,
+                    'ctrlAction':'OnQte',
+                    'size':(250,30),
+                    'txtSize': 150,},
+    {'name': 'qteMini', 'genre': 'Check', 'label': 'Qtés supérieures au mini',
+                    'help': "La coche fait apparaître les quantité supérieures au minim de saison",
+                    'value':True,
+                    'ctrlAction':'OnQte',
+                    'size':(250,30),
+                    'txtSize': 150,},
+],
+
+("param3", ""): [],
+
+("param4", "Historique"): [
     {'name': 'rappel', 'genre': 'anyctrl','label': ' ',
-                     'txtSize': 1,
-                        'ctrlMaxSize':(200,50),
-                     'ctrl': CtrlSynchro,
-                     'ctrlAction': 'OnBtnSynchro',
+                     'txtSize': 20,
+                        'ctrlMaxSize':(150,50),
+                     'ctrl': CtrlAnterieur,
+                     'ctrlAction': 'OnBtnAnterieur',
                      },
     ],
 }
 
-def GetDicParams():
+def GetDicParams(dlg):
     return {
                 'name':"PNL_params",
                 'matrice':MATRICE_PARAMS,
-                'lblBox':None,
-                'boxesSizes': [(220, 80), (260, 80), (200, 80)],
+                'dicBandeau':DIC_BANDEAU,
+                'lblBox':True,
+                'boxesSizes': [(290, 90), (200, 90), None, (160, 90)],
                 'pathdata':"srcNoelite/Data",
                 'nomfichier':"stparams",
-                'nomgroupe':"effectifs",
+                'nomgroupe':"entrees",
             }
 
 def GetBoutons(dlg):
     return  [
-                {'name': 'btnImp', 'label': "Imprimer\npour contrôle",
+                {'name': 'btnVerif', 'label': "Confirmer les qtés\ndes lignes cochées",
+                    'help': "Confirme et historise les quantités en stock vérifiées ce jour.\nTout cocher et cliquer à l'inventaire de clôture",
+                    'size': (150, 35),'onBtn':dlg.OnImprimer},
+                {'name': 'btnImp', 'label': "Imprimer\nl'inventaire",
                     'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
                     'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
                 {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour sortir",
-                    'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnFermer}
+                    'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnClose}
             ]
 
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
-    return [
-            ColumnDefn("Date", 'left', 90,      'ID', valueSetter=datetime.date.today(),stringConverter=xformat.FmtDate),
-            ColumnDefn("RepasMidi", 'right', 72, 'midiRepas', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
-            ColumnDefn("ClientsMidi", 'right', 72,'midiClients', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
-            ColumnDefn("RepasSoir", 'right', 72,   'soirRepas', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
-            ColumnDefn("ClientsSoir", 'right', 72, 'soirClients', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
-            ColumnDefn("PrévuInscrits", 'right', 72, 'prevuRepas', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
-            ColumnDefn("PrévuClients", 'right', 72, 'prevuClients', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
+    lstCol = [
+            ColumnDefn("Vérifié le", 'left', 80, 'verifie', valueSetter=datetime.date.today(),isSpaceFilling=False,
+                            isEditable=False, stringConverter=xformat.FmtDate,),
+            ColumnDefn("Magasin", 'left', 100, 'magasin', valueSetter="",isSpaceFilling=True),
+            ColumnDefn("Rayon", 'left', 100, 'rayon', valueSetter="",isSpaceFilling=True),
+            ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",isSpaceFilling=True,
+                            isEditable=False),
+            ColumnDefn("Qté stock", 'right', 80, 'qteStock',  valueSetter=0.0,isSpaceFilling=False,
+                                        stringConverter=xformat.FmtDecimal),
+            ColumnDefn("Prix Unit", 'right', 80, 'pxUn',  valueSetter=0.0,isSpaceFilling=False,
+                                        stringConverter=xformat.FmtDecimal),
+            ColumnDefn("Mtt TTC", 'right', 100, 'mttTTC',  valueSetter=0.0,isSpaceFilling=False,
+                            isEditable=False, stringConverter=xformat.FmtDecimal, ),
+            ColumnDefn("Nbre Rations", 'right', 80, 'rations',  valueSetter=0.0,isSpaceFilling=False,
+                            isEditable=False, stringConverter=xformat.FmtDecimal, ),
             ]
+    return lstCol
 
 def GetOlvCodesSup():
-    # codes dans les tracks, mais pas dans les colonnes, ces attributs sont non visibles à l'écran
-    return ['IDanalytique','modifiable']
+    # codes dans les données olv, mais pas dans les colonnes, attributs des tracks non visibles en tableau
+    return []
 
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
     return {
-            'checkColonne': False,
-            'recherche': True,
-            'getDonnees': dlg.GetDonnees,
-            'dictColFooter': {"date": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
-                                  "midiRepas": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
-                                  "midiClients": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
-                                  "prevuRepas": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
-                                  "prevuClients": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
-                                  },
-            'orientationImpression': wx.PORTRAIT,
-            'lstNomsBtns': ['creer', 'modifier','supprimer'],
+        'checkColonne': True,
+        'recherche': True,
+        'autoAddRow': False,
+        'toutCocher':True,
+        'toutDecocher':True,
+        'msgIfEmpty': "Aucun article présent (avec les options ci dessus)",
+        'minSize': (600, 300),
+        'dictColFooter': {"magasin": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
+                        "qteStock": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
+                        "mttTTC": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
+                        "rations": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
+                          },
     }
-
-def GetMatriceSaisie(dlg):
-    # utile pour personaliser la saisie avec des contrôles particuliers, sinon ignorer cette étape
-    dicRetour = {}
-    key = ("saisie", "")
-    matrice = xformat.DicOlvToMatrice(key, dlg.dicOlv)
-    # mise en place d'un contrôle sur la date saisie via la matrice
-    # matrice[key][0]['ctrlAction'] = dlg.VerifieDate
-    dicRetour['matriceSaisie'] = matrice
-    dicRetour['sizeSaisie'] = (200,420)
-    return dicRetour
 
 def GetDlgOptions(dlg):
     # Options du Dlg de lancement
     return {
         'style': wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
-        'minSize': (300, 450),
-        'size': (650, 600),
+        'minSize': (700, 450),
+        'size': (850, 650),
+        'autoSizer': False,
         }
 
-#----------------------- Parties de l'écran -----------------------------------------
+    #----------------------- Parties de l'écrans -----------------------------------------
 
-class Saisie(object):
+def GetAnterieur(dlg,db=None):
+    # retourne un dict de params après lancement d'un tableau de choix de l'existants pour reprise
+    dicParams = {}
+    dicOlv = GetMatriceAnterieurs(dlg)
+    dlg = xgtr.DLG_tableau(dlg, dicOlv=dicOlv, db=db)
+    ret = dlg.ShowModal()
+    if ret == wx.OK and dlg.GetSelection():
+        donnees = dlg.GetSelection().donnees
+        for ix in range(len(donnees)):
+            dicParams[dicOlv['listeCodesColonnes'][ix]] = donnees[ix]
+    dlg.Destroy()
+    return dicParams
+
+def GetInventaire(dlg, dParams):
+    return []
+    # retourne la liste des données de l'OLv de DlgEntree
+    ctrlOlv = dlg.ctrlOlv
+
+    ldInventaire = nust.SqlInventaire(dlg.db,dParams)
+    # appel des dicArticles des inventaires
+    ddArticles = {}
+    for dMvt in ldInventaire:
+        ddArticles[dMvt['IDarticle']] = nust.SqlDicArticle(dlg.db,dlg.ctrlOlv,dMvt['IDarticle'])
+
+    # composition des données
+    lstDonnees = []
+    lstCodesCol = ctrlOlv.GetLstCodesColonnes()
+
+    # autant de lignes dans l'olv que de inventaires remontés
+    for dMvt in ldInventaire:
+        donnees = []
+        dArticle = ddArticles[dMvt['IDarticle']]
+        # alimente les premières données des colonnes
+        for code in lstCodesCol:
+            # ajout de la donnée dans le inventaire
+            if code in dMvt.keys():
+                donnees.append(dMvt[code])
+                continue
+            # ajout de l'article associé
+            if code in dArticle.keys():
+                donnees.append(dArticle)
+                continue
+            if code in ('pxUn','mttHT','mttTTC','nbRations'):
+                convTva = (1+(dArticle['txTva'] / 100))
+                if code == 'pxUn':
+                    if dlg.ht_ttc == 'HT':
+                        donnees.append(round( dMvt['prixUnit'] / convTva,6))
+                    else:
+                        donnees.append(dMvt['prixUnit'])
+
+                elif code == 'mttHT':
+                    donnees.append(round(dMvt['prixUnit'] * dMvt['qte'] / convTva ,2))
+                elif code == 'mttTTC':
+                    donnees.append(dMvt['prixUnit'] * dMvt['qte'])
+                elif code == 'nbRations':
+                    donnees.append(dArticle['rations'] * dMvt['qte'])
+                else:
+                    raise("code: %s Erreur de programmation en UTILS_Stocks.GetInventaire"%code)
+                continue
+
+        # codes supplémentaires ('prixTTC','IDinventaire','dicArticle') dlg.dicOlv['lstCodesSup']
+        donnees += [dMvt['prixUnit'],
+                    dMvt['IDinventaire'],
+                    dArticle]
+        lstDonnees.append(donnees)
+    return lstDonnees
+
+def CalculeLigne(dlg,track):
+    if not hasattr(track,'dicArticle'): return
+    try: qte = float(track.qte)
+    except: qte = 0.0
+    if not hasattr(track,'oldQte'):
+        track.oldQte = track.qte
+    try: pxUn = float(track.pxUn)
+    except: pxUn = 0.0
+    try: txTva = track.dicArticle['txTva']
+    except: txTva = 0.0
+    try: rations = track.dicArticle['rations']
+    except: rations = 1
+    if dlg.ht_ttc == 'HT':
+        mttHT = qte * pxUn
+        mttTTC = round(mttHT * (1 + (txTva / 100)),2)
+        prixTTC = round(pxUn * (1 + (txTva / 100)),6)
+    elif dlg.ht_ttc == 'TTC':
+        mttTTC = qte * pxUn
+        mttHT = round(mttTTC / (1 + (txTva / 100)),2)
+        prixTTC = pxUn
+    else: raise("Taux TVA de l'article non renseigné")
+    track.mttHT = mttHT
+    track.mttTTC = mttTTC
+    track.prixTTC = prixTTC
+    track.nbRations = track.qte * rations
+    track.qteStock = track.dicArticle['qteStock']
+
+def ValideLigne(dlg,track):
+    # validation de la ligne de inventaire
+    track.valide = True
+    track.messageRefus = "Saisie incorrecte\n\n"
+
+    # qte négative
+    try:
+        track.qte = float(track.qte)
+    except:
+        track.qte = None
+    if not track.qte or track.qte < 0.0:
+        track.messageRefus += "La quantité ne peut être négative\n"
+
+    # pxUn null
+    try:
+        track.pxUn = float(track.pxUn)
+    except:
+        track.pxUn = None
+    if not track.pxUn or track.pxUn == 0.0:
+        track.messageRefus += "Le pxUn est à zéro\n"
+
+    # envoi de l'erreur
+    if track.messageRefus != "Saisie incomplète\n\n":
+        track.valide = False
+    else: track.messageRefus = ""
+
+    CalculeLigne(dlg,track)
+    return
+
+class PNL_corps(xgte.PNL_corps):
+    #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
+    def __init__(self, parent, dicOlv,*args, **kwds):
+        xgte.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
+        self.db = parent.db
+
+    def ValideParams(self):
+        return
+
+    def OnCtrlV(self,track):
+        # avant de coller une track, raz de certains champs et recalcul
+        track.IDinventaire = None
+        self.ValideLigne(None,track)
+        self.SauveLigne(track)
+
+    def OnDelete(self,track):
+        nust.DelInventaire(self.parent.db,self.ctrlOlv,track)
+
+    def OnNewRow(self,row,track):
+        pass
+
+    def OnEditStarted(self,code,track=None,editor=None):
+        # affichage de l'aide
+        if code in DIC_INFOS.keys():
+            self.parent.pnlPied.SetItemsInfos( DIC_INFOS[code],
+                                               wx.ArtProvider.GetBitmap(wx.ART_FIND, wx.ART_OTHER, (16, 16)))
+        else:
+            self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
+
+        # travaux avant saisie
+
+        if code == 'repas':
+            editor.Set(nust.CHOIX_REPAS)
+            editor.SetStringSelection(track.repas)
+
+        if code == 'qte':
+            if not hasattr(track,'oldQte'):
+                track.oldQte = track.qte
+
+        if code == 'pxUn':
+            if not hasattr(track, 'oldPu'):
+                CalculeLigne(self.parent,track)
+                track.oldPu = track.prixTTC
+
+    def OnEditFinishing(self,code=None,value=None,editor=None):
+        self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
+        # flagSkipEdit permet d'occulter les évènements redondants. True durant la durée du traitement
+        if self.flagSkipEdit : return
+        self.flagSkipEdit = True
+
+        (row, col) = self.ctrlOlv.cellBeingEdited
+        track = self.ctrlOlv.GetObjectAt(row)
+
+        # Traitement des spécificités selon les zones
+        if code == 'IDarticle':
+            value = DLG_Articles.GetOneIDarticle(self.db,value)
+            if value:
+                track.IDarticle = value
+                track.dicArticle = nust.SqlDicArticle(self.db,self.ctrlOlv,value)
+                track.nbRations = track.dicArticle['rations']
+                track.qteStock = track.dicArticle['qteStock']
+        if code == 'qte' or code == 'pxUn':
+            # force la tentative d'enregistrement même en l'absece de saisie
+            track.noSaisie = False
+
+        # enlève l'info de bas d'écran
+        self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
+        self.flagSkipEdit = False
+        return value
+
+    def ValideLigne(self,code,track):
+        # Relais de l'appel par cellEditor à chaque colonne
+        ValideLigne(self.parent,track)
+
+    def SauveLigne(self,track):
+        nust.SauveInventaire(self.db,self.Parent,track)
+
+    def OnEditFunctionKeys(self,event):
+        row, col = self.ctrlOlv.cellBeingEdited
+        code = self.ctrlOlv.lstCodesColonnes[col]
+        if event.GetKeyCode() == wx.WXK_F4 and code == 'IDarticle':
+            # Choix article
+            IDarticle = DLG_Articles.GetOneIDarticle(self.db,self.ctrlOlv.GetObjectAt(row).IDarticle,f4=True)
+            #self.ctrlOlv.GetObjectAt(row).IDarticle = IDarticle
+            if IDarticle:
+                ret = self.OnEditFinishing('IDarticle',IDarticle)
+
+class DLG(xgte.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self):
-        # Lanceur de l'écran de saisie d'un nouvelle ligne d'effectif
-        # Propriétés identiques au DLG de gestion pour simuler un passage via l'écran DLG
+    def __init__(self,date=None,**kwd):
+        kwds = GetDlgOptions(self)
+        self.dicParams = GetDicParams(self)
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
         self.dicOlv.update(GetOlvOptions(self))
-        self.dicOlv.update(GetMatriceSaisie(self))
-
-        # l'ajout d'une ligne nécessite d'appeler un écran avec les champs en lignes
-        dlgSaisie = xgtr.DLG_saisie(self,self.dicOlv)
-        ret = dlgSaisie.ShowModal()
-        if ret == wx.OK:
-            #récupération des valeurs saisies puis ajout dans les données
-            ddDonnees = dlgSaisie.pnl.GetValues()
-            nomsCol, donnees = xformat.DictToList(ddDonnees)
-            self.GereDonnees(nomsCol=nomsCol, donnees=donnees)
-
-    def GetDonnees(self,**kwd):
-        # censées être les données d'un OLV non créé
-        return []
-
-    def GereDonnees(self,**kwd):
-            # Appelé en retour de saisie, gère l'enregistrement
-            donnees = kwd.pop('donnees', None)
-            db = xdb.DB()
-
-            lstDonnees = [('IDdate', donnees[0]),
-                          ('IDanalytique', self.analytique),
-                          ('midiRepas', donnees[1]),
-                          ('midiClients', donnees[2]),
-                          ('soirRepas', donnees[3]),
-                          ('soirClients', donnees[4]),
-                          ('prevuRepas', donnees[5]),
-                          ('prevuClients', donnees[6]),
-                          ]
-            ret = db.ReqInsert('stEffectifs', lstDonnees=lstDonnees, mess="Insert Effectifs")
-            if ret == 'ok':
-                if ixligne and ixligne < len(donneesOlv):
-                    self.ctrlOlv.lstDonnees = donneesOlv[:ixligne] + [donnees, ] + donneesOlv[ixligne:]
-                else:
-                    self.ctrlOlv.lstDonnees.append(donnees)
-
-
-class DLG(xgtr.DLG_tableau):
-    # ------------------- Composition de l'écran de gestion----------
-    def __init__(self):
+        self.dicOlv['db'] = xdb.DB()
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
-        self.txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"
-        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),self.txtInfo]
+        txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"
+        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),txtInfo]
         dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
 
-        # Propriétés du corps de l'écran
-        self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
-        self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
-        self.dicOlv.update(GetOlvOptions(self))
-        self.dicOlv.update(GetMatriceSaisie(self))
-
-        # variables gérées par l'écran paramètres
-        self.today = datetime.date.today()
-        #self.periode = (None,None)
-        self.repas = True
-        self.analytique = '00'
 
         # Propriétés de l'écran global type Dialog
         kwds = GetDlgOptions(self)
         kwds['autoSizer'] = False
-        kwds['dicParams'] = GetDicParams()
-        kwds['dicOlv'] = self.dicOlv
+        kwds['dicParams'] = GetDicParams(self)
+        kwds['dicOlv'] = {}
         kwds['dicPied'] = dicPied
         kwds['db'] = xdb.DB()
 
         super().__init__(None, **kwds)
+
+        self.ordi = xuid.GetNomOrdi()
+        self.today = datetime.date.today()
+        if not date:
+            date = self.today
+        self.date = date
+        self.lstSaisons = SAISONS
         ret = self.Init()
         if ret == wx.ID_ABORT: self.Destroy()
         self.Sizer()
-        self.ctrlOlv.MAJ()
+        self.GetDonnees()
 
     def Init(self):
-        # lancement de l'écran en blocs principaux
-        self.pnlBandeau = xbandeau.Bandeau(self,TITRE,INTRO, hauteur=20,
-                                           nomImage="xpy/Images/80x80/Inventaire.png",
-                                           sizeImage=(60,60))
-        self.pnlBandeau.SetBackgroundColour(wx.Colour(220, 250, 220))
+        self.db = xdb.DB()
+        # définition de l'OLV
+        self.ctrlOlv = None
+        # récup des modesReglements nécessaires pour passer du texte à un ID d'un mode ayant un mot en commun
+        for colonne in self.dicOlv['lstColonnes']:
+            if 'mode' in colonne.valueGetter:
+                choicesMode = colonne.choices
+            if 'libelle' in colonne.valueGetter:
+                self.libelleDefaut = colonne.valueSetter
 
-       # charger les valeurs de pnl_params
-        self.periode = xformat.PeriodeMois(self.today)
-        self.pnlParams.SetOneValue('periode',self.periode,'param1')
-        self.pnlParams.SetOneValue('repas',self.repas,'param2')
-        self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
-        self.btnAnalytique = self.pnlParams.GetPnlCtrl('analytique','param2').btn
-        self.btnAnalytique.Enable(False)
-        self.txtAnalytique = self.pnlParams.GetPnlCtrl('analytique','param2').txt
-        self.txtAnalytique.Enable(False)
-        self.Bind(wx.EVT_CLOSE,self.OnFermer)
-
-    def Sizer(self):
-        sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
-        sizer_base.Add(self.pnlBandeau, 0, wx.TOP | wx.EXPAND, 3)
-        sizer_base.Add(self.pnlParams, 0, wx.TOP | wx.EXPAND, 3)
-        sizer_base.Add(self.pnlOlv, 1, wx.TOP | wx.EXPAND, 3)
-        sizer_base.Add(self.pnlPied, 0, wx.ALL | wx.EXPAND, 3)
-        sizer_base.AddGrowableCol(0)
-        sizer_base.AddGrowableRow(2)
-        self.CenterOnScreen()
-        self.SetSizer(sizer_base)
-        self.CenterOnScreen()
+        self.pnlOlv = PNL_corps(self, self.dicOlv)
+        #self.pnlPied = PNL_pied(self, dicPied)
+        self.ctrlOlv = self.pnlOlv.ctrlOlv
+        self.Bind(wx.EVT_CLOSE,self.OnClose)
+        """
+        self.flagSkipEdit = False
+        self.oldRow = None
+        """
 
     # ------------------- Gestion des actions -----------------------
 
@@ -283,104 +501,101 @@ class DLG(xgtr.DLG_tableau):
         self.ctrlOlv.InitObjectListView()
         self.Refresh()
 
-    def OnPeriode(self,event):
-        self.periode = self.pnlParams.GetOneValue('periode','param1')
-        self.ctrlOlv.MAJ()
+    def OnDate(self,event):
+        saisie = self.pnlParams.GetOneValue('date',codeBox='param1')
+        saisie = xformat.DateFrToDatetime(xformat.FmtDate(saisie))
+        if self.date != saisie:
+            self.GetDonnees()
+            self.date = saisie
         if event: event.Skip()
 
-    def OnRepas(self,event):
-        self.repas =  self.pnlParams.GetOneValue('repas','param2')
-        if self.repas:
-            self.pnlParams.SetOneValue('analytique','','param2')
-            self.valuesAnalytique = ['', ]
-            if event: event.Skip()
-        else:
-            self.valuesAnalytique = ['', ] + [nust.MakeChoiceActivite(x) for x in self.lstAnalytiques]
-            self.btnAnalytique.SetFocus()
-        self.pnlParams.SetOneSet('analytique', values=self.valuesAnalytique, codeBox='param2')
-        self.btnAnalytique.Enable(not self.repas)
-        self.txtAnalytique.Enable(not self.repas)
-        self.analytique = '00'
-        self.ctrlOlv.MAJ()
-
-    def OnAnalytique(self,event):
-        choixAnalytique = self.pnlParams.GetOneValue('analytique',codeBox='param2')
-        if len(choixAnalytique) > 0:
-            ix = self.valuesAnalytique.index(choixAnalytique)-1
-            self.analytique = self.lstAnalytiques[ix][0]
-        else: self.analytique = '00'
-        self.ctrlOlv.MAJ()
+    def OnSaison(self,event):
+        self.choixSaison = self.pnlParams.GetOneValue('saison', codeBox='param1')
+        self.GetDonnees()
         if event: event.Skip()
 
-    def OnBtnAnalytique(self,event):
-        # Appel du choix d'un camp via un écran complet
-        noegest = nung.Noegest(self)
-        dicAnalytique = noegest.GetActivite(mode='dlg')
-        codeAct = nust.MakeChoiceActivite(dicAnalytique)
-        self.pnlParams.SetOneValue('analytique',codeAct,codeBox='param2')
-        self.OnAnalytique(event)
-
-    def OnBtnSynchro(self,event):
-        # lancement de la synchronisation entre base LAN et Wan
-        mess = "C'est prévu...\n\nle contentement se nourrit d'espérance"
-        wx.MessageBox(mess,"Pas encore fait")
+    def OnQte(self,event):
+        self.qteZero = self.pnlParams.GetOneValue('qteZero', codeBox='param2')
+        self.qteMini = self.pnlParams.GetOneValue('qteMini', codeBox='param2')
+        self.GetDonnees()
         if event: event.Skip()
 
-    def GetDonnees(self,**kwd):
-        # rafraîchissement des données de l'Olv principal suite à changement de params
-        # periode est construite dans DLG.Init les accès en cours de construction sont ignorés
-        lstDonnees = []
-        if hasattr(self,'periode'):
-            params = self.pnlParams.GetValues()
-            kwd['db'] = self.db
-            lstDonnees = nust.GetEffectifs(self, **kwd)
-        return lstDonnees
+    def OnBtnAnterieur(self,event):
+        # lancement de la recherche d'un lot antérieur, on enlève le cellEdit pour éviter l'écho des clics
+        self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
+        # choix d'un lot de lignes définies par des params
+        dicParams = GetAnterieur(self,db=self.db)
+        self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK        # gestion du retour du choix dépot
+        if not 'date' in dicParams.keys(): return
+        self.GetDonnees(dicParams)
+        if event: event.Skip()
 
-    def OnDblClick(self,event):
-        event.Skip()
-        self.pnlOlv.OnModifier(event)
+    def GetDonnees(self,dicParams=None):
+        # appel des données de l'Olv principal à éditer
+        lstDonnees = GetInventaire(self,dicParams)
+        lstNoModif = [1 for rec in  lstDonnees if not (rec[-1])]
+        # présence de lignes déjà transférées compta
+        if len(lstNoModif) >0:
+            self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
+            self.pnlPied.SetItemsInfos("NON MODIFIABLE: enregistrements transféré ",
+                                       wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
+        # l'appel des données peut avoir retourné d'autres paramètres, il faut mettre à jour l'écran
+        if len(lstDonnees) > 0:
+            # set date du lot importé
+            self.pnlParams.SetOneValue('date',xformat.FmtDate(dicParams['date']),'param1')
+            self.date = dicParams['date']
+
+            # set Fournisseur et analytique
+            self.pnlParams.SetOneValue('fournisseur',dicParams['fournisseur'],'param2')
+            self.fournisseur = dicParams['fournisseur']
+            self.pnlParams.SetOneValue('analytique',dicParams['analytique'],'param2')
+            self.analytique = dicParams['analytique']
+
+        # alimente la grille, puis création de modelObejects pr init
+        self.ctrlOlv.lstDonnees = lstDonnees
+        self.InitOlv()
+
+        # les écritures reprises sont censées être valides, mais il faut les compléter
+        for track in self.ctrlOlv.modelObjects[:-1]:
+            CalculeLigne(self,track)
+            track.valide = True
+        self.ctrlOlv._FormatAllRows()
 
     def GetTitreImpression(self):
-        datedeb = xformat.DateSqlToFr(self.periode[0])
-        datefin = xformat.DateSqlToFr(self.periode[1])
-        tiers = "Repas en cuisine"
-        if len(self.analytique) > 0 : tiers = "Camp: %s"%self.analytique.capitalize()
-        return "Liste des Effectifs du %s au %s, %s"%( datedeb, datefin, tiers)
-
-    def GereDonnees(self,**kwd):
-        kwd['db'] = self.db
-        nust.SauveEffectif(self,**kwd)
-
-    def ValideSaisie(self,dlgSaisie,*args,**kwd):
-        dDonnees = dlgSaisie.pnl.GetValues(fmtDD=False)
-        mess = "Incohérence relevée dans les données saisies\n"
-        lg = len(mess)
-        if not (dDonnees['ID'] >= self.periode[0] and dDonnees['ID'] <= self.periode[1]):
-            mess += "\n- La date saisie est hors période\n\nLa période a été choisie dans l'écran précédent. Corrigez\n"
-        if dDonnees['midiRepas']< dDonnees['midiClients']:
-            mess += "\n- S'il y a plus de clients que de repas à midi, ceux qui jeunent ne sont pas à compter\n"
-        if dDonnees['soirRepas']< dDonnees['soirClients']:
-            mess += "\n- S'il y a plus de clients que de repas le soir, ceux qui jeunent ne sont pas à compter\n"
-        if dDonnees['prevuRepas']< dDonnees['prevuClients']:
-            mess += "\n- Plus de clients que d'inscrits, n'est pas cohérent! "
-        if len(mess) != lg:
-            wx.MessageBox(mess,"Entrée refusée!!!",style=wx.ICON_HAND)
-            return wx.NO
-        return wx.OK
+        tiers = ''
+        if self.fournisseur: tiers += ", Fournisseur: %s"%self.fournisseur.capitalize()
+        if self.analytique: tiers += ", Camp: %s"%self.analytique.capitalize()
+        date = xformat.DateSqlToFr(self.date)
+        return "Inventaire STOCKS du %s, %s%s"%(date, self.origine,tiers)
 
     def OnImprimer(self,event):
+        # test de présence d'écritures non valides
+        lstNonValides = [x for x in self.ctrlOlv.modelObjects if not x.valide]
+        if len(lstNonValides) > 0:
+            ret = wx.MessageBox('Présence de lignes non valides!\n\nCes lignes seront détruites avant impression',
+                                'Confirmez pour continuer', style=wx.OK | wx.CANCEL)
+            if ret != wx.OK: return
         # test de présence d'un filtre
         if len(self.ctrlOlv.innerList) != len(self.ctrlOlv.modelObjects):
             ret = wx.MessageBox('Filtre actif!\n\nDes lignes sont filtrées, seules les visibles seront rapportées',
                                 'Confirmez pour continuer',style=wx.OK|wx.CANCEL)
             if ret != wx.OK: return
         # purge des lignes non valides
-        self.ctrlOlv.modelObjects=[x for x in self.ctrlOlv.modelObjects]
+        self.ctrlOlv.modelObjects=[x for x in self.ctrlOlv.modelObjects if hasattr(x,'valide') and x.valide]
         # réaffichage
         self.ctrlOlv.RepopulateList()
         # impression
         self.ctrlOlv.Apercu(None)
         self.isImpress = True
+
+    def OnClose(self,event):
+        #wx.MessageBox("Traitement de sortie")
+        if event:
+            event.Skip()
+        if self.IsModal():
+            self.EndModal(wx.ID_CANCEL)
+        else:
+            self.Close()
 
 #------------------------ Lanceur de test  -------------------------------------------
 
@@ -389,5 +604,4 @@ if __name__ == '__main__':
     os.chdir("..")
     dlg = DLG()
     dlg.ShowModal()
-    Saisie()
     app.MainLoop()

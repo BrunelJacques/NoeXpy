@@ -13,7 +13,7 @@ import xpy.xGestion_TableauRecherche    as xgtr
 import xpy.xUTILS_Identification        as xuid
 import srcNoestock.UTILS_Stocks         as nust
 from srcNoelite     import DB_schema
-from xpy.outils     import xformat, xbandeau
+from xpy.outils     import xformat
 
 TITRE2 = "Recherche d'un article"
 INTRO2 = "les mots clés du champ en bas permettent de filtrer d'autres lignes et d'affiner la recherche"

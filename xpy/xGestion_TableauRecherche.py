@@ -150,7 +150,8 @@ class ListView(ObjectListView):
         self.itemSelected = False
         self.popupIndex = -1
         # Initialisation du listCtrl
-        ObjectListView.__init__(self, *args,style=style,**kwds)
+        kwds['style'] = style
+        ObjectListView.__init__(self, *args,**kwds)
         self.InitObjectListView()
         self.Proprietes()
 
@@ -444,7 +445,7 @@ class DLG_saisie(xusp.DLG_vide):
 class PNL_params(xusp.TopBoxPanel):
     def __init__(self, parent, *args, **kwds):
         kwdsTopBox = {}
-        for key in ('pos','size','style','name','matrice','donnees','lblTopBox','lblBox','boxesSizes'):
+        for key in xusp.OPTIONS_TOPBOX:
             if key in kwds.keys(): kwdsTopBox[key] = kwds[key]
         super().__init__(parent, *args, **kwdsTopBox)
         self.parent = parent
@@ -634,7 +635,7 @@ class PNL_corps(wx.Panel):
 
 class PNL_pied(wx.Panel):
     #panel infos (gauche) et boutons sorties(droite)
-    def __init__(self, parent, dicPied, **kwds):
+    def __init__(self, parent, dicPied,*args, **kwds):
         self.lanceur = parent
         self.lstInfos = dicPied.pop('lstInfos',None)
         self.lstBtns =  dicPied.pop('lstBtns',None)
@@ -642,7 +643,7 @@ class PNL_pied(wx.Panel):
         if self.lstBtns == None:
             #force la présence d'un pied d'écran par défaut
             self.lstBtns = GetBtnsPied(self)
-        wx.Panel.__init__(self, parent)
+        wx.Panel.__init__(self, parent,*args)
         self.parent = parent
         if autoSizer:
             self.Sizer()
@@ -695,11 +696,15 @@ class DLG_tableau(xusp.DLG_vide):
         self.db = kwds.pop('db',None) #purge d'éventuels arguments db à ne pas envoyer à super()
         autoSizer =     kwds.pop('autoSizer', True)
         size = kwds.get('size',None)
+        # si size pas dans kwds, on pique celle de l'olv qui serait contrainte
         if not size and dicOlv.get('size',None):
             kwds['size'] = dicOlv.pop('size',None)
-        dicBandeau = dicParams.pop('dicBandeau',None)
-        if not dicBandeau:
-            dicBandeau = dicOlv.pop('dicBandeau',None)
+        # recherche d'un dicBandeau
+        for dic in (kwds, dicParams, dicOlv):
+            dicBandeau = dic.pop('dicBandeau',None)
+            if dicBandeau != None:
+                break
+
         super().__init__(parent,**kwds)
         if dicBandeau:
             self.bandeau = xbandeau.Bandeau(self,**dicBandeau)
