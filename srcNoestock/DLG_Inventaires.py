@@ -7,6 +7,13 @@
 # Licence:         Licence GNU GPL
 # ------------------------------------------------------------------
 
+# concepts
+
+"""A chaque lancement du programme, un calcul de l'inventaire est lançé, en cumulant les mouvements postérieurs
+        à la dernière date d'un inventaire historisé. il met à jour le compteur dans l'article
+    Si une correction est apportée elle génère une od mouvement au jour de l'inventaire et coche la ligne.
+    en sortie si présence de lignes cochées, l'historisation partielle de l'inventaire est proposée"""
+
 import wx
 import os
 import datetime
@@ -14,11 +21,11 @@ import srcNoestock.UTILS_Stocks        as nust
 import xpy.xGestion_TableauEditor      as xgte
 import xpy.xGestion_TableauRecherche   as xgtr
 import xpy.xUTILS_Identification       as xuid
-import xpy.xUTILS_SaisieParams         as xusp
 import xpy.xUTILS_DB                   as xdb
 from srcNoestock                import DLG_Articles
-from xpy.outils.ObjectListView  import ColumnDefn, CellEditor
-from xpy.outils                 import xformat,xbandeau,xboutons, xdates
+from srcNoelite                 import DB_schema
+from xpy.outils.ObjectListView  import ColumnDefn
+from xpy.outils                 import xformat,xboutons, xdates
 
 #---------------------- Matrices de paramétres -------------------------------------
 
@@ -229,72 +236,20 @@ def GetDlgOptions(dlg):
 
 def GetAnterieur(dlg,db=None):
     # retourne un dict de params après lancement d'un tableau de choix de l'existants pour reprise
-    dicParams = {}
+    dParams = {}
     dicOlv = GetMatriceAnterieurs(dlg)
     dlg = xgtr.DLG_tableau(dlg, dicOlv=dicOlv, db=db)
     ret = dlg.ShowModal()
     if ret == wx.OK and dlg.GetSelection():
         donnees = dlg.GetSelection().donnees
         for ix in range(len(donnees)):
-            dicParams[dicOlv['listeCodesColonnes'][ix]] = donnees[ix]
+            dParams[dicOlv['listeCodesColonnes'][ix]] = donnees[ix]
     dlg.Destroy()
-    return dicParams
-
-def GetInventaire(dlg, dParams):
-    return []
-    # retourne la liste des données de l'OLv de DlgEntree
-    ctrlOlv = dlg.ctrlOlv
-
-    ldInventaire = nust.SqlInventaire(dlg.db,dParams)
-    # appel des dicArticles des inventaires
-    ddArticles = {}
-    for dMvt in ldInventaire:
-        ddArticles[dMvt['IDarticle']] = nust.SqlDicArticle(dlg.db,dlg.ctrlOlv,dMvt['IDarticle'])
-
-    # composition des données
-    lstDonnees = []
-    lstCodesCol = ctrlOlv.GetLstCodesColonnes()
-
-    # autant de lignes dans l'olv que de inventaires remontés
-    for dMvt in ldInventaire:
-        donnees = []
-        dArticle = ddArticles[dMvt['IDarticle']]
-        # alimente les premières données des colonnes
-        for code in lstCodesCol:
-            # ajout de la donnée dans le inventaire
-            if code in dMvt.keys():
-                donnees.append(dMvt[code])
-                continue
-            # ajout de l'article associé
-            if code in dArticle.keys():
-                donnees.append(dArticle)
-                continue
-            if code in ('pxUn','mttHT','mttTTC','nbRations'):
-                convTva = (1+(dArticle['txTva'] / 100))
-                if code == 'pxUn':
-                    if dlg.ht_ttc == 'HT':
-                        donnees.append(round( dMvt['prixUnit'] / convTva,6))
-                    else:
-                        donnees.append(dMvt['prixUnit'])
-
-                elif code == 'mttHT':
-                    donnees.append(round(dMvt['prixUnit'] * dMvt['qte'] / convTva ,2))
-                elif code == 'mttTTC':
-                    donnees.append(dMvt['prixUnit'] * dMvt['qte'])
-                elif code == 'nbRations':
-                    donnees.append(dArticle['rations'] * dMvt['qte'])
-                else:
-                    raise("code: %s Erreur de programmation en UTILS_Stocks.GetInventaire"%code)
-                continue
-
-        # codes supplémentaires ('prixTTC','IDinventaire','dicArticle') dlg.dicOlv['lstCodesSup']
-        donnees += [dMvt['prixUnit'],
-                    dMvt['IDinventaire'],
-                    dArticle]
-        lstDonnees.append(donnees)
-    return lstDonnees
+    return dParams
 
 def CalculeLigne(dlg,track):
+    return
+
     if not hasattr(track,'dicArticle'): return
     try: qte = float(track.qte)
     except: qte = 0.0
@@ -471,7 +426,11 @@ class DLG(xgte.DLG_tableau):
         ret = self.Init()
         if ret == wx.ID_ABORT: self.Destroy()
         self.Sizer()
-        self.GetDonnees()
+        # appel des données
+        self.oldParams = None
+        (self.qteZero, self.qteMini) = (True, True)
+        self.OnSaison(None)
+
 
     def Init(self):
         self.db = xdb.DB()
@@ -511,6 +470,13 @@ class DLG(xgte.DLG_tableau):
 
     def OnSaison(self,event):
         self.choixSaison = self.pnlParams.GetOneValue('saison', codeBox='param1')
+        ctrlQteMini = self.pnlParams.GetPnlCtrl('qteMini','param2')
+        self.saisonIx = SAISONS.index(self.choixSaison)
+        if self.saisonIx == 2:
+            ctrlQteMini.Enable(False)
+            ctrlQteMini.SetValue(True)
+        else:
+            ctrlQteMini.Enable(True)
         self.GetDonnees()
         if event: event.Skip()
 
@@ -524,16 +490,30 @@ class DLG(xgte.DLG_tableau):
         # lancement de la recherche d'un lot antérieur, on enlève le cellEdit pour éviter l'écho des clics
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
         # choix d'un lot de lignes définies par des params
-        dicParams = GetAnterieur(self,db=self.db)
+        dParams = GetAnterieur(self,db=self.db)
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK        # gestion du retour du choix dépot
-        if not 'date' in dicParams.keys(): return
-        self.GetDonnees(dicParams)
+        if not 'date' in dParams.keys(): return
+        self.GetDonnees(dParams)
         if event: event.Skip()
 
-    def GetDonnees(self,dicParams=None):
+    def GetDonnees(self,dParams=None):
+        if not dParams:
+            dParams = self.pnlParams.GetValues(fmtDD=False)
+        idem = True
+        if self.oldParams == None :
+            idem = False
+        else:
+            for key in ('origine','date','analytique','fournisseur'):
+                if not key in self.oldParams.keys(): idem = False
+                elif not key in dParams.keys(): idem = False
+                elif self.oldParams[key] != dParams[key]: idem = False
+        if idem : return
+
         # appel des données de l'Olv principal à éditer
-        lstDonnees = GetInventaire(self,dicParams)
-        lstNoModif = [1 for rec in  lstDonnees if not (rec[-1])]
+        lstDonnees = nust.SqlInventaire(self, dParams)
+
+        ixModif = len(DB_schema.DB_TABLES['stArticles'])-1
+        lstNoModif = [1 for rec in  lstDonnees if not (rec[-ixModif])]
         # présence de lignes déjà transférées compta
         if len(lstNoModif) >0:
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
@@ -542,14 +522,8 @@ class DLG(xgte.DLG_tableau):
         # l'appel des données peut avoir retourné d'autres paramètres, il faut mettre à jour l'écran
         if len(lstDonnees) > 0:
             # set date du lot importé
-            self.pnlParams.SetOneValue('date',xformat.FmtDate(dicParams['date']),'param1')
-            self.date = dicParams['date']
-
-            # set Fournisseur et analytique
-            self.pnlParams.SetOneValue('fournisseur',dicParams['fournisseur'],'param2')
-            self.fournisseur = dicParams['fournisseur']
-            self.pnlParams.SetOneValue('analytique',dicParams['analytique'],'param2')
-            self.analytique = dicParams['analytique']
+            self.pnlParams.SetOneValue('date',xformat.FmtDate(dParams['date']),'param1')
+            self.date = dParams['date']
 
         # alimente la grille, puis création de modelObejects pr init
         self.ctrlOlv.lstDonnees = lstDonnees
@@ -560,13 +534,15 @@ class DLG(xgte.DLG_tableau):
             CalculeLigne(self,track)
             track.valide = True
         self.ctrlOlv._FormatAllRows()
+        self.oldParams = None
 
     def GetTitreImpression(self):
-        tiers = ''
-        if self.fournisseur: tiers += ", Fournisseur: %s"%self.fournisseur.capitalize()
-        if self.analytique: tiers += ", Camp: %s"%self.analytique.capitalize()
         date = xformat.DateSqlToFr(self.date)
-        return "Inventaire STOCKS du %s, %s%s"%(date, self.origine,tiers)
+        mini = 'Sans'
+        if self.qteMini: mini = 'Avec'
+        zer = 'Sans'
+        if self.qteZero: zer = 'Avec'
+        return "Inventaire STOCKS du %s, Qtés à zéro: %s, Qtés au dessus du minimum: %s"%(date, zer, mini)
 
     def OnImprimer(self,event):
         # test de présence d'écritures non valides

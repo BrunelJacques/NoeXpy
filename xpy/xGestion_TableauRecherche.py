@@ -670,7 +670,7 @@ class PNL_pied(wx.Panel):
         # images ou texte sont retenus
         self.infosImage = None
         self.infosTexte = None
-        lstItems = [(7,7)]
+        lstItems = []
         if not lstInfos: lstInfos = []
         for item in lstInfos:
             if isinstance(item,wx.Bitmap):
@@ -679,7 +679,6 @@ class PNL_pied(wx.Panel):
             elif isinstance(item,str):
                 self.infosTexte = wx.StaticText(self,wx.ID_ANY,item)
                 lstItems.append((self.infosTexte,10,wx.ALIGN_LEFT|wx.ALL|wx.EXPAND,5))
-            lstItems.append((7,7))
         return lstItems
 
     def SetItemsInfos(self,text=None,image=None,):

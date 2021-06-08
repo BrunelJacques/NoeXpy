@@ -20,7 +20,8 @@ INTRO2 = "les mots clés du champ en bas permettent de filtrer d'autres lignes e
 TITRE = "Gestion des articles en stock"
 INTRO = "La saisie des articles permet aussi d'ajuster les quantités en stock et les prix de référence"
 
-def GetMatriceArticles(cutend=None):
+def GetDicOlv(cutend=None):
+    # le cutend est utilisé pour limiter les colonnes affichées en recherche F4
     dicBandeau = {'titre':TITRE2,
                   'texte':INTRO2,
                   'hauteur':20, 'nomImage':"xpy/Images/80x80/Legumes.png"}
@@ -32,7 +33,7 @@ def GetMatriceArticles(cutend=None):
     lstChamps = xformat.GetLstChamps(table)
     #lstTypes = xformat.GetLstTypes(table)
     lstNomsColonnes = xformat.GetLstChamps(table)
-    lstLargeurColonnes = [200, 60, 128, 50, 60, 70, -1, -1, -1, -1, -1, -1, 90][:nbcol]
+    lstLargeurColonnes = [200, 60, 128,-1, 60, 70, -1, -1, -1, -1, -1, -1, 90][:nbcol]
     lstColonnes = xformat.GetLstColonnes(table=table,lstLargeur=lstLargeurColonnes,lstNoms=lstNomsColonnes)
     matriceSaisie =  xformat.DicOlvToMatrice(('ligne',""),{'lstColonnes':lstColonnes})
     # Personnalisation
@@ -70,9 +71,9 @@ def GetOneIDarticle(db,value,**kwds):
         IDarticle = recordset[0][0]
     else:
         # article unique non trouvé, on lance la gestion des articles pour un choix filtré sur value
-        cutend = len(DB_schema.DB_TABLES['stArticles'])-3
+        cutend = len(DB_schema.DB_TABLES['stArticles'])-4
         # on affiche seulement trois premières colonnes
-        dicOlv = GetMatriceArticles(cutend=cutend)
+        dicOlv = GetDicOlv(cutend=cutend)
         dicOlv['withObsoletes'] = False
         # pas de bouton pour que le dbl click ne lance pas de modif d'article
         del dicOlv['lstNomsBtns']
@@ -94,7 +95,7 @@ class DLG_articles(xgtr.DLG_tableau):
         value = kwds.pop('value',None)
         dicOlv = kwds.pop('dicOlv',None)
         if not dicOlv:
-            dicOlv = GetMatriceArticles(cutend=2)
+            dicOlv = GetDicOlv(cutend=2)
             dicOlv['dicBandeau']['titre'] = TITRE
             dicOlv['dicBandeau']['texte'] = INTRO
 

@@ -229,6 +229,7 @@ class Dialog(wx.Dialog):
         self.pnlPied.Sizer()
         self.__set_properties()
         self.Sizer()
+        self.ctrlOlv.MAJ()
 
     def __set_properties(self):
         self.SetMinSize(MINSIZE)

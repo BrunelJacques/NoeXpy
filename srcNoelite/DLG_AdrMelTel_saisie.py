@@ -96,7 +96,6 @@ def GetDicOlvFam():
                 'getBtnActions': None,
                 'sortColumnIndex': 2,
                 'sortAscending': True,
-                'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 'recherche': False,
                 'autoAddRow': False,

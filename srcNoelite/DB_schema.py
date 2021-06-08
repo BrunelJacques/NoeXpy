@@ -261,10 +261,10 @@ DB_TABLES = {
                 ('IDarticle', 'VARCHAR(32)', "PK Désignation du produit"),
                 ('rations', 'FLOAT', "Nombre de ration pour une unité"),
                 ('fournisseur', 'VARCHAR(32)', "Fournisseur habituel"),
+                ('qteStock', 'INTEGER', "Stock en live"),
                 ('txTva', 'FLOAT', "tx de TVA en %"),
                 ('magasin', 'VARCHAR(32)', "Lieu de stockage: réserve, congel,frigo"),
                 ('rayon', 'VARCHAR(32)', "rayon ou famille produit: type de produit dans le magasin"),
-                ('qteStock', 'INTEGER', "Stock en live"),
                 ('qteMini', 'INTEGER', "Seuil déclenchant une alerte rouge"),
                 ('qteSaison', 'INTEGER', "Seuil souhaitable en haute saison"),
                 ('obsolete', 'TINYINT(1)', "0/1 : 1 n'est plus utilisé"),
@@ -330,7 +330,8 @@ DB_IX = {
         'IX_stArticles_fournisseur': {'table': 'stArticles', 'champ': 'fournisseur'},
         'IX_stArticles_magasin_rayon': {'table': 'stArticles', 'champ': 'magasin,rayon'},
         'IX_stMouvements_date_origine': {'table': 'stMouvements', 'champ': 'date,origine'},
-        'IX_stMouvements_IDanalytique_date': {'table': 'stMouvements', 'champ': 'IDanalytique,date'}
+        'IX_stMouvements_IDanalytique_date': {'table': 'stMouvements', 'champ': 'IDanalytique,date'},
+        'IX_stMouvements_IDarticle_date': {'table': 'stMouvements', 'champ': 'IDarticle, date'},
         }
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------

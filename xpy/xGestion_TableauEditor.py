@@ -398,7 +398,8 @@ class PanelListView(wx.Panel):
         wx.Panel.__init__(self, parent, id=id, style=stylePanel)
         self.dictColFooter = dicOlv.pop('dictColFooter', {})
         if not 'id' in dicOlv: dicOlv['id'] = wx.ID_ANY
-        if not 'style' in dicOlv: dicOlv['style'] = wx.LC_REPORT|wx.NO_BORDER|wx.LC_HRULES|wx.LC_VRULES
+        if not 'style' in dicOlv:
+            dicOlv['style'] = wx.LC_REPORT|wx.NO_BORDER|wx.LC_HRULES|wx.LC_VRULES
         if self.dictColFooter and len(self.dictColFooter.keys())>0:
             dicOlv['pnlFooter']=True
 

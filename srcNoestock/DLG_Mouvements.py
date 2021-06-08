@@ -175,10 +175,11 @@ def GetDicParams(dlg):
                 'name':"PNL_params",
                 'matrice':matrice,
                 'lblBox':None,
-                'boxesSizes': [(300, 90), (400, 90), (100, 90), (100, 90)],
+                'boxesSizes': [(250, 90), (250, 90), None, (160, 90)],
                 'pathdata':"srcNoelite/Data",
                 'nomfichier':"stparams",
                 'nomgroupe':"entrees",
+                'sensNum' : dlg.sensNum
             }
 
 def GetBoutons(dlg):
@@ -249,37 +250,38 @@ def GetDlgOptions(dlg):
 
 def GetAnterieur(dlg,db=None):
     # retourne un dict de params après lancement d'un tableau de choix de l'existants pour reprise
-    dicParams = {}
+    dParams = {}
     dicOlv = GetMatriceAnterieurs(dlg)
-    dlg = xgtr.DLG_tableau(dlg, dicOlv=dicOlv, db=db)
-    ret = dlg.ShowModal()
-    if ret == wx.OK and dlg.GetSelection():
-        donnees = dlg.GetSelection().donnees
+    dlgAnte = xgtr.DLG_tableau(dlg, dicOlv=dicOlv, db=db)
+    ret = dlgAnte.ShowModal()
+    if ret == wx.OK and dlgAnte.GetSelection():
+        donnees = dlgAnte.GetSelection().donnees
         for ix in range(len(donnees)):
-            dicParams[dicOlv['listeCodesColonnes'][ix]] = donnees[ix]
-    dlg.Destroy()
-    return dicParams
+            dParams[dicOlv['listeCodesColonnes'][ix]] = donnees[ix]
+        dParams['sensNum'] = dlg.sensNum
+    dlgAnte.Destroy()
+    return dParams
 
-def ValideParams(pnl,dicParams,mute=False):
+def ValideParams(pnl,dParams,mute=False):
     # vérifie la saisie des paramètres
     pnlFournisseur = pnl.GetPnlCtrl('fournisseur', codebox='param2')
     pnlAnalytique = pnl.GetPnlCtrl('analytique', codebox='param2')
     valide = True
 
     # normalisation none ''
-    if dicParams['fournisseur']  == None:
-        dicParams['fournisseur'] = ''
-    if dicParams['analytique'] == None:
-        dicParams['analytique'] = ''
+    if dParams['fournisseur']  == None:
+        dParams['fournisseur'] = ''
+    if dParams['analytique'] == None:
+        dParams['analytique'] = ''
 
-    if 'achat' in dicParams['origine']:
-        if (not dicParams['fournisseur']):
+    if 'achat' in dParams['origine']:
+        if (not dParams['fournisseur']):
             if not mute:
                 wx.MessageBox("Veuillez saisir un fournisseur!")
                 pnlFournisseur.SetFocus()
             valide = False
-    elif 'retour' in dicParams['origine']:
-        if (not dicParams['analytique']):
+    elif 'retour' in dParams['origine']:
+        if (not dParams['analytique']):
             if not mute:
                 wx.MessageBox("Veuillez saisir un camp pour le retour de marchandise!")
                 pnlAnalytique.SetFocus()
@@ -368,6 +370,7 @@ def CalculeLigne(dlg,track):
 
 def ValideLigne(dlg,track):
     # validation de la ligne de mouvement
+
     track.valide = True
     track.messageRefus = "Saisie incomplète\n\n"
 
@@ -397,7 +400,7 @@ def ValideLigne(dlg,track):
     except:
         track.pxUn = None
     if not track.pxUn or track.pxUn == 0.0:
-        track.messageRefus += "Le pxUn est à zéro\n"
+        track.messageRefus += "Le pxUn est à zéro, indispensable pour le prix de journée, fixez un prix!\n"
 
     # envoi de l'erreur
     if track.messageRefus != "Saisie incomplète\n\n":
@@ -433,12 +436,12 @@ class PNL_corps(xgte.PNL_corps):
 
     def ValideParams(self):
         pnl = self.parent.pnlParams
-        dicParams = {'origine': self.parent.GetOrigine(),
+        dParams = {'origine': self.parent.GetOrigine(),
                      'date': self.parent.GetDate(),
                      'fournisseur': pnl.GetOneValue('fournisseur',codeBox='param2'),
                      'analytique': pnl.GetOneValue('analytique',codeBox='param2'),
                      'ht_ttc': pnl.GetOneValue('ht_ttc',codeBox='param3')}
-        ret = ValideParams(pnl,dicParams)
+        ret = ValideParams(pnl,dParams)
 
     def OnCtrlV(self,track):
         # avant de coller une track, raz de certains champs et recalcul
@@ -537,6 +540,9 @@ class DLG(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,sens='sorties',date=None,**kwd):
         self.sens = sens
+        self.sensNum = 1
+        if self.sens == "sorties":
+            self.sensNum = -1
         kwds = GetDlgOptions(self)
         super().__init__(None,**kwds)
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
@@ -549,9 +555,10 @@ class DLG(xusp.DLG_vide):
         if not date:
             date = self.today
         self.date = date
-        self.analytique = ''
+        self.analytique = '00'
         self.fournisseur = ''
         self.ht_ttc = 'TTC'
+        self.oldParams = {}
         ret = self.Init()
         if ret == wx.ID_ABORT: self.Destroy()
 
@@ -708,24 +715,35 @@ class DLG(xusp.DLG_vide):
         # lancement de la recherche d'un lot antérieur, on enlève le cellEdit pour éviter l'écho des clics
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
         # choix d'un lot de lignes définies par des params
-        dicParams = GetAnterieur(self,db=self.db)
+        dParams = GetAnterieur(self,db=self.db)
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK        # gestion du retour du choix dépot
-        if not 'date' in dicParams.keys(): return
-        self.GetDonnees(dicParams)
+        if not 'date' in dParams.keys(): return
+        self.oldParams = {}
+        self.GetDonnees(dParams)
         if event: event.Skip()
 
-    def GetDonnees(self,dicParams=None):
-        if not dicParams:
-            dicParams = {'origine':self.origine,
+    def GetDonnees(self,dParams=None):
+        if not dParams:
+            dParams = {'origine':self.origine,
                          'date':self.date,
                          'fournisseur':self.fournisseur,
                          'analytique':self.analytique,
-                         'ht_ttx':self.ht_ttc}
-        valide = ValideParams(self.pnlParams,dicParams, mute=True)
+                         'ht_ttx':self.ht_ttc,
+                         'sensNum': self.sensNum,}
+        valide = ValideParams(self.pnlParams,dParams, mute=True)
         if not valide: return
+        idem = True
+        if self.oldParams == None :
+            idem = False
+        else:
+            for key in ('origine','date','analytique','fournisseur'):
+                if not key in self.oldParams.keys(): idem = False
+                elif not key in dParams.keys(): idem = False
+                elif self.oldParams[key] != dParams[key]: idem = False
+        if idem : return
 
         # appel des données de l'Olv principal à éditer
-        lstDonnees = GetMouvements(self,dicParams)
+        lstDonnees = GetMouvements(self,dParams)
         lstNoModif = [1 for rec in  lstDonnees if not (rec[-1])]
         # présence de lignes déjà transférées compta
         if len(lstNoModif) >0:
@@ -735,19 +753,19 @@ class DLG(xusp.DLG_vide):
         # l'appel des données peut avoir retourné d'autres paramètres, il faut mettre à jour l'écran
         if len(lstDonnees) > 0:
             # set date du lot importé
-            self.pnlParams.SetOneValue('date',xformat.FmtDate(dicParams['date']),'param1')
-            self.date = dicParams['date']
+            self.pnlParams.SetOneValue('date',xformat.FmtDate(dParams['date']),'param1')
+            self.date = dParams['date']
 
             # set origine
-            ixo = DICORIGINES[self.sens]['codes'].index(dicParams['origine'])
+            ixo = DICORIGINES[self.sens]['codes'].index(dParams['origine'])
             self.pnlParams.SetOneValue(DICORIGINES[self.sens]['values'][ixo])
             self.OnOrigine(None)
 
             # set Fournisseur et analytique
-            self.pnlParams.SetOneValue('fournisseur',dicParams['fournisseur'],'param2')
-            self.fournisseur = dicParams['fournisseur']
-            self.pnlParams.SetOneValue('analytique',dicParams['analytique'],'param2')
-            self.analytique = dicParams['analytique']
+            self.pnlParams.SetOneValue('fournisseur',dParams['fournisseur'],'param2')
+            self.fournisseur = dParams['fournisseur']
+            self.pnlParams.SetOneValue('analytique',dParams['analytique'],'param2')
+            self.analytique = dParams['analytique']
 
         # alimente la grille, puis création de modelObejects pr init
         self.ctrlOlv.lstDonnees = lstDonnees
@@ -758,6 +776,7 @@ class DLG(xusp.DLG_vide):
             CalculeLigne(self,track)
             track.valide = True
         self.ctrlOlv._FormatAllRows()
+        self.oldParams = xformat.CopyDic(dParams)
 
     def GetTitreImpression(self):
         tiers = ''

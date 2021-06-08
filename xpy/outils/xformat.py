@@ -116,6 +116,9 @@ def SetItemInMatrice(dldMatrice,name,item,value):
 def GetLstChamps(dicTable):
     return [x for x,y,z in dicTable]
 
+def GetLstChampsTable(table,dbTables):
+    return [(table + '.' + x) for x,y,z in dbTables[table]]
+
 def GetLstTypes(dicTable):
     return [y for x, y, z in dicTable]
 

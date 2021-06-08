@@ -7,7 +7,7 @@
 # Licence:         Licence GNU GPL
 #------------------------------------------------------------------------
 
-import wx
+import wx, datetime
 from srcNoestock    import DLG_Mouvements
 from srcNoelite     import DB_schema
 from xpy.outils     import xformat
@@ -18,63 +18,90 @@ CHOIX_REPAS = ['PtDej','Midi','Soir','Tous']
 # Select de données  ------------------------------------------------------------------
 
 
-def SqlInventaire(**kwd):
-    db = kwd.get('db',None)
-    # appel des données d'un olv
-    filtreTxt = kwd.pop('filtreTxt', '')
-    nbreFiltres = kwd.pop('nbreFiltres', 0)
-    dicOlv = kwd.pop('dicOlv',{})
-    lstChamps = dicOlv['lstChamps']
-    lstColonnes = dicOlv['lstColonnes']
-    withObsoletes = dicOlv.get('withObsoletes',True)
+def SqlInventaire(dlg,*args,**kwd):
+    db = dlg.db
 
-    # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
-    limit = ''
-    if nbreFiltres == 0:
-        limit = "LIMIT %d" %LIMITSQL
+    where = ''
+    if not dlg.qteZero:
+        where += '(stArticlesqteStock > 0) '
+    if not dlg.qteMini :
+        if len(where) > 0 :
+            where += 'AND '
+        if dlg.saisonIx == 1:
+            mini = 'stArticlesqteMini'
+        else: mini = 'stArticlesqteSaison'
+        where += '(stArticlesqteStock > %s) '%mini
+        if len(where) > 0 :
+            where = 'WHERE %s'%where
 
-    # intégration du filtre recherche via le where dans tous les champs
-    if withObsoletes:
-        where = ''
-        if filtreTxt and len(filtreTxt) > 0:
-            where = xformat.ComposeWhereFiltre(filtreTxt, lstChamps, lstColonnes=lstColonnes, lien='WHERE')
-    else:
-        where = 'WHERE (obsolete IS NULL)'
-        if filtreTxt and len(filtreTxt) >0:
-                where += xformat.ComposeWhereFiltre(filtreTxt,lstChamps, lstColonnes = lstColonnes,lien='AND')
-
-    req = """FLUSH TABLES stArticles;"""
-    retour = db.ExecuterReq(req, mess="UTILS_Stocks.SqlArticles Flush")
-
-    req = """   SELECT %s 
+    lstChamps = ['IDarticle', 'IDdate',
+                 'qteConstat', 'qteInv','prixActInv, prixMoyenInv',
+                 'qteMvt',
+                'fournisseur','magasin','rayon','qteArt','qteMini','qteSaison','prixMoyenArt','dernierAchat','rations']
+    req = """
+        SELECT  art.artArt, art.dte, 
+                stInventaires.qteConstat, stInventaires.qteStock, stInventaires.prixActuel, stInventaires.prixMoyen,
+                Sum(stMouvements.qte) AS SommeDeqte, 
+                art.fournisseur, art.magasin, art.rayon, art.artQte, art.qteMini, art.qteSaison, art.prixMoyen, 
+                art.dernierAchat, art.rations
+        
+        FROM (
+            (	SELECT stArticles.IDarticle AS artArt, max(if( IDdate is NULL, '2021-01-01', IDdate)) AS dte, 
+                        stArticles.fournisseur, stArticles.magasin, stArticles.rayon, stArticles.qteStock AS artQte, 
+                        stArticles.qteMini, stArticles.qteSaison, stArticles.prixMoyen, stArticles.dernierAchat, 
+                        stArticles.rations
                 FROM stArticles 
+                LEFT JOIN stInventaires ON stArticles.IDarticle = stInventaires.IDarticle
                 %s
-                %s ;""" % (",".join(lstChamps),where,limit)
+                GROUP BY stArticles.IDarticle, stArticles.fournisseur, stArticles.magasin, stArticles.rayon, 
+                        stArticles.qteStock, stArticles.qteMini, stArticles.qteSaison, stArticles.prixMoyen, 
+                        stArticles.dernierAchat, stArticles.rations
+             ) 
+            AS art
+        
+            LEFT JOIN stInventaires ON (art.artArt = stInventaires.IDarticle) 
+                                        AND (art.dte = stInventaires.IDdate)
+            ) 
+        LEFT JOIN stMouvements 	ON ( art.dte < stMouvements.date) 
+                                    AND (art.artArt = stMouvements.IDarticle)
+        GROUP BY art.artArt, art.dte, stInventaires.qteConstat, stInventaires.qteStock, stInventaires.prixActuel,
+            stInventaires.prixMoyen, art.fournisseur, art.magasin, art.rayon, art.artQte, art.qteMini, art.qteSaison, 
+            art.prixMoyen, art.dernierAchat, art.rations;            
+            """ %(where,)
 
     retour = db.ExecuterReq(req, mess="UTILS_Stocks.SqlArticles Select" )
     recordset = ()
     if retour == "ok":
         recordset = db.ResultatReq()
     # composition des données du tableau à partir du recordset, regroupement par article
-    lstDonnees = []
+    lstKeys = []
+    ddArticles = {}
     for record in recordset:
-        ligne = []
-        for val in record:
-            ligne.append(val)
+        dte = record[-1]
+        if not dte: dte = datetime.date(year=2021,month=1,)
+        lstKeys.append(record[0])
+        ddArticles[record[0]] = xformat.ListToDict(lstChamps,record)
         lstDonnees.append(ligne)
     return lstDonnees
 
 def SqlMouvements(db,dParams=None):
-    lstChamps = xformat.GetLstChamps(DB_schema.DB_TABLES['stMouvements'])
+    lstChamps = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
+    lstChamps.append('stArticles.qteStock')
+    sensNum = dParams['sensNum']
 
     # Appelle les mouvements associés à un dic de choix de param et retour d'une liste de dic
     req = """   SELECT %s
-                FROM stMouvements 
+                FROM stMouvements
+                LEFT JOIN stArticles ON stMouvements.IDarticle = stArticles.IDarticle 
                 WHERE ((date = '%s' )
-                        AND (origine = '%s' )
-                        AND (fournisseur IS NULL  OR fournisseur = '%s' )
-                        AND (IDanalytique IS NULL  OR IDanalytique ='00'  OR IDanalytique = '%s' ))
+                        AND (stMouvements.origine = '%s' )
+                        AND (stMouvements.fournisseur IS NULL  
+                                OR stMouvements.fournisseur = '%s' )
+                        AND (stMouvements.IDanalytique IS NULL  
+                                OR stMouvements.IDanalytique ='00'  
+                                OR stMouvements.IDanalytique = '%s' ))
                 ;""" % (",".join(lstChamps),dParams['date'],dParams['origine'],dParams['fournisseur'],dParams['analytique'])
+
     retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetMouvements')
     ldMouvements = []
     if retour == "ok":
@@ -82,10 +109,15 @@ def SqlMouvements(db,dParams=None):
         for record in recordset:
             dMouvement = {}
             for ix  in range(len(lstChamps)):
-                if lstChamps[ix] == 'repas' and record[ix]:
-                    dMouvement[lstChamps[ix]] = CHOIX_REPAS[record[ix]-1]
+                champ = lstChamps[ix].split('.')[1]
+                # transposition du code repas en libellé
+                if champ == 'repas' and record[ix]:
+                    dMouvement[champ] = CHOIX_REPAS[record[ix]-1]
+                # transposition du sens du nombre pour les quantités
+                elif champ == 'qte' and record[ix]:
+                    dMouvement[champ] = record[ix] * sensNum
                 else:
-                    dMouvement[lstChamps[ix]] = record[ix]
+                    dMouvement[champ] = record[ix]
             ldMouvements.append(dMouvement)            
     return ldMouvements
 
@@ -328,6 +360,7 @@ def MakeChoiceActivite(analytique):
 
 def SauveMouvement(db,dlg,track):
     # --- Sauvegarde des différents éléments associés à la ligne de mouvement
+    sensNum = dlg.sensNum
     if not track.valide:
         return False
     if not dlg.analytique or len(dlg.analytique.strip()) == 0:
@@ -342,7 +375,7 @@ def SauveMouvement(db,dlg,track):
                     ('origine',dlg.origine),
                     ('repas', repas),
                     ('IDarticle', track.IDarticle),
-                    ('qte', track.qte),
+                    ('qte', track.qte * sensNum),
                     ('prixUnit', track.prixTTC),
                     ('IDanalytique', analytique),
                     ('ordi', dlg.ordi),
