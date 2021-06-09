@@ -37,10 +37,11 @@ DIC_BANDEAU = {'titre': "Suivi et ajustement de l'inventaire",
         'bgColor': (220, 250, 220), }
 
 DIC_INFOS = {
+        'fournisseur': "Nom du fournisseur à enregistrer dans l'article",
         'magasin': "<F4> Choix d'un magasin",
         'rayon': "<F4> Choix d'un rayon",
-        'qte': "L'unité est en général précisée dans le nom de l'article\nNbre dans le plus petit conditionnements",
-        'pxUn': "TTC selon le choix en haut d'écran\nPrix d'une unité telle qu'on la sort du stock, pas celui du carton complet",
+        'qteStock': "L'unité est celle  qui sert au décompte du stock\nQuantité en stock au jour de l'inventaire",
+        'pxUnit': "Prix dans l'inventaire d'une unité sortie",
          }
 
 INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
@@ -185,18 +186,19 @@ def GetBoutons(dlg):
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
     lstCol = [
-            ColumnDefn("Vérifié le", 'left', 80, 'verifie', valueSetter=datetime.date.today(),isSpaceFilling=False,
-                            isEditable=False, stringConverter=xformat.FmtDate,),
-            ColumnDefn("Magasin", 'left', 100, 'magasin', valueSetter="",isSpaceFilling=True),
-            ColumnDefn("Rayon", 'left', 100, 'rayon', valueSetter="",isSpaceFilling=True),
-            ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",isSpaceFilling=True,
-                            isEditable=False),
+            ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter=" ",isSpaceFilling=True,
+                       isEditable=False),
+            ColumnDefn("Fournisseur", 'left', 100, 'fournisseur', valueSetter=" ",isSpaceFilling=True),
+            ColumnDefn("Magasin", 'left', 100, 'magasin', valueSetter=" ",isSpaceFilling=True),
+            ColumnDefn("Rayon", 'left', 100, 'rayon', valueSetter=" ",isSpaceFilling=True),
             ColumnDefn("Qté stock", 'right', 80, 'qteStock',  valueSetter=0.0,isSpaceFilling=False,
                                         stringConverter=xformat.FmtDecimal),
-            ColumnDefn("Prix Unit", 'right', 80, 'pxUn',  valueSetter=0.0,isSpaceFilling=False,
+            ColumnDefn("Prix Unit", 'right', 80, 'pxUnit',  valueSetter=0.0,isSpaceFilling=False,
                                         stringConverter=xformat.FmtDecimal),
             ColumnDefn("Mtt TTC", 'right', 100, 'mttTTC',  valueSetter=0.0,isSpaceFilling=False,
                             isEditable=False, stringConverter=xformat.FmtDecimal, ),
+            ColumnDefn("Vérifié le", 'left', 80, 'IDdate', valueSetter=datetime.date.today(),isSpaceFilling=False,
+                            isEditable=False, stringConverter=xformat.FmtDate,),
             ColumnDefn("Nbre Rations", 'right', 80, 'rations',  valueSetter=0.0,isSpaceFilling=False,
                             isEditable=False, stringConverter=xformat.FmtDecimal, ),
             ]
@@ -204,7 +206,8 @@ def GetOlvColonnes(dlg):
 
 def GetOlvCodesSup():
     # codes dans les données olv, mais pas dans les colonnes, attributs des tracks non visibles en tableau
-    return []
+    return ['qteConstat','qteMvt','mttMvt','qteInv', 'pxMoyInv','pxActInv','qteArt','qteMini','qteSaison','pxMoyArt']
+
 
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
@@ -400,6 +403,7 @@ class DLG(xgte.DLG_tableau):
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
         self.dicOlv.update(GetOlvOptions(self))
+        self.dicOlv['lstCodes'] = xformat.GetCodesColonnes(GetOlvColonnes(self))
         self.dicOlv['db'] = xdb.DB()
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
         txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"

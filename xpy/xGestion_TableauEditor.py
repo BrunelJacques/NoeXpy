@@ -493,6 +493,8 @@ class PanelListView(wx.Panel):
     def OnEditStarted(self,event):
         row, col = self.ctrlOlv.cellBeingEdited
         code = self.ctrlOlv.lstCodesColonnes[col]
+        if self.ctrlOlv.checkColonne:
+            code = self.ctrlOlv.lstCodesColonnes[col-1]
         track = self.ctrlOlv.GetObjectAt(row)
 
         # cas d'une nouvelle ligne appel des éventuels traitements
@@ -602,6 +604,7 @@ class PNL_corps(wx.Panel):
         self.avecRecherche= dicOlv.pop('recherche',True)
         self.parent = parent
         self.lanceur = parent
+        self.flagSkpiEdit = False
         if hasattr(parent,'lanceur'): self.lanceur = parent.lanceur
         # récupére les éventuels boutons d'actions
         if getBtnActions:

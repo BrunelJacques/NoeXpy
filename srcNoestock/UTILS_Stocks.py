@@ -23,27 +23,30 @@ def SqlInventaire(dlg,*args,**kwd):
 
     where = ''
     if not dlg.qteZero:
-        where += '(stArticlesqteStock > 0) '
+        where += '(stArticles.qteStock > 0) '
     if not dlg.qteMini :
         if len(where) > 0 :
             where += 'AND '
         if dlg.saisonIx == 1:
-            mini = 'stArticlesqteMini'
-        else: mini = 'stArticlesqteSaison'
+            mini = 'stArticles.qteMini'
+        else: mini = 'stArticles.qteSaison'
         where += '(stArticlesqteStock > %s) '%mini
         if len(where) > 0 :
             where = 'WHERE %s'%where
 
+    whereMvt = "WHERE stMouvements.date <= '%s' OR (stMouvements.date IS NULL) "%dlg.date
+
     lstChamps = ['IDarticle', 'IDdate',
-                 'qteConstat', 'qteInv','prixActInv, prixMoyenInv',
-                 'qteMvt',
-                'fournisseur','magasin','rayon','qteArt','qteMini','qteSaison','prixMoyenArt','dernierAchat','rations']
+                 'qteConstat', 'qteInv','pxActInv', 'pxMoyInv',
+                 'qteMvt','mttMvt',
+                 'fournisseur','magasin','rayon','qteArt','qteMini','qteSaison','pxMoyArt','rations']
+    lstChamps += ['qteStock','pxUnit','mttTTC']
     req = """
         SELECT  art.artArt, art.dte, 
                 stInventaires.qteConstat, stInventaires.qteStock, stInventaires.prixActuel, stInventaires.prixMoyen,
-                Sum(stMouvements.qte) AS SommeDeqte, 
+                Sum(stMouvements.qte) AS qteMvt, Sum(stMouvements.qte * stMouvements.prixUnit) AS mttMvt,
                 art.fournisseur, art.magasin, art.rayon, art.artQte, art.qteMini, art.qteSaison, art.prixMoyen, 
-                art.dernierAchat, art.rations
+                (art.rations * art.artQte)
         
         FROM (
             (	SELECT stArticles.IDarticle AS artArt, max(if( IDdate is NULL, '2021-01-01', IDdate)) AS dte, 
@@ -64,23 +67,37 @@ def SqlInventaire(dlg,*args,**kwd):
             ) 
         LEFT JOIN stMouvements 	ON ( art.dte < stMouvements.date) 
                                     AND (art.artArt = stMouvements.IDarticle)
+        %s
         GROUP BY art.artArt, art.dte, stInventaires.qteConstat, stInventaires.qteStock, stInventaires.prixActuel,
             stInventaires.prixMoyen, art.fournisseur, art.magasin, art.rayon, art.artQte, art.qteMini, art.qteSaison, 
-            art.prixMoyen, art.dernierAchat, art.rations;            
-            """ %(where,)
+            art.prixMoyen, art.rations;            
+            """ %(where,whereMvt)
 
     retour = db.ExecuterReq(req, mess="UTILS_Stocks.SqlArticles Select" )
     recordset = ()
     if retour == "ok":
         recordset = db.ResultatReq()
-    # composition des données du tableau à partir du recordset, regroupement par article
-    lstKeys = []
-    ddArticles = {}
+    # composition des données du tableau à partir du recordset
+    Nz = xformat.Nz
+    def CalculChamps(rec):
+        qteMvt = Nz(rec[lstChamps.index('qteMvt')])
+        mttMvt = Nz(rec[lstChamps.index('mttMvt')])
+        qteInv = Nz(rec[lstChamps.index('qteInv')])
+        pxActInv = Nz(rec[lstChamps.index('pxActInv')]) # prix forcé dans l'inventaire
+        if pxActInv <= 0.0: pxActInv = Nz(rec[lstChamps.index('pxMoyInv')]) # prix résultant d'un calcul antérieur dans l'inventaire
+        if (qteInv + qteMvt) == 0.0 : qteInv, qteMvt = (0,1)
+        qteStock = Nz(rec[lstChamps.index('qteConstat')]) + Nz(qteMvt)
+        pxUnit = ((qteInv * pxActInv) + mttMvt) / (qteInv + qteMvt)
+        mttTTC = qteStock * pxUnit
+        return (qteStock,pxUnit,mttTTC)
+
+    lstDonnees = []
+    lstCodes = dlg.dicOlv['lstCodes'] + dlg.dicOlv['lstCodesSup']
     for record in recordset:
-        dte = record[-1]
-        if not dte: dte = datetime.date(year=2021,month=1,)
-        lstKeys.append(record[0])
-        ddArticles[record[0]] = xformat.ListToDict(lstChamps,record)
+        ligne = []
+        for code in lstCodes:
+            donnees = record + CalculChamps(record)
+            ligne.append(donnees[lstChamps.index(code)])
         lstDonnees.append(ligne)
     return lstDonnees
 
