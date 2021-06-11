@@ -106,7 +106,6 @@ class DLG_articles(xgtr.DLG_tableau):
             db = xdb.DB()
         kwds['db'] = db
 
-        #kwds['dicParams'] = {'bandeau': dicBandeau}
         super().__init__(None, **kwds)
         self.db = db
         self.ordi = xuid.GetNomOrdi()
@@ -118,7 +117,10 @@ class DLG_articles(xgtr.DLG_tableau):
         if len(self.ctrlOlv.innerList) == 0:
             self.pnlOlv.ctrlOutils.barreRecherche.SetValue('')
         self.pnlOlv.ctrlOutils.barreRecherche.OnSearch(None)
-        self.pnlOlv.ctrlOlv.SetFocus()
+        self.ctrlOlv.SetFocus()
+        if len(self.ctrlOlv.innerList) > 0:
+            self.ctrlOlv.SelectObject(0)
+            self.ctrlOlv.Refresh()
 
     def FmtDonneesDB(self,nomsCol,donnees,complete=True):
         table = DB_schema.DB_TABLES['stArticles']

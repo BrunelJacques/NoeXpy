@@ -546,7 +546,22 @@ class PNL_ctrl(wx.Panel):
         event.Skip()
 
     def OnBtnAction(self,event):
-        self.parent.OnBtnAction(event)
+        if hasattr(event.EventObject,'actionBtn'):
+            actionBtn = event.EventObject.actionBtn
+        # via le parent de l'objet
+        elif hasattr(event.EventObject.Parent,'actionBtn'):
+            actionBtn = event.EventObject.Parent.actionBtn
+        elif hasattr(event.EventObject.GrandParent, 'actionBtn'):
+            actionBtn = event.EventObject.GrandParent.actionBtn
+        else:
+            print("!!!! actionBtn de <%s - %s> non trouvée"%(event.EventObject.Parent,event.EventObject.ClassName))
+            return
+        # selon la nature texte ou pas
+        if isinstance(actionBtn,str):
+            action = "self.lanceur."+actionBtn+"(event)"
+            eval(action)
+        else:
+            actionBtn(event)
         event.Skip()
 
     def PnlSizer(self):
@@ -600,6 +615,9 @@ class PNL_ctrl(wx.Panel):
         elif value == None:
             value = ''
         self.ctrl.SetValue(value)
+        test = self.ctrl.GetValue()
+        if str(test) != str(value):
+            raise Exception("SetValue échoué pour '%s' = %s(%s)"%(str(test),self.ctrl.name,str(value)))
 
     # c'est la mise à jour des choices du controle
     def Set(self,values):
@@ -827,6 +845,7 @@ class BoxPanel(wx.Panel):
     # Set pour tous les ctrl nommés dans le dictionnaire de données
     def SetValues(self,dictDonnees):
         for panel in self.lstPanels:
+            if isinstance(panel.ctrl,tuple): continue
             if panel.ctrl.nameCtrl in dictDonnees:
                 panel.SetValue(dictDonnees[panel.ctrl.nameCtrl])
             else:
@@ -949,7 +968,7 @@ class TopBoxPanel(wx.Panel):
                                **kwdBox)
                 self.lstBoxes.append(box)
                 self.topbox.Add(box, width,wx.ALL,3)
-                if grow:
+                if grow and self.topbox.ClassName == 'wxFlexGridSizer':
                     self.topbox.AddGrowableCol(ixBox,width)
                 ixBox +=1
         self.SetSizer(self.topbox)
@@ -1025,6 +1044,7 @@ class TopBoxPanel(wx.Panel):
         return
 
     def SetOneValue(self,name=None,valeur=None,codeBox=None):
+        ok = False
         if codeBox :
             box = self.GetBox(codeBox)
             box.SetOneValue(name,valeur)
@@ -1033,6 +1053,10 @@ class TopBoxPanel(wx.Panel):
                 ret = box.GetOneValue(name)
                 if ret != 'ko':
                     box.SetOneValue(name,valeur)
+                    ok = True
+            if not ok:
+                mess = str("SetOneValue(%s,%s) impossible"%(str(name),str(valeur)))
+                raise Exception(mess)
         return
 
     def SetOneSet(self,name = '', values=None,codeBox=None):

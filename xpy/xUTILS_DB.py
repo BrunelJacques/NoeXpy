@@ -1033,8 +1033,8 @@ if __name__ == "__main__":
     app = wx.App()
     os.chdir("..")
     db = DB()
-    #db.DropUneTable('stEffectifs')
+    db.DropUneTable('stArticles')
     from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
-    db.CreationUneTable(DB_TABLES,'stEffectifs')
+    #db.CreationUneTable(DB_TABLES,'stEffectifs')
     #db.CreationTables(dicTables=DB_TABLES)
-    db.CreationTousIndex(None,DB_PK,DB_TABLES)
+    #db.CreationTousIndex(None,DB_PK,DB_TABLES)

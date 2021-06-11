@@ -692,9 +692,12 @@ class PNL_pied(wx.Panel):
 class DLG_tableau(xusp.DLG_vide):
     # minimum fonctionnel du dialog l'essentiel est dans les trois pnl
     def __init__(self,parent,dicParams={},dicOlv={},dicPied={}, **kwds):
-        self.db = kwds.pop('db',None) #purge d'éventuels arguments db à ne pas envoyer à super()
+        if not 'title' in kwds.keys():
+            listArbo=os.path.abspath(__file__).split("\\")
+            kwds['title'] = listArbo[-1] + "/" + self.__class__.__name__
+        self.db =       kwds.pop('db',None) #purge d'éventuels arguments db à ne pas envoyer à super()
         autoSizer =     kwds.pop('autoSizer', True)
-        size = kwds.get('size',None)
+        size =          kwds.get('size',None)
         # si size pas dans kwds, on pique celle de l'olv qui serait contrainte
         if not size and dicOlv.get('size',None):
             kwds['size'] = dicOlv.pop('size',None)
@@ -758,8 +761,7 @@ class DLG_tableau(xusp.DLG_vide):
         if 'lstNomsBtns' in self.dicOlv.keys():
             self.pnlOlv.OnModifier(event)
         else:
-            event.Skip()
-            self.OnFermer(event)
+            self.OnFermer(end=wx.OK)
 
     def OnFermer(self, *arg, **kwd):
         end = kwd.pop('end',wx.OK)

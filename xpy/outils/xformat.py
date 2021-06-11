@@ -467,6 +467,20 @@ def FmtDecimal(montant):
     strMtt = strMtt.replace(',',' ')
     return strMtt
 
+def FmtQte(nombre):
+    if isinstance(nombre,str):
+        nombre = nombre.replace(',','.')
+    nombre = str(nombre)
+    try:
+        x=float(nombre)
+    except: return ""
+    if nombre == None or nombre == '' or float(nombre) == 0.0:
+        return ""
+    lstNb = nombre.split('.')
+    if len(lstNb) == 2:
+        nombre = lstNb[0]+'.'+ lstNb[1][:2]
+    return nombre
+
 def FmtInt(montant):
     if isinstance(montant,str):
         montant = montant.replace(',','.')
@@ -584,6 +598,18 @@ def Nz(param):
             valeur = float(param)
         except: valeur = 0.0
     return valeur
+
+def MoyPond(ltXY):
+    # moyenne pondérée d'une liste de couples de valeurs, renvoie la moyennePondérée des Y
+    sumX = 0
+    sumXY = 0
+    moyY = 0.0
+    for x,y in ltXY:
+        sumX += x
+        sumXY += y
+    if sumX != 0:
+        moyY = sumXY / sumX
+    return moyY
 
 def SupprimeAccents(texte,lower=True):
     # met en minuscule sans accents et sans caractères spéciaux

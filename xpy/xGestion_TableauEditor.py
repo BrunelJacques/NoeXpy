@@ -31,6 +31,7 @@ class TrackGeneral(object):
                                     len(donnees),len(codesSup),(len(donnees)-len(codesSup)))
             mess += '\n\n'+'\n\n'.join(lst)
             wx.MessageBox(mess,caption="xGestion_TableauEditor.TrackGeneral")
+            raise(mess)
         # pour chaque donnée affichée, attribut et ctrl setter value
         for ix in range(len(codesColonnes)):
             donnee = donnees[ix]
@@ -153,11 +154,10 @@ class ListView( ObjectListView):
         # On définit le message en cas de tableau vide
         self.SetEmptyListMsg(self.msgIfEmpty)
         self.SetEmptyListMsgFont(wx.FFont(11, wx.FONTFAMILY_DEFAULT))
-        self.SetObjects(self.formerTracks(self.dicOlv))
 
     def MAJ(self, ID=None):
         self.selectionID = ID
-        self.InitObjectListView()
+        self.SetObjects(self.formerTracks(self.dicOlv))
         if self.pnlFooter:
             self.MAJ_footer(None)
         # Rappel de la sélection d'un item
@@ -199,7 +199,7 @@ class ListView( ObjectListView):
         if self.lstDonnees is None and self.getDonnees :
             self.lstDonnees = self.getDonnees(**dicOlv)
         if self.lstDonnees is None:
-            return tracks
+            return []
 
         for ligneDonnees in self.lstDonnees:
             tracks.append(TrackGeneral(ligneDonnees,self.lstCodesColonnes,self.lstNomsColonnes,self.lstSetterValues,
@@ -740,7 +740,10 @@ class DLG_tableau(xusp.DLG_vide):
         self.db = kwds.pop('db',None) #purge d'éventuels arguments db à ne pas envoyer à super()
         autoSizer =     kwds.pop('autoSizer', True)
         size = kwds.get('size',None)
-        # si size pas dans kwds, on pique celle de l'olv qui serait contrainte
+        if not 'style' in kwds.keys():
+            kwds['style'] = wx.DEFAULT_FRAME_STYLE
+
+        # si size pas dans kwds, on pique celle de l'olv qui serait contrainte donc inutile
         if not size and dicOlv.get('size',None):
             kwds['size'] = dicOlv.pop('size',None)
         # recherche d'un dicBandeau
@@ -845,7 +848,6 @@ if __name__ == '__main__':
                                     'help': 'Confirmez le nom de sesssion de l\'utilisateur'},
                 ],
             }}
-
     exempleframe = DLG_tableau(None,dicParams,dicOlv=dicOlv,dicPied=dicPied)
     app.SetTopWindow(exempleframe)
     ret = exempleframe.ShowModal()

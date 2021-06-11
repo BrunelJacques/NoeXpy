@@ -13,7 +13,8 @@ from srcNoelite     import DB_schema
 from xpy.outils     import xformat
 
 LIMITSQL =100
-CHOIX_REPAS = ['PtDej','Midi','Soir','Tous']
+# codes repas [ 1,      2,     3,     4       5]
+CHOIX_REPAS = ['PtDej','Midi','Soir','5eme','Tous']
 
 # Select de données  ------------------------------------------------------------------
 
@@ -40,7 +41,7 @@ def SqlInventaire(dlg,*args,**kwd):
                  'qteConstat', 'qteInv','pxActInv', 'pxMoyInv',
                  'qteMvt','mttMvt',
                  'fournisseur','magasin','rayon','qteArt','qteMini','qteSaison','pxMoyArt','rations']
-    lstChamps += ['qteStock','pxUnit','mttTTC']
+    lstChamps += ['qteStock','pxUn','mttTTC']
     req = """
         SELECT  art.artArt, art.dte, 
                 stInventaires.qteConstat, stInventaires.qteStock, stInventaires.prixActuel, stInventaires.prixMoyen,
@@ -87,9 +88,9 @@ def SqlInventaire(dlg,*args,**kwd):
         if pxActInv <= 0.0: pxActInv = Nz(rec[lstChamps.index('pxMoyInv')]) # prix résultant d'un calcul antérieur dans l'inventaire
         if (qteInv + qteMvt) == 0.0 : qteInv, qteMvt = (0,1)
         qteStock = Nz(rec[lstChamps.index('qteConstat')]) + Nz(qteMvt)
-        pxUnit = ((qteInv * pxActInv) + mttMvt) / (qteInv + qteMvt)
-        mttTTC = qteStock * pxUnit
-        return (qteStock,pxUnit,mttTTC)
+        pxUn = ((qteInv * pxActInv) + mttMvt) / (qteInv + qteMvt)
+        mttTTC = qteStock * pxUn
+        return (qteStock,pxUn,mttTTC)
 
     lstDonnees = []
     lstCodes = dlg.dicOlv['lstCodes'] + dlg.dicOlv['lstCodesSup']
@@ -104,6 +105,7 @@ def SqlInventaire(dlg,*args,**kwd):
 def SqlMouvements(db,dParams=None):
     lstChamps = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
     lstChamps.append('stArticles.qteStock')
+    lstChamps.append('stArticles.prixMoyen')
     sensNum = dParams['sensNum']
 
     # Appelle les mouvements associés à un dic de choix de param et retour d'une liste de dic
@@ -421,52 +423,61 @@ def DelMouvement(db,olv,track):
 def MAJarticle(db,dlg,track):
     # sauve dicArticle bufférisé dans ctrlOlv.bffArticles, pointé par les track.dicArticle)
     if not track.IDarticle or track.IDarticle in ('',0): return
-    if not track.valide: return
+    if hasattr(track,'valide)') and track.valide == False: return
     if track.qte in (None,''): return
 
     IDarticle = track.IDarticle
     dicArticle = track.dicArticle
+    dicMvt = {}
+    newDicMvt = {}
+    newDicArticle = xformat.CopyDic(dicArticle)
 
-    # variation des quantités saisies % antérieur
-    if hasattr(track,'oldQte'):
-        deltaQte = track.qte - track.oldQte
+    if not hasattr(track,'dicMvt'):
+        # pas d'antériorité reprise
+        deltaQte = track.qte
+        prixMoyen = track.prixTTC
     else:
-        track.oldQte = track.qte
-        deltaQte = 0.0
+        dicMvt = track.dicMvt
+        # variation des quantités saisies % antérieur
+        deltaQte = track.qte - track.dicMvt['qte']
+
+        # Nouvelles valeurs en stock
+        oldValSt = dicArticle['qteStock'] * dicArticle['prixMoyen']
+        oldValMvt = dicMvt['qte'] * dicMvt['prixUnit']
+        newValMvt = track.qte * track.prixTTC
+        newValSt = oldValSt + newValMvt - oldValMvt
+        prixMoyen = round((newValSt / (dicArticle['qteStock'])), 2)
+
+    # Maj dicMvt
+    newDicMvt['IDmouvement'] = track.IDmouvement
+    newDicMvt['qte'] = track.qte
+    newDicMvt['prixUnit'] = track.pxUn
+    
+    # Maj dicArticle
     if dlg.sens == 'sorties':
         deltaQte = -deltaQte
-
-    # variation du prix Unitaire saisies % antérieur
-    if not hasattr(track,'prixTTC'): DLG_Mouvements.CalculeLigne(dlg,track)
-    if not hasattr(track,'oldPu'):
-        track.oldPu = track.prixTTC
-
-    # Nouvelles valeurs en stock
-    oldValSt = dicArticle['qteStock'] * dicArticle['prixMoyen']
-    oldValMvt = track.oldQte * track.oldPu
-    newValMvt = track.qte * track.prixTTC
-    newValSt = oldValSt + newValMvt - oldValMvt
-    dicArticle['qteStock'] += deltaQte
-
-    # sauve dicArticle
-    lstDonnees = [('qteStock', dicArticle['qteStock']), ]
+    newDicArticle['qteStock'] += deltaQte
+    newDicArticle['prixMoyen'] = prixMoyen
+    lstDonnees = [('qteStock', newDicArticle['qteStock']),
+                  ('prixMoyen', newDicArticle['prixMoyen']),
+                  ('ordi', dlg.ordi),
+                  ('dateSaisie', dlg.today),]
 
     # prix moyen changé uniquement sur nouvelles entrées achetées avec prix actuel
     if 'achat' in dlg.origine:
-        dicArticle['prixMoyen'] = round((newValSt / (dicArticle['qteStock'])),2)
-        dicArticle['prixActuel'] = track.prixTTC
+        newDicArticle['prixActuel'] = track.prixTTC
         lstDonnees += [
                     ('dernierAchat', xformat.DateFrToSql(dlg.date)),
-                    ('prixMoyen', dicArticle['prixMoyen']),
-                    ('prixActuel', dicArticle['prixActuel']),
-                    ('ordi', dlg.ordi),
-                    ('dateSaisie', dlg.today),]
+                    ('prixActuel', newDicArticle['prixActuel']),]
 
+    # enregistre l' article dans la bd
     ret = db.ReqMAJ("stArticles", lstDonnees, "IDarticle", IDarticle,mess="UTILS_Stocks.MAJarticle Modif: %s"%IDarticle)
     if ret == 'ok':
-        track.oldQte = track.qte
-        track.qteStock = dicArticle['qteStock']
-        track.oldPu = track.prixTTC
+        track.qteStock = newDicArticle['qteStock']
+        track.nbRations = track.qteStock * dicArticle['rations']
+        dicArticle.update(newDicArticle)
+        dicMvt.update(newDicMvt)
+        print(track.qteStock,lstDonnees,IDarticle)
 
 def SauveEffectif(dlg,**kwd):
     # Appelé en retour de saisie, gère l'enregistrement
@@ -609,7 +620,7 @@ def GetEffectifs(dlg,**kwd):
     return lstDonnees
 
 def GetPrixJours(dlg,**kwd):
-    # retourne les effectifs dans la table stEffectifs
+    # retourne les données de prix de journée à afficher dans l'olv
     db = kwd.get('db',dlg.db)
 
     # filtrage sur la date
@@ -617,16 +628,16 @@ def GetPrixJours(dlg,**kwd):
     dtDeb = xformat.DateSqlToDatetime(dlg.periode[0])
     dtFinJ1 = xformat.DecaleDateTime(dtFin,+1) # pour inclure les ptDèj du lendemain
 
-    # filtrage sur les types de repas
+    # filtrage sur les types de repas demandés
     lstRepasRetenus = []
     if dlg.midi:
         lstRepasRetenus.append(2)
     if dlg.soir:
         lstRepasRetenus.append(3)
     if len(lstRepasRetenus) >0:
-        lstRepasRetenus += [0,4,]
+        lstRepasRetenus += [0,5,]# ajout des indifinis sauf si matins seuls
     if dlg.matin:   
-        lstRepasRetenus.append(1)
+        lstRepasRetenus += [1,4]
     if lstRepasRetenus == []: return []
 
     # compose le where sur date et analytique
@@ -686,7 +697,7 @@ def GetPrixJours(dlg,**kwd):
             # on garde le distingo par repas à cause des valeurs unitaires à calculer en final
             for code in lstRepasRetenus:
                 dicLignes[date]['cout'][code] = 0.0
-        dicLignes[date]['cout'][codeRepas] += round(qteConso * prixUnit,2)
+        dicLignes[date]['cout'][codeRepas] += round(-qteConso * prixUnit,2)
 
     # Recherche des effectifs: ['date', 'nbMidiCli', 'nbMidiRep', 'nbSoirCli', 'nbSoirRep']
     where = getWhere('IDdate', dtDeb,dtFin)
@@ -713,37 +724,48 @@ def GetPrixJours(dlg,**kwd):
     # Deuxième passage: Calcul des composants de la ligne regroupée par date
     lstDonnees = []
     for date,dic in dicLignes.items():
+        # calcul du coût global des fournitures
         nbRepas = 0
         nbClients = 0
         cout = 0.0
         for code, value in dic['cout'].items():
             cout += value
-        # choix du diviseur
-        lstCodes = [x for x in dic['cout'].keys()]
-        soir = (1 in lstCodes or 3 in lstCodes) 
-        midi = (2 in lstCodes) 
-        tous = (4 in lstCodes or 0 in lstCodes or None in lstCodes)
-        if dlg.matin and not (soir or midi):
-            soir = True
-        if tous and not (soir or midi):
-            midi = True
-        diviseur = soir + midi
-        if diviseur == 0: diviseur = 1
+        # calcul effectif moyen selon les repas servis, saisis dans les mouvements du jour
+        lstCodes = [x for x in dic['cout'].keys()] # listes des différents repas servis ce jour
+        # test présence des différents repas servis
+        effSoir = (1 in lstCodes or 3 in lstCodes or 4 in lstCodes) # présence de repas du soir
+        effMidi = (2 in lstCodes)
+        repasIndef = (5 in lstCodes or 0 in lstCodes or None in lstCodes) # présence de repas indéterminés
+
+        # finalisation selon les cases cochées lors de la demande
+        if dlg.matin and not (dlg.midi or dlg.soir):
+            effSoir = True # le cout matin seul sera divisé par l'effectif du soir seul
+            effMidi = False
+        if repasIndef:
+            # il y a des repas indéfinis, on ne s'occupe que des cases cochées
+            effMidi, effSoir = False, False
+            if dlg.midi: effMidi = True
+            if dlg.soir or dlg.matin: effSoir = True
+
+        nRepCli = 0
         if date in dicEffectifs.keys():
             dicEff = dicEffectifs[date]
-            if midi:
+            if effMidi:
                 nbRepas += xformat.Nz(dicEff['midiRepas'])
                 nbClients += xformat.Nz(dicEff['midiClients'])
-            if soir:
+                if nbClients > 0: nRepCli +=1
+            if effSoir:
                 nbRepas += xformat.Nz(dicEff['soirRepas'])
                 nbClients += xformat.Nz(dicEff['soirClients'])
-        nbClients = nbClients / diviseur 
+                if nbClients > 0: nRepCli += 1
+        if nRepCli == 0: nRepCli = 1
+        nbClients = nbClients / nRepCli
         prixRepas = cout
         prixClient = cout
         if nbRepas > 0:
-            prixRepas = prixRepas / nbRepas
+            prixRepas = cout / nbRepas
         if nbClients > 0:
-            prixClient = prixClient / nbClients
+            prixClient = cout / nbClients
         ligne = [   date,
                     nbRepas,
                     nbClients,
