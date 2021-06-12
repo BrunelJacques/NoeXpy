@@ -2354,6 +2354,11 @@ class ObjectListView(wx.ListCtrl):
         # Give the world the chance to veto the edit, or to change its characteristics
         rowModel = self.GetObjectAt(rowIndex)
         rowModel.vierge = False
+        # filtrage des evènements redondants
+        if hasattr(rowModel,'isFinishing') and rowModel.isFinishing:
+            return
+
+        rowModel.isFinishing = True
         value = self.cellEditor.GetValue()
         if hasattr(self.cellEditor,'error') and self.cellEditor.error:
             self.error = wx.ID_ABORT
@@ -2367,6 +2372,7 @@ class ObjectListView(wx.ListCtrl):
             value,
             self.cellEditor,
             False)
+
         self.GetEventHandler().ProcessEvent(evt)
         if not evt.IsVetoed() and evt.cellValue is not None:
             self.columns[subItemIndex].SetValue(rowModel, evt.cellValue)
@@ -2379,7 +2385,7 @@ class ObjectListView(wx.ListCtrl):
             rowModel,
             False)
         self.GetEventHandler().ProcessEvent(evt)
-
+        rowModel.isFinishing = False
         self._CleanupCellEdit()
         return
 

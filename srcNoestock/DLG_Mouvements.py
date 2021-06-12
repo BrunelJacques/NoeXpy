@@ -180,7 +180,6 @@ def GetDicParams(dlg):
                 'pathdata':"srcNoelite/Data",
                 'nomfichier':"stparams",
                 'nomgroupe':"entrees",
-                'sensNum' : dlg.sensNum
             }
 
 def GetBoutons(dlg):
@@ -240,7 +239,7 @@ def GetOlvColonnes(dlg):
 
 def GetOlvCodesSup():
     # codes dans les données olv, mais pas dans les colonnes, attributs des tracks non visibles en tableau
-    return ['dicArticle','dicMvt']
+    return ['dicArticle','dicMvt',]
 
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
@@ -292,10 +291,12 @@ def ValideParams(pnl,dParams,mute=False):
     if dParams['analytique'] == None:
         dParams['analytique'] = ''
 
-    if 'retour' in dParams['origine']:
-        if (not dParams['analytique']):
+    if dParams['origine'] in ('retour','camp'):
+        if (dParams['analytique'] == '00'):
             if not mute:
                 wx.MessageBox("Veuillez saisir un camp pour le retour de marchandise!")
+                default = pnl.lanceur.codesAnalytiques[-1]
+                pnl.lanceur.SetAnalytique(default)
                 pnlAnalytique.SetFocus()
             valide = False
     return valide
@@ -351,7 +352,7 @@ def GetMouvements(dlg, dParams):
             continue
         # codes supplémentaires de track non affichés('prixTTC','IDmouvement','dicArticle','dicMvt) dlg.dicOlv['lstCodesSup']
         donnees += [dArticle,
-                    dMvt]
+                    dMvt,]
         # correctif si présence des colonnes spéciales Achat
 
         if 'parAch' in lstCodesCol:
@@ -369,8 +370,6 @@ def CalculeLigne(dlg,track):
         track.pxUn = round(Nz(track.pxAch) / Nz(track.parAch),2)
     try: qte = float(track.qte)
     except: qte = 0.0
-    if not hasattr(track,'oldQte'):
-        track.oldQte = track.qte
     try: pxUn = float(track.pxUn)
     except: pxUn = 0.0
     try: txTva = track.dicArticle['txTva']
@@ -423,7 +422,7 @@ def ValideLigne(dlg,track):
     except:
         track.qte = None
     if not track.qte or track.qte == 0.0:
-        track.messageRefus += "La quantité est à zéro, ligne inutile à supprimer\n"
+        track.messageRefus += "La quantité est à zéro, mouvement inutile à supprimer\n"
 
     # pxUn null
     try:
@@ -505,16 +504,20 @@ class PNL_corps(xgte.PNL_corps):
             editor.Set(nust.CHOIX_REPAS)
             editor.SetStringSelection(track.repas)
 
-        if code == 'qte':
-            if not hasattr(track,'oldQte'):
-                track.oldQte = track.qte
+        try:
+            IDmvt = int(track.IDmouvement)
+        except: IDmvt = 0
+        if code == 'IDarticle' and IDmvt >0:
+            # ligne déjà enregistrée saisie de l'article à gérer comme suppression puis recréation
+            track.oldIDarticle = track.IDarticle
+            track.oldDicArticle = track.dicArticle
 
         if code == 'pxUn':
             if not hasattr(track, 'oldPu'):
                 CalculeLigne(self.parent,track)
                 track.oldPu = track.prixTTC
 
-    def OnEditFinishing(self,code=None,value=None,editor=None):
+    def OnEditFinishing(self,code=None,value=None,event=None):
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
         # flagSkipEdit permet d'occulter les évènements redondants. True durant la durée du traitement
         if self.flagSkipEdit : return
@@ -533,6 +536,21 @@ class PNL_corps(xgte.PNL_corps):
                 track.qteStock = track.dicArticle['qteStock']
                 if self.parent.sens == 'sorties':
                     track.pxUn = track.dicArticle['prixMoyen']
+                # stock négatif
+                if self.lanceur.sens == "sorties" and (Nz(track.qteStock)) <= 0:
+                    ret = wx.MessageBox("Le Stock est vide! Procédure à suivre: Luc 9:13", "Problème stock")
+
+
+        if code == 'qte':
+            # saisie négative en sortie
+            if self.lanceur.sens == "sorties" and (Nz(value)) <= 0:
+                wx.MessageBox("On ne garde que le positif dans les sorties!", "Problème saisie")
+                value = abs(Nz(value))
+
+            # stock négatif
+            if self.lanceur.sens == "sorties" and (Nz(track.qteStock)- Nz(value)) < 0:
+                wx.MessageBox("Le Stock deviendrait négatif sauf entrée à saisir: Luc 9:13", "Problème stock")
+
         if code in ('qte','pxUn','nbAch','pxAch','parAch'):
             # force la tentative d'enregistrement et le calcul même en l'absece de saisie
             track.noSaisie = False
@@ -633,10 +651,10 @@ class DLG(xusp.DLG_vide):
         # charger les valeurs de pnl_params
         self.pnlParams.SetOneSet('fournisseur',values=nust.SqlFournisseurs(self.db),codeBox='param2')
         self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
-        self.valuesAnalytique = ['',] + [nust.MakeChoiceActivite(x) for x in self.lstAnalytiques]
-        self.codesAnalytique = [x[:2] for x in self.valuesAnalytique]
-        self.codesAnalytique[0] = '00'
-        self.pnlParams.SetOneSet('analytique',values=self.valuesAnalytique,codeBox='param2')
+        self.valuesAnalytiques = ['',] + [nust.MakeChoiceActivite(x) for x in self.lstAnalytiques]
+        self.codesAnalytiques = [x[:2] for x in self.valuesAnalytiques]
+        self.codesAnalytiques[0] = '00'
+        self.pnlParams.SetOneSet('analytique',values=self.valuesAnalytiques,codeBox='param2')
         self.SetAnalytique('00')
         self.pnlParams.SetOneValue('origine',valeur=DICORIGINES[self.sens]['values'][0],codeBox='param1')
         self.Bind(wx.EVT_CLOSE,self.OnClose)
@@ -656,7 +674,7 @@ class DLG(xusp.DLG_vide):
     # ------------------- Gestion des actions -----------------------
 
     def InitOlv(self):
-        self.origine = self.pnlParams.GetOneValue('origine','param1')
+        self.origine = self.GetOrigine()
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
         self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
         self.ctrlOlv.InitObjectListView()
@@ -678,13 +696,13 @@ class DLG(xusp.DLG_vide):
     def GetAnalytique(self):
         choixAnalytique = self.pnlParams.GetOneValue('analytique',codeBox='param2')
         if len(choixAnalytique) > 0:
-            ix = self.valuesAnalytique.index(choixAnalytique)
-            code = self.codesAnalytique[ix]
+            ix = self.valuesAnalytiques.index(choixAnalytique)
+            code = self.codesAnalytiques[ix]
         else: code = '00'
         return code
 
     def SetAnalytique(self,code):
-        value = self.valuesAnalytique[self.codesAnalytique.index(code)]
+        value = self.valuesAnalytiques[self.codesAnalytiques.index(code)]
         self.pnlParams.SetOneValue('analytique',valeur=value,codeBox='param2')
         self.analytique = code
 
@@ -717,8 +735,8 @@ class DLG(xusp.DLG_vide):
             setEnable('fournisseur',False)
             self.pnlParams.SetOneValue('fournisseur',"", codeBox='param2')
             setEnable('analytique',True)
-            if len(self.valuesAnalytique) >0:
-                self.pnlParams.SetOneValue('analytique',self.valuesAnalytique[0], codeBox='param2')
+            if len(self.valuesAnalytiques) >0:
+                self.pnlParams.SetOneValue('analytique',self.valuesAnalytiques[0], codeBox='param2')
         elif ('od' in self.origine) or ('repas' in self.origine) :
             self.pnlParams.SetOneValue('fournisseur',"", codeBox='param2')
             setEnable('fournisseur',False)
@@ -763,10 +781,9 @@ class DLG(xusp.DLG_vide):
         self.analytique = self.GetAnalytique()
         choixAnalytique = self.pnlParams.GetOneValue('analytique',codeBox='param2')
         if len(choixAnalytique) > 0:
-            ix = self.valuesAnalytique.index(choixAnalytique)
+            ix = self.valuesAnalytiques.index(choixAnalytique)
             self.analytique = self.lstAnalytiques[ix][0]
         self.GetDonnees()
-        if event: event.Skip()
 
     def OnBtnAnalytique(self,event):
         # Appel du choix d'un camp via un écran complet
@@ -797,7 +814,7 @@ class DLG(xusp.DLG_vide):
                          'analytique':self.analytique,
                          'ht_ttx':self.ht_ttc,
                          'sensNum': self.sensNum,}
-        valide = ValideParams(self.pnlParams,dParams, mute=True)
+        valide = ValideParams(self.pnlParams,dParams, mute=False)
         if not valide: return
         idem = True
         if self.oldParams == None :

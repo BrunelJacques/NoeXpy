@@ -526,6 +526,10 @@ class PNL_ctrl(wx.Panel):
                 self.ctrl.Bind(wx.EVT_CHECKBOX, self.OnCtrlAction)
 
     def OnCtrlAction(self,event):
+        if self.flagSkipEdit: return
+        self.flagSkipEdit = True
+        #print("action %s"%event.EventType, self.name) #pour debug event multiples
+        event.Skip()
         #Recherche de l'action dans l'attribut du ctrl
         if hasattr(event.EventObject,'actionCtrl'):
             actionCtrl = event.EventObject.actionCtrl
@@ -543,7 +547,7 @@ class PNL_ctrl(wx.Panel):
             eval(action)
         else:
             actionCtrl(event)
-        event.Skip()
+        self.flagSkipEdit = False
 
     def OnBtnAction(self,event):
         if hasattr(event.EventObject,'actionBtn'):

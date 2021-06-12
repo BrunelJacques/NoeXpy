@@ -79,7 +79,9 @@ def GetValideLigne(track):
 def EnterAction(event):
     # Touche enter on détourne l'usage pour un équivalent tab sauf en fin de ligne on passe à la suivante
     olv = event.EventObject.Parent
-    row, col = olv.cellBeingEdited
+    try:
+        row, col = olv.cellBeingEdited
+    except: return
     olv.error = None
     olv.FinishCellEdit()
     if olv.error:

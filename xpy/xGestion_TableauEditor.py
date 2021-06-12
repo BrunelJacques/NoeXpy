@@ -521,7 +521,6 @@ class PanelListView(wx.Panel):
         track = self.ctrlOlv.GetObjectAt(row)
         value = self.ctrlOlv.cellEditor.GetValue()
         code = self.ctrlOlv.lstCodesColonnes[col]
-
         # si pas de saisie on passe
         if (value == None) or track.oldValue == value:
             track.noSaisie = True
@@ -531,7 +530,7 @@ class PanelListView(wx.Panel):
 
         # appel des éventuels spécifiques
         if hasattr(self.parent, 'OnEditFinishing'):
-            ret = self.parent.OnEditFinishing(code,value)
+            ret = self.parent.OnEditFinishing(code,value,event)
             if ret: value = ret
         # stockage de la nouvelle saisie
         track.__setattr__(code, value)
@@ -552,15 +551,15 @@ class PanelListView(wx.Panel):
             # appel des éventuels spécifiques
             code = self.ctrlOlv.lstCodesColonnes[col]
             if hasattr(self.parent, 'OnEditFinished'):
-                self.parent.OnEditFinished(code, track, editor=event.editor)
+                ret = self.parent.OnEditFinished(code, track, editor=event.editor)
 
             # lance l'enregistrement de la ligne
             self.ValideLigne(code,track)
             if hasattr(track,'valide') and track.valide:
                 self.SauveLigne(track)
 
-        self.ctrl_footer.MAJ_totaux()
-        self.ctrl_footer.MAJ_affichage()
+            self.ctrl_footer.MAJ_totaux()
+            self.ctrl_footer.MAJ_affichage()
         event.Skip()
 
     def OnEditFunctionKeys(self, event):
