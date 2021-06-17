@@ -778,7 +778,7 @@ class DB():
         for nomChamp, typeChamp, comment in dicTables[nomTable]:
             comment = comment.replace("'", "''")
             # Adaptation à Sqlite
-            if self.isNetwork == False and typeChamp == "LONGBLOB" : typeChamp = "BLOB"
+            if self.typeDB == 'sqlite' and typeChamp == "LONGBLOB" : typeChamp = "BLOB"
             # Adaptation à MySQL :
             if self.isNetwork == True and typeChamp == "INTEGER PRIMARY KEY AUTOINCREMENT" :
                 typeChamp = "INTEGER PRIMARY KEY AUTO_INCREMENT"
@@ -791,7 +791,9 @@ class DB():
                 if nbreCaract > 20000 :
                     typeChamp = "MEDIUMTEXT"
             # ------------------------------
-            req = req + "%s %s COMMENT '%s', " % (nomChamp, typeChamp, comment)
+            req = req + "%s %s , " % (nomChamp, typeChamp)
+            if not self.typeDB == 'sqlite':
+                req = req[:-2] + "COMMENT '%s' , " %(comment,)
         req = req[:-2] + ");"
         retour = self.ExecuterReq(req)
         if retour == "ok":
@@ -812,8 +814,9 @@ class DB():
             if parent:
                 parent.mess += "%s %s, "%(nomTable,ret)
                 parent.SetStatusText(parent.mess[-200:])
-        parent.mess += "- CreaTables Termine"
-        parent.SetStatusText(parent.mess[-200:])
+        if parent:
+            parent.mess += "- CreaTables Termine"
+            parent.SetStatusText(parent.mess[-200:])
 
     def CreationIndex(self,nomIndex=None,dicIndex=None):
         try:
@@ -827,8 +830,11 @@ class DB():
         if self.IsTableExists(nomTable) :
             #print "Creation de l'index : %s" % nomIndex
             if nomIndex[:7] == "PRIMARY":
-                #ALTER TABLE `matthania_data`.`stEffectifs` DROP PRIMARY KEY, ADD PRIMARY KEY (`IDdate`, `IDanalytique`) COMMENT '';
-                req = "ALTER TABLE %s ADD PRIMARY KEY (%s);" % (nomTable, nomChamp)
+                if self.typeDB == 'sqlite':
+                    req = "CREATE UNIQUE INDEX %s ON %s (%s);" % (nomIndex, nomTable, nomChamp)
+                else:
+                    #ALTER TABLE `matthania_data`.`stEffectifs` DROP PRIMARY KEY, ADD PRIMARY KEY (`IDdate`, `IDanalytique`) COMMENT '';
+                    req = "ALTER TABLE %s ADD PRIMARY KEY (%s);" % (nomTable, nomChamp)
             elif nomIndex[:2] == "PK":
                 req = "CREATE UNIQUE INDEX %s ON %s (%s);" % (nomIndex, nomTable, nomChamp)
             else :
@@ -851,8 +857,9 @@ class DB():
                 if parent:
                     parent.mess += "%s %s, " % (nomIndex, ret)
                     parent.SetStatusText(parent.mess)
-        parent.mess += "- Index Terminés"
-        parent.SetStatusText(parent.mess[-200:])
+        if parent:
+            parent.mess += "- Index Terminés"
+            parent.SetStatusText(parent.mess[-200:])
 
     def GetDataBases(self):
         self.cursor.execute("SHOW DATABASES;")
@@ -1033,8 +1040,8 @@ if __name__ == "__main__":
     app = wx.App()
     os.chdir("..")
     db = DB()
-    db.DropUneTable('stArticles')
+    #db.DropUneTable('stArticles')
     from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
     #db.CreationUneTable(DB_TABLES,'stEffectifs')
-    #db.CreationTables(dicTables=DB_TABLES)
-    #db.CreationTousIndex(None,DB_PK,DB_TABLES)
+    #db.CreationTables(None,dicTables=DB_TABLES,tables=['stArticles','stEffectifs','stMouvements','stInventaires','cpta_analytiques'])
+    db.CreationTousIndex(None,DB_PK,DB_TABLES)

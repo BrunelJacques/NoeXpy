@@ -296,7 +296,7 @@ class DLG(xgtr.DLG_tableau):
         self.pnlBandeau.SetBackgroundColour(wx.Colour(220, 250, 220))
 
        # charger les valeurs de pnl_params
-        self.periode = xformat.PeriodeMois(self.today,str)
+        self.periode = xformat.PeriodeMois(self.today)
         self.pnlParams.SetOneValue('periode',self.periode,'param1')
         self.pnlParams.SetOneValue('cuisine',self.cuisine,'param2')
         self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')

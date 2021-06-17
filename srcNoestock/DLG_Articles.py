@@ -151,7 +151,7 @@ class DLG_articles(xgtr.DLG_tableau):
         lg = len(mess)
         IDarticle = dDonnees['IDarticle']
         if mode == 'ajout':
-            lstArticles = nust.SqlOneArticle(IDarticle, flou = False)
+            lstArticles = nust.SqlOneArticle(self.db,IDarticle, flou = False)
             if len(lstArticles) > 0:
                 mess += "\n- L'article '%s' est déjà présent, passez en modification\n" % IDarticle
         for champ in ('IDarticle','magasin'):

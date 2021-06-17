@@ -619,6 +619,13 @@ def SupprimeAccents(texte,lower=True):
     code = ''.join(car for car in code if car not in " %)(.[]',;/\n")
     return code
 
+def ListTuplesToDict(lstTuples):
+    dict = {}
+    if isinstance(lstTuples,list):
+        for cle,don in lstTuples:
+            dict[cle] = don
+    return dict
+
 def ListToDict(lstCles,lstValeurs):
     dict = {}
     if isinstance(lstCles,list):

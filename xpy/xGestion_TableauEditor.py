@@ -13,7 +13,7 @@ import os
 import datetime
 import xpy.xUTILS_SaisieParams as xusp
 from xpy.outils                 import xbandeau,xformat, xboutons
-from xpy.outils.ObjectListView  import  ObjectListView,ObjectListView, ColumnDefn, Footer, CTRL_Outils, OLVEvent,CellEditor
+from xpy.outils.ObjectListView  import  ObjectListView, ColumnDefn, Footer, CTRL_Outils, OLVEvent,CellEditor
 from xpy.outils.xconst          import *
 
 # ----------  Objets  ObjectListView --------------------------------------------------------
@@ -105,6 +105,8 @@ class ListView( ObjectListView):
         self.dictColFooter = kwds.pop('dictColFooter', {})
 
         # Choix des options du 'tronc commun' du menu contextuel
+        self.supprimer = kwds.pop('supprimer', True)
+        self.inserer = kwds.pop('inserer', True)
         self.exportExcel = kwds.pop('exportExcel', True)
         self.exportTexte = kwds.pop('exportTexte', True)
         self.apercuAvantImpression = kwds.pop('apercuAvantImpression', True)
@@ -250,6 +252,23 @@ class ListView( ObjectListView):
         else:
             menuPop = wx.Menu()
 
+        # Item Insérer Ligne
+        if self.inserer:
+            item = wx.MenuItem(menuPop, 21, INSERER_LIGNE)
+            bmp = wx.Bitmap(MAGIQUE_16X16_IMG, wx.BITMAP_TYPE_PNG)
+            item.SetBitmap(bmp)
+            menuPop.Append(item)
+            self.Bind(wx.EVT_MENU, self.OnInsert, id=21)
+
+
+        # Item Supprimer Ligne
+        if self.supprimer:
+            item = wx.MenuItem(menuPop, 22, SUPPPRIMER_LIGNE)
+            bmp = wx.Bitmap(ABANDON_16X16_IMG, wx.BITMAP_TYPE_PNG)
+            item.SetBitmap(bmp)
+            menuPop.Append(item)
+            self.Bind(wx.EVT_MENU, self.OnDelete, id=22)
+
         # Item Tout cocher
         if self.toutCocher:
             item = wx.MenuItem(menuPop, 70, TOUT_COCHER_TXT)
@@ -365,6 +384,18 @@ class ListView( ObjectListView):
         self.parent.ctrlOutils.SupprimerFiltres()
 
     def OnDelete(self,event):
+        if event.Id == 22:
+            # origine menu contextuel
+            nb = len(self.GetSelectedObjects())
+            if nb == 0: mess = "Pas de ligne sélectionnée pour suppression"
+            elif nb == 1 : mess = "Confirmation: suppression de la ligne sélectionnée!"
+            else:  mess = "Confirmation: suppression des %d lignes sélectionnées!"%nb
+            mess += "\n\n<Entrée> ou <esc>"
+            dlg = wx.MessageDialog(self,mess,"Touche Supprime",style=wx.YES_NO,)
+            ret = dlg.ShowModal()
+            dlg.Destroy()
+            if ret != wx.ID_YES:
+                return False
         ix = 0
         for obj in self.GetSelectedObjects():
             # suppression des lignes pour la saisie

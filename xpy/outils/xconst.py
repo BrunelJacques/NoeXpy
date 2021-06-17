@@ -42,7 +42,9 @@ ORIENTATION_VER_32X32_IMG = PREFIXE_DOSSIER_IMG + "Images/32x32/Orientation_vert
 ORIENTATION_HOR_32X32_IMG = PREFIXE_DOSSIER_IMG + "Images/32x32/Orientation_horizontal.png"
 
 MECANISME_16X16_IMG = PREFIXE_DOSSIER_IMG + "Images/16x16/Mecanisme.png"
+MAGIQUE_16X16_IMG = PREFIXE_DOSSIER_IMG + "Images/16x16/Magique.png"
 ACTUALISER_16X16_IMG = PREFIXE_DOSSIER_IMG + "Images/16x16/Actualiser.png"
+ABANDON_16X16_IMG = PREFIXE_DOSSIER_IMG + "Images/16x16/Abandon.png"
 SAUVEGARDER_16X16_IMG = PREFIXE_DOSSIER_IMG + "Images/16x16/Sauvegarder.png"
 APERCU_16X16_IMG = PREFIXE_DOSSIER_IMG + "Images/16x16/Apercu.png"
 TEXTE2_16X16_IMG = PREFIXE_DOSSIER_IMG + "Images/16x16/Texte2.png"
@@ -58,6 +60,8 @@ FILTREOUT_16X16_IMG = PREFIXE_DOSSIER_IMG + "Images/16x16/Filtre_supprimer.png"
 
 #  outils/xtableau.py
 
+SUPPPRIMER_LIGNE = "Supprimer la ligne"
+INSERER_LIGNE = "Insérer une ligne"
 TOUT_COCHER_TXT = "Tout cocher"
 TOUT_DECOCHER_TXT = "Tout décocher"
 INVERSER_COCHES_TXT = "Inverser les coches"

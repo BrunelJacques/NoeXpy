@@ -61,7 +61,6 @@ MATRICE_PARAMS = {
                                           "Les séparateurs ne sont pas obligatoires en saisie.",
                                           "Saisissez début et fin de la période, "),
                     'ctrl': xdates.CTRL_Periode,
-                    'value':xformat.DatetimeToStr(datetime.date.today()),
                     'size':(200,40),},
     ],
 ("param2", "Comptes"): [

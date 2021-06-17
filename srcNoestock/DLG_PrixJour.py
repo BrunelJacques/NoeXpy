@@ -363,6 +363,7 @@ class DLG(xgtr.DLG_tableau):
         # lancement de l'écran des effectifs
         if self.ctrlOlv.GetSelectedObject() != None:
             date = self.ctrlOlv.GetSelectedObject().IDdate
+        else: date = datetime.date.today()
         dlg = DLG_Mouvements.DLG(sens='sorties',date=date)
         dlg.ShowModal()
         if event: event.Skip()

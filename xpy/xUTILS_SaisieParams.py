@@ -606,7 +606,7 @@ class PNL_ctrl(wx.Panel):
                 value = xformat.FmtIntNoSpce(value)
         elif self.genre in ('bool','check'):
             try:
-                value = int(value)
+                test = int(value)
             except Exception:
                 value = 0
         elif self.genre in ('datetime','date'):
@@ -620,7 +620,7 @@ class PNL_ctrl(wx.Panel):
             value = ''
         self.ctrl.SetValue(value)
         test = self.ctrl.GetValue()
-        if str(test) != str(value):
+        if str(test) != str(value) and value != 0:
             raise Exception("SetValue échoué pour '%s' = %s(%s)"%(str(test),self.ctrl.name,str(value)))
 
     # c'est la mise à jour des choices du controle

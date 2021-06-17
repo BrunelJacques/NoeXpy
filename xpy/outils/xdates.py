@@ -1195,7 +1195,7 @@ class CTRL_Periode(wx.Panel):
             self.ctrlSaisieAu.SetFocus()
         else:
             debut,fin = self.GetValue()
-            if len(fin)>0 and fin < debut:
+            if fin < debut:
                 wx.MessageBox("La date fin est antérieure au début!!")
             else:
                 if event.EventType == wx.EVT_KILL_FOCUS.typeId:
@@ -1212,7 +1212,9 @@ class CTRL_Periode(wx.Panel):
 
     def GetValue(self):
         # retourne tuple deux dates en ansi
-        return  (self.ctrlSaisieDu.GetValue(),self.ctrlSaisieAu.GetValue())
+        dteDu = xformat.DateSqlToDatetime(self.ctrlSaisieDu.GetValue())
+        dteAu = xformat.DateSqlToDatetime(self.ctrlSaisieAu.GetValue())
+        return  (dteDu,dteAu)
 
 # -Pour test--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 

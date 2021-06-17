@@ -132,8 +132,8 @@ def SqlMouvements(db,dParams=None):
                 if champ == 'repas' and record[ix]:
                     dMouvement[champ] = CHOIX_REPAS[record[ix]-1]
                 # transposition du sens du nombre pour les quantités
-                elif champ == 'qte' and record[ix]:
-                    dMouvement[champ] = record[ix] * sensNum
+                #elif champ == 'qte' and record[ix]:
+                #    dMouvement[champ] = record[ix] * sensNum
                 else:
                     dMouvement[champ] = record[ix]
             ldMouvements.append(dMouvement)
@@ -164,8 +164,9 @@ def SqlArticles(**kwd):
         if filtreTxt and len(filtreTxt) >0:
                 where += xformat.ComposeWhereFiltre(filtreTxt,lstChamps, lstColonnes = lstColonnes,lien='AND')
 
-    req = """FLUSH TABLES stArticles;"""
-    retour = db.ExecuterReq(req, mess="UTILS_Stocks.SqlArticles Flush")
+    if not db.typeDB == 'sqlite':
+        req = """FLUSH TABLES stArticles;"""
+        retour = db.ExecuterReq(req, mess="UTILS_Stocks.SqlArticles Flush")
 
     req = """   SELECT %s 
                 FROM stArticles 
@@ -204,6 +205,7 @@ def SqlOneArticle(db,value,flou=True):
 def SqlDicArticle(db,olv,IDarticle):
     # retourne les valeurs de l'article sous forme de dict à partir du buffer < fichier starticles
     dicArticle = {}
+    dlg = olv.lanceur
     if len(IDarticle)>0:
         if not hasattr(olv, 'buffArticles'):
             olv.buffArticles = {}
@@ -230,9 +232,14 @@ def SqlDicArticle(db,olv,IDarticle):
                         if not valeur:
                             valeur = lstSetterValues[ix]
                         dicArticle[key] = valeur
-            # bufferisation avec tuple QstPmoy pour calcul des variations lors des entrées
-            #dicArticle['oldQstPmoy'] = (dicArticle['qteStock',dicArticle['prixMoyen']])
+            # bufferisation avec tuple (qteStock,prixMoyen) pour calcul des variations lors des entrées
             olv.buffArticles[IDarticle] =dicArticle
+
+        # vérif taux TVA
+        try:
+            txTva = dicArticle['txTva']
+        except:
+            dicArticle['txTva'] = 0.0
     return dicArticle
 
 def SqlFournisseurs(db=None, **kwd):
@@ -387,14 +394,12 @@ def SauveMouvement(db,dlg,track):
     if dlg.sens == 'sorties' and hasattr(track,'repas'):
         if len(track.repas) > 0:
             repas = CHOIX_REPAS.index(track.repas)+1
-    lstDonnees = [  ('date',dlg.date),
-                    ('fournisseur',dlg.fournisseur),
-                    ('origine',dlg.origine),
-                    ('repas', repas),
+    lstDonnees = [
                     ('IDarticle', track.IDarticle),
+                    ('repas', repas),
                     ('qte', track.qte * dlg.sensNum),
                     ('prixUnit', track.prixTTC),
-                    ('IDanalytique', analytique),
+
                     ('ordi', dlg.ordi),
                     ('dateSaisie', dlg.today),
                     ('modifiable', 1),]
@@ -406,16 +411,28 @@ def SauveMouvement(db,dlg,track):
     if IDmouvement :
         ret = db.ReqMAJ("stMouvements", lstDonnees, "IDmouvement", IDmouvement,mess="UTILS_Stocks.SauveLigne Modif: %d"%IDmouvement)
     else:
+        lstDonnees += [('origine', dlg.origine),
+                       ('date', dlg.date),
+                       ('fournisseur', dlg.fournisseur),
+                       ('IDanalytique', analytique),
+                       ]
         ret = db.ReqInsert("stMouvements",lstDonnees= lstDonnees, mess="UTILS_Stocks.SauveLigne Insert")
-        if ret == 'ok':
-            track.IDmouvement = db.newID
+        if ret == 'ok': IDmouvement = db.newID
+    if ret == 'ok':
+        track.IDmouvement = IDmouvement
+        dicMvt = xformat.ListTuplesToDict(lstDonnees)
+        track.dicMvt.update(dicMvt)
 
 def DelMouvement(db,olv,track):
     # --- Supprime les différents éléments associés à la ligne --
     if not track.IDmouvement in (None,0, ''):
+        if not hasattr(track, 'dicMvt'):
+            dicMvt = {'qte': track.qte, 'prixUnit': track.prixTTC}
         track.qte = 0
         MAJarticle(db, olv.lanceur, track)
         ret = db.ReqDEL("stMouvements", "IDmouvement", track.IDmouvement,affichError=True)
+        if ret == 'ok':
+            del track.dicMvt
     return
 
 def MAJarticle(db,dlg,track):
@@ -428,31 +445,34 @@ def MAJarticle(db,dlg,track):
     def majArticle(dicArt,dicMvt):
 
         # calcul de la correction quantités stock
-        deltaQte = track.qte - dicMvt['qte']
-
+        deltaQte = (track.qte * dlg.sensNum) - dicMvt['qte']
+        oldQteStock = dicArt['qteStock']
+        dicArt['qteStock'] += deltaQte
         # calcul du nouveau prix moyen
         if not dicArt or Nz(dicArt['prixMoyen']) <= 0:
             # non renseigné en double, pas de moyenne nécessaire
             prixMoyen = abs(track.prixTTC)
-        elif dlg.sens == 'sorties' or track.qte <= 0:
-            # les sorties ne modifient pas la valeur unitaire du stock
+        elif dlg.sens == 'sorties' or track.qte < 0:
+            # les sorties ou correctifs ne modifient pas la valeur unitaire du stock
             prixMoyen = dicArt['prixMoyen']
         else:
             # Nouvelle entrée en stock, il faut faire la moyenne geométrique
-            oldValSt = dicArt['qteStock'] * dicArt['prixMoyen']
+            oldValSt = oldQteStock * dicArt['prixMoyen']
             oldValMvt = dicMvt['qte'] * dicMvt['prixUnit']
             newValMvt = track.qte * track.prixTTC
             newValSt = oldValSt + newValMvt - oldValMvt
             if xformat.Nz(dicArt['qteStock']) == 0:
-                raise Exception("diviseur zéro inattendu: %s" % dicArt)
-            prixMoyen = round((newValSt / (dicArt['qteStock'])), 2)
+                prixMoyen = dicArticle['prixMoyen']
+            else:
+                prixMoyen = (newValSt / dicArt['qteStock'] )
+            track.pxMoy = prixMoyen
+            if dlg.ht_ttc == 'HT':
+                track.pxMoy = prixMoyen / (1 + (dicArt['txTva'] / 100))
 
         # Maj dicMvt
         newDicMvt['IDmouvement'] = track.IDmouvement
         newDicMvt['prixUnit'] = track.pxUn
         newDicMvt['IDarticle'] = track.IDarticle
-        deltaQte = dlg.sensNum * deltaQte
-        dicArt['qteStock'] += deltaQte
         dicArt['prixMoyen'] = prixMoyen
         lstDonnees = [('qteStock', dicArt['qteStock']),
                       ('prixMoyen', dicArt['prixMoyen']),
@@ -471,21 +491,26 @@ def MAJarticle(db,dlg,track):
                         mess="UTILS_Stocks.MAJarticle Modif: %s" % dicArt['IDarticle'])
         return ret
 
-    IDarticle = track.IDarticle
+    #IDarticle = track.IDarticle
     newDicMvt = {}
     dicArticle = xformat.CopyDic(track.dicArticle)
-    if not hasattr(track, 'dicMvt'):
-        dicMvt = {'qte': 0, 'prixUnit': 0}
-    else:
+
+    oldIDarticle = track.IDarticle
+    if hasattr(track, 'oldIDarticle'):
+        oldIDarticle = track.oldIDarticle
+
+    if hasattr(track, 'dicMvt'):
         dicMvt = track.dicMvt
+        oldIDarticle = dicMvt['IDarticle']
+    else:
+        dicMvt = {'IDarticle':oldIDarticle,'qte': 0, 'prixUnit': 0}
+
     newQte = track.qte
 
     ret = None
     # différents cas lancés
-    oldIDarticle = None
-    if hasattr(track, 'oldIDarticle'):
-        oldIDarticle = track.oldIDarticle
-    if oldIDarticle and  oldIDarticle != dicArticle['IDarticle']:
+
+    if oldIDarticle != dicArticle['IDarticle']:
         # article changé, gestion de la suppression virutelle de la ligne puis recréation
         # suppression, de l'ancien mouvement et mis sa nouvelle quantité à zéro
         track.qte = 0
@@ -494,7 +519,7 @@ def MAJarticle(db,dlg,track):
         # recréation, sans ancien mouvement mais nouvelle quantité
         track.qte = newQte
         newDicMvt = {}
-        ret = majArticle(dicArticle, {'qte': 0, 'prixUnit': 0})
+        ret = majArticle(dicArticle, {'qte': 0, 'prixUnit': dicArticle['prixMoyen']})
     else:
         # modif du mouvement sur le même article
         ret = majArticle(dicArticle,dicMvt)
@@ -502,10 +527,9 @@ def MAJarticle(db,dlg,track):
     if ret == 'ok':
         if hasattr(track,'dicMvt'):
             track.dicMvt.update(newDicMvt)
+        else: track.dicMvt = newDicMvt
         track.dicArticle.update(dicArticle)
-        track.qteStock = dicArticle['qteStock'] + track.qte * dlg.sensNum
         track.nbRations = track.qteStock * dicArticle['rations']
-
 
 def SauveEffectif(dlg,**kwd):
     # Appelé en retour de saisie, gère l'enregistrement
@@ -713,6 +737,7 @@ def GetPrixJours(dlg,**kwd):
         # on ne retient que les repas à inclure
         if not codeRepas in lstRepasRetenus: continue
         # seuls les pt dej au delà de date fin sont pris
+        date = xformat.DateSqlToDatetime(date)
         if codeRepas == 1:
             # Ptit dèj: reculer d'un jour pour se rattacher au soir
             date = xformat.DecaleDateTime(date,-1)

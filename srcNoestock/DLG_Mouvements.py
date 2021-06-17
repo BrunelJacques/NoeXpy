@@ -292,13 +292,13 @@ def ValideParams(pnl,dParams,mute=False):
         dParams['analytique'] = ''
 
     if dParams['origine'] in ('retour','camp'):
-        if (dParams['analytique'] == '00'):
+        if (dParams['analytique'] == '00') and len(pnl.lanceur.codesAnalytiques)>1:
+            valide = False
             if not mute:
-                wx.MessageBox("Veuillez saisir un camp pour le retour de marchandise!")
+                wx.MessageBox("Veuillez saisir un camp pour affecter les coûts!")
                 default = pnl.lanceur.codesAnalytiques[-1]
                 pnl.lanceur.SetAnalytique(default)
                 pnlAnalytique.SetFocus()
-            valide = False
     return valide
 
 def ConvTva(valeur,taux,modeOut='HT',modeIn='TTC'):
@@ -334,6 +334,9 @@ def GetMouvements(dlg, dParams):
         # alimente les données des colonnes
         for code in lstCodesCol:
             # ajout de la donnée dans le mouvement
+            if code == 'qte' :
+                donnees.append(dMvt['qte']* dlg.sensNum)
+                continue
             if code == 'pxUn' :
                 donnees.append(ConvTva(dMvt['prixUnit'],dArticle['txTva'],dlg.ht_ttc))
                 continue
@@ -362,6 +365,19 @@ def GetMouvements(dlg, dParams):
         lstDonnees.append(donnees)
     return lstDonnees
 
+def PxUnToTTC(ht_ttc,txTva):
+    # retourne le taux de conversion de la saisie vers le ttc
+    if ht_ttc == 'HT':
+        return 1 + (txTva / 100)
+    else: return 1
+
+def PxUnToHT(ht_ttc, txTva):
+    # retourne le taux de conversion de la saisie vers le ht
+    if ht_ttc == 'HT':
+        return 1
+    else:
+        return 1 / (1+ (txTva / 100))
+
 def CalculeLigne(dlg,track):
     if not hasattr(track,'dicArticle'): return
     if dlg.typeAchat:
@@ -370,31 +386,31 @@ def CalculeLigne(dlg,track):
         track.pxUn = round(Nz(track.pxAch) / Nz(track.parAch),2)
     try: qte = float(track.qte)
     except: qte = 0.0
+
     try: pxUn = float(track.pxUn)
     except: pxUn = 0.0
-    try: txTva = track.dicArticle['txTva']
-    except: txTva = 0.0
+
     try: rations = track.dicArticle['rations']
     except: rations = 1
-    if dlg.ht_ttc == 'HT':
-        mttHT = qte * pxUn
-        prixTTC = round(pxUn * (1 + (txTva / 100)),2)
-        mttTTC = qte * prixTTC
-    elif dlg.ht_ttc == 'TTC':
-        mttTTC = qte * pxUn
-        mttHT = round(mttTTC / (1 + (txTva / 100)),2)
-        prixTTC = pxUn
-    else: raise Exception("Taux TVA de l'article non renseigné")
-    track.mttHT = mttHT
-    track.mttTTC = mttTTC
-    track.prixTTC = prixTTC
-    track.qteStock = track.dicArticle['qteStock']
-    if not isinstance(track.IDmouvement,int):
-        track.nbRations = (track.qteStock) * rations
-    else:
+    txTva = track.dicArticle['txTva']
+    track.mttHT = PxUnToHT(dlg.ht_ttc,txTva) * pxUn * qte
+    track.mttTTC = PxUnToTTC(dlg.ht_ttc,txTva) * pxUn * qte
+    track.prixTTC = round(PxUnToTTC(dlg.ht_ttc,txTva) * pxUn,2)
+    track.qteStock = track.dicArticle['qteStock'] + (Nz(track.qte) * dlg.sensNum)
+
+    if isinstance(track.IDmouvement,int):
+        # Le mouvement est déjà comptabilisé dans le stock
         qteStock = dlg.ctrlOlv.buffArticles[track.IDarticle]['qteStock']
-        track.nbRations = (track.qte - track.qte + qteStock) * rations
+        if hasattr(track,'dicMvt') and track.IDarticle != track.dicMvt['IDarticle']:
+            # le mouvement chargé n'est plus celui de l'article
+            track.qteStock = qteStock + track.qte * dlg.sensNum
+        elif hasattr(track,'dicMvt'):
+            # le mouvement est celui de la ligne
+            track.qteStock = qteStock + (track.qte * dlg.sensNum) - track.dicMvt['qte']
+        else: track.qteStock = qteStock
+
     lstCodesColonnes = dlg.ctrlOlv.lstCodesColonnes
+    track.nbRations = (track.qteStock) * rations
     for ix in range(len(lstCodesColonnes)):
         track.donnees[ix] = eval("track.%s"%lstCodesColonnes[ix])
 
@@ -512,7 +528,7 @@ class PNL_corps(xgte.PNL_corps):
             track.oldIDarticle = track.IDarticle
             track.oldDicArticle = track.dicArticle
 
-        if code == 'pxUn':
+        if code == 'zzzzpxUn':
             if not hasattr(track, 'oldPu'):
                 CalculeLigne(self.parent,track)
                 track.oldPu = track.prixTTC
@@ -534,12 +550,11 @@ class PNL_corps(xgte.PNL_corps):
                 track.dicArticle = nust.SqlDicArticle(self.db,self.ctrlOlv,value)
                 track.nbRations = track.dicArticle['rations']
                 track.qteStock = track.dicArticle['qteStock']
-                if self.parent.sens == 'sorties':
-                    track.pxUn = track.dicArticle['prixMoyen']
+                track.pxUn = track.dicArticle['prixMoyen'] / PxUnToTTC(self.lanceur.ht_ttc,track.dicArticle['txTva'])
+                track.pxMoy = track.pxUn
                 # stock négatif
                 if self.lanceur.sens == "sorties" and (Nz(track.qteStock)) <= 0:
                     ret = wx.MessageBox("Le Stock est vide! Procédure à suivre: Luc 9:13", "Problème stock")
-
 
         if code == 'qte':
             # saisie négative en sortie
@@ -619,6 +634,7 @@ class DLG(xusp.DLG_vide):
         if ret == wx.ID_ABORT: self.Destroy()
         self.ht_ttc = self.pnlParams.GetOneValue('ht_ttc',codeBox='param3')
         self.origine = self.GetOrigine()
+        self.OnOrigine(None)
         self.GetDonnees()
         self.Sizer()
 
@@ -654,6 +670,8 @@ class DLG(xusp.DLG_vide):
         self.valuesAnalytiques = ['',] + [nust.MakeChoiceActivite(x) for x in self.lstAnalytiques]
         self.codesAnalytiques = [x[:2] for x in self.valuesAnalytiques]
         self.codesAnalytiques[0] = '00'
+        if len(self.codesAnalytiques) == 1:
+            wx.MessageBox("Aucune activité définie!\n\nLes affectations analytiques ne seront pas possibles par camp")
         self.pnlParams.SetOneSet('analytique',values=self.valuesAnalytiques,codeBox='param2')
         self.SetAnalytique('00')
         self.pnlParams.SetOneValue('origine',valeur=DICORIGINES[self.sens]['values'][0],codeBox='param1')
@@ -691,7 +709,7 @@ class DLG(xusp.DLG_vide):
         ixo = DICORIGINES[self.sens]['codes'].index(code)
         value = DICORIGINES[self.sens]['values'][ixo]
         self.pnlParams.SetOneValue('origine',valeur=value,codeBox='param1')
-        self.origine = value
+        self.origine = code
 
     def GetAnalytique(self):
         choixAnalytique = self.pnlParams.GetOneValue('analytique',codeBox='param2')
