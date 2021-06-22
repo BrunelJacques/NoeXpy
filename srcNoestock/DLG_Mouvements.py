@@ -494,6 +494,7 @@ class PNL_corps(xgte.PNL_corps):
         self.SauveLigne(track)
 
     def OnDelete(self,track):
+        CalculeLigne(self.lanceur,track)
         nust.DelMouvement(self.parent.db,self.ctrlOlv,track)
 
     def OnNewRow(self,row,track):

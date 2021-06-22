@@ -58,35 +58,39 @@ def GetDicOlv(cutend=None):
 def GetOneIDarticle(db,value,**kwds):
     f4 = kwds.pop('f4',False)
     # recherche d'un article unique à partir d'une saisie d'id partielle
-    while True:
-        # tant qu'on récupère pas au moins un enregistrement on réduit value
-        recordset = nust.SqlOneArticle(db,value)
-        if recordset == None or len(recordset) >= 1 or len(value) == 0:
-            break
-        value = value[:-1]
-    # traitement du recordset obtenu
-    if recordset == None:
-        IDarticle = None
-    elif len(recordset) == 1 and not f4:
-        IDarticle = recordset[0][0]
-    else:
-        # article unique non trouvé, on lance la gestion des articles pour un choix filtré sur value
-        cutend = len(DB_schema.DB_TABLES['stArticles'])-4
-        # on affiche seulement trois premières colonnes
-        dicOlv = GetDicOlv(cutend=cutend)
-        dicOlv['withObsoletes'] = False
-        # pas de bouton pour que le dbl click ne lance pas de modif d'article
-        del dicOlv['lstNomsBtns']
-        dlg = DLG_articles(db=db,value=value,dicOlv=dicOlv)
-        ret = dlg.ShowModal()
-        IDarticle = None
-        if ret == wx.OK:
-            selection = dlg.GetSelection()
-            if not selection and len(dlg.ctrlOlv.innerList) >0:
-                selection = dlg.ctrlOlv.innerList[0]
-            if selection:
-                IDarticle = selection.IDarticle
-        dlg.Destroy()
+    IDarticle = None
+    if  len(value)>0:
+        while True:
+            # tant qu'on récupère pas au moins un enregistrement on réduit value
+            recordset = nust.SqlOneArticle(db,value)
+            if recordset == None or len(recordset) >= 1 or len(value) == 0:
+                break
+            value = value[:-1]
+        # traitement du recordset obtenu
+        if recordset == None:
+            IDarticle = None
+        elif len(recordset) == 1 and not f4:
+            IDarticle = recordset[0][0]
+
+    if IDarticle:
+        return IDarticle
+    # article unique non trouvé, on lance la gestion des articles pour un choix filtré sur value
+    cutend = len(DB_schema.DB_TABLES['stArticles'])-4
+    # on affiche seulement trois premières colonnes
+    dicOlv = GetDicOlv(cutend=cutend)
+    dicOlv['withObsoletes'] = False
+    # pas de bouton pour que le dbl click ne lance pas de modif d'article
+    del dicOlv['lstNomsBtns']
+    dlg = DLG_articles(db=db,value=value,dicOlv=dicOlv)
+    ret = dlg.ShowModal()
+    IDarticle = None
+    if ret == wx.OK:
+        selection = dlg.GetSelection()
+        if not selection and len(dlg.ctrlOlv.innerList) >0:
+            selection = dlg.ctrlOlv.innerList[0]
+        if selection:
+            IDarticle = selection.IDarticle
+    dlg.Destroy()
     return IDarticle
 
 # gestion des articles via tableau de recherche ---------------------------------------------------------

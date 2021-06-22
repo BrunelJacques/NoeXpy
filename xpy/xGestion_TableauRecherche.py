@@ -296,7 +296,7 @@ class ListView(ObjectListView):
         if self.toutDecocher or self.toutCocher:
             menuPop.AppendSeparator()
 
-        if self.parent.ctrlOutils:
+        if hasattr(self.parent,'ctrlOutils'):
             # Item filtres
             item = wx.MenuItem(menuPop, 81, UN_FILTRE)
             bmp = wx.Bitmap(FILTRE_16X16_IMG, wx.BITMAP_TYPE_PNG)

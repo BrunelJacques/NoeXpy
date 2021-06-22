@@ -211,7 +211,7 @@ class DB():
         if ret != 0:
             mess = "Time Out %d pings en %.3f secondes "%(nbre,deltasec)
             print(mess)
-            raise NameError("Pas de réponse du serveur %s à la commande PING\n\n%s"%(serveur,mess))
+            print("Pas de réponse du serveur %s à la commande PING\n\n%s"%(serveur,mess))
             ret = 'ko'
         else: ret = 'ok'
         return ret

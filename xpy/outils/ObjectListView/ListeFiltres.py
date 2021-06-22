@@ -20,13 +20,13 @@ MATRICE = {
     ("filtre", "Composition du Filtre"):
         [
             {'name': 'nomCol','genre': 'Combo',  'label': "Colonne à filtrer",'value':'',
-                            'ctrlAction':'parent.OnChoixCol',
+                            'ctrlAction':'OnChoixCol',
                             'help': "Choisissez la colonne sur laquelle portera le filtre",},
             {'name': 'txtChoix', 'genre': 'Combo', 'label': "Action à appliquer",'value':'',
-                            'ctrlAction': 'parent.OnChoixAction,',
+                            'ctrlAction': 'OnChoixAction,',
                             'help': "Choisissez le type de filtre à appliquer dans la colonne", },
             {'name': 'critere', 'genre': 'texte', 'label': "Valeur filtrée",'value':'',
-                            'ctrlAction': 'parent.OnChoixValeur',
+                            'ctrlAction': 'OnChoixValeur',
                             'help': "Valeur proposée à l'action pour le filtre", },
             {'name': 'code', 'label': "code de la Colonne stocké", 'value': '',},
             {'name': 'choix', 'label': "code du choix stocké", 'value': '',},

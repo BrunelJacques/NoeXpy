@@ -191,6 +191,8 @@ class Dialog(wx.Dialog):
         # l'identification n'a de sens qu'en réseau
         if not DB.isNetwork:
             self.echec = True
+            mess = "Identification impossible!\n\nIl faut se connecter à une base de donnée réseau pour s'identifier"
+            wx.MessageBox(mess)
         if not self.echec:
             self.listeUtilisateurs = SqlLstUsers(db=DB)
         self.dictUtilisateur = None
@@ -283,7 +285,7 @@ if __name__ == '__main__':
     app = wx.App(0)
     import os
     os.chdir("..")
-    #ret = AfficheUsers()
+    ret = AfficheUsers(None)
     dlg = Dialog(None)
     app.SetTopWindow(dlg)
     ret = dlg.ShowModal()

@@ -222,7 +222,7 @@ class EffectifUnJour(object):
             dDonnees = xformat.ListToDict(lstCodes, ligne)
         else:
             ligne = None
-            dDonnees = {}
+            dDonnees = {'ID':self.date}
 
         kw = xformat.CopyDic(self.dicOlv)
         # appeler un écran avec les champs en lignes

@@ -157,7 +157,7 @@ class ListView( ObjectListView):
         self.SetEmptyListMsg(self.msgIfEmpty)
         self.SetEmptyListMsgFont(wx.FFont(11, wx.FONTFAMILY_DEFAULT))
 
-    def MAJ(self, ID=None):
+    def MAJ(self, ID=None, ):
         self.selectionID = ID
         self.SetObjects(self.formerTracks(self.dicOlv))
         if self.pnlFooter:
@@ -165,6 +165,18 @@ class ListView( ObjectListView):
         # Rappel de la sélection d'un item
         if self.selectionID != None and len(self.innerList) > 0:
             self.SelectObject(self.innerList[ID], deselectOthers=True, ensureVisible=True)
+
+    def formerTracks(self,dicOlv = None):
+        tracks = list()
+        if self.lstDonnees is None and self.getDonnees :
+            self.lstDonnees = self.getDonnees(**dicOlv)
+        if self.lstDonnees is None:
+            return []
+
+        for ligneDonnees in self.lstDonnees:
+            tracks.append(TrackGeneral(ligneDonnees,self.lstCodesColonnes,self.lstNomsColonnes,self.lstSetterValues,
+                                        codesSup=self.lstCodesSup))
+        return tracks
 
     def OnSetFocus(self,evt):
         if self.flagSkipEdit : return
@@ -195,18 +207,6 @@ class ListView( ObjectListView):
             tracks.append(TrackGeneral( ligneDonnees,self.lstCodesColonnes,self.lstNomsColonnes,self.lstSetterValues,
                                         codesSup=self.lstCodesSup))
         self.AddObjects(tracks)
-
-    def formerTracks(self,dicOlv = None):
-        tracks = list()
-        if self.lstDonnees is None and self.getDonnees :
-            self.lstDonnees = self.getDonnees(**dicOlv)
-        if self.lstDonnees is None:
-            return []
-
-        for ligneDonnees in self.lstDonnees:
-            tracks.append(TrackGeneral(ligneDonnees,self.lstCodesColonnes,self.lstNomsColonnes,self.lstSetterValues,
-                                        codesSup=self.lstCodesSup))
-        return tracks
 
     def GetLstCodesColonnes(self):
         lstCodes = list()

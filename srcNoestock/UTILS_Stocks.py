@@ -31,9 +31,10 @@ def SqlInventaire(dlg,*args,**kwd):
         if dlg.saisonIx == 1:
             mini = 'stArticles.qteMini'
         else: mini = 'stArticles.qteSaison'
-        where += '(stArticlesqteStock > %s) '%mini
-        if len(where) > 0 :
-            where = 'WHERE %s'%where
+        where += '(stArticles.qteStock > %s) '%mini
+    if len(where) > 0 :
+        where = 'WHERE %s'%where
+
 
     whereMvt = "WHERE stMouvements.date <= '%s' OR (stMouvements.date IS NULL) "%dlg.date
 
@@ -160,7 +161,7 @@ def SqlArticles(**kwd):
         if filtreTxt and len(filtreTxt) > 0:
             where = xformat.ComposeWhereFiltre(filtreTxt, lstChamps, lstColonnes=lstColonnes, lien='WHERE')
     else:
-        where = 'WHERE (obsolete IS NULL)'
+        where = 'WHERE ((obsolete IS NULL) OR (obsolete = 0))'
         if filtreTxt and len(filtreTxt) >0:
                 where += xformat.ComposeWhereFiltre(filtreTxt,lstChamps, lstColonnes = lstColonnes,lien='AND')
 
@@ -547,10 +548,11 @@ def SauveEffectif(dlg,**kwd):
     condPK = 'IDanalytique = %s' % dlg.analytique
 
     ixLigne = kwd.pop('ixLigne',None)
-    if ixLigne != None:
+    if hasattr(dlg,'ctrlOlv'):
         donneesOlv = dlg.ctrlOlv.lstDonnees
-        ixLigne = min(ixLigne,len(donneesOlv))
-        IDdate = donneesOlv[ixLigne][0]
+        if ixLigne != None and len(donneesOlv) > 0:
+            ixLigne = min(ixLigne,len(donneesOlv))
+            IDdate = donneesOlv[ixLigne][0]
 
     if mode == 'suppr':
         ret = db.ReqDEL('stEffectifs','IDdate',IDdate,condPK, mess="Suppression Effectifs")
@@ -570,7 +572,7 @@ def SauveEffectif(dlg,**kwd):
 
     if mode == 'ajout':
         ret = db.ReqInsert('stEffectifs',lstDonnees=lstDonnees,mess="Insert Effectifs",affichError=True)
-        if ret == 'ok':
+        if ret == 'ok' and hasattr(dlg,'ctrlOlv'):
             if ixLigne and ixLigne < len(donneesOlv):
                 dlg.ctrlOlv.lstDonnees = donneesOlv[:ixLigne] + [donnees,] + donneesOlv[ixLigne:]
             else: dlg.ctrlOlv.lstDonnees.append(donnees)

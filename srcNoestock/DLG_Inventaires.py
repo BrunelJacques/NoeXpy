@@ -193,7 +193,7 @@ def GetOlvColonnes(dlg):
             ColumnDefn("Rayon", 'left', 100, 'rayon', valueSetter=" ",isSpaceFilling=True),
             ColumnDefn("Qté stock", 'right', 80, 'qteStock',  valueSetter=0.0,isSpaceFilling=False,
                                         stringConverter=xformat.FmtDecimal),
-            ColumnDefn("Prix Unit", 'right', 80, 'pxUnit',  valueSetter=0.0,isSpaceFilling=False,
+            ColumnDefn("Prix Unit", 'right', 80, 'pxUn',  valueSetter=0.0,isSpaceFilling=False,
                                         stringConverter=xformat.FmtDecimal),
             ColumnDefn("Mtt TTC", 'right', 100, 'mttTTC',  valueSetter=0.0,isSpaceFilling=False,
                             isEditable=False, stringConverter=xformat.FmtDecimal, ),
@@ -451,6 +451,7 @@ class DLG(xgte.DLG_tableau):
         #self.pnlPied = PNL_pied(self, dicPied)
         self.ctrlOlv = self.pnlOlv.ctrlOlv
         self.Bind(wx.EVT_CLOSE,self.OnClose)
+        self.InitOlv()
         """
         self.flagSkipEdit = False
         self.oldRow = None
@@ -462,7 +463,6 @@ class DLG(xgte.DLG_tableau):
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
         self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
         self.ctrlOlv.InitObjectListView()
-        self.Refresh()
 
     def OnDate(self,event):
         saisie = self.pnlParams.GetOneValue('date',codeBox='param1')
@@ -526,13 +526,12 @@ class DLG(xgte.DLG_tableau):
         # l'appel des données peut avoir retourné d'autres paramètres, il faut mettre à jour l'écran
         if len(lstDonnees) > 0:
             # set date du lot importé
-            self.pnlParams.SetOneValue('date',xformat.FmtDate(dParams['date']),'param1')
+            self.pnlParams.SetOneValue('date',xformat.DateSqlToDatetime(dParams['date']),'param1')
             self.date = dParams['date']
 
         # alimente la grille, puis création de modelObejects pr init
         self.ctrlOlv.lstDonnees = lstDonnees
-        self.InitOlv()
-
+        self.ctrlOlv.MAJ()
         # les écritures reprises sont censées être valides, mais il faut les compléter
         for track in self.ctrlOlv.modelObjects[:-1]:
             CalculeLigne(self,track)
