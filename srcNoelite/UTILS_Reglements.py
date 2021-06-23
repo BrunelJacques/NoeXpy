@@ -587,11 +587,12 @@ def SauveLigne(db,dlg,track):
         return False
 
     # gestion de l'ID depot si withDepot
-    if not hasattr(dlg,"IDdepot") and dlg.withDepot:
-        dlg.IDdepot = SetDepot(dlg,db)
-    elif dlg.withDepot:
-        dlg.IDdepot = dlg.pnlParams.ctrlRef.GetValue()
-    MajDepot(dlg,db,dlg.IDdepot)
+    if dlg.withDepot:
+        if not hasattr(dlg,"IDdepot"):
+            dlg.IDdepot = SetDepot(dlg,db)
+        else:
+            dlg.IDdepot = dlg.pnlParams.ctrlRef.GetValue()
+        MajDepot(dlg,db,dlg.IDdepot)
 
     # annulations des prestations associées antérieurement et de leurs ventilations
     ixnat = dlg.ctrlOlv.lstCodesColonnes.index('nature')

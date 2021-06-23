@@ -10,13 +10,14 @@
 #-----------------------------------------------------------
 
 import wx
-import wx.grid as gridlib
-import xpy.xGestion_TableauEditor       as xgte
-import xpy.xUTILS_DB                   as xdb
-import wx.lib.agw.hyperlink as Hyperlink
 import datetime
 import decimal
 import sys
+import wx.grid                      as gridlib
+import xpy.xGestion_TableauEditor   as xgte
+import xpy.xUTILS_DB                as xdb
+import wx.lib.agw.hyperlink         as Hyperlink
+from xpy.outils                     import xformat
 
 SYMBOLE = "€"
 
@@ -53,9 +54,6 @@ def DateComplete(dateDD):
     dateComplete = listeJours[dateDD.weekday()] + " " + str(dateDD.day) + " " + listeMois[dateDD.month-1] + " " + str(dateDD.year)
     return dateComplete
 
-def DateEngEnDateDD(dateEng):
-    return datetime.date(int(dateEng[:4]), int(dateEng[5:7]), int(dateEng[8:10]))
-        
 def PeriodeComplete(mois, annee):
     listeMois = (("Janvier"), ("Février"), ("Mars"), ("Avril"), ("Mai"), ("Juin"), ("Juillet"), ("Août"), ("Septembre"), ("Octobre"), ("Novembre"), ("Décembre"))
     periodeComplete = u"%s %d" % (listeMois[mois-1], annee)
@@ -645,7 +643,7 @@ class CTRL_Ventilation(gridlib.Grid):
                     or (montant < 0.0 and montantVentilation > montant) \
                     or IDprestation in self.dictVentilation.keys() :
                 # On garde cette prestation pour pouvoir affecter le règlement
-                date = DateEngEnDateDD(date)
+                date = xformat.DateSqlToDatetime(date)
                 if IDprestation in self.dictVentilation.keys() :
                     montantVentilation = montantVentilation - self.dictVentilation[IDprestation] 
 

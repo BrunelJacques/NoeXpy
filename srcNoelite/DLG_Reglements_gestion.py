@@ -368,7 +368,7 @@ class PNL_corpsReglements(xgte.PNL_corps):
             self.OnEditFinishing('IDfamille',IDfamille)
             self.ctrlOlv.GetObjectAt(row).IDfamille = IDfamille
 
-    def OnDelete(self,noligne,track,parent=None):
+    def OnDelete(self,track,parent=None):
         nur.DeleteLigne(self.parent.db,track)
         # suppression du dépôt vidé
         if len(self.ctrlOlv.modelObjects) <= 2:
@@ -544,6 +544,7 @@ class Dialog(wx.Dialog):
 
     def OnRaz(self,event):
         # effacement des lignes sur l'écran
+        self.pnlParams.ctrlSsDepot.Enable(True)
         self.pnlParams.ctrlRef.SetValue('')
         self.ctrlOlv.lstDonnees = []
         self.ctrlOlv.MAJ()
@@ -564,12 +565,20 @@ class Dialog(wx.Dialog):
             nbcol = len(self.ctrlOlv.lstCodesColonnes)
             ixpc = nbcol + self.ctrlOlv.lstCodesSup.index('prestcpta')
             ixrc = nbcol + self.ctrlOlv.lstCodesSup.index('reglcompta')
+            ixmod = self.ctrlOlv.lstCodesColonnes.index('mode')
             lstEnCompta = [1 for rec in  lstDonnees if (rec[ixpc] or rec[ixrc])]
+            lstDifferes = [1 for rec in  lstDonnees if not('diff' in rec[ixmod])]
             # présence de lignes déjà transférées compta
             if len(lstEnCompta) >0:
                 self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
                 self.pnlPied.SetItemsInfos("NON MODIFIABLE: règlement ou prestation transféré en compta ",
                                            wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
+            # présence de lignes déjà transférées compta
+            elif len(lstDifferes) >0:
+                self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
+                self.pnlPied.SetItemsInfos("NON MODIFIABLE dans Noelite: présence de chèques différés dans un dépot saisi dans Noethys",
+                                           wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
+
 
             if len(lstDonnees)>0:
                 # marque dépot non différé car déjà déposé
@@ -589,6 +598,7 @@ class Dialog(wx.Dialog):
                 for item in self.ctrlOlv.modelObjects[:-1]:
                     item.valide = True
                 self.ctrlOlv._FormatAllRows()
+                self.ctrlOlv.MAJ()
                 # stockage pour test de saisie
                 self.depotOrigine = self.ctrlOlv.innerList
                 self.IDdepot = IDdepot

@@ -253,7 +253,7 @@ class ListView( ObjectListView):
             menuPop = wx.Menu()
 
         # Item Insérer Ligne
-        if self.inserer:
+        if self.inserer  and self.cellEditMode != 0:
             item = wx.MenuItem(menuPop, 21, INSERER_LIGNE)
             bmp = wx.Bitmap(MAGIQUE_16X16_IMG, wx.BITMAP_TYPE_PNG)
             item.SetBitmap(bmp)
@@ -262,7 +262,7 @@ class ListView( ObjectListView):
 
 
         # Item Supprimer Ligne
-        if self.supprimer:
+        if self.supprimer and self.cellEditMode != 0:
             item = wx.MenuItem(menuPop, 22, SUPPPRIMER_LIGNE)
             bmp = wx.Bitmap(ABANDON_16X16_IMG, wx.BITMAP_TYPE_PNG)
             item.SetBitmap(bmp)
