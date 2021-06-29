@@ -1,3 +1,6 @@
+Version 1.1.2.3 (23/06/2021)
+- Améliorations saisie stock
+
 Version 1.1.2.2 (09/06/2021)
 - Version mise en service sans les synchro
 

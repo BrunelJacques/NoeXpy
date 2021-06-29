@@ -10,18 +10,6 @@
 
 # description des tables de l'application
 DB_TABLES = {
-    "v_clients":[
-                ("IDclient", "INTEGER PRIMARY KEY AUTOINCREMENT", "ID de la famille"),
-                ("libelle", "VARCHAR(40)", "libellé de la famille pour les adresses"),
-                ("rue", "VARCHAR(255)", "Adresse de la personne"),
-                ("cp", "VARCHAR(10)", "Code postal de la personne"),
-                ("ville", "VARCHAR(100)", "Ville de la personne"),
-                ("fixe", "VARCHAR(50)", "Tel domicile de la personne"),
-                ("mobile", "VARCHAR(50)", "Tel mobile perso de la personne"),
-                ("mail", "VARCHAR(50)", "Email perso de la personne"),
-                ("refus_pub", "INTEGER", "Refus de publicités papier"),
-                ("refus_mel", "INTEGER", "Refus de publicités demat"),
-                ], #Coordonnées clients, remplacé par une vue dans Noethys
 
     "modes_reglements":[
                 ("IDmode", "INTEGER PRIMARY KEY AUTOINCREMENT", "ID mode de règlement"),
