@@ -72,7 +72,8 @@ def GetValideLigne(track):
         if not hasattr(track,'valide'):
             track.valide = True
         if not track.valide:
-            wx.MessageBox(track.messageRefus,style=wx.ICON_ERROR)
+            if track.noSaisie == False:
+                wx.MessageBox(track.messageRefus,style=wx.ICON_ERROR)
             descend = 0
     return descend
 
@@ -532,7 +533,7 @@ class FloatEditor(BaseCellTextEditor):
     def SetValue(self, value):
         "Put a new value into the editor"
         if isinstance(value, (float,int)):
-            value = repr(value)
+            value = repr(round(value,4))
         wx.TextCtrl.SetValue(self, value)
 
 class DateTimeEditor(BaseCellTextEditor):

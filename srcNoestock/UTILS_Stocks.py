@@ -301,6 +301,38 @@ def SqlAnalytiques(db, axe="%%"):
         lstDonnees = [list(x) for x in recordset]
     return lstDonnees
 
+def SqlRayons(db):
+    # appel des items utilisés
+    req = """   
+            SELECT rayon
+            FROM stArticles
+            GROUP BY rayon
+            ORDER BY rayon;
+            """
+    lstDonnees = []
+    retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlMagasins')
+    if retour == "ok":
+        recordset = db.ResultatReq()
+        lstDonnees = [x[0].capitalize() for x in recordset]
+    lstDonnees = ["",] + lstDonnees
+    return lstDonnees
+
+def SqlMagasins(db):
+    # appel des items utilisés
+    req = """   
+            SELECT magasin
+            FROM stArticles
+            GROUP BY magasin
+            ORDER BY magasin;
+            """
+    lstDonnees = []
+    retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlMagasins')
+    if retour == "ok":
+        recordset = db.ResultatReq()
+        lstDonnees = [x[0].capitalize() for x in recordset]
+    lstDonnees = ["",] + lstDonnees
+    return lstDonnees
+
 # Appel des mouvements antérieurs
 def SqlMvtsAnte(**kwd):
     # ajoute les données à la matrice pour la recherche d'un anterieur

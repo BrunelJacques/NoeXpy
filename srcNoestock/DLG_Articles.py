@@ -20,7 +20,32 @@ INTRO2 = "les mots clés du champ en bas permettent de filtrer d'autres lignes e
 TITRE = "Gestion des articles en stock"
 INTRO = "La saisie des articles permet aussi d'ajuster les quantités en stock et les prix de référence"
 
-def GetDicOlv(cutend=None):
+
+def GetOlvColonnes(table):
+    lstNomsColonnes = xformat.GetLstChamps(table)
+    lstLargeurColonnes = [200, 60, 128,-1, 60, 80, 80, -1, -1, -1, -1, -1, 90]
+    lstColonnes = xformat.GetLstColonnes(table=table,lstLargeur=lstLargeurColonnes,lstNoms=lstNomsColonnes)
+    return lstColonnes, lstLargeurColonnes
+
+def GetMatriceSaisie(db,lstColonnes):
+    keyBox = ('ligne', "")
+    matrice = xformat.DicOlvToMatrice(keyBox, {'lstColonnes': lstColonnes})
+    for ligne in matrice[keyBox]:
+        if ligne['name'] == 'magasin':
+            ligne['genre'] = 'Combo'
+            ligne['values'] = nust.SqlMagasins(db)
+            ligne['value'] = ""
+        if ligne['name'] == 'rayon':
+            ligne['genre'] = 'Combo'
+            ligne['values'] = nust.SqlRayons(db)
+            ligne['value'] = ""
+        if ligne['name'] == 'fournisseur':
+            ligne['genre'] = 'Combo'
+            ligne['values'] = nust.SqlFournisseurs(db)
+            ligne['value'] = ""
+    return matrice
+
+def GetDicOlv(db,cutend=None):
     # le cutend est utilisé pour limiter les colonnes affichées en recherche F4
     dicBandeau = {'titre':TITRE2,
                   'texte':INTRO2,
@@ -31,14 +56,11 @@ def GetDicOlv(cutend=None):
         nbcol -= cutend
     table = DB_schema.DB_TABLES['stArticles'][:nbcol]
     lstChamps = xformat.GetLstChamps(table)
-    #lstTypes = xformat.GetLstTypes(table)
-    lstNomsColonnes = xformat.GetLstChamps(table)
-    lstLargeurColonnes = [200, 60, 128,-1, 60, 70, -1, -1, -1, -1, -1, -1, 90][:nbcol]
-    lstColonnes = xformat.GetLstColonnes(table=table,lstLargeur=lstLargeurColonnes,lstNoms=lstNomsColonnes)
-    matriceSaisie =  xformat.DicOlvToMatrice(('ligne',""),{'lstColonnes':lstColonnes})
+    lstColonnes, lstLargeurColonnes = GetOlvColonnes(table)
+    matriceSaisie =  GetMatriceSaisie(db,lstColonnes)
     # Personnalisation
     lgSize = 150
-    for lg in lstLargeurColonnes: lgSize += max(lg,50)
+    for lg in lstLargeurColonnes[:nbcol]: lgSize += max(lg,50)
     sizeSaisie = (500, max(len(lstColonnes) * 50, 400))
     return   {
                 'lstColonnes': lstColonnes,
@@ -77,7 +99,7 @@ def GetOneIDarticle(db,value,**kwds):
     # article unique non trouvé, on lance la gestion des articles pour un choix filtré sur value
     cutend = len(DB_schema.DB_TABLES['stArticles'])-4
     # on affiche seulement trois premières colonnes
-    dicOlv = GetDicOlv(cutend=cutend)
+    dicOlv = GetDicOlv(db,cutend=cutend)
     dicOlv['withObsoletes'] = False
     # pas de bouton pour que le dbl click ne lance pas de modif d'article
     del dicOlv['lstNomsBtns']
@@ -96,21 +118,22 @@ def GetOneIDarticle(db,value,**kwds):
 # gestion des articles via tableau de recherche ---------------------------------------------------------
 class DLG_articles(xgtr.DLG_tableau):
     def __init__(self,**kwds):
-        value = kwds.pop('value',None)
-        dicOlv = kwds.pop('dicOlv',None)
-        if not dicOlv:
-            dicOlv = GetDicOlv(cutend=2)
-            dicOlv['dicBandeau']['titre'] = TITRE
-            dicOlv['dicBandeau']['texte'] = INTRO
-
-        kwds['dicOlv'] = dicOlv
         db = kwds.pop('db',None)
         if db == None:
             import xpy.xUTILS_DB as xdb
             db = xdb.DB()
+        value = kwds.pop('value',None)
+        dicOlv = kwds.pop('dicOlv',None)
+        if not dicOlv:
+            dicOlv = GetDicOlv(db,cutend=2)
+            dicOlv['dicBandeau']['titre'] = TITRE
+            dicOlv['dicBandeau']['texte'] = INTRO
+
+        kwds['dicOlv'] = dicOlv
         kwds['db'] = db
 
         super().__init__(None, **kwds)
+        self.pnlOlv.estAdmin = True # force la gestion possible
         self.db = db
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()

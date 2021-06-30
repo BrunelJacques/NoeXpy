@@ -208,7 +208,6 @@ def GetOlvCodesSup():
     # codes dans les données olv, mais pas dans les colonnes, attributs des tracks non visibles en tableau
     return ['qteConstat','qteMvt','mttMvt','qteInv', 'pxMoyInv','pxActInv','qteArt','qteMini','qteSaison','pxMoyArt']
 
-
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
     return {
@@ -231,7 +230,7 @@ def GetDlgOptions(dlg):
     return {
         'style': wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         'minSize': (700, 450),
-        'size': (850, 650),
+        'size': (1150, 800),
         'autoSizer': False,
         }
 
@@ -547,25 +546,9 @@ class DLG(xgte.DLG_tableau):
         if self.qteZero: zer = 'Avec'
         return "Inventaire STOCKS du %s, Qtés à zéro: %s, Qtés au dessus du minimum: %s"%(date, zer, mini)
 
+
     def OnImprimer(self,event):
-        # test de présence d'écritures non valides
-        lstNonValides = [x for x in self.ctrlOlv.modelObjects if not x.valide]
-        if len(lstNonValides) > 0:
-            ret = wx.MessageBox('Présence de lignes non valides!\n\nCes lignes seront détruites avant impression',
-                                'Confirmez pour continuer', style=wx.OK | wx.CANCEL)
-            if ret != wx.OK: return
-        # test de présence d'un filtre
-        if len(self.ctrlOlv.innerList) != len(self.ctrlOlv.modelObjects):
-            ret = wx.MessageBox('Filtre actif!\n\nDes lignes sont filtrées, seules les visibles seront rapportées',
-                                'Confirmez pour continuer',style=wx.OK|wx.CANCEL)
-            if ret != wx.OK: return
-        # purge des lignes non valides
-        self.ctrlOlv.modelObjects=[x for x in self.ctrlOlv.modelObjects if hasattr(x,'valide') and x.valide]
-        # réaffichage
-        self.ctrlOlv.RepopulateList()
-        # impression
         self.ctrlOlv.Apercu(None)
-        self.isImpress = True
 
     def OnClose(self,event):
         #wx.MessageBox("Traitement de sortie")

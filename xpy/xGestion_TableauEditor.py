@@ -176,6 +176,13 @@ class ListView( ObjectListView):
         for ligneDonnees in self.lstDonnees:
             tracks.append(TrackGeneral(ligneDonnees,self.lstCodesColonnes,self.lstNomsColonnes,self.lstSetterValues,
                                         codesSup=self.lstCodesSup))
+        if hasattr(self.parent,"ValideLigne"):
+            for track in tracks:
+                self.parent.ValideLigne(self,track)
+        for track in tracks:
+            # les lignes remontées sont sensées être valides
+            track.valide = True
+        self._FormatAllRows()
         return tracks
 
     def OnSetFocus(self,evt):
@@ -355,16 +362,23 @@ class ListView( ObjectListView):
                or self.toutCocher or self.toutDecocher or self.menuPersonnel
 
     def Apercu(self, event):
+        if hasattr(self.lanceur,"ValideImpress"):
+            if not self.lanceur.ValideImpress():
+                return
+                print("Impress non valide")
         import xpy.outils.ObjectListView.Printer as printer
         prt = printer.ObjectListViewPrinter(self, titre=self.GetTitreImpression(),
                                                         orientation=self.GetOrientationImpression())
         prt.Preview()
 
     def Imprimer(self, event):
+        if hasattr(self.lanceur,"ValideImpress"):
+            if not self.lanceur.ValideImpress():
+                return
         import xpy.outils.ObjectListView.Printer as printer
         prt = printer.ObjectListViewPrinter(self, titre=self.GetTitreImpression(),
-                                                        orientation=self.GetOrientationImpression())
-        prt.Print()
+                                                    orientation=self.GetOrientationImpression())
+        prt.Preview()
 
     def ExportTexte(self, event):
         import xpy.outils.xexport

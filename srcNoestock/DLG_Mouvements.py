@@ -260,7 +260,7 @@ def GetDlgOptions(dlg):
     return {
         'style': wx.DEFAULT_FRAME_STYLE,
         'minSize': (700, 450),
-        'size': (950, 800),
+        'size': (1150, 800),
         }
 
     #----------------------- Parties de l'écrans -----------------------------------------
@@ -529,10 +529,8 @@ class PNL_corps(xgte.PNL_corps):
             track.oldIDarticle = track.IDarticle
             track.oldDicArticle = track.dicArticle
 
-        if code == 'zzzzpxUn':
-            if not hasattr(track, 'oldPu'):
-                CalculeLigne(self.parent,track)
-                track.oldPu = track.prixTTC
+        #if code == 'pxUn':
+
 
     def OnEditFinishing(self,code=None,value=None,event=None):
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
@@ -877,11 +875,6 @@ class DLG(xusp.DLG_vide):
 
         # maj écritures reprises sont censées être valides, mais il faut les compléter
         self.ctrlOlv.MAJ()
-        for track in self.ctrlOlv.modelObjects:
-            CalculeLigne(self,track)
-            track.valide = True
-        self.ctrlOlv._FormatAllRows()
-        self.ctrlOlv.MAJ()
 
     def GetTitreImpression(self):
         tiers = ''
@@ -890,25 +883,26 @@ class DLG(xusp.DLG_vide):
         date = xformat.DateSqlToFr(self.date)
         return "Mouvements STOCKS %s du %s, %s%s"%(self.sens, date, self.origine,tiers)
 
-    def OnImprimer(self,event):
+    def ValideImpress(self):
         # test de présence d'écritures non valides
         lstNonValides = [x for x in self.ctrlOlv.modelObjects if not x.valide and x.IDmouvement]
         if len(lstNonValides) > 0:
             ret = wx.MessageBox('Présence de lignes non valides!\n\nCes lignes seront détruites avant impression',
                                 'Confirmez pour continuer', style=wx.OK | wx.CANCEL)
-            if ret != wx.OK: return
+            if ret != wx.OK: return False
         # test de présence d'un filtre
         if len(self.ctrlOlv.innerList) != len(self.ctrlOlv.modelObjects):
             ret = wx.MessageBox('Filtre actif!\n\nDes lignes sont filtrées, seules les visibles seront rapportées',
                                 'Confirmez pour continuer',style=wx.OK|wx.CANCEL)
-            if ret != wx.OK: return
+            if ret != wx.OK: return False
         # purge des lignes non valides
         self.ctrlOlv.modelObjects=[x for x in self.ctrlOlv.modelObjects if hasattr(x,'valide') and x.valide]
         # réaffichage
         self.ctrlOlv.RepopulateList()
-        # impression
+        return True
+
+    def OnImprimer(self,event):
         self.ctrlOlv.Apercu(None)
-        self.isImpress = True
 
     def OnClose(self,event):
         #wx.MessageBox("Traitement de sortie")

@@ -394,19 +394,9 @@ class DLG(xgtr.DLG_tableau):
         kwd['cuisine'] = self.cuisine
         return DLG_Effectifs.ValideSaisie(dlgSaisie,**kwd)
 
+
     def OnImprimer(self,event):
-        # test de présence d'un filtre
-        if len(self.ctrlOlv.innerList) != len(self.ctrlOlv.modelObjects):
-            ret = wx.MessageBox('Filtre actif!\n\nDes lignes sont filtrées, seules les visibles seront rapportées',
-                                'Confirmez pour continuer',style=wx.OK|wx.CANCEL)
-            if ret != wx.OK: return
-        # purge des lignes non valides
-        self.ctrlOlv.modelObjects=[x for x in self.ctrlOlv.modelObjects]
-        # réaffichage
-        self.ctrlOlv.RepopulateList()
-        # impression
         self.ctrlOlv.Apercu(None)
-        self.isImpress = True
 
 #------------------------ Lanceur de test  -------------------------------------------
 

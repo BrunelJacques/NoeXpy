@@ -414,8 +414,9 @@ class PNL_ctrl(wx.Panel):
         else:
             self.txt = wx.StaticText(self, wx.ID_ANY, label)
         self.txt.SetMinSize((lg, 25))
-        maxSize = kwds.pop('ctrlMaxSize',(300,50))
-        self.SetMaxSize(maxSize)
+        maxSize = kwds.pop('ctrlMaxSize',None)
+        if maxSize:
+            self.SetMaxSize(maxSize)
 
         # seul le PropertyGrid gère le multichoices, pas le comboBox
         if genre == 'multichoice': genre = 'combo'
@@ -457,7 +458,7 @@ class PNL_ctrl(wx.Panel):
         elif not lgenre:
             self.ctrl = (10,10)
         else:
-            style = wx.TE_PROCESS_ENTER | wx.TE_CENTRE
+            style = wx.TE_PROCESS_ENTER | wx.TE_LEFT
             if lname:
                 if 'pass' in lgenre:
                     lgenre = 'str'
@@ -486,12 +487,6 @@ class PNL_ctrl(wx.Panel):
         elif self.avecBouton:
             self.btn = xboutons.Bouton(self,label=btnLabel, image=btnImage,help=btnHelp)
         self.PnlSizer()
-        """
-        except Exception as err:
-            mess = "Echec sur PNL_ctrl de:\ngenre: %s\nname: %s\nvalue: %s (%s)\n\n"%(lgenre, name, value, type(value))
-            mess += "Le retour d'erreur est : \n%s\n\nSur commande : %s"%(err, commande)
-            wx.MessageBox( mess, 'PNL_ctrl.__init__() : Paramètre de ligne indigeste !', wx.OK | wx.ICON_STOP
-            )"""
 
     def Proprietes(self,ligne):
         if not ligne['genre']:
@@ -571,7 +566,7 @@ class PNL_ctrl(wx.Panel):
     def PnlSizer(self):
         topbox = wx.BoxSizer(wx.HORIZONTAL)
         topbox.Add(self.txt,0, wx.LEFT|wx.TOP|wx.ALIGN_CENTER, 5)
-        topbox.Add(self.ctrl, 1, wx.ALL|wx.ALIGN_CENTER_VERTICAL , 4)
+        topbox.Add(self.ctrl, 1, wx.ALL|wx.EXPAND , 4)
         if self.avecBouton:
             topbox.Add(self.btn, 0, wx.ALL|wx.EXPAND, 4)
         self.SetSizer(topbox)
@@ -826,7 +821,7 @@ class BoxPanel(wx.Panel):
                                 'value', 'labels', 'values','enable'):
                         if not cle in ligne:
                             ligne[cle]=None
-                    self.ssbox.Add(panel,1,wx.EXPAND, wx.ALL,0)
+                    self.ssbox.Add(panel,1, wx.ALL,0)
                     panel.Proprietes(ligne)
                     self.lstPanels.append(panel)
         self.SetSizer(self.ssbox)
@@ -971,7 +966,7 @@ class TopBoxPanel(wx.Panel):
                                dictDonnees=self.ddDonnees[code],
                                **kwdBox)
                 self.lstBoxes.append(box)
-                self.topbox.Add(box, width,wx.ALL,3)
+                self.topbox.Add(box, width,wx.ALL|wx.EXPAND,3)
                 if grow and self.topbox.ClassName == 'wxFlexGridSizer':
                     self.topbox.AddGrowableCol(ixBox,width)
                 ixBox +=1
@@ -1477,12 +1472,19 @@ if __name__ == '__main__':
             ],
         ("choix_config", "Choisissez votre configuration"):
             [
-                {'genre': 'Date', 'name': 'config', 'label': 'DateConfiguration','value':DDstrdate2wxdate('27/02/2019',iso=False),
-                      'help': "Le bouton de droite vous permet de créer une nouvelle configuration"},
-                {'genre': 'Combo', 'name': 'multi', 'label': 'Configurations','labels':['aa','bb','cc'], 'value':'1',
-                         'help': "Le bouton de droite vous permet de créer une nouvelle configuration",
-                         'btnLabel': "...", 'btnHelp': "Cliquez pour gérer les configurations",
-                        'btnAction': 'OnCtrlAction'},
+                {   'genre': 'Date',
+                    'name': 'config',
+                    'label': 'DateConfiguration',
+                    'value':DDstrdate2wxdate('27/02/2019',iso=False),
+                    'help': "Le bouton de droite vous permet de créer une nouvelle configuration"},
+                {'genre': 'Combo',
+                    'name': 'multi',
+                    'label': 'Configurations',
+                    'labels':['aa','bb','cc'],
+                    'value':'1',
+                    'help': "Le bouton de droite vous permet de créer une nouvelle configuration",
+                    'btnLabel': "...", 'btnHelp': "Cliquez pour gérer les configurations",
+                    'btnAction': 'OnCtrlAction'},
             ],
         ("bd_reseau", "Base de donnée réseau"):
             [

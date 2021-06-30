@@ -44,6 +44,8 @@ def DicOlvToMatrice(key,dicOlv):
         if hasattr(col.valueSetter,'choices'):
             param['genre'] = 'combo'
             param['choices'] = col.choices
+        if hasattr(col,"width"):
+            param['ctrlSize'] = (max(100, col.width) * 2,30)
         ld.append(param)
     matrice = {key: ld}
     return matrice
