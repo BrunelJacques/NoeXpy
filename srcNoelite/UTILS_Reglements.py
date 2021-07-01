@@ -30,7 +30,7 @@ def GetMatriceFamilles():
 
     lstTypes = ['INTEGER','INTEGER','VARCHAR(80)','VARCHAR(10)','VARCHAR(100)',
                 'VARCHAR(90)','VARCHAR(120)']
-    lstCodesColonnes = [xformat.SupprimeAccents(x) for x in lstNomsColonnes]
+    lstCodesColonnes = [xformat.NoAccents(x) for x in lstNomsColonnes]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
     lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes)
     lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
@@ -133,7 +133,7 @@ def GetMatriceDepots():
     lstNomsColonnes = ['0','numéro', 'date', 'nomDépôt', 'banque', 'nbre', 'total', 'détail', 'observations']
 
     lstTypes = ['INTEGER','INTEGER','DATE','VARCHAR(80)','VARCHAR(130)','VARCHAR(10)','VARCHAR(10)','VARCHAR(170)','VARCHAR(170)']
-    lstCodesColonnes = [xformat.SupprimeAccents(x).lower() for x in lstNomsColonnes]
+    lstCodesColonnes = [xformat.NoAccents(x).lower() for x in lstNomsColonnes]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
     lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes)
     lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
@@ -752,7 +752,7 @@ class Compte(object):
         lstNomsColonnes = ["0","compte","code","libellé"]
 
         lstTypes = ['INTEGER','VARCHAR(8)','VARCHAR(16)','VARCHAR(100)']
-        lstCodesColonnes = [xformat.SupprimeAccents(x) for x in lstNomsColonnes]
+        lstCodesColonnes = [xformat.NoAccents(x) for x in lstNomsColonnes]
         lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
         lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes)
         lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)

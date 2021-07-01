@@ -43,6 +43,8 @@ def GetMatriceSaisie(db,lstColonnes):
             ligne['genre'] = 'Combo'
             ligne['values'] = nust.SqlFournisseurs(db)
             ligne['value'] = ""
+        if ligne['genre'].lower() in ('str','combo'):
+            ligne['ctrlAction'] = "ValideNbCar"
     return matrice
 
 def GetDicOlv(db,cutend=None):
@@ -196,9 +198,20 @@ class DLG_articles(xgtr.DLG_tableau):
             if (dDonnees[champ]): dDonnees[champ] = dDonnees[champ].upper()
         for champ in ('magasin','rayon'):
             if (dDonnees[champ]): dDonnees[champ] = dDonnees[champ].capitalize()
-
         return wx.OK
 
+    def ValideNbCar(self,evt):
+        value = evt.EventObject.GetValue()
+        if len(value) > 32:
+            wx.MessageBox("La longeur est limitée à 32 caratères\n\nvous en avez saisi %d"%len(value),"Saisie tronquée!")
+            value = value[:32]
+        if evt.EventObject.name in ['IDarticle','fournisseur']:
+            value = value.upper()
+        if evt.EventObject.name in ['magasin','rayon']:
+            value = value.capitalise()
+        value = xformat.NoPunctuation(value,punct="\".:;?#%\\^`{|}~'").strip()
+        evt.EventObject.SetValue(value)
+        evt.Skip()
 
 # Pour tests ------------------------------------------------------------
 if __name__ == '__main__':

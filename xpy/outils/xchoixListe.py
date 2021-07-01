@@ -63,7 +63,7 @@ class DialogLettrage(wx.Dialog):
                 self.lstLibels[i] += u"/%s"%item
             i +=1
         # le code est le dernier mot du libellé de la colonne, sans accent et en minuscule
-        self.lstCodes = [xdb.Supprime_accent(x.split(u"/")[-1].strip()).lower() for x in self.lstLibels]
+        self.lstCodes = [xformat.Supprime_accent(x.split(u"/")[-1].strip()).lower() for x in self.lstLibels]
         # vérif unicité code
         lstano = [x for x in self.lstCodes if self.lstCodes.count(x)>1]
         if len(lstano)>0:
@@ -502,7 +502,7 @@ class DialogAffiche(wx.Dialog):
         self.listview.Bind(wx.EVT_LIST_ITEM_ACTIVATED,self.OnDblClicOk)
 
         lstColumns = []
-        self.lstCodes = [xformat.SupprimeAccents(x) for x in  self.lstColonnes]
+        self.lstCodes = [xformat.NoAccents(x) for x in  self.lstColonnes]
         for ix  in range(self.nbColonnes):
             width = self.lstWcol[ix]
             label = self.lstColonnes[ix]

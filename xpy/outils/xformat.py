@@ -249,7 +249,7 @@ def GetLstColonnes(**kwd):
     # si les listes sont fournies, les param précédents sont inutiles
     lstNoms = kwd.pop('lstNoms',GetLstChamps(table))
     lstTypes = kwd.pop('lstTypes',[y for x, y, z in table])
-    lstCodes = kwd.pop('lstCodes',[SupprimeAccents(x,lower=False) for x in lstNoms])
+    lstCodes = kwd.pop('lstCodes',[NoAccents(x,lower=False) for x in lstNoms])
     lstValDef = kwd.pop('lstValDef',ValeursDefaut(lstNoms, lstTypes,wxDates=wxDates))
     lstLargeur = kwd.pop('lstLargeur',LargeursDefaut(lstNoms, lstTypes,IDcache=IDcache))
     return DefColonnes(lstNoms, lstCodes, lstValDef, lstLargeur)
@@ -580,6 +580,33 @@ def FmtSolde(montant):
     strMtt = strMtt.replace(',',' ')+ SYMBOLE
     return strMtt
 
+# Formatage de textes
+
+def NoPunctuation(txt= '',punct= "'!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'"):
+    import re
+    regex = re.compile('[%s]' % re.escape(punct))
+    return regex.sub(' ', txt)
+
+def NoLettre(txt = ''):
+    if isinstance(txt,str):
+        chiffres = "0123456789.,-+"
+        newtxt = ''
+        for a in txt:
+            if a in chiffres:
+                newtxt += a
+        txt = newtxt
+        txt = txt.replace(',','.')
+    return txt
+
+def NoAccents(texte,lower=True):
+    # met en minuscule sans accents et sans caractères spéciaux
+    code = ''.join(c for c in unicodedata.normalize('NFD', texte) if unicodedata.category(c) != 'Mn')
+    #("é", "e"), ("è", "e"), ("ê", "e"), ("ë", "e"), ("à", "a"), ("û", ""), ("ô", "o"), ("ç", "c"), ("î", "i"), ("ï", "i")
+
+    if lower: code = code.lower()
+    code = ''.join(car for car in code if car not in " %)(.[]',;/\n")
+    return code
+
 # Diverses fonctions-------------------------------------------------------------------------------------------
 
 def Nz(param):
@@ -612,14 +639,6 @@ def MoyPond(ltXY):
     if sumX != 0:
         moyY = sumXY / sumX
     return moyY
-
-def SupprimeAccents(texte,lower=True):
-    # met en minuscule sans accents et sans caractères spéciaux
-    code = ''.join(c for c in unicodedata.normalize('NFD', texte) if unicodedata.category(c) != 'Mn')
-    #code = str(unicodedata.normalize('NFD', texte).encode('ascii', 'ignore'))
-    if lower: code = code.lower()
-    code = ''.join(car for car in code if car not in " %)(.[]',;/\n")
-    return code
 
 def ListTuplesToDict(lstTuples):
     dict = {}
@@ -844,7 +863,7 @@ if __name__ == '__main__':
     print(FmtSolde(8520.547),FmtSolde(-8520.547),FmtSolde(0))
     print(FmtMontant(8520.547),FmtMontant(-8520.547),FmtMontant(0))
     print(FmtDate('01022019'))
-    print(SupprimeAccents("ÊLève!"))
+    print(NoAccents("ÊLève!"))
     ret = FmtTelephone('0494149367')
     """
     ret = DateToFr(None)

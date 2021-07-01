@@ -30,7 +30,7 @@ def GetDicOlvInd():
 
     lstLargeurColonnes = [0,-1,-1,80,90,90,90,170,120,50,60]
 
-    lstCodesColonnes = [xformat.SupprimeAccents(x) for x in lstNomsColonnes]
+    lstCodesColonnes = [xformat.NoAccents(x) for x in lstNomsColonnes]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
 
     # matrice OLV
@@ -75,7 +75,7 @@ def GetDicOlvFam():
 
     lstLargeurColonnes = [0,-1,-1,50,80,90,90,170,120,50,50,90]
 
-    lstCodesColonnes = [xformat.SupprimeAccents(x) for x in lstNomsColonnes]
+    lstCodesColonnes = [xformat.NoAccents(x) for x in lstNomsColonnes]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
 
     # matrice OLV

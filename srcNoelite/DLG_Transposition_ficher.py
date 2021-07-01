@@ -36,7 +36,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table):
     # 'in' est le fichier entrée, 'out' est l'OLV
     lstOut = []
     formatIn = dicParams['fichiers']['formatin']
-    noPiece = dicParams['compta']['lastpiece']
+    noPiece = dicParams['compta']['piece']
     champsIn = FORMATS_IMPORT[formatIn]['champs']
     nblent = FORMATS_IMPORT[formatIn]['lignesentete']
     # longeur du préfixe ajouté lors du traitement de l'import
@@ -70,14 +70,14 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table):
         if len(champsIn) != len(ligne):
             # ligne batarde ignorée
             continue
-        noPiece = xformat.IncrementeRef(noPiece)
+        #noPiece = xformat.IncrementeRef(noPiece)
         ligneOut = []
         for champ in champsOut:
             valeur = None
             if champ    == 'date':
                 if 'date' in champsIn:
                     valeur = xformat.FinDeMois(ligne[champsIn.index(champ)])
-            elif champ == 'piece':
+            elif champ == 'noPiece':
                     valeur = noPiece
             elif champ  == 'libelle':
                 # ajout du début de date dans le libellé
@@ -111,18 +111,22 @@ MATRICE_PARAMS = {
     {'name': 'formatexp', 'genre': 'Enum', 'label': 'Format export',
                     'help': "Le choix est limité par la programmation", 'value':0,
                     'values':[x for x in UTILS_Compta.FORMATS_EXPORT.keys()],
-                    'ctrlAction':'self.OnChoixExport',
+                    'ctrlAction':'OnChoixExport',
                     'size':(300,30)},
     ],
 ("compta", "Paramètres comptables"): [
-    {'name': 'journal', 'genre': 'Combo', 'label': 'Journal','ctrlAction':'self.OnCtrlJournal',
-                    'help': "Code journal utilisé dans la compta",'size':(350,30),
+    {'name': 'journal', 'genre': 'Combo', 'label': 'Journal','ctrlAction':'OnCtrlJournal',
+                    'help': "Code journal utilisé dans la compta",'size':(250,30),
                     'values':['BQ','LCL','LBP','CCP'],
                     'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un journal",
                     'btnAction': 'OnBtnJournal'},
     {'name': 'contrepartie', 'genre': 'String', 'label': 'Contrepartie',
                     'help': "Code comptable du compte de contrepartie de la banque",'size':(250,30)},
-    {'name': 'lastpiece', 'genre': 'String', 'label': 'Dernier no de pièce',
+    {'name': 'piece',
+                    'genre': 'String',
+                    'label': 'No de pièce commun',
+                    'ctrlAction': "OnPiece",
+                    'txtSize': 130,
                     'help': "Préciser avant l'import le dernier numéro de pièce à incrémenter",'size':(250,30)},
     ],
 ("vide", ""): []
@@ -147,18 +151,18 @@ def GetOlvColonnes(dlg):
     return [
             ColumnDefn("Date", 'center', 85, 'date', valueSetter=wx.DateTime.Today(),isSpaceFilling=False,
                             stringConverter=xformat.FmtDate),
-            ColumnDefn("Cpt No", 'left', 70, 'compte',valueSetter='',isSpaceFilling=False,
+            ColumnDefn("Cpt No", 'left', 90, 'compte',valueSetter='',isSpaceFilling=False,
                             isEditable=True),
-            ColumnDefn("Cpt Appel", 'left', 70, 'appel',valueSetter='',isSpaceFilling=False,
+            ColumnDefn("Cpt Appel", 'left', 90, 'appel',valueSetter='',isSpaceFilling=False,
                             isEditable=False),
             ColumnDefn("Cpt Libellé ", 'left', 150, 'libcpt',valueSetter='',isSpaceFilling=False,
                             isEditable=False),
-            ColumnDefn("Mode", 'centre', 60, 'mode', valueSetter='', isSpaceFilling=False,),
-            ColumnDefn("NoPièce", 'left', 70, 'piece', isSpaceFilling=False),
-            ColumnDefn("Libelle", 'left', 220, 'libelle', valueSetter='', isSpaceFilling=True),
-            ColumnDefn("Montant", 'right',70, "montant", isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Mode", 'centre', 70, 'mode', valueSetter='', isSpaceFilling=False,),
+            ColumnDefn("NoPièce", 'left', 80, 'noPiece', isSpaceFilling=False),
+            ColumnDefn("Libelle", 'left', 200, 'libelle', valueSetter='', isSpaceFilling=True),
+            ColumnDefn("Montant", 'right',90, "montant", isSpaceFilling=False, valueSetter=0.0,
                             stringConverter=xformat.FmtDecimal),
-            ColumnDefn("Nature", 'left', 100, 'nature', valueSetter='', isSpaceFilling=False,
+            ColumnDefn("Nature", 'left', 200, 'nature', valueSetter='', isSpaceFilling=True,
                             isEditable=False)
             ]
 
@@ -299,7 +303,7 @@ class PNL_pied(xgte.PNL_pied):
 class Dialog(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self):
-        super().__init__(None,name='DLG_Transposition_fichier')
+        super().__init__(None,name='DLG_Transposition_fichier',size=(1200,700))
         self.ctrlOlv = None
         self.txtInfo =  "Non connecté à une compta"
         self.dicOlv = self.GetParamsOlv()
@@ -339,21 +343,29 @@ class Dialog(xusp.DLG_vide):
         sizer_base.Add(self.pnlPied, 0, wx.ALL | wx.EXPAND, 3)
         sizer_base.AddGrowableCol(0)
         sizer_base.AddGrowableRow(2)
-        self.SetSizerAndFit(sizer_base)
+        self.SetSizer(sizer_base)
         self.CenterOnScreen()
 
     # ------------------- Gestion des actions -----------------------
+
+    def OnPiece(self,evt):
+        # la modif du numéro de pièce s'applique à toutes les lignes visibles
+        valeur = self.pnlParams.GetOneValue('piece',codeBox='compta')
+        for track in self.ctrlOlv.innerList:
+            track.noPiece = valeur
+        self.ctrlOlv.RepopulateList()
+
 
     def OnCtrlJournal(self,evt):
         # tronque pour ne garder que le code journal sur trois caractères maxi
         box = self.pnlParams.GetBox('compta')
         valeur = self.pnlParams.lstBoxes[1].GetOneValue('journal')
-        valeur = valeur[:3].strip()
         box.SetOneValue('journal', valeur)
         if self.compta:
             item = self.compta.GetOneAuto(table='journaux',filtre=valeur)
             if item:
                 box = self.pnlParams.GetBox('compta')
+                valeur = valeur[:3].strip()
                 box.SetOneValue('journal',valeur)
                 box.SetOneValue('contrepartie',item[2])
 
@@ -374,6 +386,7 @@ class Dialog(xusp.DLG_vide):
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
         self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
         self.ctrlOlv.InitObjectListView()
+        self.ctrlOlv.MAJ()
         self.Refresh()
 
     def GetDonneesIn(self):
@@ -401,7 +414,8 @@ class Dialog(xusp.DLG_vide):
         # appel des journaux
         if compta:
             lstJournaux = compta.GetJournaux()
-            lstLibJournaux = [(x[0]+"   ")[:3]+' - '+x[1] for x in lstJournaux]
+            #lstLibJournaux = [(x[0]+"   ")[:3]+' - '+x[1] for x in lstJournaux]
+            lstLibJournaux = [(x[0]+"   ")[:3] for x in lstJournaux]
             box = self.pnlParams.GetBox('compta')
             valeur = self.pnlParams.lstBoxes[1].GetOneValue('journal')
             box.SetOneSet('journal',lstLibJournaux)
@@ -427,6 +441,22 @@ class Dialog(xusp.DLG_vide):
         self.InitOlv()
 
     def OnExporter(self,event):
+        nbl = len(self.ctrlOlv.innerList)
+        if nbl == 0:
+            mess = "Aucune ligne affichée\n\nRien à exporter"
+            wx.MessageBox(mess,"Export impossible")
+            return mess
+
+        params = self.pnlParams.GetValues()['compta']
+        mess = "Journal '%s' - contrepartie '%s'\n\n"%(params['journal'],params['contrepartie'])
+        if len(params['journal'].strip()) == 0 or len(params['contrepartie'].strip()) == 0:
+            mess += "Le code journal ou la contrepartie sont mal renseignés"
+            wx.MessageBox(mess,"Export impossible")
+            return mess
+        mess += "Confirmez-vous l'export ?"
+        dlg = wx.MessageDialog(self,mess ,"Lancement de l'export")
+        ret = dlg.ShowModal()
+        if ret != wx.ID_YES : return "abandon"
         champsIn = self.ctrlOlv.lstCodesColonnes
         donnees = []
         # calcul des débit et crédit des pièces
@@ -453,7 +483,7 @@ class Dialog(xusp.DLG_vide):
                 return wx.CANCEL
 
         exp = UTILS_Compta.Export(self,self.compta)
-        ret = exp.Exporte(self.pnlParams.GetValues(),
+        ret = exp.Exporte(params,
                           donnees,
                           champsIn)
         if not ret == wx.OK:

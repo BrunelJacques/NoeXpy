@@ -350,7 +350,7 @@ class Compta(object):
         # Composition de la matrice de l'OLV familles, retourne un dictionnaire    
         lstChamps =         matrice['lstChamps']
         lstNomsColonnes =   matrice['lstNomsColonnes']
-        lstCodesColonnes =  [xformat.SupprimeAccents(x) for x in lstNomsColonnes]
+        lstCodesColonnes =  [xformat.NoAccents(x) for x in lstNomsColonnes]
         lstValDefColonnes =   matrice['lstValDefColonnes']
         lstLargeurColonnes = matrice['lstLargeurColonnes']
         lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)

@@ -34,7 +34,7 @@ def dicOlvIndividus():
                         "rue", "cp", "ville","tel domicile", "tel mobile", "mail"]
     lstTypes = ["INTEGER","INTEGER","VARCHAR(100)","VARCHAR(100)","DATE","INTEGER",
                 "VARCHAR(100)","VARCHAR(8)","VARCHAR(100)","VARCHAR(11)","VARCHAR(11)","VARCHAR(40)"]
-    lstCodesColonnes = [xformat.SupprimeAccents(x) for x in lstNomsColonnes]
+    lstCodesColonnes = [xformat.NoAccents(x) for x in lstNomsColonnes]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
     lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes)
     # composition des données du tableau à partir du recordset
@@ -61,7 +61,7 @@ def dicOlvFamilles():
 
     lstTypes = ["INTEGER","INTEGER","INTEGER","VARCHAR(100)","VARCHAR(100)",
                 "VARCHAR(100)","INTEGER","VARCHAR(100)","VARCHAR(11)","VARCHAR(80)"]
-    lstCodesColonnes = [xformat.SupprimeAccents(x) for x in lstNomsColonnes]
+    lstCodesColonnes = [xformat.NoAccents(x) for x in lstNomsColonnes]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
     lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes)
 

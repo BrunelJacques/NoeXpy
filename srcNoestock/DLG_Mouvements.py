@@ -88,7 +88,7 @@ def GetMatriceAnterieurs(dlg):
     lstNomsColonnes = ['origine', 'date', 'fournisseur', 'analytique', 'nbLignes']
 
     lstTypes = ['VARCHAR(8)', 'DATE', 'VARCHAR(32)', 'VARCHAR(32)', 'INT']
-    lstCodesColonnes = [xformat.SupprimeAccents(x).lower() for x in lstNomsColonnes]
+    lstCodesColonnes = [xformat.NoAccents(x).lower() for x in lstNomsColonnes]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
     lstLargeurColonnes = [100,100,180,180,200]
     lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)

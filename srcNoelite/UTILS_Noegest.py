@@ -199,7 +199,7 @@ class Noegest(object):
 
         # Composition de la matrice de l'OLV Analytiques, retourne un dictionnaire
 
-        lstCodesColonnes = [xformat.SupprimeAccents(x).lower() for x in lstNomsCol]
+        lstCodesColonnes = [xformat.NoAccents(x).lower() for x in lstNomsCol]
         lstValDefColonnes = xformat.ValeursDefaut(lstNomsCol, lstTypes)
         lstLargeurColonnes = xformat.LargeursDefaut(lstNomsCol, lstTypes,IDcache=False)
         lstColonnes = xformat.DefColonnes(lstNomsCol, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
@@ -230,7 +230,7 @@ class Noegest(object):
         lstTypes = kwd.pop('lstTypes',None)
         if not lstTypes:
             lstTypes = [y for x,y,z in DB_TABLES['cpta_analytiques']]
-        lstCodesColonnes = [xformat.SupprimeAccents(x).lower() for x in lstNomsCol]
+        lstCodesColonnes = [xformat.NoAccents(x).lower() for x in lstNomsCol]
         lstCodesColonnes.append("axe")
 
         if not mode: mode = 'normal'

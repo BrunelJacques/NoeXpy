@@ -21,30 +21,6 @@ import xpy.outils.xshelve as xucfg
 
 DICT_CONNEXIONS = {}
 
-def NoPunctuation(txt = ''):
-    import re
-    punctuation = "'!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'"
-    regex = re.compile('[%s]' % re.escape(punctuation))
-    return regex.sub(' ', txt)
-
-def NoLettre(txt = ''):
-    if isinstance(txt,str):
-        chiffres = "0123456789.,-+"
-        newtxt = ''
-        for a in txt:
-            if a in chiffres:
-                newtxt += a
-        txt = newtxt
-        txt = txt.replace(',','.')
-    return txt
-
-def Supprime_accent(texte):
-    liste = [ ("é", "e"), ("è", "e"), ("ê", "e"), ("ë", "e"), ("à", "a"), ("û", ""), ("ô", "o"), ("ç", "c"), ("î", "i"), ("ï", "i"),]
-    for a, b in liste :
-        texte = texte.replace(a, b)
-        texte = texte.replace(a.upper(), b.upper())
-    return texte
-
 def DateEngEnDateDD(dateEng):
     return datetime.date(int(dateEng[:4]), int(dateEng[5:7]), int(dateEng[8:10]))
 

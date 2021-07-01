@@ -141,11 +141,11 @@ def ComposeMatrice(champDeb=None,champFin=None,lstChamps=[],lstTypes=[],lstHelp=
     lstNomsColonnes = ExtractList(lstChamps, champDeb=champDeb, champFin=champFin)
     options = {}
     for key, dic in dicOptions.items():
-        options[xformat.SupprimeAccents(key)] = dic
+        options[xformat.NoAccents(key)] = dic
     if lstCodes:
         lstCodesColonnes = lstCodes
     else:
-        lstCodesColonnes = [xformat.SupprimeAccents(x) for x in lstNomsColonnes]
+        lstCodesColonnes = [xformat.NoAccents(x) for x in lstNomsColonnes]
     if len(lstTypes) < len(lstChamps) and len(record) == len(lstChamps):
         lstTypes = []
         for valeur in record:
@@ -541,8 +541,10 @@ class PNL_ctrl(wx.Panel):
             action = "self.lanceur."+actionCtrl+"(event)"
             eval(action)
         else:
+            # actionCtrl est un pointeur de Fonction
             actionCtrl(event)
         self.flagSkipEdit = False
+        print(self.GetValue())
 
     def OnBtnAction(self,event):
         if hasattr(event.EventObject,'actionBtn'):
@@ -576,7 +578,7 @@ class PNL_ctrl(wx.Panel):
         try:
             if self.genre in ('int','float'):
                 if not value: value = 0
-                value = xdb.NoLettre(str(value))
+                value = xformat.NoLettre(str(value))
                 if self.genre == 'float':
                     value = float(value)
                 if self.genre == 'int':
