@@ -411,12 +411,12 @@ def GetReglements(dlg,IDdepot):
     lstChamps = ['reglements.IDreglement','reglements.date','reglements.IDcompte_payeur','familles.adresse_intitule',
             'payeurs.nom','reglements.IDmode','emetteurs.nom','reglements.numero_piece','reglements.observations',
             'reglements.montant','Null','reglements.IDpiece','prestations.categorie','prestations.code_compta',
-            'prestations.compta','reglements.compta', 'COUNT(ventilation.IDventilation)']
+            'prestations.compta','reglements.compta', 'reglements.date_differe', 'COUNT(ventilation.IDventilation)']
     
     lstCodesChamps = ['IDreglement','date','IDfamille','designation',
                       'payeur','IDmode','emetteur','numero','libelle',
                       'montant','creer','IDprestation','prestcateg','prestcompte',
-                      'prestcpta','reglcompta','nbventil']
+                      'prestcpta','reglcompta','differe','nbventil']
 
     #            IDreglement,date,IDfamille,designation,payeur,labelmode,numero,libelle,montant,IDpiece in recordset
     req = """   SELECT %s

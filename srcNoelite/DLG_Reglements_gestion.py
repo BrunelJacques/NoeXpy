@@ -78,10 +78,10 @@ def GetOlvColonnes():
             ColumnDefn("créer", 'centre', 38, 'creer', valueSetter=True,
                         isEditable=False,
                         stringConverter=xformat.FmtBool),
-            ColumnDefn("differé", 'center', 80, 'differe', valueSetter=datetime.date.today(), isSpaceFilling=False,
-                        stringConverter=xformat.FmtDate,),
             ColumnDefn("IDprestation", 'centre', 0, 'IDprestation',
                         isEditable=False),
+            ColumnDefn("differé", 'center', 80, 'differe', valueSetter=datetime.date.today(), isSpaceFilling=False,
+                        stringConverter=xformat.FmtDate,),
             ]
 
 def GetOlvCodesSup():
@@ -237,7 +237,7 @@ class PNL_corpsReglements(xgte.PNL_corps):
 
     def OnCtrlV(self,track):
         # raz de certains champs à recomposer
-        (track.IDreglement, track.date, track.IDprestation, track.IDpiece,track.compta) = (None,)*5
+        (track.IDreglement, track.date, track.IDprestation, track.differe, track.IDpiece,track.compta) = (None,)*6
 
     def OnNewRow(self,row,track):
         pass
@@ -521,12 +521,13 @@ class Dialog(wx.Dialog):
         ixMode = self.ctrlOlv.lstCodesColonnes.index('mode')
         ixDiffere= self.ctrlOlv.lstCodesColonnes.index('differe')
         if not withDiffere:
-            del self.ctrlOlv.lstCodesColonnes[ixDiffere]
-            del self.ctrlOlv.lstColonnes[ixDiffere]
+            self.ctrlOlv.lstColonnes[ixDiffere].width = 0
+            self.ctrlOlv.lstColonnes[ixDiffere].isEditable = False
             # charge les choix possibles des modes de règlements
             self.ctrlOlv.lstColonnes[ixMode].choices = self.choicesNonDiffere
         else:
             # change les choix des modes de règlements possibles
+            self.ctrlOlv.lstColonnes = GetOlvColonnes()
             self.ctrlOlv.lstColonnes[ixMode].choices = self.choicesDiffere
         self.ctrlOlv.InitObjectListView()
         self.Refresh()
@@ -565,9 +566,9 @@ class Dialog(wx.Dialog):
             nbcol = len(self.ctrlOlv.lstCodesColonnes)
             ixpc = nbcol + self.ctrlOlv.lstCodesSup.index('prestcpta')
             ixrc = nbcol + self.ctrlOlv.lstCodesSup.index('reglcompta')
-            ixmod = self.ctrlOlv.lstCodesColonnes.index('mode')
+            ixdiff = self.ctrlOlv.lstCodesColonnes.index('differe')
             lstEnCompta = [1 for rec in  lstDonnees if (rec[ixpc] or rec[ixrc])]
-            lstDifferes = [1 for rec in  lstDonnees if not('diff' in rec[ixmod])]
+            lstDifferes = [1 for rec in  lstDonnees if rec[ixdiff] != None and len(rec[ixdiff]) >1 ]
             # présence de lignes déjà transférées compta
             if len(lstEnCompta) >0:
                 self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
