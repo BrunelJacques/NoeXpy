@@ -108,13 +108,14 @@ def GetMatriceAnterieurs(dlg):
 
 # Description des paramètres de la gestion des mouvements
 
+
 MATRICE_PARAMS = {
 ("param1", "Paramètres"): [
     {'name': 'origine', 'genre': 'Choice', 'label': "",
                     'help': "Le choix de la nature modifie certains contrôles",
                     'value':0, 'values':[],
                     'ctrlAction': 'OnOrigine',
-                    'size':(205,30),
+                    'ctrlMaxSize':(220,35),
                     'txtSize': 90},
     {'name': 'date', 'genre': 'Texte', 'label': "",
                     'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
@@ -122,7 +123,7 @@ MATRICE_PARAMS = {
                                           "Saisissez la date de l'entrée en stock sans séparateurs, "),
                     'value':xformat.DatetimeToStr(datetime.date.today()),
                     'ctrlAction': 'OnDate',
-                    'size':(200,30),
+                    'ctrlMaxSize':(220,35),
                     'txtSize': 90},
     ],
 ("param2", "Comptes"): [
@@ -132,7 +133,8 @@ MATRICE_PARAMS = {
                     'ctrlAction':'OnFournisseur',
                      'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un compte pour l'origine",
                      'btnAction': 'OnBtnFournisseur',
-                    'size':(250,30),
+                    'size':(250,35),
+                    'ctrlMaxSize':(250,35),
                     'txtSize': 70,
      },
     {'name': 'analytique', 'genre': 'Choice', 'label': 'Activité',
@@ -141,7 +143,7 @@ MATRICE_PARAMS = {
                     'value':'','values':[''],
                     'btnLabel': "...", 'btnHelp': "Cliquez pour choisir l'activité de destination des mouvements",
                     'btnAction': 'OnBtnAnalytique',
-                    'size':(250,30),
+                    'ctrlMaxSize':(250,35),
                     'txtSize': 70,}
 ],
 ("param3", "saisie"): [
@@ -163,7 +165,6 @@ MATRICE_PARAMS = {
                      },
     ],
 }
-
 def GetDicParams(dlg):
     matrice = xformat.CopyDic(MATRICE_PARAMS)
     if dlg.sens == 'sorties':
@@ -605,7 +606,7 @@ class PNL_pied(xgte.PNL_pied):
 
 class DLG(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,sens='entrees',date=None,**kwd):
+    def __init__(self,sens='sorties',date=None,**kwd):
         self.sens = sens
         self.sensNum = 1
         if self.sens == "sorties":

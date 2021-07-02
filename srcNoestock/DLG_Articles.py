@@ -208,7 +208,7 @@ class DLG_articles(xgtr.DLG_tableau):
         if evt.EventObject.name in ['IDarticle','fournisseur']:
             value = value.upper()
         if evt.EventObject.name in ['magasin','rayon']:
-            value = value.capitalise()
+            value = value.capitalize()
         value = xformat.NoPunctuation(value,punct="\".:;?#%\\^`{|}~'").strip()
         evt.EventObject.SetValue(value)
         evt.Skip()

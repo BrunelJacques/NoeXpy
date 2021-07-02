@@ -89,7 +89,8 @@ MATRICE_PARAMS = {
                     'btnLabel': "...", 'btnHelp': "Cliquez pour choisir l'activité de destination des mouvements",
                     'btnAction': 'OnBtnAnalytique',
                     'txtSize': 50,
-                    'ctrlMaxSize': (210, 35)}
+                    'ctrlMaxSize': (220,30),
+                    }
 ],
 ("param3", "Circadien"): [
     {'name': 'midi', 'genre': 'Check', 'label': 'Midi',
@@ -115,7 +116,7 @@ MATRICE_PARAMS = {
 ("param4", "Boutons actions"): [
     {'name': 'rappel', 'genre': 'anyctrl','label': ' ',
                      'txtSize': 1,
-                     'ctrlMaxSize':(150,40),
+                     'ctrlMaxSize':(150,50),
                      'ctrl': CtrlEffectifs,
                      'ctrlAction': 'OnBtnEffectifs',
                      },
@@ -135,7 +136,7 @@ def GetDicParams():
                 'name':"PNL_params",
                 'matrice':MATRICE_PARAMS,
                 'lblBox':None,
-                'boxesSizes': [(220, 80), (220, 80), None, (150, 80)],
+                'boxesSizes': [(220, 70), (240, 90), None, (150, 95)],
                 'pathdata':"srcNoelite/Data",
                 'nomfichier':"stparams",
                 'nomgroupe':"prixJour",
@@ -185,9 +186,9 @@ def GetOlvOptions(dlg):
 def GetDlgOptions(dlg):
     # Options du Dlg de lancement
     return {
-        'style': wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
-        'minSize': (300, 450),
-        'size': (750, 600),
+        'style': wx.DEFAULT_FRAME_STYLE,
+        'minSize': (700, 550),
+        'size': (850, 600),
         }
 
 #----------------------- Parties de l'écran -----------------------------------------
@@ -373,7 +374,7 @@ class DLG(xgtr.DLG_tableau):
         # periode est construite dans DLG.Init les accès en cours de construction sont ignorés
         lstDonnees = []
         if hasattr(self,'periode'):
-            params = self.pnlParams.GetValues()
+            self.params = self.pnlParams.GetValues()
             kwd['db'] = self.db
             lstDonnees = nust.GetPrixJours(self, **kwd)
         return lstDonnees

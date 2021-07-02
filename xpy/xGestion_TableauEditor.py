@@ -648,7 +648,7 @@ class PNL_corps(wx.Panel):
         self.avecRecherche= dicOlv.pop('recherche',True)
         self.parent = parent
         self.lanceur = parent
-        self.flagSkpiEdit = False
+        self.flagSkipEdit = False
         if hasattr(parent,'lanceur'): self.lanceur = parent.lanceur
         # récupére les éventuels boutons d'actions
         if getBtnActions:

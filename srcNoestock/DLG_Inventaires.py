@@ -116,9 +116,9 @@ MATRICE_PARAMS = {
                     'help': "Le choix de la saison détermine la couleur des lignes selon les minimums prévus par article",
                     'value':0, 'values': SAISONS,
                     'ctrlAction': 'OnSaison',
-                    'size':(120,30),
-                    'ctrlMaxSize': (260, 40),
-                    'txtSize': 110},
+                    'size':(260,30),
+                    'ctrlMaxSize': (370, 40),
+                    'txtSize': 105},
 
     {'name': 'date', 'genre': 'anyctrl', 'label': "Date d'inventaire",
                     'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
@@ -127,9 +127,9 @@ MATRICE_PARAMS = {
                     'ctrl': xdates.CTRL_SaisieDateAnnuel,
                     'value':xformat.DatetimeToStr(datetime.date.today()),
                     'ctrlAction': 'OnDate',
-                    'size':(150,30),
-                    'ctrlMaxSize': (270, 40),
-                    'txtSize': 105,},
+                    'size':(280,30),
+                    'ctrlMaxSize': (370, 40),
+                    'txtSize': 100,},
 ],
 
 ("param2", "Quantités"): [
@@ -165,7 +165,7 @@ def GetDicParams(dlg):
                 'matrice':MATRICE_PARAMS,
                 'dicBandeau':DIC_BANDEAU,
                 'lblBox':True,
-                'boxesSizes': [(290, 90), (200, 90), None, (160, 90)],
+                'boxesSizes': [(390, 90), (200, 90), None, (160, 90)],
                 'pathdata':"srcNoelite/Data",
                 'nomfichier':"stparams",
                 'nomgroupe':"entrees",
@@ -191,7 +191,7 @@ def GetOlvColonnes(dlg):
             ColumnDefn("Fournisseur", 'left', 100, 'fournisseur', valueSetter=" ",isSpaceFilling=True),
             ColumnDefn("Magasin", 'left', 100, 'magasin', valueSetter=" ",isSpaceFilling=True),
             ColumnDefn("Rayon", 'left', 100, 'rayon', valueSetter=" ",isSpaceFilling=True),
-            ColumnDefn("Qté stock", 'right', 80, 'qteStock',  valueSetter=0.0,isSpaceFilling=False,
+            ColumnDefn("Qté stock", 'right', 80, 'qteConstat',  valueSetter=0.0,isSpaceFilling=False,
                                         stringConverter=xformat.FmtDecimal),
             ColumnDefn("Prix Unit", 'right', 80, 'pxUn',  valueSetter=0.0,isSpaceFilling=False,
                                         stringConverter=xformat.FmtDecimal),
@@ -211,13 +211,12 @@ def GetOlvCodesSup():
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
     return {
-        'checkColonne': True,
+        'checkColonne': False,
         'recherche': True,
         'autoAddRow': False,
         'toutCocher':True,
         'toutDecocher':True,
         'msgIfEmpty': "Aucun article présent (avec les options ci dessus)",
-        'minSize': (600, 300),
         'dictColFooter': {"magasin": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
                         "qteStock": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
                         "mttTTC": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
@@ -228,7 +227,6 @@ def GetOlvOptions(dlg):
 def GetDlgOptions(dlg):
     # Options du Dlg de lancement
     return {
-        'style': wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         'minSize': (700, 450),
         'size': (1150, 800),
         'autoSizer': False,
@@ -250,46 +248,28 @@ def GetAnterieur(dlg,db=None):
     return dParams
 
 def CalculeLigne(dlg,track):
-    return
 
-    if not hasattr(track,'dicArticle'): return
-    try: qte = float(track.qte)
+    try: qte = float(track.qteStock)
     except: qte = 0.0
+    track.qteStock = qte
     if not hasattr(track,'oldQte'):
-        track.oldQte = track.qte
-    try: pxUn = float(track.pxUn)
-    except: pxUn = 0.0
-    try: txTva = track.dicArticle['txTva']
-    except: txTva = 0.0
-    try: rations = track.dicArticle['rations']
-    except: rations = 1
-    if dlg.ht_ttc == 'HT':
-        mttHT = qte * pxUn
-        mttTTC = round(mttHT * (1 + (txTva / 100)),2)
-        prixTTC = round(pxUn * (1 + (txTva / 100)),6)
-    elif dlg.ht_ttc == 'TTC':
-        mttTTC = qte * pxUn
-        mttHT = round(mttTTC / (1 + (txTva / 100)),2)
-        prixTTC = pxUn
-    else: raise("Taux TVA de l'article non renseigné")
-    track.mttHT = mttHT
-    track.mttTTC = mttTTC
-    track.prixTTC = prixTTC
-    track.nbRations = track.qte * rations
-    track.qteStock = track.dicArticle['qteStock']
+        track.oldQte = track.qteStock
 
 def ValideLigne(dlg,track):
+
+    CalculeLigne(dlg,track)
+
     # validation de la ligne de inventaire
     track.valide = True
     track.messageRefus = "Saisie incorrecte\n\n"
 
     # qte négative
     try:
-        track.qte = float(track.qte)
+        track.qteStock = float(track.qteStock)
     except:
-        track.qte = None
-    if not track.qte or track.qte < 0.0:
-        track.messageRefus += "La quantité ne peut être négative\n"
+        track.qteStock = None
+    if not track.qteStock or track.qteStock < 0.0:
+        track.messageRefus += "La quantité ne peut être nulle ou négative\n"
 
     # pxUn null
     try:
@@ -300,11 +280,9 @@ def ValideLigne(dlg,track):
         track.messageRefus += "Le pxUn est à zéro\n"
 
     # envoi de l'erreur
-    if track.messageRefus != "Saisie incomplète\n\n":
+    if track.messageRefus != "Saisie incorrecte\n\n":
         track.valide = False
     else: track.messageRefus = ""
-
-    CalculeLigne(dlg,track)
     return
 
 class PNL_corps(xgte.PNL_corps):
@@ -337,19 +315,14 @@ class PNL_corps(xgte.PNL_corps):
             self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
 
         # travaux avant saisie
-
-        if code == 'repas':
-            editor.Set(nust.CHOIX_REPAS)
-            editor.SetStringSelection(track.repas)
-
-        if code == 'qte':
+        if code == 'qteStock':
             if not hasattr(track,'oldQte'):
                 track.oldQte = track.qte
 
         if code == 'pxUn':
             if not hasattr(track, 'oldPu'):
                 CalculeLigne(self.parent,track)
-                track.oldPu = track.prixTTC
+                track.oldPu = track.pxUn
 
     def OnEditFinishing(self,code=None,value=None,editor=None):
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
@@ -368,7 +341,7 @@ class PNL_corps(xgte.PNL_corps):
                 track.dicArticle = nust.SqlDicArticle(self.db,self.ctrlOlv,value)
                 track.nbRations = track.dicArticle['rations']
                 track.qteStock = track.dicArticle['qteStock']
-        if code == 'qte' or code == 'pxUn':
+        if code == 'qteStock' or code == 'pxUn':
             # force la tentative d'enregistrement même en l'absece de saisie
             track.noSaisie = False
 
@@ -402,6 +375,7 @@ class DLG(xgte.DLG_tableau):
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
         self.dicOlv.update(GetOlvOptions(self))
+        self.checkColonne = self.dicOlv.get('checkColonne',False)
         self.dicOlv['lstCodes'] = xformat.GetCodesColonnes(GetOlvColonnes(self))
         self.dicOlv['db'] = xdb.DB()
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
@@ -467,8 +441,8 @@ class DLG(xgte.DLG_tableau):
         saisie = self.pnlParams.GetOneValue('date',codeBox='param1')
         saisie = xformat.DateFrToDatetime(xformat.FmtDate(saisie))
         if self.date != saisie:
-            self.GetDonnees()
             self.date = saisie
+            self.GetDonnees()
         if event: event.Skip()
 
     def OnSaison(self,event):
@@ -516,11 +490,11 @@ class DLG(xgte.DLG_tableau):
         lstDonnees = nust.SqlInventaire(self, dParams)
 
         ixModif = len(DB_schema.DB_TABLES['stArticles'])-1
-        lstNoModif = [1 for rec in  lstDonnees if not (rec[-ixModif])]
+        lstNoModif = [1 for rec in  lstDonnees if rec[ixModif]]
         # présence de lignes déjà transférées compta
         if len(lstNoModif) >0:
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
-            self.pnlPied.SetItemsInfos("NON MODIFIABLE: enregistrements transféré ",
+            self.pnlPied.SetItemsInfos("NON MODIFIABLE: enregistrements transférés ",
                                        wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
         # l'appel des données peut avoir retourné d'autres paramètres, il faut mettre à jour l'écran
         if len(lstDonnees) > 0:

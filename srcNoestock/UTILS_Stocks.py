@@ -21,7 +21,6 @@ CHOIX_REPAS = ['PtDej','Midi','Soir','5eme','Tous']
 
 def SqlInventaire(dlg,*args,**kwd):
     db = dlg.db
-
     where = ''
     if not dlg.qteZero:
         where += '(stArticles.qteStock > 0) '
@@ -36,7 +35,7 @@ def SqlInventaire(dlg,*args,**kwd):
         where = 'WHERE %s'%where
 
 
-    whereMvt = "WHERE stMouvements.date <= '%s' OR (stMouvements.date IS NULL) "%dlg.date
+    whereMvt = "WHERE (stMouvements.date <= '%s') "%dlg.date
 
     lstChamps = ['IDarticle', 'IDdate',
                  'qteConstat', 'qteInv','pxActInv', 'pxMoyInv',
@@ -835,8 +834,9 @@ def GetPrixJours(dlg,**kwd):
             if dlg.soir or dlg.matin: effSoir = True
 
         nRepCli = 0
-        if date in dicEffectifs.keys():
-            dicEff = dicEffectifs[date]
+        lstDtesEffectifs = [str(x) for x in dicEffectifs.keys()]
+        if str(date) in lstDtesEffectifs:
+            dicEff = dicEffectifs[str(date)]
             if effMidi:
                 nbRepas += xformat.Nz(dicEff['midiRepas'])
                 nbClients += xformat.Nz(dicEff['midiClients'])
