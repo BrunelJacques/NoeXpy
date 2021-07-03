@@ -9,7 +9,7 @@
 
 import wx
 import datetime
-import xpy.xGestion_TableauRecherche    as xgtr
+import xpy.xGestion_TableauRecherche as xgtr
 import xpy.xUTILS_Identification        as xuid
 import srcNoestock.UTILS_Stocks         as nust
 from srcNoelite     import DB_schema

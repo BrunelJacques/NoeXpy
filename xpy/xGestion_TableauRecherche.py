@@ -9,7 +9,6 @@
 
 import wx
 import os
-import xpy.xUTILS_DB            as xdb
 import xpy.xUTILS_SaisieParams  as xusp
 from xpy.outils import xbandeau,xformat,xboutons,xshelve
 from xpy.outils.ObjectListView import ObjectListView, ColumnDefn, CTRL_Outils, Footer
@@ -49,7 +48,7 @@ def GetBtnActions(self,lstNomsBtns):
 
 class TrackGeneral(object):
     #    Cette classe va transformer une ligne en objet selon les listes de colonnes et valeurs par défaut(setter)
-    def __init__(self, donnees,codesColonnes, setterValues,codesSup=[]):
+    def __init__(self, donnees,codesColonnes, setterValues,codesSup=list):
         # il peut y avoir plus de données que le nombre de colonnes, elles sont non gérées par le tableau
         if not (len(donnees)-len(codesSup) == len(codesColonnes) == len(setterValues) ):
             lst = [str(codesColonnes),str(setterValues),str(donnees)]
@@ -181,6 +180,7 @@ class ListView(ObjectListView):
         # On définit le message en cas de tableau vide
         self.SetEmptyListMsg(self.msgIfEmpty)
         self.SetEmptyListMsgFont(wx.FFont(11, wx.FONTFAMILY_DEFAULT))
+
         # Si la colonne à trier n'est pas précisée on trie selon la première par défaut
         if self.ColumnCount > 1:
             if self.sortColumnIndex == None:
@@ -698,9 +698,13 @@ class DLG_tableau(xusp.DLG_vide):
         self.db =       kwds.pop('db',None) #purge d'éventuels arguments db à ne pas envoyer à super()
         autoSizer =     kwds.pop('autoSizer', True)
         size =          kwds.get('size',None)
+        if not 'style' in kwds.keys():
+            kwds['style'] = wx.DEFAULT_FRAME_STYLE
+
         # si size pas dans kwds, on pique celle de l'olv qui serait contrainte
         if not size and dicOlv.get('size',None):
             kwds['size'] = dicOlv.pop('size',None)
+
         # recherche d'un dicBandeau
         for dic in (kwds, dicParams, dicOlv):
             dicBandeau = dic.pop('dicBandeau',None)

@@ -53,7 +53,7 @@ MATRICE_CHOIX_CONFIG = {
                         'ctrlAction':'OnCtrlConfig',
                         'btnLabel':"...", 'btnHelp':"Cliquez pour gérer les configurations d'accès aux données",
                         'btnAction':"OnBtnConfig",
-                        'txtSize': 140},]}
+                        'txtSize': 85},]}
 # db_reseau et db_fichier sont des types de config, pourront être présentes dans dictAPPLI['TYPE_CONFIG'] et xUTILS_DB
 MATRICE_CONFIGS = {
     ('db_reseau', "Acccès à une base avec authentification"): [
@@ -260,23 +260,24 @@ class DLG_choixConfig(wx.Dialog):
 
         self.Sizer()
 
+
     def Sizer(self):
         # Déroulé de la composition
         cadre_staticbox = wx.StaticBox(self, -1, label='identification')
         topbox = wx.StaticBoxSizer(cadre_staticbox, wx.VERTICAL)
         topbox.Add(self.ctrlID, 0,wx.ALL | wx.EXPAND, 5)
-        topbox.Add((20,20), 0, wx.ALIGN_TOP, 0)
+        topbox.Add((20,20), 1, wx.ALIGN_TOP, 0)
         topbox.Add(self.titre, 0, wx.LEFT, 60)
         for ctrlConfig in self.lstChoixConfigs:
-            topbox.Add((20,20), 0, wx.ALIGN_TOP, 0)
-            topbox.Add(ctrlConfig, 0, wx.ALIGN_TOP | wx.EXPAND, 0)
-        topbox.Add((20,20), 0, wx.ALIGN_TOP, 0)
-        topbox.Add((40,40), 0, wx.EXPAND, 0)
+            topbox.Add((20,20), 1, wx.ALIGN_TOP, 0)
+            topbox.Add(ctrlConfig, 1, wx.ALIGN_TOP , 0)
+        topbox.Add((20,20), 1, wx.ALIGN_TOP, 0)
+        topbox.Add((40,40), 1, wx.EXPAND, 0)
         piedbox = wx.BoxSizer(wx.HORIZONTAL)
         piedbox.Add(self.btnTest, 0, 0, 0)
         piedbox.Add(self.btn, 0, wx.RIGHT, 11)
         topbox.Add(piedbox, 0, wx.ALIGN_RIGHT, 0)
-        self.SetSizerAndFit(topbox)
+        self.SetSizer(topbox)
 
     def OnTester(self,event,mute=False):
         # appelé par le bouton tester tente toutes les connexions de l'appli.
@@ -288,6 +289,7 @@ class DLG_choixConfig(wx.Dialog):
             self.echec = DB.echec
             if not mute:
                 DB.AfficheTestOuverture(info=" pour %s"%nomConfig)
+
 
     def OnCtrlAction(self, event):
         # relais des actions sur les ctrls
@@ -441,10 +443,8 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
         valeurs = [x for x in ctrl.values]
         ctrl2 = self.dlgGest.pnl.GetPnlCtrl('nameDB')
         ctrl2.Set(valeurs)
-        print(valeurs)
         ctrl2.ctrl.SetValue(valeurs[0])
         val = ctrl2.ctrl.GetValue()
-        print(val)
         event.Skip()
 
     def OnNameDB(self,event):
@@ -464,8 +464,6 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
         if self.IsModal():
             self.EndModal(wx.OK)
         else: self.Close()
-
-
 
     def GetChoix(self, idxColonne = 0):
         # récupère le choix fait dans le listCtrl par la recherche de son ID

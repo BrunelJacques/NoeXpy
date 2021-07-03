@@ -23,6 +23,9 @@ OPTIONS_CTRL = ('name', 'label', 'ctrlAction', 'btnLabel', 'btnImage','btnAction
 # les Binds de ctrl se posent dans le pannel
 OPTIONS_PANEL = ('pos','style','name', 'size')
 
+# pour une longeur de texte attribuée selon le len d'un label
+PT_CARACTERE = 6.3
+
 def DDstrdate2wxdate(date,iso=True):
     if not isinstance(date, str) : date = str(date)
     if len(date) < 10: return None
@@ -209,7 +212,6 @@ def DicFiltre(dic,options):
 #**********************************************************************************
 
 
-
 class AnyCtrl(wx.Panel):
     # Exemple d'un controle pour s'insérer dans une matrice 'genre':'anyctrl', 'ctrl':'MyAnyCtrl'
     def __init__(self,parent):
@@ -389,12 +391,21 @@ class PNL_ctrl(wx.Panel):
     """ et en option (code) un bouton d'action permettant de contrôler les saisies
         GetValue retourne la valeur choisie dans le ctrl avec action possible par bouton à droite"""
     def __init__(self, parent, *args, genre='string', name=None, label='', value= None, labels=[], values=[],
-                 help=None, btnLabel=None, btnImage=None, btnHelp=None,  txtSize=100, ctrl=None, **kwds):
+                 help=None, btnLabel=None, btnImage=None, btnHelp=None,  ctrl=None, **kwds):
         self.parent = parent
         self.flagSkipEdit = False
+
+        # gestion des size
+        self.txtSize =       kwds.pop('txtSize',0)
         if not label: label = ''
-        if 'ctrlSize' in kwds:
-            kwds['size'] = kwds['ctrlSize']
+        lgTxtCtrl =     max(self.txtSize,int(len(label)* PT_CARACTERE))
+        minSize =       kwds.pop('ctrlMinSize',(int(lgTxtCtrl * 1.5),30))
+        maxSize =       kwds.pop('ctrlMaxSize',(lgTxtCtrl * 3,minSize[1] * 2))
+        size =          kwds.pop('size',None)
+        if not size:
+            size =  kwds.pop('ctrlSize',maxSize)
+        kwds['size'] = size
+
         kw = DicFiltre(kwds,OPTIONS_PANEL )
         wx.Panel.__init__(self,parent,*args, **kw)
         if genre: genre = genre.lower()
@@ -408,15 +419,15 @@ class PNL_ctrl(wx.Panel):
         if btnLabel or btnImage :
             self.avecBouton = True
         else: self.avecBouton = False
-        lg = max(txtSize,int(len(label)*5.5))
         if label and len(label.strip())>0:
             self.txt = wx.StaticText(self, wx.ID_ANY, label + " :")
         else:
             self.txt = wx.StaticText(self, wx.ID_ANY, label)
-        self.txt.SetMinSize((lg, 25))
-        maxSize = kwds.pop('ctrlMaxSize',None)
-        if maxSize:
+        self.txt.SetMinSize((lgTxtCtrl, 25))
+        if maxSize :
             self.SetMaxSize(maxSize)
+        if minSize:
+            self.SetMinSize(minSize)
 
         # seul le PropertyGrid gère le multichoices, pas le comboBox
         if genre == 'multichoice': genre = 'combo'
@@ -544,7 +555,6 @@ class PNL_ctrl(wx.Panel):
             # actionCtrl est un pointeur de Fonction
             actionCtrl(event)
         self.flagSkipEdit = False
-        print(self.GetValue())
 
     def OnBtnAction(self,event):
         if hasattr(event.EventObject,'actionBtn'):
@@ -566,12 +576,12 @@ class PNL_ctrl(wx.Panel):
         event.Skip()
 
     def PnlSizer(self):
-        topbox = wx.BoxSizer(wx.HORIZONTAL)
-        topbox.Add(self.txt,0, wx.LEFT|wx.TOP|wx.ALIGN_CENTER, 5)
-        topbox.Add(self.ctrl, 1, wx.ALL|wx.EXPAND , 4)
+        ctrlbox = wx.BoxSizer(wx.HORIZONTAL)
+        ctrlbox.Add(self.txt,0, wx.LEFT|wx.TOP|wx.ALIGN_CENTER, 5)
+        ctrlbox.Add(self.ctrl, 1, wx.ALL|wx.EXPAND , 4)
         if self.avecBouton:
-            topbox.Add(self.btn, 0, wx.ALL|wx.EXPAND, 4)
-        self.SetSizer(topbox)
+            ctrlbox.Add(self.btn, 0, wx.ALL, 4)
+        self.SetSizer(ctrlbox)
 
     def GetValue(self):
         value = self.ctrl.GetValue()
@@ -798,13 +808,20 @@ class BoxPanel(wx.Panel):
         self.lstPanels=[]
         self.dictDonnees = dictDonnees
         if lblBox:
-            cadre_staticbox = wx.StaticBox(self, wx.ID_ANY, label=lblBox)
-            self.ssbox = wx.StaticBoxSizer(cadre_staticbox, wx.VERTICAL)
+            self.ssbox = wx.StaticBoxSizer(wx.VERTICAL, self, lblBox)
         else:
             self.ssbox = wx.BoxSizer(wx.VERTICAL)
         self.InitMatrice(lignes)
 
     def InitMatrice(self,lignes):
+
+        # calcul d'un default txtSize
+        dfltTextSize = 0
+        for ligne in lignes:
+            if (not 'txtSize' in ligne) and 'label' in ligne:
+                dfltTextSize = max(dfltTextSize,int(len(ligne['label']) * PT_CARACTERE))
+
+        # composition des lignes en ctrl
         for ligne in lignes:
             kwdLigne= self.kwds.copy()
             for nom,valeur in ligne.items():
@@ -814,6 +831,9 @@ class BoxPanel(wx.Panel):
                     possibles = "Liste des possibles: %s"%str(OPTIONS_CTRL)
                     wx.MessageBox("BoxPanel: L'option '%s' de la ligne '%s' n'est pas reconnue!\n\n%s"%(nom,
                                                                                         ligne['name'],possibles))
+            if (not 'txtSize' in ligne) and 'label' in ligne:
+                kwdLigne['txtSize'] = dfltTextSize
+
             if ('genre' in ligne):
                 panel = PNL_ctrl(self, **kwdLigne)
                 if ligne['genre'] and ligne['genre'].lower() in ['bool', 'check']:
@@ -823,7 +843,7 @@ class BoxPanel(wx.Panel):
                                 'value', 'labels', 'values','enable'):
                         if not cle in ligne:
                             ligne[cle]=None
-                    self.ssbox.Add(panel,1, wx.ALL,0)
+                    self.ssbox.Add(panel,1, wx.ALL|wx.EXPAND,0)
                     panel.Proprietes(ligne)
                     self.lstPanels.append(panel)
         self.SetSizer(self.ssbox)
