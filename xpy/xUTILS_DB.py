@@ -777,6 +777,21 @@ class DB():
         return retour
         #fin CreationUneTable
 
+    def TestTables(self, parent,dicTables, tables):
+        if not tables:
+            tables = dicTables.keys()
+        retour = 'ok'
+        for nomTable in tables:
+            if self.IsTableExists(nomTable):
+                continue
+            retour = 'KO'
+            mess = "Manque table %s, " %(nomTable)
+            print(mess)
+        if self and retour == 'KO':
+            mess = "Des tables manquent dans cette base de donnée\n\n"
+            mess += "Identifiez-vous en tant qu'admin pour pouvoir les créer, ou changez de base"
+            wx.MessageBox(mess,"Création de tables nécessaires")
+
     def CreationTables(self, parent,dicTables, tables):
         if not tables:
             tables = dicTables.keys()
@@ -809,7 +824,6 @@ class DB():
                 if self.typeDB == 'sqlite':
                     req = "CREATE UNIQUE INDEX %s ON %s (%s);" % (nomIndex, nomTable, nomChamp)
                 else:
-                    #ALTER TABLE `matthania_data`.`stEffectifs` DROP PRIMARY KEY, ADD PRIMARY KEY (`IDdate`, `IDanalytique`) COMMENT '';
                     req = "ALTER TABLE %s ADD PRIMARY KEY (%s);" % (nomTable, nomChamp)
             elif nomIndex[:2] == "PK":
                 req = "CREATE UNIQUE INDEX %s ON %s (%s);" % (nomIndex, nomTable, nomChamp)
@@ -822,13 +836,29 @@ class DB():
 
     def CreationTousIndex(self,parent,dicIndex,tables):
         """ Création de tous les index """
-        for nomIndex, dic in dicIndex.items() :
-            if not dic['table'] in tables:
-                continue
+        for nomIndex, dict in dicIndex.items() :
+
+            if not 'table' in dict:
+                raise Exception("Structure incorrecte: shema Index '%s' - absence cle 'table'"%nomIndex)
+            if not dict['table'] in tables: continue
+
+            if nomIndex[:7] == "PRIMARY" and self.typeDB != 'sqlite':
+                nomIndex = "PRIMARY"
+                # test de présence car non détecté par la liste des index
+                req = """
+                    SELECT constraint_name
+                    FROM information_schema.table_constraints
+                    WHERE   table_name = '%s'
+                            AND  constraint_name = 'PRIMARY';"""%(dict['table'])
+                retour = self.ExecuterReq(req)
+                if retour == 'ok':
+                    recordset = self.ResultatReq()
+                    if len(recordset)>0:
+                        # primary exists on passe
+                        continue
             if not self.IsIndexExists(nomIndex) :
                 ret = self.CreationIndex(nomIndex,dicIndex)
                 mess = "Création de l'index %s: %s" %(nomIndex,ret)
-                print(mess)
                 # Affichage dans la StatusBar
                 if parent:
                     parent.mess += "%s %s, " % (nomIndex, ret)
@@ -979,24 +1009,28 @@ class DB():
         finally:
             connection.close()
 
-def Init_tables(parent=None, mode="creation",tables=None):
-    # actualise la structure des tables
+def Init_tables(parent=None, mode="creation",tables=None,db_tables=None,db_ix=None,db_pk=None):
+    # actualise ou vérifie la structure des tables : test, creation, ctrl
     if not tables:
         md = wx.MessageDialog(parent,
                 "%s de toutes les tables\n\ny compris la structure des tables Noethys existantes"%mode.capitalize(),
                 style=wx.YES_NO)
         if md.ShowModal() != wx.ID_YES:
             return
-    db = DB()
-    del db.cursor
+    if parent and parent.db:
+        db = parent.db
+    else:
+        db = DB()
+    if hasattr(db,'cursor'):
+        del db.cursor
     db.cursor = db.connexion.cursor(buffered=False)
 
-    from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
-    if parent:
+    if mode != "test" and parent:
         parent.mess = "Lancement créations: "
         parent.SetStatusText(parent.mess)
+
     if mode == "creation":
-        db.CreationTables(parent,DB_TABLES,tables)
+        db.CreationTables(parent,db_tables,tables)
 
         # réinit complet de db pour prendre en compte les nouvelles tables
         del db.cursor
@@ -1004,11 +1038,14 @@ def Init_tables(parent=None, mode="creation",tables=None):
         db = DB()
         db.cursor = db.connexion.cursor(buffered=False)
 
-        db.CreationTousIndex(parent,DB_IX, tables)
-        db.CreationTousIndex(parent,DB_PK, tables)
+        db.CreationTousIndex(parent,db_ix, tables)
+        db.CreationTousIndex(parent,db_pk, tables)
 
     elif mode == "ctrl":
-        db.CtrlTables(parent,DB_TABLES,tables)
+        db.CtrlTables(parent,db_tables,tables)
+
+    elif mode == "test":
+        db.TestTables(parent,db_tables,tables)
 
     db.Close() # fermeture pour prise en compte de la création
 
@@ -1020,4 +1057,4 @@ if __name__ == "__main__":
     from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
     #db.CreationUneTable(DB_TABLES,'stEffectifs')
     #db.CreationTables(None,dicTables=DB_TABLES,tables=['stArticles','stEffectifs','stMouvements','stInventaires','cpta_analytiques'])
-    db.CreationTousIndex(None,DB_PK,DB_TABLES)
+    db.CreationTousIndex(None,DB_PK,['stEffectifs',])

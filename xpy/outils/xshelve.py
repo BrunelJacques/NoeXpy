@@ -245,6 +245,8 @@ if __name__ == u"__main__":
 
     cfgUser = ParamUser()
     cfgNoelite  = ParamFile('Config',path='C:\\ProgramData\\Noelite',flag='r')
+    #'../../srcNoelite/Data',
+    paramsNoelite  = ParamFile('Geographie.dat',path='../../srcNoelite/Data',flag='r')
 
     # del de clés
     #cfgUser.DelDictConfig(cle=None,groupe='USER')
@@ -252,7 +254,7 @@ if __name__ == u"__main__":
 
     DumpFile(cfgUser.dictFic)
     print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Fichiers Noelite Data.Config')
-    DumpFile(cfgNoelite.dictFic)
+    DumpFile(paramsNoelite.dictFic)
     #print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Fichiers Openref Data.Config')
     #DumpFile(cfgOpen.dictFic)
     #cfg = ParamUser('UserConfig', flag='c')

@@ -198,9 +198,11 @@ def ValideSaisie(dlgSaisie,**kwd):
 
 class EffectifUnJour(object):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,db=xdb.DB(),date=None,analytique='00'):
+    def __init__(self,db=None,date=None,analytique='00'):
         # Lanceur de l'écran de saisie d'une ligne d'effectif
-        self.db = db
+        if db:
+            self.db = db
+        else: self.db = xdb.DB()
         self.analytique = analytique
         if not date:
             date = datetime.date.today()

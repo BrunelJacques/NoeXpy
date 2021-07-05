@@ -85,14 +85,14 @@ def GetMatriceAnterieurs(dlg):
 
     # Composition de la matrice de l'OLV anterieurs, retourne un dictionnaire
 
-    lstChamps = ['origine', 'date', 'fournisseur', 'IDanalytique', 'COUNT(IDinventaire)']
+    lstChamps = ['date', 'fournisseur', 'IDanalytique', 'COUNT(IDinventaire)']
 
-    lstNomsColonnes = ['origine', 'date', 'fournisseur', 'analytique', 'nbLignes']
+    lstNomsColonnes = ['date', 'fournisseur', 'analytique', 'nbLignes']
 
-    lstTypes = ['VARCHAR(8)', 'DATE', 'VARCHAR(32)', 'VARCHAR(32)', 'INT']
+    lstTypes = [ 'DATE', 'VARCHAR(32)', 'VARCHAR(32)', 'INT']
     lstCodesColonnes = [xformat.NoAccents(x).lower() for x in lstNomsColonnes]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
-    lstLargeurColonnes = [100,100,180,180,200]
+    lstLargeurColonnes = [100,180,180,200]
     lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
     return {
         'lstSaisons': dlg.lstSaisons,
@@ -100,7 +100,7 @@ def GetMatriceAnterieurs(dlg):
         'lstChamps': lstChamps,
         'listeNomsColonnes': lstNomsColonnes,
         'listeCodesColonnes': lstCodesColonnes,
-        'getDonnees': nust.SqlMvtsAnte,
+        'getDonnees': nust.SqlInvAnte,
         'dicBandeau': dicBandeau,
         'sortColumnIndex': 2,
         'sensTri': False,
@@ -173,7 +173,7 @@ def GetDicParams(dlg):
 
 def GetBoutons(dlg):
     return  [
-                {'name': 'btnVerif', 'label': "Confirmer les qtés\ndes lignes cochées",
+                {'name': 'btnVerif', 'label': "Conserver cet \ninventaire",
                     'help': "Confirme et historise les quantités en stock vérifiées ce jour.\nTout cocher et cliquer à l'inventaire de clôture",
                     'size': (150, 35),'onBtn':dlg.OnImprimer},
                 {'name': 'btnImp', 'label': "Imprimer\nl'inventaire",
@@ -188,25 +188,30 @@ def GetOlvColonnes(dlg):
     lstCol = [
             ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter=" ",isSpaceFilling=True,
                        isEditable=False),
-            ColumnDefn("Fournisseur", 'left', 100, 'fournisseur', valueSetter=" ",isSpaceFilling=True),
-            ColumnDefn("Magasin", 'left', 100, 'magasin', valueSetter=" ",isSpaceFilling=True),
-            ColumnDefn("Rayon", 'left', 100, 'rayon', valueSetter=" ",isSpaceFilling=True),
+            ColumnDefn("Fournisseur", 'left', 100, 'fournisseur', valueSetter=" ",isSpaceFilling=True,
+                       isEditable=False),
+            ColumnDefn("Magasin", 'left', 100, 'magasin', valueSetter=" ",isSpaceFilling=True,
+                       isEditable=False),
+            ColumnDefn("Rayon", 'left', 100, 'rayon', valueSetter=" ",isSpaceFilling=True,
+                       isEditable=False),
             ColumnDefn("Qté stock", 'right', 80, 'qteConstat',  valueSetter=0.0,isSpaceFilling=False,
                                         stringConverter=xformat.FmtDecimal),
-            ColumnDefn("Prix Unit", 'right', 80, 'pxUn',  valueSetter=0.0,isSpaceFilling=False,
+            ColumnDefn("Prix Unit Moy", 'right', 85, 'pxUn',  valueSetter=0.0,isSpaceFilling=False,
                                         stringConverter=xformat.FmtDecimal),
             ColumnDefn("Mtt TTC", 'right', 100, 'mttTTC',  valueSetter=0.0,isSpaceFilling=False,
-                            isEditable=False, stringConverter=xformat.FmtDecimal, ),
-            ColumnDefn("Vérifié le", 'left', 80, 'IDdate', valueSetter=datetime.date.today(),isSpaceFilling=False,
-                            isEditable=False, stringConverter=xformat.FmtDate,),
+                        isEditable=False, stringConverter=xformat.FmtDecimal, ),
+            ColumnDefn("QteMini", 'right', 80, 'mini',  valueSetter=0.0,isSpaceFilling=False,
+                        isEditable=False, stringConverter=xformat.FmtDecimal, ),
             ColumnDefn("Nbre Rations", 'right', 80, 'rations',  valueSetter=0.0,isSpaceFilling=False,
-                            isEditable=False, stringConverter=xformat.FmtDecimal, ),
+                        isEditable=False, stringConverter=xformat.FmtDecimal, ),
+            ColumnDefn("Vérifié le", 'left', 80, 'IDdate', valueSetter=datetime.date.today(),isSpaceFilling=False,
+                        isEditable=False, stringConverter=xformat.FmtDate,),
             ]
     return lstCol
 
 def GetOlvCodesSup():
     # codes dans les données olv, mais pas dans les colonnes, attributs des tracks non visibles en tableau
-    return ['qteConstat','qteMvt','mttMvt','qteInv', 'pxMoyInv','pxActInv','qteArt','qteMini','qteSaison','pxMoyArt']
+    return ['qteMvt','mttMvt','qteEnt','mttEnt','qteInv', 'pxMoyInv','pxActInv','qteFin','qteTous','qteArt','qteMini','qteSaison']
 
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
@@ -229,7 +234,7 @@ def GetDlgOptions(dlg):
     return {
         'minSize': (700, 450),
         'size': (1150, 800),
-        'autoSizer': False,
+        'autoSizer': False
         }
 
     #----------------------- Parties de l'écrans -----------------------------------------
@@ -487,15 +492,13 @@ class DLG(xgte.DLG_tableau):
         if idem : return
 
         # appel des données de l'Olv principal à éditer
-        lstDonnees = nust.SqlInventaire(self, dParams)
-
-        ixModif = len(DB_schema.DB_TABLES['stArticles'])-1
-        lstNoModif = [1 for rec in  lstDonnees if rec[ixModif]]
-        # présence de lignes déjà transférées compta
-        if len(lstNoModif) >0:
-            self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
-            self.pnlPied.SetItemsInfos("NON MODIFIABLE: enregistrements transférés ",
+        lstDonnees = nust.SqlInventaire(self)
+        self.mouvementsPost = nust.MouvementsPosterieurs(self)
+        if self.mouvementsPost:
+            self.pnlPied.SetItemsInfos("Présence de mouvements postérieurs\nLe stock dans l'article n'est pas mis à jour",
                                        wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
+
+
         # l'appel des données peut avoir retourné d'autres paramètres, il faut mettre à jour l'écran
         if len(lstDonnees) > 0:
             # set date du lot importé

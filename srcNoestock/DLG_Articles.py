@@ -45,6 +45,7 @@ def GetMatriceSaisie(db,lstColonnes):
             ligne['value'] = ""
         if ligne['genre'].lower() in ('str','combo'):
             ligne['ctrlAction'] = "ValideNbCar"
+
     return matrice
 
 def GetDicOlv(db,cutend=None):

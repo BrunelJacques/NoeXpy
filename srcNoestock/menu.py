@@ -11,14 +11,18 @@
 import wx
 from xpy import xUTILS_Identification, xGestionConfig, xUTILS_DB
 from srcNoestock import DLG_Articles, DLG_Mouvements, DLG_Effectifs, DLG_PrixJour, DLG_Inventaires, UTILS_Stocks
-
-# liste de tables de DB_schema à contrôler et à créer si inexistantes
-LST_TABLES = ['utilisateurs','droits','cpta_analytiques','stArticles','stEffectifs','stMouvements','stInventaires']
+from srcNoelite  import DB_schema
 
 """ Paramétrage de la construction de la barre de menus """
 class MENU():
     def __init__(self,parent):
         self.parent = parent
+        self.parent.ConnectBase()
+        self.db = self.parent.db
+        if self.db:
+            xUTILS_DB.Init_tables(parent=self.parent,mode="test",
+                              tables=self.parent.dictAppli['LST_TABLES'],
+                              db_tables=DB_schema.DB_TABLES)
 
     def ParamMenu(self):
         """ appelé pour Construire la barre de menus """
@@ -166,10 +170,14 @@ class MENU():
         del dlg
 
     def On_gesTables(self,event):
-        xUTILS_DB.Init_tables(parent=self.parent,mode="creation",tables=LST_TABLES)
+        xUTILS_DB.Init_tables(parent= self.parent,mode= "creation",
+                              tables= self.parent.dictAppli['LST_TABLES'],
+                              db_tables=DB_schema.DB_TABLES,db_ix=DB_schema.DB_IX,db_pk=DB_schema.DB_PK)
 
     def On_ctrlTables(self,event):
-        xUTILS_DB.Init_tables(parent=self.parent,mode="ctrl",tables=LST_TABLES)
+        xUTILS_DB.Init_tables(parent=self.parent,mode="ctrl",
+                              tables=self.parent.dictAppli['LST_TABLES'],
+                              db_tables=DB_schema.DB_TABLES)
 
     def On_sauve(self,event):
         pass

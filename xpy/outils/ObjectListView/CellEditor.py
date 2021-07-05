@@ -533,7 +533,7 @@ class FloatEditor(BaseCellTextEditor):
     def SetValue(self, value):
         "Put a new value into the editor"
         if isinstance(value, (float,int)):
-            value = repr(round(value,4))
+            value = repr(round(value,6))
         wx.TextCtrl.SetValue(self, value)
 
 class DateTimeEditor(BaseCellTextEditor):

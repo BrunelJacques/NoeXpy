@@ -318,7 +318,9 @@ class CTRL_property(wxpg.PropertyGrid):
                                 propriete = wxpg.FileProperty(name)
 
                             else:
-                                commande = "wxpg." + genre.upper()[:1] + genre.lower()[1:] + "Property(label= label, name=name, value=value)"
+                                commande = "wxpg." + genre.upper()[:1] \
+                                           + genre.lower()[1:] \
+                                           + "Property(label= label, name=name, value=value)"
                                 propriete = eval(commande)
                             if 'help' in ligne:
                                 propriete.SetHelpString(ligne['help'])
@@ -401,9 +403,17 @@ class PNL_ctrl(wx.Panel):
         lgTxtCtrl =     max(self.txtSize,int(len(label)* PT_CARACTERE))
         minSize =       kwds.pop('ctrlMinSize',(int(lgTxtCtrl * 1.5),30))
         maxSize =       kwds.pop('ctrlMaxSize',(lgTxtCtrl * 3,minSize[1] * 2))
+
+        # size renseignée est prioritaire
         size =          kwds.pop('size',None)
         if not size:
             size =  kwds.pop('ctrlSize',maxSize)
+        lg, ht = size
+        if lg < minSize[0]: minSize = (lg,size[1])
+        if lg > maxSize[0]: maxSize = (lg,size[1])
+        if ht < minSize[1]: minSize = (size[0],ht)
+        if lg > maxSize[1]: maxSize = (size[0],ht)
+
         kwds['size'] = size
 
         kw = DicFiltre(kwds,OPTIONS_PANEL )

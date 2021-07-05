@@ -108,7 +108,6 @@ def GetMatriceAnterieurs(dlg):
 
 # Description des paramètres de la gestion des mouvements
 
-
 MATRICE_PARAMS = {
 ("param1", "Paramètres"): [
     {'name': 'origine', 'genre': 'Choice', 'label': "",
@@ -165,6 +164,7 @@ MATRICE_PARAMS = {
                      },
     ],
 }
+
 def GetDicParams(dlg):
     matrice = xformat.CopyDic(MATRICE_PARAMS)
     if dlg.sens == 'sorties':
@@ -307,8 +307,8 @@ def ConvTva(valeur,taux,modeOut='HT',modeIn='TTC'):
     if modeIn == modeOut : return valeur
     if float(taux) == 0.0 : return
     if not modeOut in ('TTC','HT'): raise Exception("ConvTVA  %s %s impossible!!!"%(modeIn,modeOut))
-    if modeIn == 'TTC': return round(float(valeur) / (1 + float(taux)/100),2)
-    if modeIn == 'HT': return round(float(valeur) * (1+ float(taux)/100),2)
+    if modeIn == 'TTC': return round(float(valeur) / (1 + float(taux)/100),6)
+    if modeIn == 'HT': return round(float(valeur) * (1+ float(taux)/100),6)
 
 def GetMouvements(dlg, dParams):
     # retourne la liste des données de l'OLv de DlgEntree
@@ -384,7 +384,7 @@ def CalculeLigne(dlg,track):
     if dlg.typeAchat:
         track.qte = track.nbAch * track.parAch
         if track.parAch == 0.0: track.parAch = 1
-        track.pxUn = round(Nz(track.pxAch) / Nz(track.parAch),2)
+        track.pxUn = round(Nz(track.pxAch) / Nz(track.parAch),6)
     try: qte = float(track.qte)
     except: qte = 0.0
 
@@ -396,7 +396,7 @@ def CalculeLigne(dlg,track):
     txTva = track.dicArticle['txTva']
     track.mttHT = PxUnToHT(dlg.ht_ttc,txTva) * pxUn * qte
     track.mttTTC = PxUnToTTC(dlg.ht_ttc,txTva) * pxUn * qte
-    track.prixTTC = round(PxUnToTTC(dlg.ht_ttc,txTva) * pxUn,2)
+    track.prixTTC = round(PxUnToTTC(dlg.ht_ttc,txTva) * pxUn,6)
     track.qteStock = track.dicArticle['qteStock'] + (Nz(track.qte) * dlg.sensNum)
 
     if isinstance(track.IDmouvement,int):
@@ -606,7 +606,8 @@ class PNL_pied(xgte.PNL_pied):
 
 class DLG(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,sens='sorties',date=None,**kwd):
+    def __init__(self,sens='entrees',date=None,**kwd):
+        # gestion des deux sens possibles 'entrees' et 'sorties'
         self.sens = sens
         self.sensNum = 1
         if self.sens == "sorties":
@@ -628,6 +629,7 @@ class DLG(xusp.DLG_vide):
         self.analytique = '00'
         self.fournisseur = ''
         self.ht_ttc = 'TTC'
+        if sens == "entrees":  self.htTTC = 'HT'
         self.oldParams = {}
 
         ret = self.Init()

@@ -1,65 +1,89 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 # Application :    NoeLITE, gestion des stocks et prix de journée
 # Usage : Ensemble de fonctions acompagnant les DLG
 # Auteur:          Jacques BRUNEL 2021-01 Matthania
 # Licence:         Licence GNU GPL
-#------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 
-import wx, datetime
+import wx
 from srcNoelite     import DB_schema
 from xpy.outils     import xformat
-from xpy.outils.xformat         import Nz
+from xpy.outils.xformat import Nz
 
-LIMITSQL =100
+LIMITSQL = 100
 # codes repas [ 1,      2,     3,     4       5]
 CHOIX_REPAS = ['PtDej','Midi','Soir','5eme','Tous']
 
 # Select de données  ------------------------------------------------------------------
+
+def MouvementsPosterieurs(dlg):
+    db = dlg.db
+    # limitation à la date d'analyse, mais art.qte est l'ensemble des mouvements
+    where = "WHERE (stMouvements.date > '%s') " % dlg.date
+
+    req = """
+        SELECT  Count(stMouvements.qte)        
+        FROM stMouvements
+        %s ;""" % (where)
+
+    retour = db.ExecuterReq(req, mess="UTILS_Stocks.MouvementsPosterieurs Select" )
+    recordset = ()
+    if retour == "ok":
+        recordset = db.ResultatReq()
+    if recordset[0][0] > 0:
+        return True
+    return False
 
 
 def SqlInventaire(dlg,*args,**kwd):
     db = dlg.db
     where = ''
     if not dlg.qteZero:
-        where += '(stArticles.qteStock > 0) '
+        where += '( art.qte > 0) '
     if not dlg.qteMini :
         if len(where) > 0 :
             where += 'AND '
         if dlg.saisonIx == 1:
-            mini = 'stArticles.qteMini'
-        else: mini = 'stArticles.qteSaison'
-        where += '(stArticles.qteStock > %s) '%mini
+            mini = 'art.qteMini'
+        else: mini = 'art.qteSaison'
+        where += '(art.qte > %s) '%mini
+
     if len(where) > 0 :
-        where = 'WHERE %s'%where
+        where += 'AND '
+    where = 'WHERE %s'%where
+
+    # limitation à la date d'analyse, mais art.qte est l'ensemble des mouvements
+    where += " ((stMouvements.date <= '%s') OR (stMouvements.date IS NULL)) "%dlg.date
 
 
-    whereMvt = "WHERE (stMouvements.date <= '%s') "%dlg.date
-
-    lstChamps = ['IDarticle', 'IDdate',
-                 'qteConstat', 'qteInv','pxActInv', 'pxMoyInv',
-                 'qteMvt','mttMvt',
-                 'fournisseur','magasin','rayon','qteArt','qteMini','qteSaison','pxMoyArt','rations']
-    lstChamps += ['qteStock','pxUn','mttTTC']
+    lstChamps = ['IDarticle', 'IDdate','qteFin',
+                 'qteInv', 'pxMoyInv',
+                 'qteMvt', 'mttMvt', 'qteEnt','mttEnt',
+                 'fournisseur','magasin','rayon','qteArt','qteMini','qteSaison','rations','prixActuel']
     req = """
-        SELECT  art.artArt, art.dte, 
-                stInventaires.qteConstat, stInventaires.qteStock, stInventaires.prixActuel, stInventaires.prixMoyen,
-                Sum(stMouvements.qte) AS qteMvt, Sum(stMouvements.qte * stMouvements.prixUnit) AS mttMvt,
-                art.fournisseur, art.magasin, art.rayon, art.artQte, art.qteMini, art.qteSaison, art.prixMoyen, 
-                (art.rations * art.artQte)
+        SELECT  art.artArt, art.dte, art.qte,
+                stInventaires.qteConstat, 
+                stInventaires.prixMoyen,
+                Sum(stMouvements.qte), 
+                Sum(stMouvements.qte * stMouvements.prixUnit) AS mttMvt,
+                Sum(if (stMouvements.qte > 0,stMouvements.qte,0)) AS qteEnt, 
+                Sum(if (stMouvements.qte > 0, stMouvements.qte,0) * stMouvements.prixUnit) AS mttEnt,                
+                art.fournisseur, art.magasin, art.rayon, art.artQte, art.qteMini, art.qteSaison, 
+                art.rations,art.prixActuel
         
         FROM (
             (	SELECT stArticles.IDarticle AS artArt, max(if( IDdate is NULL, '2021-01-01', IDdate)) AS dte, 
                         stArticles.fournisseur, stArticles.magasin, stArticles.rayon, stArticles.qteStock AS artQte, 
-                        stArticles.qteMini, stArticles.qteSaison, stArticles.prixMoyen, stArticles.dernierAchat, 
-                        stArticles.rations
+                        stArticles.qteMini, stArticles.qteSaison,stArticles.rations,stArticles.prixActuel,
+                        sum(stMouvements.qte) AS qte
                 FROM stArticles 
+                LEFT JOIN stMouvements ON stArticles.IDarticle = stMouvements.IDarticle
                 LEFT JOIN stInventaires ON stArticles.IDarticle = stInventaires.IDarticle
-                %s
                 GROUP BY stArticles.IDarticle, stArticles.fournisseur, stArticles.magasin, stArticles.rayon, 
-                        stArticles.qteStock, stArticles.qteMini, stArticles.qteSaison, stArticles.prixMoyen, 
-                        stArticles.dernierAchat, stArticles.rations
+                        stArticles.qteStock, stArticles.qteMini, stArticles.qteSaison, stArticles.rations,
+                        stArticles.prixActuel
              ) 
             AS art
         
@@ -71,34 +95,76 @@ def SqlInventaire(dlg,*args,**kwd):
         %s
         GROUP BY art.artArt, art.dte, stInventaires.qteConstat, stInventaires.qteStock, stInventaires.prixActuel,
             stInventaires.prixMoyen, art.fournisseur, art.magasin, art.rayon, art.artQte, art.qteMini, art.qteSaison, 
-            art.prixMoyen, art.rations;            
-            """ %(where,whereMvt)
+            art.rations,art.prixActuel
+        ;
+            """ %(where)
 
-    retour = db.ExecuterReq(req, mess="UTILS_Stocks.SqlArticles Select" )
+    retour = db.ExecuterReq(req, mess="UTILS_Stocks.SqlInventaire Select" )
     recordset = ()
     if retour == "ok":
         recordset = db.ResultatReq()
-    # composition des données du tableau à partir du recordset
-    def CalculChamps(rec):
-        qteMvt = Nz(rec[lstChamps.index('qteMvt')])
-        mttMvt = Nz(rec[lstChamps.index('mttMvt')])
-        qteInv = Nz(rec[lstChamps.index('qteInv')])
-        pxActInv = Nz(rec[lstChamps.index('pxActInv')]) # prix forcé dans l'inventaire
-        if pxActInv <= 0.0: pxActInv = Nz(rec[lstChamps.index('pxMoyInv')]) # prix résultant d'un calcul antérieur dans l'inventaire
-        if (qteInv + qteMvt) == 0.0 : qteInv, qteMvt = (0,1)
-        qteStock = Nz(rec[lstChamps.index('qteConstat')]) + Nz(qteMvt)
-        pxUn = ((qteInv * pxActInv) + mttMvt) / (qteInv + qteMvt)
-        mttTTC = qteStock * pxUn
-        return (qteStock,pxUn,mttTTC)
 
-    lstDonnees = []
-    lstCodes = dlg.dicOlv['lstCodes'] + dlg.dicOlv['lstCodesSup']
-    for record in recordset:
-        ligne = []
+    # composition des données du tableau à partir du recordset
+    def ComposeLigne(record):
+        donnees = [None,] * len(lstCodes)
+        # certains champs sont transposés en l'état
         for code in lstCodes:
-            donnees = record + CalculChamps(record)
-            ligne.append(donnees[lstChamps.index(code)])
-        lstDonnees.append(ligne)
+            if code in lstChamps:
+                donnees[lstCodes.index(code)] = record[lstChamps.index(code)]
+
+        # Les champs lus doivent être assemblés pour certains
+        qteMvt = Nz(record[lstChamps.index('qteMvt')])
+        qteInv = Nz(record[lstChamps.index('qteInv')])
+        qteConstat = qteInv + qteMvt
+        # codesOlv[IDarticle,fournisseur,magasin,rayon,qteConstat,pxUn,mttTTC,IDdate,rations
+        # codesSup['qteMvt','mttMvt','qteEnt','mttEnt','qteInv', 'pxMoyInv','pxActInv','qteFin','qteTous','qteArt','qteMini','qteSaison']
+
+        mttInv = Nz(record[lstChamps.index('pxMoyInv')]) * qteInv
+        mttMvt = Nz(record[lstChamps.index('mttMvt')])
+        if qteConstat == 0:
+            donnees[lstCodes.index('pxUn')] = Nz(record[lstChamps.index('prixActuel')])
+        else:
+            donnees[lstCodes.index('pxUn')] = (mttInv + mttMvt) / qteConstat
+        donnees[lstCodes.index('mttTTC')] = mttInv + mttMvt
+
+        # la qteConstat calculée a servi pour le pxMoyen, mais la qteStock sera la somme des mvts
+        qteTous = Nz(record[lstChamps.index('qteTous')])
+        if qteConstat != qteTous:
+            qteConstat = qteTous
+        donnees[lstCodes.index('qteConstat')] = qteConstat
+        donnees[lstCodes.index('rations')] = qteConstat * Nz(record[lstChamps.index('rations')])
+
+        # dans l'inventaire le prix actuel est la moyenne des dernieres entrées, sinon prix du dernier achat
+        qteEnt = Nz(record[lstChamps.index('qteEnt')])
+        mttEnt = Nz(record[lstChamps.index('mttEnt')])
+        if qteEnt == 0:
+            donnees[lstCodes.index('pxActInv')] = Nz(record[lstChamps.index('prixActuel')])
+        else:
+            donnees[lstCodes.index('pxActInv')] = (mttEnt) / qteEnt
+
+        if dlg.saisonIx == 0:
+            mini = Nz(record[lstChamps.index('qteMini')])
+        elif dlg.saisonIx == 1:
+            mini = Nz(record[lstChamps.index('qteSaison')])
+        else:
+            mini = 0
+        donnees[lstCodes.index('mini')] = mini
+        return donnees
+
+    lstCodes = dlg.dicOlv['lstCodes'] + dlg.dicOlv['lstCodesSup']
+    lstDonnees = []
+    for record in recordset:
+        lstDonnees.append(ComposeLigne(record))
+
+    # MAJ des quantités en stock dans les articles
+    req = """
+            UPDATE stArticles 
+            INNER JOIN stMouvements ON stArticles.IDarticle = stMouvements.IDarticle 
+            SET stArticles.qteStock = Sum([stmouvements].[qte])
+            WHERE (((stMouvements.qte)<>[starticles].[qtestock]));"""
+    mess = "Echec de l'actualisation des qteStocks dans les Articles"
+    retour = db.ExecuterReq(req, mess= mess, affichError=True)
+
     return lstDonnees
 
 def SqlMouvements(db,dParams=None):
@@ -371,6 +437,7 @@ def SqlMvtsAnte(**kwd):
 
 # Appel des inventaires antérieurs
 def SqlInvAnte(**kwd):
+    return []
     # ajoute les données à la matrice pour la recherche d'un anterieur
     dicOlv = kwd.get('dicOlv',None)
     db = kwd.get('db',None)
@@ -573,8 +640,7 @@ def SauveEffectif(dlg,**kwd):
 
     db = kwd.pop('db',None)
     lstDonnees = []
-    if hasattr(dlg,'date'):
-        IDdate = dlg.date
+    IDdate = dlg.date
 
     condPK = 'IDanalytique = %s' % dlg.analytique
 
