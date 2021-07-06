@@ -7,10 +7,11 @@
 # Licence:         Licence GNU GPL
 # ------------------------------------------------------------------------
 
-import wx
+import wx, decimal
 from srcNoelite     import DB_schema
 from xpy.outils     import xformat
 from xpy.outils.xformat import Nz
+from xpy            import xUTILS_DB as xdb
 
 LIMITSQL = 100
 # codes repas [ 1,      2,     3,     4       5]
@@ -36,9 +37,31 @@ def MouvementsPosterieurs(dlg):
         return True
     return False
 
-
 def SqlInventaire(dlg,*args,**kwd):
+    # met à jour les quantités dans article et appelle les données pour OLV
     db = dlg.db
+    # MAJ des quantités en stock dans les articles
+    req = """
+            UPDATE stArticles 
+            INNER JOIN (
+                SELECT IDarticle, SUM(qte) as qtemvt
+                FROM stMouvements
+                GROUP BY stMouvements.IDarticle) as stmvt 
+            ON stArticles.IDarticle = stmvt.IDarticle 
+            SET stArticles.qteStock = stmvt.qtemvt
+            WHERE stArticles.qteStock <> stmvt.qtemvt
+            ;"""
+
+    mess = "Echec de l'actualisation des qteStocks dans les Articles"
+    retour = db.ExecuterReq(req, mess= mess, affichError=True)
+
+    # Force la mise à jour dans la base avant nouveau select évitant le cache
+    del db.cursor
+    db.cursor = db.connexion.cursor(buffered=False)
+    req = """FLUSH  TABLES stArticles;"""
+    retour = db.ExecuterReq(req, mess='SqlInventaires flush')
+
+    # appel des données
     where = ''
     if not dlg.qteZero:
         where += '( art.qte > 0) '
@@ -58,12 +81,12 @@ def SqlInventaire(dlg,*args,**kwd):
     where += " ((stMouvements.date <= '%s') OR (stMouvements.date IS NULL)) "%dlg.date
 
 
-    lstChamps = ['IDarticle', 'IDdate','qteFin',
+    lstChamps = ['IDarticle', 'IDdate','qteTous','qteFin',
                  'qteInv', 'pxMoyInv',
                  'qteMvt', 'mttMvt', 'qteEnt','mttEnt',
-                 'fournisseur','magasin','rayon','qteArt','qteMini','qteSaison','rations','prixActuel']
+                 'fournisseur','magasin','rayon','qteArt','qteMini','qteSaison','artRations','prixActuel']
     req = """
-        SELECT  art.artArt, art.dte, art.qte,
+        SELECT  art.artArt, art.dte, art.tous, art.qte,
                 stInventaires.qteConstat, 
                 stInventaires.prixMoyen,
                 Sum(stMouvements.qte), 
@@ -77,7 +100,8 @@ def SqlInventaire(dlg,*args,**kwd):
             (	SELECT stArticles.IDarticle AS artArt, max(if( IDdate is NULL, '2021-01-01', IDdate)) AS dte, 
                         stArticles.fournisseur, stArticles.magasin, stArticles.rayon, stArticles.qteStock AS artQte, 
                         stArticles.qteMini, stArticles.qteSaison,stArticles.rations,stArticles.prixActuel,
-                        sum(stMouvements.qte) AS qte
+                        Sum(if (stMouvements.date <= '%s',stMouvements.qte,0)) AS tous,
+                        Sum(stMouvements.qte) AS qte
                 FROM stArticles 
                 LEFT JOIN stMouvements ON stArticles.IDarticle = stMouvements.IDarticle
                 LEFT JOIN stInventaires ON stArticles.IDarticle = stInventaires.IDarticle
@@ -97,7 +121,7 @@ def SqlInventaire(dlg,*args,**kwd):
             stInventaires.prixMoyen, art.fournisseur, art.magasin, art.rayon, art.artQte, art.qteMini, art.qteSaison, 
             art.rations,art.prixActuel
         ;
-            """ %(where)
+            """ %(dlg.date,where)
 
     retour = db.ExecuterReq(req, mess="UTILS_Stocks.SqlInventaire Select" )
     recordset = ()
@@ -110,14 +134,19 @@ def SqlInventaire(dlg,*args,**kwd):
         # certains champs sont transposés en l'état
         for code in lstCodes:
             if code in lstChamps:
-                donnees[lstCodes.index(code)] = record[lstChamps.index(code)]
+                value = record[lstChamps.index(code)]
+                if isinstance(value,decimal.Decimal):
+                    value = float(value)
+
+                donnees[lstCodes.index(code)] = value
 
         # Les champs lus doivent être assemblés pour certains
         qteMvt = Nz(record[lstChamps.index('qteMvt')])
         qteInv = Nz(record[lstChamps.index('qteInv')])
         qteConstat = qteInv + qteMvt
         # codesOlv[IDarticle,fournisseur,magasin,rayon,qteConstat,pxUn,mttTTC,IDdate,rations
-        # codesSup['qteMvt','mttMvt','qteEnt','mttEnt','qteInv', 'pxMoyInv','pxActInv','qteFin','qteTous','qteArt','qteMini','qteSaison']
+        # codesSup['qteMvt','mttMvt','qteEnt','mttEnt','qteInv', 'pxMoyInv','pxActInv',
+        # 'qteFin','qteTous','artRations','qteArt','qteMini','qteSaison']
 
         mttInv = Nz(record[lstChamps.index('pxMoyInv')]) * qteInv
         mttMvt = Nz(record[lstChamps.index('mttMvt')])
@@ -132,7 +161,7 @@ def SqlInventaire(dlg,*args,**kwd):
         if qteConstat != qteTous:
             qteConstat = qteTous
         donnees[lstCodes.index('qteConstat')] = qteConstat
-        donnees[lstCodes.index('rations')] = qteConstat * Nz(record[lstChamps.index('rations')])
+        donnees[lstCodes.index('rations')] = qteConstat * Nz(record[lstChamps.index('artRations')])
 
         # dans l'inventaire le prix actuel est la moyenne des dernieres entrées, sinon prix du dernier achat
         qteEnt = Nz(record[lstChamps.index('qteEnt')])
@@ -155,15 +184,6 @@ def SqlInventaire(dlg,*args,**kwd):
     lstDonnees = []
     for record in recordset:
         lstDonnees.append(ComposeLigne(record))
-
-    # MAJ des quantités en stock dans les articles
-    req = """
-            UPDATE stArticles 
-            INNER JOIN stMouvements ON stArticles.IDarticle = stMouvements.IDarticle 
-            SET stArticles.qteStock = Sum([stmouvements].[qte])
-            WHERE (((stMouvements.qte)<>[starticles].[qtestock]));"""
-    mess = "Echec de l'actualisation des qteStocks dans les Articles"
-    retour = db.ExecuterReq(req, mess= mess, affichError=True)
 
     return lstDonnees
 

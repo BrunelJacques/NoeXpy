@@ -73,7 +73,7 @@ class Noegest(object):
 
     # ---------------- gestion des immos
 
-    def ValideLigneComposant(self, track):
+    def ValideLigComp(self, track):
         track.valide = True
         track.messageRefus = "Saisie incomplète\n\n"
 
@@ -494,6 +494,10 @@ class Noegest(object):
                                 }, ],db=self.db)
         return ret
 
+    def CalculeLigne(self,track):
+        # relais lors de former Tracks
+        self.ValideLigne(self,track)
+
     def ValideLigne(self, track):
         track.valide = True
         track.messageRefus = "Saisie incomplète\n\n"
@@ -582,15 +586,16 @@ class Noegest(object):
 
     def ChoixExercice(self):
         lstExercices = self.GetExercices()
-        dlg = xchoixListe.DialogAffiche(titre="Choix de l'exercice ",
-                 intro="Le choix permettra le calcul des dotations pour cet exercice",
-                 lstDonnees=lstExercices,
-                 lstColonnes=["Début","Fin"],
-                 lstWcol=[150,150],
-                 size=(300,500))
-        if dlg.ShowModal() == wx.OK:
-            return dlg.choix
-        else: return None
+        if len(lstExercices) > 0:
+            dlg = xchoixListe.DialogAffiche(titre="Choix de l'exercice ",
+                     intro="Le choix permettra le calcul des dotations pour cet exercice",
+                     lstDonnees=lstExercices,
+                     lstColonnes=["Début","Fin"],
+                     lstWcol=[150,150],
+                     size=(300,500))
+            if dlg.ShowModal() == wx.OK:
+                return dlg.choix
+        return None
 
     def GetParam(self,cat,name):
         # récup des paramètres stockés sur le disque

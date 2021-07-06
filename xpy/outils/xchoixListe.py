@@ -450,7 +450,7 @@ class DialogAffiche(wx.Dialog):
         lstColonnes = kwd.pop('lstColonnes',["col1","col2"])
         lstWnomsCol = [len(x)*6 for x in lstColonnes]
         self.lstWcol =   kwd.pop('lstWcol',lstWnomsCol)
-        self.lstSetters = kwd.pop('lstSetters',lstDonnees[0])
+        self.lstSetters = kwd.pop('lstSetters',None)
         self.withCheck  = kwd.pop('withCheck', False)
         self.columnSort = kwd.pop('columnSort',1)
         size =      kwd.pop('size',(600,600))

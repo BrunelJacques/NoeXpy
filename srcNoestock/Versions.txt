@@ -1,3 +1,6 @@
+Version 1.1.2.4 (06/07/2021)
+- gestion inventaires
+
 Version 1.1.2.3 (23/06/2021)
 - Améliorations saisie stock
 

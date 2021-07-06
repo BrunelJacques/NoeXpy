@@ -166,7 +166,7 @@ class ListView( ObjectListView):
         if self.selectionID != None and len(self.innerList) > 0:
             self.SelectObject(self.innerList[ID], deselectOthers=True, ensureVisible=True)
 
-    def formerTracks(self,dicOlv = None):
+    def formerTracks(self,dicOlv=None):
         tracks = list()
         if self.lstDonnees is None and self.getDonnees :
             self.lstDonnees = self.getDonnees(**dicOlv)
@@ -176,9 +176,9 @@ class ListView( ObjectListView):
         for ligneDonnees in self.lstDonnees:
             tracks.append(TrackGeneral(ligneDonnees,self.lstCodesColonnes,self.lstNomsColonnes,self.lstSetterValues,
                                         codesSup=self.lstCodesSup))
-        if hasattr(self.parent,"ValideLigne"):
+        if hasattr(self.parent,"CalculeLigne"):
             for track in tracks:
-                self.parent.ValideLigne(self,track)
+                self.parent.CalculeLigne(self,track)
         for track in tracks:
             # les lignes remontées sont sensées être valides
             track.valide = True
@@ -617,6 +617,10 @@ class PanelListView(wx.Panel):
         # Cette procédure peut générer deux attributs track.valide track.message interceptés par CellEditor.
         if hasattr(self.parent, 'ValideLigne'):
             self.parent.ValideLigne(code,track)
+
+    def CalculeLigne(self,code,track):
+        if hasattr(self.parent, 'CalculeLigne'):
+            self.parent.CalculeLigne(code,track)
 
     def SauveLigne(self,track):
         # teste old donnees % en cas de modif lance le sauve ligne du parent

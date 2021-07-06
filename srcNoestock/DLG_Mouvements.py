@@ -579,6 +579,10 @@ class PNL_corps(xgte.PNL_corps):
         # Relais de l'appel par cellEditor à chaque colonne
         ValideLigne(self.parent,track)
 
+    def CalculeLigne(self,code,track):
+        # Relais de l'appel par par GetDonnnees
+        CalculeLigne(self.parent,track)
+
     def SauveLigne(self,track):
         nust.SauveMouvement(self.db,self.Parent,track)
 

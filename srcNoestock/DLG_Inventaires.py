@@ -40,8 +40,8 @@ DIC_INFOS = {
         'fournisseur': "Nom du fournisseur à enregistrer dans l'article",
         'magasin': "<F4> Choix d'un magasin",
         'rayon': "<F4> Choix d'un rayon",
-        'qteStock': "L'unité est celle  qui sert au décompte du stock\nQuantité en stock au jour de l'inventaire",
-        'pxUnit': "Prix dans l'inventaire d'une unité sortie",
+        'qteConstat': "L'unité est celle  qui sert au décompte du stock\nQuantité en stock au jour de l'inventaire",
+        'pxUn': "Prix dans l'inventaire d'une unité sortie",
          }
 
 INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
@@ -204,14 +204,17 @@ def GetOlvColonnes(dlg):
                         isEditable=False, stringConverter=xformat.FmtDecimal, ),
             ColumnDefn("Nbre Rations", 'right', 80, 'rations',  valueSetter=0.0,isSpaceFilling=False,
                         isEditable=False, stringConverter=xformat.FmtDecimal, ),
-            ColumnDefn("Vérifié le", 'left', 80, 'IDdate', valueSetter=datetime.date.today(),isSpaceFilling=False,
+            ColumnDefn("Vérifié au", 'left', 80, 'IDdate', valueSetter=datetime.date.today(),isSpaceFilling=False,
                         isEditable=False, stringConverter=xformat.FmtDate,),
             ]
     return lstCol
 
 def GetOlvCodesSup():
     # codes dans les données olv, mais pas dans les colonnes, attributs des tracks non visibles en tableau
-    return ['qteMvt','mttMvt','qteEnt','mttEnt','qteInv', 'pxMoyInv','pxActInv','qteFin','qteTous','qteArt','qteMini','qteSaison']
+    return ['qteMvt','mttMvt','qteEnt','mttEnt',
+            'qteInv', 'pxMoyInv','pxActInv',
+            'qteFin','qteTous',
+            'artRations','qteArt','qteMini','qteSaison']
 
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
@@ -254,11 +257,17 @@ def GetAnterieur(dlg,db=None):
 
 def CalculeLigne(dlg,track):
 
-    try: qte = float(track.qteStock)
+    try: qte = float(track.qteConstat)
     except: qte = 0.0
-    track.qteStock = qte
-    if not hasattr(track,'oldQte'):
-        track.oldQte = track.qteStock
+    try: pu = float(track.pxUn)
+    except: pu = 0.0
+    track.mttTTC = qte * pu
+    track.rations = qte * track.artRations
+    track.valide = dlg.date
+    deltaQte =  qte - track.qteTous
+    track.qteFin += deltaQte
+    track.qteTous += deltaQte
+    track.deltaQte = deltaQte
 
 def ValideLigne(dlg,track):
 
@@ -270,11 +279,11 @@ def ValideLigne(dlg,track):
 
     # qte négative
     try:
-        track.qteStock = float(track.qteStock)
+        track.qteConstat = float(track.qteConstat)
     except:
-        track.qteStock = None
-    if not track.qteStock or track.qteStock < 0.0:
-        track.messageRefus += "La quantité ne peut être nulle ou négative\n"
+        track.qteConstat = 0.0
+    if track.qteConstat < 0.0:
+        track.messageRefus += "La quantité ne peut être négative\n"
 
     # pxUn null
     try:
@@ -282,7 +291,7 @@ def ValideLigne(dlg,track):
     except:
         track.pxUn = None
     if not track.pxUn or track.pxUn == 0.0:
-        track.messageRefus += "Le pxUn est à zéro\n"
+        track.messageRefus += "Le pxUnitaire est à zéro\n"
 
     # envoi de l'erreur
     if track.messageRefus != "Saisie incorrecte\n\n":
@@ -319,15 +328,6 @@ class PNL_corps(xgte.PNL_corps):
         else:
             self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
 
-        # travaux avant saisie
-        if code == 'qteStock':
-            if not hasattr(track,'oldQte'):
-                track.oldQte = track.qte
-
-        if code == 'pxUn':
-            if not hasattr(track, 'oldPu'):
-                CalculeLigne(self.parent,track)
-                track.oldPu = track.pxUn
 
     def OnEditFinishing(self,code=None,value=None,editor=None):
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
@@ -359,8 +359,54 @@ class PNL_corps(xgte.PNL_corps):
         # Relais de l'appel par cellEditor à chaque colonne
         ValideLigne(self.parent,track)
 
+    def zzCalculeLigne(self,code,track):
+        # Relais de l'appel par former Track
+        CalculeLigne(self.parent,track)
+
     def SauveLigne(self,track):
-        nust.SauveInventaire(self.db,self.Parent,track)
+        db = self.db
+        # génération de l'od corrective dans un mouvement
+        if not hasattr(track,'IDmouvement'):
+            track.IDmouvement = None
+            track.qteMvtOld = 0.0
+        lstDonnees = [
+            ('IDarticle', track.IDarticle),
+            ('prixUnit', track.pxUn),
+            ('ordi', dlg.ordi),
+            ('dateSaisie', dlg.today),
+            ('modifiable', 1),]
+        if track.IDmouvement :
+            qteMvt = track.deltaQte + track.qteMvtOld
+            lstDonnees += [('qte', qteMvt),]
+            ret = db.ReqMAJ("stMouvements", lstDonnees,
+                            "IDmouvement", track.IDmouvement,
+                            mess="DLG_Inventaires.SauveLigne Modif: %d"%track.IDmouvement)
+        else:
+            qteMvt = track.deltaQte
+            ret = 'abort'
+            if qteMvt != 0.0:
+                lstDonnees += [('origine', 'od_in'),
+                               ('qte', qteMvt),
+                               ('date', dlg.date),
+                               ('IDanalytique', '00'),
+                               ]
+                ret = db.ReqInsert("stMouvements",lstDonnees= lstDonnees, mess="DLG_Inventaires.SauveLigne Insert")
+        if ret == 'ok':
+            print("mvt",track.IDmouvement,lstDonnees)
+            track.IDmouvement = db.newID
+            track.qteMvtOld = qteMvt
+
+        # MAJ de l'article
+        lstDonnees = [('qteStock',track.qteFin),
+                      ('prixMoyen',track.pxUn),
+                      ]
+        if track.qteEnt > 0:
+            lstDonnees += [('prixActuel',track.mttEnt / track.qteEnt),
+                              ('ordi',dlg.ordi),
+                              ('dateSaisie',dlg.today)]
+        mess = "MAJ article '%s'"%track.IDarticle
+        self.db.ReqMAJ('stArticles',lstDonnees,'IDarticle',track.IDarticle,mess=mess,IDestChaine=True)
+        print("art",track.IDarticle,lstDonnees)
 
     def OnEditFunctionKeys(self,event):
         row, col = self.ctrlOlv.cellBeingEdited
@@ -508,11 +554,9 @@ class DLG(xgte.DLG_tableau):
         # alimente la grille, puis création de modelObejects pr init
         self.ctrlOlv.lstDonnees = lstDonnees
         self.ctrlOlv.MAJ()
-        # les écritures reprises sont censées être valides, mais il faut les compléter
+        # les écritures reprises sont censées être valides
         for track in self.ctrlOlv.modelObjects[:-1]:
-            CalculeLigne(self,track)
-            track.valide = True
-        self.ctrlOlv._FormatAllRows()
+            track.IDmouvement = None
         self.oldParams = None
 
     def GetTitreImpression(self):

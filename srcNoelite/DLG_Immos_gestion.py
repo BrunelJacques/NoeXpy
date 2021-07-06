@@ -250,7 +250,7 @@ class Pnl_corps(xgte.PNL_corps):
         if not self.oldRow: self.oldRow = row
         if row != self.oldRow:
             track = self.ctrlOlv.GetObjectAt(self.oldRow)
-            test = self.parent.noegest.ValideLigneComposant(track)
+            test = self.parent.noegest.ValideLigComp(track)
             if test:
                 track.valide = True
                 self.oldRow = row
@@ -291,7 +291,7 @@ class Pnl_corps(xgte.PNL_corps):
 
 
         # l'enregistrement de la ligne se fait à chaque saisie pour gérer les montées et descentes
-        self.parent.noegest.ValideLigneComposant(track)
+        self.parent.noegest.ValideLigComp(track)
 
 
         # enlève l'info de bas d'écran
@@ -351,7 +351,7 @@ class Dlg_immo(xusp.DLG_vide):
             self.noegest.GetEnsemble(self.IDimmo,self.dicOlv['lstChmpEns'],self.pnlParams)
             self.noegest.GetComposants(self.IDimmo,self.dicOlv['lstChamps'])
         for object in self.ctrlOlv.modelObjects:
-            self.noegest.ValideLigneComposant(object)
+            self.noegest.ValideLigComp(object)
         self.ctrlOlv._FormatAllRows()
         self.ctrlOlv.Refresh()
         # conservation des originaux

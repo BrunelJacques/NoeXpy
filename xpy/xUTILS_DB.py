@@ -527,7 +527,10 @@ class DB():
         donneesCouples = donneesCouples[:-2]+' '
         return donneesCouples
 
-    def ReqMAJ(self, nomTable='',lstDonnees=None,nomChampID=None,ID=None,condition=None,lstValues=[],lstChamps=[],
+    def ReqMAJ(self, nomTable='',
+               lstDonnees=None,
+               nomChampID=None,ID=None,condition=None,
+               lstValues=[],lstChamps=[],
                mess=None, affichError=True, IDestChaine = False):
         """ Permet de mettre à jour des lstDonnees présentées en dic ou liste de tuples"""
         # si couple est None, on en crée à partir de lstChamps et lstValues
