@@ -207,15 +207,17 @@ def GetOlvColonnes(dlg):
                                 stringConverter=xformat.FmtQte),
             ColumnDefn(titlePrix, 'right', 80, 'pxUn', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal),
+            ColumnDefn("Coût Ration", 'right', 80, 'pxRation', isSpaceFilling=False, valueSetter=0.0,
+                                stringConverter=xformat.FmtDecimal, isEditable=False),
+            ColumnDefn("Nbre Rations", 'right', 80, 'nbRations', isSpaceFilling=False, valueSetter=0.0,
+                                stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Mtt HT", 'right', 80, 'mttHT', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Mtt TTC", 'right', 80, 'mttTTC', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Qté stock", 'right', 80, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("PrixStock", 'right', 80, 'pxMoy', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Nbre Rations", 'right', 80, 'nbRations', isSpaceFilling=False, valueSetter=0.0,
+                   stringConverter=xformat.FmtDecimal, isEditable=False),
+            ColumnDefn("Qté stock", 'right', 80, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
             ]
     if dlg.sens == 'entrees':
@@ -411,7 +413,10 @@ def CalculeLigne(dlg,track):
         else: track.qteStock = qteStock
 
     lstCodesColonnes = dlg.ctrlOlv.lstCodesColonnes
-    track.nbRations = (track.qteStock) * rations
+    track.nbRations = qte * rations
+    if track.nbRations >0:
+        track.pxRation = track.prixTTC / track.nbRations
+    else: track.pxRation = 0.0
     for ix in range(len(lstCodesColonnes)):
         track.donnees[ix] = eval("track.%s"%lstCodesColonnes[ix])
 
@@ -532,7 +537,6 @@ class PNL_corps(xgte.PNL_corps):
 
         #if code == 'pxUn':
 
-
     def OnEditFinishing(self,code=None,value=None,event=None):
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
         # flagSkipEdit permet d'occulter les évènements redondants. True durant la durée du traitement
@@ -545,16 +549,19 @@ class PNL_corps(xgte.PNL_corps):
         # Traitement des spécificités selon les zones
         if code == 'IDarticle':
             value = self.GetOneIDarticle(self.db,value)
+            track.IDarticle = value
             if value:
-                track.IDarticle = value
                 track.dicArticle = nust.SqlDicArticle(self.db,self.ctrlOlv,value)
                 track.nbRations = track.dicArticle['rations']
                 track.qteStock = track.dicArticle['qteStock']
                 track.pxUn = track.dicArticle['prixMoyen'] / PxUnToTTC(self.lanceur.ht_ttc,track.dicArticle['txTva'])
                 track.pxMoy = track.pxUn
                 # stock négatif
-                if self.lanceur.sens == "sorties" and (Nz(track.qteStock)) <= 0:
-                    ret = wx.MessageBox("Le Stock est vide! Procédure à suivre: Luc 9:13", "Problème stock")
+                if self.lanceur.sens == "sorties" and (Nz(track.qteStock)) < 0:
+                    ret = wx.MessageBox("Le Stock est vide! Erreur d'article ou Entrée manquante")
+                event.Veto(False)
+            else:
+                event.Veto(True)
 
         if code == 'qte':
             # saisie négative en sortie
@@ -805,8 +812,10 @@ class DLG(xusp.DLG_vide):
         self.analytique = self.GetAnalytique()
         choixAnalytique = self.pnlParams.GetOneValue('analytique',codeBox='param2')
         if len(choixAnalytique) > 0:
-            ix = self.valuesAnalytiques.index(choixAnalytique)
-            self.analytique = self.lstAnalytiques[ix][0]
+            ix = self.valuesAnalytiques.index(choixAnalytique) -1
+            if isinstance(ix,int) and ix <= len(self.lstAnalytiques):
+                self.analytique = self.lstAnalytiques[ix][0]
+            else: return
         self.GetDonnees()
 
     def OnBtnAnalytique(self,event):

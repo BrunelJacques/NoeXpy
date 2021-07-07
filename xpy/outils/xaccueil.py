@@ -165,7 +165,8 @@ class Panel_Titre(wx.Panel):
 
         size[1] = 145
         wx.Panel.__init__(self, parent, name="panel_titre", id=-1, size=size, pos=pos, style=wx.TAB_TRAVERSAL)
-        
+
+        # imageBmp = xformat.GetImage("xpy/Images/Noestock.png",(80,80))
         self.image_titre = wx.StaticBitmap(self, -1, wx.Bitmap(image, wx.BITMAP_TYPE_ANY), pos=posImage)
         if not couleurFond: couleurFond = COULEUR_FOND
         self.SetForegroundColour(couleurFond)

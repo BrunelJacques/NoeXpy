@@ -85,9 +85,10 @@ def EnterAction(event):
     except: return
     olv.error = None
     olv.FinishCellEdit()
-    if olv.error:
+    if olv.error :
         go = 0
-    else: go = 1
+    else:
+        go = 1
     # avancement d'une colonne
     for ix in range(col+go,olv.ColumnCount):
         # saute une cellule non éditable

@@ -547,8 +547,13 @@ class PanelListView(wx.Panel):
             self.parent.OnNewRow(row,track)
 
         # conservation de la valeur qui peut être modifiée
-        track.oldValue = None
-        track.oldValue = eval("track.%s"%code)
+        if not (hasattr(track,'oldValue')):
+            track.oldValue = None
+        if not (hasattr(self.ctrlOlv,'error')):
+            self.ctrlOlv.error = None
+        if not self.ctrlOlv.error:
+            track.oldValue = eval("track.%s"%code)
+        else: track.oldValue = None
 
         # appel des éventuels spécifiques
         if hasattr(self.parent, 'OnEditStarted'):
@@ -566,6 +571,7 @@ class PanelListView(wx.Panel):
         track = self.ctrlOlv.GetObjectAt(row)
         value = self.ctrlOlv.cellEditor.GetValue()
         code = self.ctrlOlv.lstCodesColonnes[col]
+        valueOrigin = eval("track.%s"%code)
         # si pas de saisie on passe
         if (value == None) or track.oldValue == value:
             track.noSaisie = True

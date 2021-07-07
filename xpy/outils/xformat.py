@@ -673,23 +673,29 @@ def DictToList(dic):
                 lstValeurs.append(valeur)
     return lstCles,lstValeurs
 
+def DeepCopy(data):
+    if isinstance(data,(dict)):
+        return CopyDic(data)
+    if isinstance(data,(list,tuple)):
+        data2 = [DeepCopy(x) for x in data]
+        if isinstance(data,tuple):
+            data2 = tuple(data2)
+        return data2
+    return data
+
 def CopyDic(dic):
     #deepcopy d'un dictionnaire
     dic2 = {}
-    for key in dic.keys():
+    for key, data in dic.items():
+        # traitement de la clé
         if isinstance(key,(list,tuple)):
             key2 = [x for x in key]
             if isinstance(key,tuple):
                 key2 = tuple(key2)
-        else: key2 = key
-        if isinstance(dic[key], (list,tuple)):
-            donnee2 = [x for x in dic[key2]]
-            if isinstance(dic[key],tuple):
-                donnee2 = tuple(donnee2)
-        elif isinstance(dic[key], dict):
-            donnee2 = CopyDic(dic[key2])
-        else: donnee2 = dic[key]
-        dic2[key2] = donnee2
+        else:
+            key2 = key
+        # traitement de data
+        dic2[key2] = DeepCopy(data)
     return dic2
 
 def ResizeBmp(bitmap,size,qual=wx.IMAGE_QUALITY_HIGH):

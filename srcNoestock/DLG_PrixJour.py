@@ -154,7 +154,8 @@ def GetBoutons(dlg):
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
     return [
-            ColumnDefn("Date", 'left', 90,     'IDdate', valueSetter=datetime.date.today(),stringConverter=xformat.FmtDate),
+            ColumnDefn("pbImpress", 'right', 0,'pbImp', valueSetter=''),
+            ColumnDefn("Date", 'right', 90, 'IDdate', valueSetter=datetime.date.today(),stringConverter=xformat.FmtDate),
             ColumnDefn("NbRepas", 'right', 80, 'nbRepas', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
             ColumnDefn("NbClients", 'right', 80, 'nbClients', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
             ColumnDefn("PrixParRepas", 'right', 100,'prixRepas', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=True),
@@ -394,7 +395,6 @@ class DLG(xgtr.DLG_tableau):
         kwd['periode'] = self.periode
         kwd['cuisine'] = self.cuisine
         return DLG_Effectifs.ValideSaisie(dlgSaisie,**kwd)
-
 
     def OnImprimer(self,event):
         self.ctrlOlv.Apercu(None)

@@ -45,7 +45,17 @@ def GetMatriceSaisie(db,lstColonnes):
             ligne['value'] = ""
         if ligne['genre'].lower() in ('str','combo'):
             ligne['ctrlAction'] = "ValideNbCar"
+    return matrice
 
+def GetMatriceRenameArt(matriceSaisie):
+    keyBox = ('rename', "")
+    matrice = {keyBox: [xformat.DeepCopy(matriceSaisie['ligne', ""][0]),
+                        xformat.DeepCopy(matriceSaisie['ligne', ""][0])
+                        ]}
+    matrice[keyBox][1]['label'] = 'Nouveau nom'
+    matrice[keyBox][1]['name'] = 'newID'
+    matrice[keyBox][1]['txtSize'] = 100
+    matrice[keyBox][0]['txtSize'] = 100
     return matrice
 
 def GetDicOlv(db,cutend=None):
@@ -69,7 +79,7 @@ def GetDicOlv(db,cutend=None):
                 'lstColonnes': lstColonnes,
                 'lstChamps':lstChamps,
                 'getDonnees': nust.SqlArticles,
-                'lstNomsBtns': ['creer','modifier'],
+                'lstNomsBtns': ['creer','modifier','dupliquer'],
                 'size':(lgSize,700),
                 'sizeSaisie': sizeSaisie,
                 'ctrlSize': (150,30),
@@ -140,7 +150,8 @@ class DLG_articles(xgtr.DLG_tableau):
         self.db = db
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
-
+        # personnalisation du bouton dupliquer
+        self.pnlOlv.lstBtnCtrl[2][0].SetToolTip("Changer le nom de l'article sélectionné ")
         if  isinstance(value,str):
             self.pnlOlv.ctrlOutils.barreRecherche.SetValue(value)
         # enlève le filtre si pas de réponse
@@ -151,6 +162,32 @@ class DLG_articles(xgtr.DLG_tableau):
         if len(self.ctrlOlv.innerList) > 0:
             self.ctrlOlv.SelectObject(0)
             self.ctrlOlv.Refresh()
+
+    def OnDupliquer(self,event):
+        olv = self.ctrlOlv
+        if olv.GetSelectedItemCount() == 0:
+            wx.MessageBox("Pas de sélection faite, pas d'article pointé !" ,
+                          'La vie est faite de choix', wx.OK | wx.ICON_INFORMATION)
+            return
+        matriceSaisie = xformat.DeepCopy(GetMatriceSaisie(self.db,self.dicOlv['lstColonnes']))
+        matriceRename = xformat.DeepCopy(GetMatriceRenameArt(matriceSaisie))
+
+        self.dicOlv['matriceSaisie'] = matriceRename
+
+        ligne = olv.GetSelectedObject()
+        ixLigne = olv.modelObjects.index(ligne)
+        dDonnees = xformat.TrackToDdonnees(ligne,olv)
+        self.dicOlv['mode'] = 'modif'
+        dlgSaisie = xgtr.DLG_saisie(self.lanceur,self.dicOlv,kwValideSaisie=self.dicOlv)
+        dlgSaisie.pnl.SetValues(dDonnees,)
+        ret = dlgSaisie.ShowModal()
+        if ret == wx.OK:
+            ctrlNewID = dlgSaisie.GetPnlCtrl('newID',)
+            newID = ctrlNewID.GetValue()
+            nust.RenameArticle(self.db,self,ligne.IDarticle,newID)
+            olv.MAJ()
+        olv.Select(ixLigne)
+        self.dicOlv['matriceSaisie'] = matriceSaisie
 
     def FmtDonneesDB(self,nomsCol,donnees,complete=True):
         table = DB_schema.DB_TABLES['stArticles']
@@ -184,10 +221,12 @@ class DLG_articles(xgtr.DLG_tableau):
             lstArticles = nust.SqlOneArticle(self.db,IDarticle, flou = False)
             if len(lstArticles) > 0:
                 mess += "\n- L'article '%s' est déjà présent, passez en modification\n" % IDarticle
-        for champ in ('IDarticle','magasin'):
+        for champ in ('IDarticle','magasin','newID'):
+            if not champ in dDonnees: continue
             if not (dDonnees[champ]) or len(dDonnees[champ]) == 0:
                     mess += "\n- La saisie de '%s' est obligatoire\n"%champ
         for champ in ('txTva','prixMoyen'):
+            if not champ in dDonnees: continue
             if not(dDonnees[champ]) or float(dDonnees[champ]) == 0.0:
                 mess += "\n- La saisie de '%s' est obligatoire\n"%champ
         if len(mess) != lg:
@@ -195,9 +234,11 @@ class DLG_articles(xgtr.DLG_tableau):
             return wx.NO
 
         # formatage
-        for champ in ('IDarticle','fournisseur'):
+        for champ in ('IDarticle','fournisseur','newID'):
+            if not champ in dDonnees: continue
             if (dDonnees[champ]): dDonnees[champ] = dDonnees[champ].upper()
         for champ in ('magasin','rayon'):
+            if not champ in dDonnees: continue
             if (dDonnees[champ]): dDonnees[champ] = dDonnees[champ].capitalize()
         return wx.OK
 
@@ -206,7 +247,7 @@ class DLG_articles(xgtr.DLG_tableau):
         if len(value) > 32:
             wx.MessageBox("La longeur est limitée à 32 caratères\n\nvous en avez saisi %d"%len(value),"Saisie tronquée!")
             value = value[:32]
-        if evt.EventObject.name in ['IDarticle','fournisseur']:
+        if evt.EventObject.name in ['IDarticle','fournisseur','newID']:
             value = value.upper()
         if evt.EventObject.name in ['magasin','rayon']:
             value = value.capitalize()

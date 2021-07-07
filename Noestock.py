@@ -6,9 +6,8 @@
 import wx
 import xpy.xAppli as xAppli
 import xpy.xUTILS_DB as xdb
-#import xpy.xGestionConfig as xGestionConfig
-import xpy.outils.xaccueil as xaccueil
 import srcNoestock.menu as menu
+from xpy.outils import xaccueil,xformat
 
 # Variables incontournables pour xpy
 dictAPPLI = {
@@ -48,6 +47,7 @@ class StFrame(xAppli.MainFrame):
 
         # Crée 'topPanel' et 'topContenu' destroyables
         self.MakeBureau(pnlTitre=xaccueil.Panel_Titre(self,texte="NOESTOCK\n\nGestion des stocks et prix journée",
+                                                      image="xpy/Images/Noestock.png",
                                                       pos=(20,30),couleurFond=self.couleur_fond),
                         pnlBtnActions=xaccueil.Panel_Buttons(self,self.ldButtons,couleurFond=self.couleur_fond))
 

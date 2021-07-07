@@ -650,6 +650,16 @@ def MAJarticle(db,dlg,track):
         track.dicArticle.update(dicArticle)
         track.nbRations = track.qteStock * dicArticle['rations']
 
+def RenameArticle(db,dlg,oldID,newID):
+    lstDonnees = [('IDarticle',newID)]
+
+    ret = db.ReqMAJ('stArticles',lstDonnees,'IDarticle',oldID, mess="RenameArticle / Articles",affichError=True)
+    if ret == 'ok':
+        condition = "IDarticle = '%s'"%oldID
+        ret = db.ReqMAJ('stMouvements',lstDonnees,condition=condition, mess="RenameArticle / Mouvements",affichError=True)
+        ret = db.ReqMAJ('stInventaires',lstDonnees,condition=condition, mess="RenameArticle / Inventaires",affichError=True)
+    return
+
 def SauveEffectif(dlg,**kwd):
     # Appelé en retour de saisie, gère l'enregistrement
     mode = kwd.pop('mode',None)
@@ -939,7 +949,8 @@ def GetPrixJours(dlg,**kwd):
             prixRepas = cout / nbRepas
         if nbClients > 0:
             prixClient = cout / nbClients
-        ligne = [   date,
+        ligne = [   None,
+                    date,
                     nbRepas,
                     nbClients,
                     prixRepas,

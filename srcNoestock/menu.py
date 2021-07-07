@@ -184,8 +184,7 @@ class MENU():
 
     def On_inStock(self,event):
         dlg = DLG_Mouvements.DLG(sens='entrees')
-        ret = dlg.ShowModal()
-        dlg.Destroy()
+        dlg.ShowModal()
         del dlg
 
     def On_outStock(self,event):

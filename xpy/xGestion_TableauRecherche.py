@@ -36,7 +36,7 @@ def GetBtnActions(self,lstNomsBtns):
                 'dupliquer': {'name':'dupliquer',
                        'image':wx.Bitmap("xpy/Images/16x16/Copier.png"),
                        'help':"Dupliquer la ligne selectionnée",
-                       'onBtn':"OnSupprimer" },
+                       'onBtn':"OnDupliquer" },
                 'supprimer': {'name':'supprimer',
                        'image':wx.Bitmap("xpy/Images/16x16/Supprimer.png"),
                        'help':"Supprimer les lignes selectionnées",
@@ -551,8 +551,9 @@ class PNL_corps(wx.Panel):
         sizerbase.Add(sizercorps, 10, wx.EXPAND, 10)
         # ajout des boutons d'actions
         if self.lstBtnActions:
+            self.lstBtnCtrl = xboutons.GetAddManyBtns(self,self.lstBtnActions)
             sizeractions = wx.BoxSizer(wx.VERTICAL)
-            sizeractions.AddMany(xboutons.GetAddManyBtns(self,self.lstBtnActions))
+            sizeractions.AddMany(self.lstBtnCtrl)
             sizerbase.Add(sizeractions, 0, wx.TOP, 10)
         self.SetSizer(sizerbase)
 
@@ -573,65 +574,104 @@ class PNL_corps(wx.Panel):
         self.Parent.OnDblClick(event)
 
     def OnAjouter(self, event):
-        if not self.EstAdmin(): return
-        # l'ajout d'une ligne nécessite d'appeler un écran avec les champs en lignes
-        olv = self.ctrlOlv
-        ligne = olv.GetSelectedObject()
-        ixLigne = 0
-        if ligne:
-            ixLigne = olv.modelObjects.index(ligne)
-        else: ixLigne = len(olv.lstDonnees)
-        self.dicOlv['mode'] = 'ajout'
-        dlgSaisie = DLG_saisie(self.lanceur,self.dicOlv, kwValideSaisie=self.dicOlv)
-        ret = dlgSaisie.ShowModal()
-        if ret == wx.OK:
-            #récupération des valeurs saisies puis ajout dans les données avant reinit olv
-            ddDonnees = dlgSaisie.pnl.GetValues()
-            nomsCol, donnees = xformat.DictToList(ddDonnees)
-            self.parent.GereDonnees(mode='ajout',nomsCol=nomsCol, donnees=donnees, ixLigne=ixLigne,dicOlv=self.dicOlv)
-            self.ctrlOutils.barreRecherche.SetValue('')
-            olv.Filtrer('')
-        olv.Select(ixLigne)
+        if hasattr(self.parent,'OnModifier'):
+            self.parent.OnDupliquer(event)
+        else:
+            if not self.EstAdmin(): return
+            # l'ajout d'une ligne nécessite d'appeler un écran avec les champs en lignes
+            olv = self.ctrlOlv
+            ligne = olv.GetSelectedObject()
+            ixLigne = 0
+            if ligne:
+                ixLigne = olv.modelObjects.index(ligne)
+            else: ixLigne = len(olv.lstDonnees)
+            self.dicOlv['mode'] = 'ajout'
+            dlgSaisie = DLG_saisie(self.lanceur,self.dicOlv, kwValideSaisie=self.dicOlv)
+            ret = dlgSaisie.ShowModal()
+            if ret == wx.OK:
+                #récupération des valeurs saisies puis ajout dans les données avant reinit olv
+                ddDonnees = dlgSaisie.pnl.GetValues()
+                nomsCol, donnees = xformat.DictToList(ddDonnees)
+                self.parent.GereDonnees(mode='ajout',nomsCol=nomsCol, donnees=donnees, ixLigne=ixLigne,dicOlv=self.dicOlv)
+                self.ctrlOutils.barreRecherche.SetValue('')
+                olv.Filtrer('')
+            olv.Select(ixLigne)
 
     def OnModifier(self, event):
-        if not self.EstAdmin(): return
-        # Action du clic sur l'icone sauvegarde renvoie au parent
-        olv = self.ctrlOlv
+        if hasattr(self.parent,'OnModifier'):
+            self.parent.OnDupliquer(event)
+        else:
+            if not self.EstAdmin(): return
+            # Action du clic sur l'icone sauvegarde renvoie au parent
+            olv = self.ctrlOlv
 
-        if olv.GetSelectedItemCount() == 0:
-            wx.MessageBox("Pas de sélection faite, pas de modification possible !" ,
-                                'La vie est faite de choix', wx.OK | wx.ICON_INFORMATION)
-            return
+            if olv.GetSelectedItemCount() == 0:
+                wx.MessageBox("Pas de sélection faite, pas de modification possible !" ,
+                                    'La vie est faite de choix', wx.OK | wx.ICON_INFORMATION)
+                return
 
-        ligne = olv.GetSelectedObject()
-        ixLigne = olv.modelObjects.index(ligne)
+            ligne = olv.GetSelectedObject()
+            ixLigne = olv.modelObjects.index(ligne)
 
-        dDonnees = xformat.TrackToDdonnees(ligne,olv)
-        self.dicOlv['mode'] = 'modif'
-        dlgSaisie = DLG_saisie(self.lanceur,self.dicOlv,kwValideSaisie=self.dicOlv)
-        dlgSaisie.pnl.SetValues(dDonnees,)
-        ret = dlgSaisie.ShowModal()
-        if ret == wx.OK:
-            #récupération des valeurs saisies puis ajout dans les données avant reinit olv
-            ddDonnees = dlgSaisie.pnl.GetValues()
-            nomsCol, donnees = xformat.DictToList(ddDonnees)
-            self.parent.GereDonnees(mode='modif',nomsCol=nomsCol, donnees=donnees, ixLigne=ixLigne,dicOlv=self.dicOlv)
-            olv.Filtrer()
-        olv.Select(ixLigne)
+            dDonnees = xformat.TrackToDdonnees(ligne,olv)
+            self.dicOlv['mode'] = 'modif'
+            dlgSaisie = DLG_saisie(self.lanceur,self.dicOlv,kwValideSaisie=self.dicOlv)
+            dlgSaisie.pnl.SetValues(dDonnees,)
+            ret = dlgSaisie.ShowModal()
+            if ret == wx.OK:
+                #récupération des valeurs saisies puis ajout dans les données avant reinit olv
+                ddDonnees = dlgSaisie.pnl.GetValues()
+                nomsCol, donnees = xformat.DictToList(ddDonnees)
+                self.parent.GereDonnees(mode='modif',nomsCol=nomsCol, donnees=donnees, ixLigne=ixLigne,dicOlv=self.dicOlv)
+                olv.Filtrer()
+            olv.Select(ixLigne)
+
+    def OnDupliquer(self, event):
+        if hasattr(self.parent,'OnDupliquer'):
+            self.parent.OnDupliquer(event)
+        else:
+            # non testé
+            if not self.EstAdmin(): return
+            # Action du clic sur l'icone sauvegarde renvoie au parent
+            olv = self.ctrlOlv
+
+            if olv.GetSelectedItemCount() == 0:
+                wx.MessageBox("Pas de sélection faite, pas de modification possible !" ,
+                              'La vie est faite de choix', wx.OK | wx.ICON_INFORMATION)
+                return
+
+            ligne = olv.GetSelectedObject()
+            ixLigne = olv.modelObjects.index(ligne)
+
+            dDonnees = xformat.TrackToDdonnees(ligne,olv)
+            self.dicOlv['mode'] = 'modif'
+            dlgSaisie = DLG_saisie(self.lanceur,self.dicOlv,kwValideSaisie=self.dicOlv)
+            dlgSaisie.pnl.SetValues(dDonnees,)
+            ret = dlgSaisie.ShowModal()
+            if ret == wx.OK:
+                #récupération des valeurs saisies puis ajout dans les données avant reinit olv
+                ddDonnees = dlgSaisie.pnl.GetValues()
+                nomsCol, donnees = xformat.DictToList(ddDonnees)
+                self.parent.GereDonnees(mode='modif',nomsCol=nomsCol, donnees=donnees, ixLigne=ixLigne,dicOlv=self.dicOlv)
+                olv.Filtrer()
+            olv.Select(ixLigne)
 
     def OnSupprimer(self, event):
-        if not self.EstAdmin(): return
-        olv = self.ctrlOlv
-        if olv.GetSelectedItemCount() == 0:
-            wx.MessageBox("Pas de sélection faite, pas de suppression possible !",
-                      'La vie est faite de choix', wx.OK | wx.ICON_INFORMATION)
-            return
-        ligne = olv.GetSelectedObject()
-        ixLigne = olv.modelObjects.index(ligne)
-        olv.modelObjects.remove(ligne)
-        self.dicOlv['mode'] = 'suppr'
-        self.parent.GereDonnees(mode='suppr', ixLigne=ixLigne,dicOlv=self.dicOlv)
-        olv.RepopulateList()
+        if hasattr(self.parent,'OnSupprimer'):
+            self.parent.OnDupliquer(event)
+        else:
+            if not self.EstAdmin(): return
+            olv = self.ctrlOlv
+            if olv.GetSelectedItemCount() == 0:
+                wx.MessageBox("Pas de sélection faite, pas de suppression possible !",
+                          'La vie est faite de choix', wx.OK | wx.ICON_INFORMATION)
+                return
+            ligne = olv.GetSelectedObject()
+            ixLigne = olv.modelObjects.index(ligne)
+            olv.modelObjects.remove(ligne)
+            self.dicOlv['mode'] = 'suppr'
+            self.parent.GereDonnees(mode='suppr', ixLigne=ixLigne,dicOlv=self.dicOlv)
+            olv.RepopulateList()
 
 class PNL_pied(wx.Panel):
     #panel infos (gauche) et boutons sorties(droite)

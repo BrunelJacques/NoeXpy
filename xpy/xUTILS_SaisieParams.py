@@ -13,7 +13,6 @@ import datetime
 import os
 import wx.propgrid as wxpg
 import xpy.xUTILS_DB as xdb
-from copy                      import deepcopy
 from xpy.outils                import xformat,xboutons
 
 OPTIONS_TOPBOX = ('pos','size','style','name','matrice','donnees','lblTopBox','lblBox','boxesSizes')
@@ -828,12 +827,14 @@ class BoxPanel(wx.Panel):
         # calcul d'un default txtSize
         dfltTextSize = 0
         for ligne in lignes:
-            if (not 'txtSize' in ligne) and 'label' in ligne:
+            if 'label' in ligne and not isinstance(ligne['label'],str) :
+                wx.MessageBox("Label non texte ligne %d\n\n%s"%(lignes.index(ligne),lignes),"Pb param Matrice!")
+            elif (not 'txtSize' in ligne) and 'label' in ligne:
                 dfltTextSize = max(dfltTextSize,int(len(ligne['label']) * PT_CARACTERE))
 
         # composition des lignes en ctrl
         for ligne in lignes:
-            kwdLigne= self.kwds.copy()
+            kwdLigne= xformat.CopyDic(self.kwds)
             for nom,valeur in ligne.items():
                 if nom in OPTIONS_CTRL + OPTIONS_PANEL:
                     kwdLigne[nom] = valeur
@@ -942,7 +943,7 @@ class TopBoxPanel(wx.Panel):
         if hasattr(parent,'lanceur'):
             self.lanceur = parent.lanceur
         else: self.lanceur = parent
-        self.matrice = matrice.copy()
+        self.matrice = xformat.CopyDic(matrice)
 
         # cas ou on limite les champs à éditer la matrice est réduite
         if dlChamps and len(dlChamps) > 0:
@@ -1026,7 +1027,7 @@ class TopBoxPanel(wx.Panel):
         dDonnees = {}
         for box in self.lstBoxes:
             dic = box.GetValues()
-            ddDonnees[box.code] = deepcopy(dic)
+            ddDonnees[box.code] = xformat.CopyDic(dic)
             dDonnees.update(dic)
         if fmtDD: return ddDonnees
         else: return dDonnees
@@ -1278,7 +1279,7 @@ class DLG_listCtrl(wx.Dialog):
 
     def OnDupliquer(self,event, items):
         # récupération des données de la ligne que l'on place dans l'écran de saisie
-        ddDonnees = self.lddDonnees[items].copy()
+        ddDonnees = xformat.DeepCopy(self.lddDonnees[items])
         self.dlgGest.pnl.SetValues(ddDonnees)
         self.EnableID(enable=True)
         # affichage de l'écran de saisie
@@ -1286,7 +1287,7 @@ class DLG_listCtrl(wx.Dialog):
         if ret == wx.OK:
             #stockage des données
             ddDonnees = self.Calcul(self.dlgGest.pnl.GetValues())
-            donnees = ddDonnees.copy()
+            donnees = xformat.DeepCopy(ddDonnees)
             self.lddDonnees.append(donnees)
             self.lddDonnees, self.ltColonnes, self.llItems = Transpose(self.dldMatrice, self.dlColonnes, self.lddDonnees)
             self.pnl.SetValues(self.llItems, self.ltColonnes)

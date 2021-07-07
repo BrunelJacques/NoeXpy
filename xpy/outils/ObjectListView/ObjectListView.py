@@ -2377,6 +2377,8 @@ class ObjectListView(wx.ListCtrl):
         if not evt.IsVetoed() and evt.cellValue is not None:
             self.columns[subItemIndex].SetValue(rowModel, evt.cellValue)
             self.RefreshIndex(rowIndex, rowModel)
+        else:
+            self.error = wx.ID_ABORT
 
         evt = OLVEvent.CellEditFinishedEvent(
             self,
