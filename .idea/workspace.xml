@@ -7,32 +7,11 @@
     <bookmark url="file://$PROJECT_DIR$/xpy/outils/xdates.py" line="1250" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4c63f410-1c6e-41ab-90bc-9449d93a05cf" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/srcNoelite/Data/params.dat" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xpy/Images/NoeStock.ico" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xpy/Images/Noestock.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xpy/Images/SplashAzur.ico" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xpy/Images/SplashAzur.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xpy/Images/SplashJaune.ico" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xpy/Images/SplashJaune.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xpy/Images/SplashRouge.ico" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xpy/Images/SplashRouge.png" afterDir="false" />
+    <list default="true" id="4c63f410-1c6e-41ab-90bc-9449d93a05cf" name="Default Changelist" comment="Inventaires et duplication articles">
+      <change beforePath="$PROJECT_DIR$/.idea/NoeXpy.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/NoeXpy.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Noestock.py" beforeDir="false" afterPath="$PROJECT_DIR$/Noestock.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/srcNoestock/DLG_Articles.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/DLG_Articles.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/srcNoestock/DLG_Inventaires.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/DLG_Inventaires.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/srcNoestock/DLG_Mouvements.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/DLG_Mouvements.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/srcNoestock/DLG_PrixJour.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/DLG_PrixJour.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/srcNoestock/UTILS_Stocks.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/UTILS_Stocks.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/srcNoestock/Versions.txt" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/Versions.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/srcNoestock/menu.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/menu.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xpy/outils/ObjectListView/CellEditor.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/outils/ObjectListView/CellEditor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xpy/outils/ObjectListView/ObjectListView.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/outils/ObjectListView/ObjectListView.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xpy/outils/xaccueil.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/outils/xaccueil.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xpy/outils/xformat.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/outils/xformat.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xpy/xGestion_TableauEditor.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/xGestion_TableauEditor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xpy/xGestion_TableauRecherche.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/xGestion_TableauRecherche.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xpy/xUTILS_SaisieParams.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/xUTILS_SaisieParams.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xpy/xUTILS_DB.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/xUTILS_DB.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -248,14 +227,13 @@
   </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
-    <option name="showExcludedFiles" value="false" />
     <option name="showLibraryContents" value="true" />
     <option name="showMembers" value="true" />
   </component>
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../../Python37-64/projetXPY/source/.idea" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PythonContentEntriesConfigurable" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
     <property name="two.files.diff.last.used.file" value="$USER_HOME$/Desktop/xUTILS_SaisieParamsNew.py" />
   </component>
   <component name="ReaderModeSettings">
@@ -275,7 +253,7 @@
       <recent name="C:\Python37-32\NoeXpy\xpy\outils\ObjectListView" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.DLG_Articles">
+  <component name="RunManager" selected="Python.Noestock">
     <configuration name="DLG_Articles" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoeXpy" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -289,27 +267,6 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/srcNoestock/DLG_Articles.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="DLG_Inventaires" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="NoeXpy" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/srcNoestock" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/srcNoestock/DLG_Inventaires.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -360,6 +317,27 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="Noelite" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="NoeXpy" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Noelite.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="Noestock" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoeXpy" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -383,11 +361,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.DLG_Articles" />
         <item itemvalue="Python.Noestock" />
+        <item itemvalue="Python.Noelite" />
+        <item itemvalue="Python.DLG_Articles" />
         <item itemvalue="Python.DLG_PrixJour" />
         <item itemvalue="Python.DLG_Mouvements" />
-        <item itemvalue="Python.DLG_Inventaires" />
       </list>
     </recent_temporary>
   </component>
@@ -406,13 +384,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1606130437177</updated>
-    </task>
-    <task id="LOCAL-00038" summary="Gestion des modifs de lignes en Tableau recherche">
-      <created>1617724423842</created>
-      <option name="number" value="00038" />
-      <option name="presentableId" value="LOCAL-00038" />
-      <option name="project" value="LOCAL" />
-      <updated>1617724423842</updated>
     </task>
     <task id="LOCAL-00039" summary="Entrées stocks et incidences diverses">
       <created>1617828321405</created>
@@ -750,7 +721,14 @@
       <option name="project" value="LOCAL" />
       <updated>1625566368790</updated>
     </task>
-    <option name="localTasksCounter" value="87" />
+    <task id="LOCAL-00087" summary="Inventaires et duplication articles">
+      <created>1625687755150</created>
+      <option name="number" value="00087" />
+      <option name="presentableId" value="LOCAL-00087" />
+      <option name="project" value="LOCAL" />
+      <updated>1625687755150</updated>
+    </task>
+    <option name="localTasksCounter" value="88" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -838,7 +816,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/../OpenRef" />
     </ignored-roots>
-    <MESSAGE value="Entrée stock" />
     <MESSAGE value="Entrée stock reprise anterieur" />
     <MESSAGE value="Getxxx avec sql devient Sqlxxx" />
     <MESSAGE value="Entrées Stocks" />
@@ -863,7 +840,8 @@
     <MESSAGE value="Saisie règlements" />
     <MESSAGE value="Sizer automatique" />
     <MESSAGE value="Inventaires" />
-    <option name="LAST_COMMIT_MESSAGE" value="Inventaires" />
+    <MESSAGE value="Inventaires et duplication articles" />
+    <option name="LAST_COMMIT_MESSAGE" value="Inventaires et duplication articles" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

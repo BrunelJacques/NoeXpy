@@ -310,7 +310,8 @@ class DB():
         # Initialisation de la connexion
         try:
             self.connexion = win32com.client.Dispatch(r'ADODB.Connection')
-            DSN = ('PROVIDER = Microsoft.Jet.OLEDB.4.0;DATA SOURCE = ' + self.nomBase + ';')
+            #DSN = ('PROVIDER = Microsoft.Jet.OLEDB.4.0;DATA SOURCE = ' + self.nomBase + ';')
+            DSN = ('PROVIDER = Microsoft.ACE.OLEDB.12.0;DATA SOURCE = ' + self.nomBase + ';')
             self.connexion.Open(DSN)
             #lecture des tables de la base de données
             cat = win32com.client.Dispatch(r'ADOX.Catalog')

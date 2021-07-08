@@ -151,7 +151,8 @@ class DLG_articles(xgtr.DLG_tableau):
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
         # personnalisation du bouton dupliquer
-        self.pnlOlv.lstBtnCtrl[2][0].SetToolTip("Changer le nom de l'article sélectionné ")
+        if hasattr(self.pnlOlv,'lstBtnCtrl'):
+            self.pnlOlv.lstBtnCtrl[2][0].SetToolTip("Changer le nom de l'article sélectionné ")
         if  isinstance(value,str):
             self.pnlOlv.ctrlOutils.barreRecherche.SetValue(value)
         # enlève le filtre si pas de réponse
