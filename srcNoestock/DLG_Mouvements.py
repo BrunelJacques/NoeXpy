@@ -282,6 +282,23 @@ def GetAnterieur(dlg,db=None):
     dlgAnte.Destroy()
     return dParams
 
+def GetEnSaisie(dlg,db=None):
+    # Façon GetAnterieur retourne un dict de params de la dernière saisie du jour
+    dParams = {}
+    dicOlv = xformat.CopyDic(GetMatriceAnterieurs(dlg))
+    getDonnees = dicOlv['getDonnees']
+    dicOlv['lstChamps'][-1] =  'MAX(IDmouvement)'
+    encours = str(datetime.date.today())
+    lstDonnees = getDonnees(dicOlv=dicOlv,db=db,encours=encours)
+    if len(lstDonnees) > 0:
+        donnees = lstDonnees[0]
+        for ix in range(len(donnees)):
+            if dicOlv['lstChamps'][ix] == 'IDanalytique':
+                dicOlv['lstChamps'][ix] = 'analytique'
+            dParams[dicOlv['lstChamps'][ix]] = donnees[ix]
+        dParams['sensNum'] = dlg.sensNum
+    return dParams
+
 def ValideParams(pnl,dParams,mute=False):
     # vérifie la saisie des paramètres
     pnlFournisseur = pnl.GetPnlCtrl('fournisseur', codebox='param2')
@@ -648,8 +665,10 @@ class DLG(xusp.DLG_vide):
         self.ht_ttc = self.pnlParams.GetOneValue('ht_ttc',codeBox='param3')
         self.origine = self.GetOrigine()
         self.OnOrigine(None)
+        self.OnBtnAnterieur(None) # appel de la saisie du jour encours
         self.GetDonnees()
         self.Sizer()
+
 
     def Init(self):
         self.db = xdb.DB()
@@ -826,11 +845,15 @@ class DLG(xusp.DLG_vide):
         self.pnlParams.SetOneValue('analytique',codeAct,codeBox='param2')
 
     def OnBtnAnterieur(self,event):
-        # lancement de la recherche d'un lot antérieur, on enlève le cellEdit pour éviter l'écho des double clics
-        self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
-        # choix d'un lot de lignes définies par des params
-        dParams = GetAnterieur(self,db=self.db)
-        self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK # gestion du retour du choix dépot réactive dblClic
+        if event:
+            # lancement de la recherche d'un lot antérieur, on enlève le cellEdit pour éviter l'écho des double clics
+            self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
+            # choix d'un lot de lignes définies par des params
+            dParams = GetAnterieur(self,db=self.db)
+            self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK # gestion du retour du choix dépot réactive dblClic
+        else:
+            dParams = GetEnSaisie(self,db=self.db)
+
         if not 'date' in dParams.keys(): return
         self.pnlParams.SetOneValue('date',dParams['date'],'param1')
         self.pnlParams.SetOneValue('fournisseur',dParams['fournisseur'],'param2')

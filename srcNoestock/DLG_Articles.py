@@ -31,6 +31,8 @@ def GetMatriceSaisie(db,lstColonnes):
     keyBox = ('ligne', "")
     matrice = xformat.DicOlvToMatrice(keyBox, {'lstColonnes': lstColonnes})
     for ligne in matrice[keyBox]:
+        if ligne['name'] == 'qteStock':
+            ligne['enable'] = False
         if ligne['name'] == 'magasin':
             ligne['genre'] = 'Combo'
             ligne['values'] = nust.SqlMagasins(db)
@@ -226,7 +228,7 @@ class DLG_articles(xgtr.DLG_tableau):
             if not champ in dDonnees: continue
             if not (dDonnees[champ]) or len(dDonnees[champ]) == 0:
                     mess += "\n- La saisie de '%s' est obligatoire\n"%champ
-        for champ in ('txTva','prixMoyen'):
+        for champ in ('txTva'):
             if not champ in dDonnees: continue
             if not(dDonnees[champ]) or float(dDonnees[champ]) == 0.0:
                 mess += "\n- La saisie de '%s' est obligatoire\n"%champ

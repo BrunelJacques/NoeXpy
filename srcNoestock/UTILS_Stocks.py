@@ -425,14 +425,21 @@ def SqlMvtsAnte(**kwd):
     db = kwd.get('db',None)
     filtre = kwd.pop('filtreTxt', '')
     nbreFiltres = kwd.pop('nbreFiltres', 0)
-
+    encours = kwd.pop('encours',None)
     # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
     limit = ''
     if nbreFiltres == 0:
         limit = """
                 LIMIT %d""" % LIMITSQL
     origines = dicOlv['codesOrigines']
-    where = """                    WHERE origine in ( %s ) """ % str(origines)[1:-1]
+    where = """
+                WHERE origine in ( %s ) """ % str(origines)[1:-1]
+
+    if encours:
+        # limite à la date encours
+        where += """
+                AND dateSaisie = '%s' """%(encours)
+
     if filtre:
         where += """
                 AND (date LIKE '%%%s%%'
@@ -648,7 +655,7 @@ def MAJarticle(db,dlg,track):
             track.dicMvt.update(newDicMvt)
         else: track.dicMvt = newDicMvt
         track.dicArticle.update(dicArticle)
-        track.nbRations = track.qteStock * dicArticle['rations']
+        track.nbRations = track.qte * dicArticle['rations']
 
 def RenameArticle(db,dlg,oldID,newID):
     lstDonnees = [('IDarticle',newID)]

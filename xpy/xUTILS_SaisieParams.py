@@ -17,8 +17,9 @@ from xpy.outils                import xformat,xboutons
 
 OPTIONS_TOPBOX = ('pos','size','style','name','matrice','donnees','lblTopBox','lblBox','boxesSizes')
 
-OPTIONS_CTRL = ('name', 'label', 'ctrlAction', 'btnLabel', 'btnImage','btnAction', 'value', 'labels', 'values', 'enable',
-                'genre', 'help','ctrlSize','ctrlMinSize','ctrlMaxSize','txtSize', 'btnHelp','boxMaxSize','boxMinSize','boxSize','ctrl')
+OPTIONS_CTRL = ('name', 'label', 'ctrlAction', 'btnLabel', 'btnImage','btnAction', 'value', 'labels',
+                'values', 'enable', 'genre', 'help','ctrlSize','ctrlMinSize','ctrlMaxSize','txtSize',
+                'btnHelp','boxMaxSize','boxMinSize','boxSize','ctrl')
 # les Binds de ctrl se posent dans le pannel
 OPTIONS_PANEL = ('pos','style','name', 'size')
 
