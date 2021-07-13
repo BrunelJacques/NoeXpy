@@ -14,16 +14,15 @@ import srcNoestock.UTILS_Stocks        as nust
 import srcNoelite.UTILS_Noegest        as nung
 import xpy.xGestion_TableauRecherche   as xgtr
 import xpy.xUTILS_DB                   as xdb
-from srcNoestock                import DLG_Effectifs, DLG_Mouvements, DLG_PrixJourDetail
+from srcNoestock                import DLG_Effectifs, DLG_Mouvements
 from xpy.outils.ObjectListView  import ColumnDefn
 from xpy.outils                 import xformat,xbandeau,xboutons,xdates
 
 #---------------------- Matrices de paramétres -------------------------------------
 
 LIMITSQL = 100
-TITRE = "Suivi des Prix de journée"
-INTRO = "Ce tableau fait ressortir le prix des repas selon les sorties de stock " \
-        + "rapproché des effectifs servis ou payants seuls, à compléter par le bouton 'saisie'. Le matin se rattache au soir de la veille"
+TITRE = "Prix de journée"
+INTRO = "Détail du calcul du prix d'une journée "
 
 BTN_EFFECTIFS = {'label':"Effectifs",
                 'name':'effectifs',
@@ -155,12 +154,15 @@ def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
     return [
             ColumnDefn("pbImpress", 'right', 0,'pbImp', valueSetter=''),
-            ColumnDefn("Date", 'right', 90, 'IDdate', valueSetter=datetime.date.today(),stringConverter=xformat.FmtDate),
-            ColumnDefn("NbRepas", 'right', 80, 'nbRepas', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
-            ColumnDefn("NbClients", 'right', 80, 'nbClients', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=True),
-            ColumnDefn("PrixParRepas", 'right', 100,'prixRepas', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=True),
-            ColumnDefn("PrixJourClient", 'right', 100, 'prixClient', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=True),
-            ColumnDefn("Coût global", 'right', 100, 'cout', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=True),
+            ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="", isSpaceFilling=True),
+            ColumnDefn("Rayon", 'left', 80, 'rayon', valueSetter="", isSpaceFilling=False),
+            ColumnDefn("Qté", 'right', 80, 'qte', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=False),
+            ColumnDefn("PrixUn", 'right', 80, 'prixUn', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=False),
+            ColumnDefn("Coût", 'right', 80, 'cout', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=False),
+            ColumnDefn("NbRepas", 'right', 80, 'nbRepas', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=False),
+            ColumnDefn("PrixParRepas", 'right', 80,'prixRepas', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=False),
+            ColumnDefn("NbClients", 'right', 80, 'nbClients', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=False),
+            ColumnDefn("PrixJourClient", 'right', 80, 'prixClient', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=False),
             ]
 
 def GetOlvCodesSup():
@@ -171,7 +173,8 @@ def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
     return {
             'checkColonne': False,
-            'recherche': False,
+            'sortColumnIndex':2,
+            'recherche': True,
             'getDonnees': dlg.GetDonnees,
             'dictColFooter': {"IDdate": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
                               "nbRepas": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
@@ -181,7 +184,6 @@ def GetOlvOptions(dlg):
                               "cout": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
                               },
             'orientationImpression': wx.PORTRAIT,
-            'lstNomsBtns': ['modifier'],
     }
 
 def GetDlgOptions(dlg):
@@ -189,7 +191,7 @@ def GetDlgOptions(dlg):
     return {
         'style': wx.DEFAULT_FRAME_STYLE,
         'minSize': (700, 550),
-        'size': (850, 600),
+        'size': (850, 800),
         }
 
 #----------------------- Parties de l'écran -----------------------------------------
@@ -203,32 +205,24 @@ class PNL_corps(xgtr.PNL_corps):
         self.OnModifier(event)
 
     def OnModifier(self, event):
-        # fonction modifier détournée pour imprimer ou saisir effectif
+        # Action du clic sur l'icone sauvegarde renvoie au parent
         olv = self.ctrlOlv
         if olv.GetSelectedItemCount() == 0:
-            mess = "Vous n'avez pas sélectionné une ligne\n\n"
-            mess += "Vous ne souhaitez pas l'édition du détail d'un jour ?"
-            dlg = wx.MessageDialog(self,mess,"Information")
-            ret = dlg.ShowModal()
-            del dlg
-            if ret != wx.ID_YES:
-                return
+            wx.MessageBox("Pas de sélection faite, pas de modification possible !" ,
+                                'Problème de double clic?', wx.OK | wx.ICON_INFORMATION)
+            return
 
         ligne = olv.GetSelectedObject()
         ixLigne = olv.modelObjects.index(ligne)
         dte = ligne.IDdate
         analytique = self.parent.analytique
-
-        if ligne.nbRepas == 0.0:
-            # lancement de la gestion effectif
-            DLG_Effectifs.EffectifUnJour(self.db,dte,analytique)
-            self.ctrlOlv.MAJ(ixLigne)
-        dlg = DLG_PrixJourDetail.DLG(dteJour=ligne.IDdate)
-        dlg.ShowModal()
+        # lancemetn de la gestion effectif
+        DLG_Effectifs.EffectifUnJour(self.db,dte,analytique)
+        self.ctrlOlv.MAJ(ixLigne)
 
 class DLG(xgtr.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self):
+    def __init__(self,dteJour=None):
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
         lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),]
         lstInfos += INFOS
@@ -241,7 +235,10 @@ class DLG(xgtr.DLG_tableau):
 
         # variables gérées par l'écran paramètres
         self.today = datetime.date.today()
-        #self.periode = (None,None)
+        if not dteJour:
+            dteJour = self.today
+        else: dteJour = xformat.DateSqlToDatetime(dteJour)
+        self.periode = (dteJour,dteJour)
         self.cuisine = True
         self.analytique = '00'
         self.midi = True
@@ -274,7 +271,6 @@ class DLG(xgtr.DLG_tableau):
         self.pnlBandeau.SetBackgroundColour(wx.Colour(220, 250, 220))
 
        # charger les valeurs de pnl_params
-        self.periode = xformat.PeriodeMois(self.today)
         self.pnlParams.SetOneValue('periode',self.periode,'param1')
         self.pnlParams.SetOneValue('cuisine',self.cuisine,'param2')
         self.pnlParams.SetOneValue('midi',self.midi,'param3')
@@ -352,7 +348,7 @@ class DLG(xgtr.DLG_tableau):
     def OnSoir(self,event):
         self.soir =  self.pnlParams.GetOneValue('soir','param3')
         self.matin = self.soir
-        self.pnlParams.SetOneValue('matin', self.soir,'param3')
+        self.pnlParams.SetOneValue('matin', bool(self.soir),'param3')
         ctrlMatin = self.pnlParams.GetPnlCtrl('midi','param3')
         ctrlMatin.SetFocus()
         self.ctrlOlv.MAJ()
@@ -385,15 +381,33 @@ class DLG(xgtr.DLG_tableau):
         if hasattr(self,'periode'):
             self.params = self.pnlParams.GetValues()
             kwd['db'] = self.db
-            lstDonnees = nust.GetPrixJours(self, **kwd)
+            lstDonnees = nust.GetPxJourDetail(self, **kwd)
         return lstDonnees
 
     def GetTitreImpression(self):
         datedeb = xformat.DateSqlToFr(self.periode[0])
         datefin = xformat.DateSqlToFr(self.periode[1])
+        if datedeb == datefin:
+            titre = "Prix journée %s"%datedeb
+        else:
+            titre = "Prix Jour du %s au %s"%(datedeb, datefin)
+
+        tiers = "en Cuisine"
+        if self.analytique != "00" : tiers = "Camp: %s"%self.analytique.capitalize()
+
+        repas = ""
+        if self.params['param3']['midi']: repas += "Midi,"
+        if self.params['param3']['soir']: repas += "Soir,"
+        if self.params['param3']['matin']: repas += "5e+ptDej,"
+
+        return "%s, %s, Repas: %s"%( titre, tiers, repas)
+
+    def GetIntroImpression(self):
+        datedeb = xformat.DateSqlToFr(self.periode[0])
+        datefin = xformat.DateSqlToFr(self.periode[1])
         tiers = "Repas en cuisine"
-        if len(self.analytique) > 0 : tiers = "Camp: %s"%self.analytique.capitalize()
-        return "Synthèse des Prix de journée du %s au %s, %s"%( datedeb, datefin, tiers)
+        if len(self.analytique) != "00" : tiers = "Camp: %s"%self.analytique.capitalize()
+        return "Prix de journée détaillé du %s au %s, %s"%( datedeb, datefin, tiers)
 
     def ValideSaisie(self,dlgSaisie,*args,**kwd):
         #Relais de l'appel de l'écran de saisie en sortie
@@ -402,16 +416,13 @@ class DLG(xgtr.DLG_tableau):
         return DLG_Effectifs.ValideSaisie(dlgSaisie,**kwd)
 
     def OnImprimer(self,event):
-        # lancement du détail possible via 'Modifier' détourné
-        self.pnlOlv.OnModifier(None)
         self.ctrlOlv.Apercu(None)
-        return
 
 #------------------------ Lanceur de test  -------------------------------------------
 
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG()
+    dlg = DLG(dteJour="2021-07-04")
     dlg.ShowModal()
     app.MainLoop()

@@ -8,8 +8,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4c63f410-1c6e-41ab-90bc-9449d93a05cf" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/srcNoestock/DLG_PrixJourDetail.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/srcNoestock/Versions.txt" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/Versions.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/srcNoestock/DLG_Articles.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/DLG_Articles.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/srcNoestock/DLG_PrixJour.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/DLG_PrixJour.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/srcNoestock/UTILS_Stocks.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/UTILS_Stocks.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xpy/outils/ObjectListView/ObjectListView.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/outils/ObjectListView/ObjectListView.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xpy/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xpy/xGestion_TableauRecherche.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/xGestion_TableauRecherche.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xpy/xUTILS_SaisieParams.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/xUTILS_SaisieParams.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -273,48 +280,6 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="DLG_Effectifs" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="NoeXpy" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/srcNoestock" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/srcNoestock/DLG_Effectifs.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="DLG_JourDetail" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="NoeXpy" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/srcNoestock" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/srcNoestock/DLG_JourDetail.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
     <configuration name="DLG_Mouvements" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="NoeXpy" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -357,11 +322,53 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="DLG_PrixJourDetail" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="NoeXpy" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/srcNoestock" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/srcNoestock/DLG_PrixJourDetail.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="xGestion_TableauRecherche" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="NoeXpy" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/xpy" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/xpy/xGestion_TableauRecherche.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
         <item itemvalue="Python.DLG_PrixJour" />
-        <item itemvalue="Python.DLG_Effectifs" />
-        <item itemvalue="Python.DLG_JourDetail" />
+        <item itemvalue="Python.DLG_PrixJourDetail" />
+        <item itemvalue="Python.xGestion_TableauRecherche" />
         <item itemvalue="Python.DLG_Mouvements" />
         <item itemvalue="Python.DLG_Articles" />
       </list>
@@ -382,13 +389,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1606130437177</updated>
-    </task>
-    <task id="LOCAL-00041" summary="Entrées stocks">
-      <created>1617999852912</created>
-      <option name="number" value="00041" />
-      <option name="presentableId" value="LOCAL-00041" />
-      <option name="project" value="LOCAL" />
-      <updated>1617999852912</updated>
     </task>
     <task id="LOCAL-00042" summary="ID_OK to OK">
       <created>1618058600904</created>
@@ -726,7 +726,14 @@
       <option name="project" value="LOCAL" />
       <updated>1626085135589</updated>
     </task>
-    <option name="localTasksCounter" value="90" />
+    <task id="LOCAL-00090" summary="Prix journée">
+      <created>1626085394443</created>
+      <option name="number" value="00090" />
+      <option name="presentableId" value="LOCAL-00090" />
+      <option name="project" value="LOCAL" />
+      <updated>1626085394443</updated>
+    </task>
+    <option name="localTasksCounter" value="91" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -858,6 +865,11 @@
         </breakpoint>
       </default-breakpoints>
     </breakpoint-manager>
+    <watches-manager>
+      <configuration name="PythonConfigurationType">
+        <watch expression="self.sortColumnIndex" language="Python" />
+      </configuration>
+    </watches-manager>
   </component>
   <component name="debuggerHistoryManager">
     <expressions id="watch">

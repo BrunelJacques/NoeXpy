@@ -14,6 +14,12 @@ from xpy.outils import xbandeau,xformat,xboutons,xshelve
 from xpy.outils.ObjectListView import ObjectListView, ColumnDefn, CTRL_Outils, Footer
 from xpy.outils.xconst import *
 
+OPTIONS_OLV = ('f.rowFormatter', 'rowFormatter','useAlternateBackColors', 'useAlternateBackColorsTrue',
+                'sortColumnIndex','sortAscending','sortable',
+                'cellEditMode','autoAddRow','typingSearchesSortColumn',
+               'pos','size','style','validator','name')
+
+
 def GetBtnsPied(pnl):
     return  [
             ('BtnPrec', wx.ID_CANCEL, wx.ArtProvider.GetBitmap(wx.ART_DELETE, wx.ART_OTHER, (32, 32)),
@@ -53,7 +59,7 @@ class TrackGeneral(object):
         if not (len(donnees)-len(codesSup) == len(codesColonnes) == len(setterValues) ):
             lst = [str(codesColonnes),str(setterValues),str(donnees)]
             mess = "Problème de nombre d'occurences!\n\n"
-            mess += "%d - %d donnees, %d codes, %d colonnes"%(len(donnees),len(codesSup),
+            mess += "(%d - %d) donnees, %d codes, %d colonnes"%(len(donnees),len(codesSup),
                                                         len(codesColonnes), len(setterValues))
             mess += '\n\n'+'\n\n'.join(lst)
             wx.MessageBox(mess,caption="xGestion_TableauRecherche.TrackGeneral")
@@ -113,7 +119,17 @@ class ListView(ObjectListView):
         self.lstDonnees = []
         self.avecFooter = False
         self.dicOlv = xformat.CopyDic(kwds)
-        style = kwds.pop('style', wx.LC_SINGLE_SEL)| wx.LC_REPORT
+
+        # récup des arguments à transmettre à l'OLV
+        kwdsOLV = {}
+        for arg in OPTIONS_OLV:
+            valarg = kwds.get(arg,None)
+            if valarg:
+                kwdsOLV[arg] = valarg
+
+        if not 'style' in kwdsOLV: kwdsOLV['style'] = (wx.LC_SINGLE_SEL| wx.LC_REPORT)
+
+        # arguments propres à cette instance
         self.checkColonne = kwds.pop('checkColonne',False)
         self.lstColonnes = kwds.pop('lstColonnes', [])
         self.lstCodesSup = kwds.pop('lstCodesSup', [])
@@ -148,9 +164,9 @@ class ListView(ObjectListView):
         self.criteres = ""
         self.itemSelected = False
         self.popupIndex = -1
+
         # Initialisation du listCtrl
-        kwds['style'] = style
-        ObjectListView.__init__(self, *args,**kwds)
+        ObjectListView.__init__(self, *args,**kwdsOLV)
         self.InitObjectListView()
         self.Proprietes()
 
@@ -356,15 +372,16 @@ class ListView(ObjectListView):
     def Apercu(self, event):
         import xpy.outils.ObjectListView.Printer as printer
         # L'orientation par défaut est donnée par l'attribut 'orientationImpression' de l'olv
-        titre = self.GetTitreImpression()
         prt = printer.ObjectListViewPrinter(self, titre=self.GetTitreImpression(),
-                                                        orientation=self.GetOrientationImpression())
+                                            intro=self.GetIntroImpression(),
+                                            orientation=self.GetOrientationImpression())
         prt.Preview()
 
     def Imprimer(self, event):
         import xpy.outils.ObjectListView.Printer as printer
         prt = printer.ObjectListViewPrinter(self, titre=self.GetTitreImpression(),
-                                                        orientation=self.GetOrientationImpression())
+                                                intro=self.GetIntroImpression(),
+                                                orientation=self.GetOrientationImpression())
         prt.Print()
 
     def ExportTexte(self, event):
@@ -373,7 +390,8 @@ class ListView(ObjectListView):
 
     def ExportExcel(self, event):
         import xpy.outils.xexport
-        xpy.outils.xexport.ExportExcel(self, titre=self.GetTitreImpression(), autoriseSelections=False)
+        xpy.outils.xexport.ExportExcel(self, titre=self.GetTitreImpression(),
+                                           autoriseSelections=False)
 
     def GetTracksCoches(self):
         return self.GetCheckedObjects()
@@ -390,6 +408,13 @@ class ListView(ObjectListView):
         elif hasattr(self, 'titreImpression') and self.titreImpression:
             return self.titreImpression
         return "Tableau récapitulatif"
+
+    def GetIntroImpression(self):
+        if hasattr(self.lanceur,'GetIntroImpression'):
+            return self.lanceur.GetIntroImpression()
+        elif hasattr(self, 'introImpression') and self.introImpression:
+            return self.introImpression
+        return ""
 
 # Saisie ou gestion d'une ligne de l'olv dans un nouvel écran
 class DLG_saisie(xusp.DLG_vide):

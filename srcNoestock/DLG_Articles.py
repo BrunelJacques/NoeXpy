@@ -33,6 +33,7 @@ def GetMatriceSaisie(db,lstColonnes):
     for ligne in matrice[keyBox]:
         if ligne['name'] == 'qteStock':
             ligne['enable'] = False
+            ixQteStock = matrice[keyBox].index(ligne)
         if ligne['name'] == 'magasin':
             ligne['genre'] = 'Combo'
             ligne['values'] = nust.SqlMagasins(db)
@@ -47,6 +48,7 @@ def GetMatriceSaisie(db,lstColonnes):
             ligne['value'] = ""
         if ligne['genre'].lower() in ('str','combo'):
             ligne['ctrlAction'] = "ValideNbCar"
+    del matrice[keyBox][ixQteStock]
     return matrice
 
 def GetMatriceRenameArt(matriceSaisie):

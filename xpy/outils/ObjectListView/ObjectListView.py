@@ -279,9 +279,7 @@ class ObjectListView(wx.ListCtrl):
         self.sortable = kwargs.pop("sortable", True)
         self.cellEditMode = kwargs.pop("cellEditMode", self.CELLEDIT_NONE)
         self.autoAddRow = kwargs.pop("autoAddRow",False)
-        self.typingSearchesSortColumn = kwargs.pop(
-            "typingSearchesSortColumn",
-            True)
+        self.typingSearchesSortColumn = kwargs.pop("typingSearchesSortColumn",True)
 
         self.evenRowsBackColor = wx.Colour(255, 255, 245)
         self.oddRowsBackColor = wx.Colour(245, 245, 255)
@@ -293,6 +291,7 @@ class ObjectListView(wx.ListCtrl):
         for key,value in kwargs.items():
             if key in ('ID','pos','size','style','validator','name'):
                 kwds[key]=value
+
         wx.ListCtrl.__init__(self, *args, **kwds)
 
         if self.sortable:

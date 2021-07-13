@@ -522,16 +522,20 @@ class PNL_ctrl(wx.Panel):
         self.ctrl.valOrigine = ligne['value']
         self.ctrl.valuesCtrl = ligne['values']
         self.ctrl.labelsCtrl = ligne['labels']
+
+        self.ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnCtrlAction)
+        #self.ctrl.Bind(wx.EVT_KEY_DOWN, self.OnEnter)
         if ligne['enable'] == False:
             self.ctrl.Enable(False)
             self.txt.Enable(False)
+
         if self.avecBouton and ligne['genre'].lower()[:3] != 'dir':
             self.btn.nameBtn = self.codename
             self.btn.labelBtn = ligne['btnLabel']
             self.btn.actionBtn = ligne['btnAction']
             self.btn.Bind(wx.EVT_BUTTON, self.OnBtnAction)
+
         if self.ctrl.actionCtrl:
-            self.ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnCtrlAction)
             self.ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnCtrlAction)
             if self.ctrl.genreCtrl in ['anyctrl']:
                 self.ctrl.Bind(wx.EVT_BUTTON, self.OnCtrlAction)
@@ -541,30 +545,52 @@ class PNL_ctrl(wx.Panel):
                 self.ctrl.Bind(wx.EVT_COMBOBOX, self.OnCtrlAction)
                 self.ctrl.Bind(wx.EVT_CHECKBOX, self.OnCtrlAction)
 
+    def zzzOnEnter(self, event):
+        # gestion de la validations
+        keycode = event.GetKeyCode()
+        if keycode == wx.WXK_RETURN or keycode == wx.WXK_NUMPAD_ENTER or keycode == wx.WXK_TAB:
+            event.EventObject.Navigate()
+        event.Skip()
+
     def OnCtrlAction(self,event):
         if self.flagSkipEdit: return
         self.flagSkipEdit = True
         #print("action %s"%event.EventType, self.name) #pour debug event multiples
         event.Skip()
+
+        actionCtrl = None
         #Recherche de l'action dans l'attribut du ctrl
-        if hasattr(event.EventObject,'actionCtrl'):
+        if hasattr(event.EventObject,'actionCtrl') and event.EventObject.actionCtrl:
             actionCtrl = event.EventObject.actionCtrl
         # via le parent de l'objet
         elif hasattr(event.EventObject.Parent,'actionCtrl'):
             actionCtrl = event.EventObject.Parent.actionCtrl
         elif hasattr(event.EventObject.GrandParent, 'actionCtrl'):
             actionCtrl = event.EventObject.GrandParent.actionCtrl
-        else:
+        elif event.EventType != wx.EVT_TEXT_ENTER.evtType[0]:
             print("!!!! actionCtrl de <%s - %s> non trouvée"%(event.EventObject.Parent,event.EventObject.ClassName))
             return
-        # selon la nature texte ou pas
-        if isinstance(actionCtrl,str):
-            action = "self.lanceur."+actionCtrl+"(event)"
-            eval(action)
-        else:
-            # actionCtrl est un pointeur de Fonction
-            actionCtrl(event)
+
+        if actionCtrl:
+            # selon la nature texte ou pas
+            if isinstance(actionCtrl,str):
+                action = "self.lanceur."+actionCtrl+"(event)"
+                eval(action)
+            else:
+                # actionCtrl est un pointeur de Fonction
+                actionCtrl(event)
+        #event.Skip()
         self.flagSkipEdit = False
+        if event.EventType == wx.EVT_TEXT_ENTER.evtType[0]:
+            # avec ou sans actionCtrl c'était un évènement 'valider'
+            self.Navigate() # move to next control
+
+            ix = self.parent.lstPanels.index(self)
+            lg = len(self.parent.lstPanels)
+            if ix < lg-1:
+                nextPnlCtrl = self.parent.lstPanels[ix + 1]
+                if nextPnlCtrl.Enabled == False or nextPnlCtrl.genre in ("bool"):
+                    nextPnlCtrl.Navigate() # move to next control
 
     def OnBtnAction(self,event):
         if hasattr(event.EventObject,'actionBtn'):
@@ -579,11 +605,16 @@ class PNL_ctrl(wx.Panel):
             return
         # selon la nature texte ou pas
         if isinstance(actionBtn,str):
-            action = "self.lanceur."+actionBtn+"(event)"
-            eval(action)
+            if hasattr(self.lanceur,actionBtn):
+                action = "self.lanceur.%s(event)"%(actionBtn)
+                eval(action)
         else:
             actionBtn(event)
         event.Skip()
+
+        if event.EventType == wx.EVT_TEXT_ENTER.evtType[0]:
+            # avec ou sans actionCtrl c'était un évènement 'valider'
+            event.EventObject.Navigate() # move to next control
 
     def PnlSizer(self):
         ctrlbox = wx.BoxSizer(wx.HORIZONTAL)
@@ -1564,7 +1595,6 @@ if __name__ == '__main__':
     """
     """
     """
-    """
     dlg_3 = DLG_vide(None)
     #pnl = PNL_property(dlg_3,dlg_3,matrice=dictMatrice,donnees=dictDonnees)
     pnl = TopBoxPanel(dlg_3,matrice=dictMatrice,donnees=dictDonnees)
@@ -1580,5 +1610,6 @@ if __name__ == '__main__':
     app.SetTopWindow(frame_1)
     frame_1.Position = (50,50)
     frame_1.Show()
+    """
 
     app.MainLoop()
