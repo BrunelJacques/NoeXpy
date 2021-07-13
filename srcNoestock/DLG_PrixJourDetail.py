@@ -21,7 +21,7 @@ from xpy.outils                 import xformat,xbandeau,xboutons,xdates
 #---------------------- Matrices de paramétres -------------------------------------
 
 LIMITSQL = 100
-TITRE = "Prix de journée"
+TITRE = "Prix de journée détaillé"
 INTRO = "Détail du calcul du prix d'une journée "
 
 BTN_EFFECTIFS = {'label':"Effectifs",
@@ -403,11 +403,10 @@ class DLG(xgtr.DLG_tableau):
         return "%s, %s, Repas: %s"%( titre, tiers, repas)
 
     def GetIntroImpression(self):
-        datedeb = xformat.DateSqlToFr(self.periode[0])
-        datefin = xformat.DateSqlToFr(self.periode[1])
-        tiers = "Repas en cuisine"
-        if len(self.analytique) != "00" : tiers = "Camp: %s"%self.analytique.capitalize()
-        return "Prix de journée détaillé du %s au %s, %s"%( datedeb, datefin, tiers)
+        return "et patata..."
+
+    def GetTotalImpression(self):
+        return "Total cumulé :"
 
     def ValideSaisie(self,dlgSaisie,*args,**kwd):
         #Relais de l'appel de l'écran de saisie en sortie

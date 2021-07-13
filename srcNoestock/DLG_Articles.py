@@ -90,7 +90,6 @@ def GetDicOlv(db,cutend=None):
                 'matriceSaisie': matriceSaisie,
                 'dicBandeau': dicBandeau,
                 'sortColumnIndex': 0,
-                'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 }
 

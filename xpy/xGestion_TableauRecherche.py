@@ -127,7 +127,8 @@ class ListView(ObjectListView):
             if valarg:
                 kwdsOLV[arg] = valarg
 
-        if not 'style' in kwdsOLV: kwdsOLV['style'] = (wx.LC_SINGLE_SEL| wx.LC_REPORT)
+        if not 'style' in kwdsOLV:
+            kwdsOLV['style'] = (wx.LC_SINGLE_SEL| wx.LC_REPORT|wx.LC_HRULES|wx.LC_VRULES)
 
         # arguments propres à cette instance
         self.checkColonne = kwds.pop('checkColonne',False)
@@ -374,6 +375,7 @@ class ListView(ObjectListView):
         # L'orientation par défaut est donnée par l'attribut 'orientationImpression' de l'olv
         prt = printer.ObjectListViewPrinter(self, titre=self.GetTitreImpression(),
                                             intro=self.GetIntroImpression(),
+                                            total=self.GetTotalImpression(),
                                             orientation=self.GetOrientationImpression())
         prt.Preview()
 
@@ -381,6 +383,7 @@ class ListView(ObjectListView):
         import xpy.outils.ObjectListView.Printer as printer
         prt = printer.ObjectListViewPrinter(self, titre=self.GetTitreImpression(),
                                                 intro=self.GetIntroImpression(),
+                                                total=self.GetTotalImpression(),
                                                 orientation=self.GetOrientationImpression())
         prt.Print()
 
@@ -412,6 +415,13 @@ class ListView(ObjectListView):
     def GetIntroImpression(self):
         if hasattr(self.lanceur,'GetIntroImpression'):
             return self.lanceur.GetIntroImpression()
+        elif hasattr(self, 'introImpression') and self.introImpression:
+            return self.introImpression
+        return ""
+
+    def GetTotalImpression(self):
+        if hasattr(self.lanceur,'GetTotalImpression'):
+            return self.lanceur.GetTotalImpression()
         elif hasattr(self, 'introImpression') and self.introImpression:
             return self.introImpression
         return ""
