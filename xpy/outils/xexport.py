@@ -355,7 +355,8 @@ def ExportExcel(listview=None, grid=None, titre="Liste", lstColonnes=None, liste
     # Création d'un classeur
     wb = xlwt.Workbook()
     # Création d'une feuille
-    ws1 = wb.add_sheet(titre)
+    title = xformat.NoPunctuation(titre)
+    ws1 = wb.add_sheet(title[:25])
     # Remplissage de la feuille
 
     al = xlwt.Alignment()

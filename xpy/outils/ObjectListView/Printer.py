@@ -12,7 +12,6 @@
 from builtins import object
 import datetime
 import wx
-
 from xpy.outils.ObjectListView import ReportFormat, ListCtrlPrinter, OptionsImpression
 from xpy.outils                import xformat
 
@@ -232,7 +231,7 @@ class ObjectListViewPrinter(object):
                 dictOptions[key] = valeur
 
         # Préparation du printout
-        self.printer = ListCtrlPrinter(self.listview, dictOptions["titre"])
+        self.printer = ListCtrlPrinter.LCprinter(self.listview, dictOptions["titre"])
         self.printer.printout.margins = (wx.Point(dictOptions["marge_gauche"], dictOptions["marge_haut"]),
                                          wx.Point(dictOptions["marge_droite"], dictOptions["marge_bas"]))
         self.printer.printout.printData.SetOrientation(dictOptions["orientation"])
@@ -286,10 +285,6 @@ class ObjectListViewPrinter(object):
         fmt.GroupTitle.GridPen = wx.Pen(dictOptions["grille_trait_couleur"], dictOptions["grille_trait_epaisseur"],
                                         wx.SOLID)
 
-        ##        fmt.GroupTitle.TextColor = wx.BLUE
-        ##        fmt.GroupTitle.Padding = (0, 12, 0, 12)
-        ##        fmt.GroupTitle.Line(wx.BOTTOM, wx.GREEN, 4, toColor=wx.WHITE, space=0)
-
         # Ligne
         fmt.Row.Font = wx.Font(dictOptions["ligne_taille_texte"], wx.SWISS, wx.NORMAL, dictOptions["ligne_style"],
                                faceName="Arial")
@@ -315,7 +310,6 @@ class ObjectListViewPrinter(object):
         fmt.ColumnFooter.TextAlignment = dictOptions["pied_colonne_alignement"]
         fmt.ColumnFooter.GridPen = wx.Pen(dictOptions["grille_trait_couleur"], dictOptions["grille_trait_epaisseur"],
                                           wx.SOLID)
-        ##        fmt.ColumnFooter.SetAlwaysCenter(True)
 
         # Conclusion
         fmt.ListFooter.Font = wx.Font(dictOptions["conclusion_taille_texte"], wx.SWISS, wx.NORMAL,
@@ -381,7 +375,7 @@ class ObjectListViewPrinter(object):
         fmt.ListHeader.Frame(wx.Pen(wx.BLACK, 0.25, wx.SOLID), space=10)
 
         # Intro
-        fmt.ListIntro.Font = wx.FFont(7, wx.FONTFAMILY_DECORATIVE, face=headerFontName)
+        fmt.ListIntro.Font = wx.FFont(10, wx.FONTFAMILY_DECORATIVE, wx.FONTFLAG_BOLD,face=headerFontName)
         fmt.ListIntro.TextColor = wx.BLACK
         fmt.ListIntro.Padding = (12, 2, 12, 2)
         fmt.ListIntro.TextAlignment = wx.ALIGN_LEFT
@@ -428,7 +422,7 @@ class ObjectListViewPrinter(object):
         fmt.ColumnFooter.SetAlwaysCenter(True)
 
         # Pied de Liste
-        fmt.ListFooter.Font = wx.FFont(7, wx.FONTFAMILY_DECORATIVE, wx.FONTFLAG_BOLD, face=headerFontName)
+        fmt.ListFooter.Font = wx.FFont(12, wx.FONTFAMILY_DECORATIVE, wx.FONTFLAG_BOLD, face=headerFontName)
         fmt.ListFooter.Padding = (12, 12, 0, 0)
         fmt.ListFooter.CellPadding = 5
         ##        fmt.ListFooter.Line(wx.TOP, wx.BLACK, 1, space=3)
@@ -517,11 +511,11 @@ class FramePreview(wx.Frame):
         self.OnZoom(None)
 
     def OnPageSetup(self, event):
-        self.ListCtrlPrinter.PageSetup()
+        self.LCprinter.PageSetup()
         self.RefreshPreview()
 
     def OnPrint(self, event):
-        self.ListCtrlPrinter.Print()
+        self.LCprinter.Print()
 
     def OnPremierePage(self, event):  # wxGlade: MyFrame.<event_handler>
         self.printPreview.SetCurrentPage(self.printPreview.GetMinPage())
@@ -547,3 +541,9 @@ class FramePreview(wx.Frame):
 
     def OnFermer(self, event):
         self.Destroy()
+
+
+if __name__ == '__main__':
+    app = wx.App(0)
+    print(ListCtrlPrinter)
+    app.MainLoop()

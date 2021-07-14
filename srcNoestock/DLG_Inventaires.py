@@ -104,7 +104,6 @@ def GetMatriceAnterieurs(dlg):
         'dicBandeau': dicBandeau,
         'sortColumnIndex': 2,
         'sensTri': False,
-        'style': wx.LC_SINGLE_SEL | wx.LC_HRULES | wx.LC_VRULES,
         'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
         'size': (650, 400)}
 

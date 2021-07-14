@@ -176,9 +176,7 @@ def GetOlvOptions(dlg):
             'sortColumnIndex':2,
             'recherche': True,
             'getDonnees': dlg.GetDonnees,
-            'dictColFooter': {"IDdate": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
-                              "nbRepas": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
-                              "nbClients": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
+            'dictColFooter': {"IDarticle": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
                               "prixRepas": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
                               "prixClient": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
                               "cout": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
@@ -381,7 +379,7 @@ class DLG(xgtr.DLG_tableau):
         if hasattr(self,'periode'):
             self.params = self.pnlParams.GetValues()
             kwd['db'] = self.db
-            lstDonnees = nust.GetPxJourDetail(self, **kwd)
+            lstDonnees = nust.GetPrixJourArticle(self, **kwd)
         return lstDonnees
 
     def GetTitreImpression(self):
@@ -392,21 +390,67 @@ class DLG(xgtr.DLG_tableau):
         else:
             titre = "Prix Jour du %s au %s"%(datedeb, datefin)
 
-        tiers = "en Cuisine"
+        return "%s"%( titre,)
+
+    def GetIntroImpression(self):
+        tiers = "En Cuisine"
         if self.analytique != "00" : tiers = "Camp: %s"%self.analytique.capitalize()
 
         repas = ""
-        if self.params['param3']['midi']: repas += "Midi,"
-        if self.params['param3']['soir']: repas += "Soir,"
-        if self.params['param3']['matin']: repas += "5e+ptDej,"
+        if self.params['param3']['midi']: repas += "Midi, "
+        if self.params['param3']['soir']: repas += "Soir, "
+        if self.params['param3']['matin']: repas += "5e+ptDej, "
 
-        return "%s, %s, Repas: %s"%( titre, tiers, repas)
-
-    def GetIntroImpression(self):
-        return "et patata..."
+        return "%s, Repas: %s"%(tiers, repas[:-2])
 
     def GetTotalImpression(self):
-        return "Total cumulé :"
+        # génération d'une ligne de synthèse avec éventuellement présence de filtre
+        effectifs = nust.GetEffectifs(self,)
+        nbRepas = effectifs[0][1] + effectifs[0][2]
+        nbClients = (effectifs[0][3] + effectifs[0][4])/2
+        # recherche filtres
+        yaFiltre = False
+        filtres = self.ctrlOlv.ctrlOutils.barreRecherche.GetValue()
+        if len(filtres) > 0: filtres += ", "
+
+        for filtre in  self.ctrlOlv.listeFiltresColonnes:
+            filtres += "%s %s %s, "%(filtre['titre'] , filtre['choix'], filtre['critere'])
+
+        if len(filtres) > 0 :
+            yaFiltre = True
+            filtres = filtres[:-2] # enlève dernière virgule
+
+        # calcul synthèse
+        modTot = 0.0
+        for track in self.ctrlOlv.modelObjects:
+            modTot += track.cout
+        modPxRep = modTot
+        modPxCli = modTot
+        if nbRepas > 0: modPxRep = round(modTot / nbRepas,2)
+        if nbClients > 0: modPxCli = round(modTot / nbClients,2)
+        modTot = round(modTot)
+
+        # pas de filtre
+        txt = "Coût global: %d€,  par repas servi : %.2f€ , par client : %.2f€"%(modTot,modPxRep, modPxCli)
+
+        if yaFiltre:
+
+            innerTot, innerNbCli, innerNbRep = 0.0, 0.0, 0.0
+            for track in self.ctrlOlv.innerList:
+                innerTot += track.cout
+                innerNbCli = max(innerNbCli, track.nbClients)
+                innerNbRep = max(innerNbRep, track.nbRepas)
+            innerPxRep = innerTot
+            innerPxCli = innerTot
+            if innerNbRep > 0: innerPxRep = round(innerTot / innerNbRep,2)
+            if innerNbCli > 0: innerPxCli = round(innerTot / innerNbCli,2)
+            innerTot = round(innerTot)
+            # présence de filtre on affiche le filtré / non filtré
+            txt = "Filtré par : %s\n"%filtres
+            txt += "Coût global - filtré: %d€ - %d€,  "%(modTot,innerTot,)
+            txt += "par repas servi : %.2f€ - %.2f€, par client : %.2f€ - %.2f€"%(modPxRep,innerPxRep,
+                                                                                modPxCli,innerPxCli)
+        return txt
 
     def ValideSaisie(self,dlgSaisie,*args,**kwd):
         #Relais de l'appel de l'écran de saisie en sortie

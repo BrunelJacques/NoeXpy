@@ -299,7 +299,7 @@ class CTRL_Parametres(CTRL_Propertygrid):
         self.Append(wxpg.PropertyCategory("Introduction"))
 
         # Taille police
-        propriete = wxpg.IntProperty(label=TAILLE_TEXTE_LABEL, name="intro_taille_texte", value=7)
+        propriete = wxpg.IntProperty(label=TAILLE_TEXTE_LABEL, name="intro_taille_texte", value=10)
         propriete.SetHelpString(TAILLE_TEXTE_INTRO_HELP)
         propriete.SetAttribute("obligatoire", True)
         self.Append(propriete)
@@ -310,7 +310,7 @@ class CTRL_Parametres(CTRL_Propertygrid):
                                       name="intro_style",
                                       labels=STYLE_TEXTE_LABELS,
                                       values=STYLE_TEXTE_VALEURS,
-                                      value=wx.FONTWEIGHT_NORMAL)
+                                      value=wx.FONTWEIGHT_BOLD)
         propriete.SetHelpString(STYLE_TEXTE_HELP)
         propriete.SetAttribute("obligatoire", True)
         self.Append(propriete)
@@ -510,7 +510,7 @@ class CTRL_Parametres(CTRL_Propertygrid):
         self.Append(wxpg.PropertyCategory("Conclusion"))
 
         # Taille police
-        propriete = wxpg.IntProperty(label=TAILLE_TEXTE_LABEL, name="conclusion_taille_texte", value=7)
+        propriete = wxpg.IntProperty(label=TAILLE_TEXTE_LABEL, name="conclusion_taille_texte", value=12)
         propriete.SetHelpString(TAILLE_TEXTE_CONCL_HELP)
         propriete.SetAttribute("obligatoire", True)
         self.Append(propriete)

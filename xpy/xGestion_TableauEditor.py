@@ -386,7 +386,8 @@ class ListView( ObjectListView):
 
     def ExportExcel(self, event):
         import xpy.outils.xexport
-        xpy.outils.xexport.ExportExcel(self, titre=self.GetTitreImpression(), autoriseSelections=False)
+        titre = self.GetTitreImpression()
+        xpy.outils.xexport.ExportExcel(self, titre=titre[:31], autoriseSelections=False)
 
     def GetTracksCoches(self):
         return self.GetCheckedObjects()

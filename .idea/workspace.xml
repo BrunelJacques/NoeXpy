@@ -9,9 +9,18 @@
   <component name="ChangeListManager">
     <list default="true" id="4c63f410-1c6e-41ab-90bc-9449d93a05cf" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/srcNoestock/DLG_Articles.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/DLG_Articles.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/srcNoelite/UTILS_Noegest.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoelite/UTILS_Noegest.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/srcNoestock/DLG_Inventaires.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/DLG_Inventaires.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/srcNoestock/DLG_Mouvements.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/DLG_Mouvements.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/srcNoestock/DLG_PrixJourDetail.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/DLG_PrixJourDetail.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xpy/xGestion_TableauRecherche.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/xGestion_TableauRecherche.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/srcNoestock/UTILS_Stocks.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/UTILS_Stocks.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xpy/outils/ObjectListView/Footer.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/outils/ObjectListView/Footer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xpy/outils/ObjectListView/ListCtrlPrinter.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/outils/ObjectListView/ListCtrlPrinter.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xpy/outils/ObjectListView/OptionsImpression.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/outils/ObjectListView/OptionsImpression.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xpy/outils/ObjectListView/Printer.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/outils/ObjectListView/Printer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xpy/outils/ObjectListView/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/outils/ObjectListView/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xpy/outils/xexport.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/outils/xexport.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xpy/xGestion_TableauEditor.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/xGestion_TableauEditor.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -253,8 +262,8 @@
       <recent name="C:\Python37-32\NoeXpy\xpy\outils" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.DLG_PrixJourDetail">
-    <configuration name="DLG_Articles" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python.DLG_PrixJour">
+    <configuration name="DLG_Inventaires" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoeXpy" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -266,7 +275,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/srcNoestock/DLG_Articles.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/srcNoestock/DLG_Inventaires.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -338,7 +347,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="xGestion_TableauRecherche" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="Printer" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoeXpy" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -346,11 +355,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/xpy" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/xpy/outils/ObjectListView" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/xpy/xGestion_TableauRecherche.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/xpy/outils/ObjectListView/Printer.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -361,11 +370,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.DLG_PrixJourDetail" />
-        <item itemvalue="Python.xGestion_TableauRecherche" />
         <item itemvalue="Python.DLG_PrixJour" />
-        <item itemvalue="Python.DLG_Articles" />
+        <item itemvalue="Python.DLG_PrixJourDetail" />
+        <item itemvalue="Python.Printer" />
         <item itemvalue="Python.DLG_Mouvements" />
+        <item itemvalue="Python.DLG_Inventaires" />
       </list>
     </recent_temporary>
   </component>
@@ -384,13 +393,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1606130437177</updated>
-    </task>
-    <task id="LOCAL-00043" summary="Entrée stock">
-      <created>1618158524907</created>
-      <option name="number" value="00043" />
-      <option name="presentableId" value="LOCAL-00043" />
-      <option name="project" value="LOCAL" />
-      <updated>1618158524907</updated>
     </task>
     <task id="LOCAL-00044" summary="Entrée stock reprise anterieur">
       <created>1618347865901</created>
@@ -728,7 +730,14 @@
       <option name="project" value="LOCAL" />
       <updated>1626185831755</updated>
     </task>
-    <option name="localTasksCounter" value="92" />
+    <task id="LOCAL-00092" summary="Prix journée détail">
+      <created>1626192193697</created>
+      <option name="number" value="00092" />
+      <option name="presentableId" value="LOCAL-00092" />
+      <option name="project" value="LOCAL" />
+      <updated>1626192193697</updated>
+    </task>
+    <option name="localTasksCounter" value="93" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -850,11 +859,6 @@
           <url>file://$PROJECT_DIR$/xpy/outils/xchoixListe.py</url>
           <line>460</line>
           <option name="timeStamp" value="131" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/xpy/outils/ObjectListView/ListCtrlPrinter.py</url>
-          <line>133</line>
-          <option name="timeStamp" value="141" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

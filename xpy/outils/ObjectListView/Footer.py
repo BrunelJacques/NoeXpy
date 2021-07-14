@@ -41,8 +41,17 @@ class Footer(wx.Control):
         self.dictTotaux = {}
         for track in objects:
             for nomColonne, dictColonne in self.dictColFooter.items() :
-                if dictColonne["mode"] == "total" :
-                    if hasattr(track, nomColonne) :
+                if dictColonne["mode"] == "maximum":
+                    if hasattr(track, nomColonne):
+                        maximum = getattr(track, nomColonne)
+                        if not nomColonne in self.dictTotaux:
+                            self.dictTotaux[nomColonne] = 0
+                        if maximum != None :
+                            if isinstance(maximum,str):
+                                maximum = float(maximum.replace(',','.'))
+                            self.dictTotaux[nomColonne] = max(maximum,self.dictTotaux[nomColonne])
+                if dictColonne["mode"] == "total":
+                    if hasattr(track, nomColonne):
                         total = getattr(track, nomColonne)
                         if not nomColonne in self.dictTotaux:
                             self.dictTotaux[nomColonne] = 0
@@ -95,6 +104,17 @@ class Footer(wx.Control):
                 infoColonne = self.dictColFooter[nom]
                 
                 mode = infoColonne["mode"]
+
+                # Valeur : MAXIMUM
+                if mode == "maximum" :
+                    if nom in self.dictTotaux :
+                        texte = self.dictTotaux[nom]
+                    else :
+                        texte = 0
+                    if converter != None :
+                        texte = converter(texte)
+                    if type(texte) in (int, float) :
+                        texte = str(texte)
 
                 # Valeur : TOTAL
                 if mode == "total" :

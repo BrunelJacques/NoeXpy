@@ -24,17 +24,17 @@
 
 
 """
-An ``ListCtrlPrinter`` takes an ``ObjectListView`` or ``wx.ListCtrl`` and turns it into a
+An ``LCprinter`` takes an ``ObjectListView`` or ``wx.ListCtrl`` and turns it into a
 pretty report.
 
 As always, the goal is for this to be as easy to use as possible. A typical
 usage should be as simple as::
 
-   printer = ListCtrlPrinter(self.myOlv, "My Report Title")
+   printer = LCprinter(self.myOlv, "My Report Title")
    printer.PrintPreview()
 
 This will produce a report with reasonable formatting. The formatting of a report is
-controlled completely by the ReportFormat object of the ListCtrlPrinter. To change the appearance
+controlled completely by the ReportFormat object of the LCprinter. To change the appearance
 of the report, you change the settings in this object.
 
 A report consists of various sections (called "blocks") and each of these blocks has a
@@ -68,7 +68,7 @@ These properties return BlockFormat objects, which have the following properties
 Implementation
 ==============
 
-A ``ListCtrlPrinter`` is a *Facade* over two classes:
+A ``LCprinter`` is a *Facade* over two classes:
     - ``ListCtrlPrintout``, which handles the interface to the wx printing subsystem
     - ``ReportEngine``, which does the actual work of creating the report
 
@@ -77,7 +77,7 @@ particular, it configures the printing DC so that its origin and scale are corre
 enables the ``ReportEngine`` to simply render the report without knowing the
 characteristics of the underlying printer DPI, unprintable region, or the scale of a print
 preview. When The ``ListCtrlPrintout`` encounters some action that is cannot perform (like
-actually rendering a page) it calls back into ``ListCtrlPrinter`` (which simply forwards
+actually rendering a page) it calls back into ``LCprinter`` (which simply forwards
 to the ``ReportEngine``).
 
 The ``ReportEngine`` uses a block structure approach to reports. Each element of
@@ -103,28 +103,23 @@ import math
 
 from .WordWrapRenderer import *
 
-# Ajout Perso :
+# Valeurs par défaut de lignes avant et après le corps du document
 LISTINTRO = u""
 LISTFOOTER=u""
 
-# ----------------------------------------------------------------------------
 
-class ListCtrlPrinter(object):
+# ancienne 'class ListCtrlPrinter': pb d'homonyme portant confusion dans l'usage de 'global' dans Printer.py
+class LCprinter(object):
     # this class creates a pretty report from an ObjectListView/ListCtrl.
 
     def __init__(self, listCtrl=None, title="ListCtrl Printing"):
-        """
-        """
-        global LISTINTRO, LISTFOOTER
-        LISTINTRO = u""
-        LISTFOOTER=u""
+
         self.printout = ListCtrlPrintout(self)
         self.engine = ReportEngine()
         if listCtrl is not None:
             self.AddListCtrl(listCtrl, title)
 
     # ----------------------------------------------------------------------------
-    # Accessing
 
     def GetPageFooter(self):
         """
@@ -196,8 +191,7 @@ class ListCtrlPrinter(object):
     PrintData = property(GetPrintData)
     Watermark = property(GetWatermark, SetWatermark)
 
-    # ----------------------------------------------------------------------------
-    # Setup
+    # Setup ---------------------------------------------------------------------
 
     def AddListCtrl(self, listCtrl, title=None):
         """
@@ -211,8 +205,7 @@ class ListCtrlPrinter(object):
         """
         self.engine.ClearListCtrls()
 
-    # ----------------------------------------------------------------------------
-    # Printing Commands
+    # Printing Commands --------------------------------------------------------
 
     def PageSetup(self, parent=None):
         """
@@ -479,7 +472,7 @@ class ReportEngine(object):
 class ListCtrlPrintout(wx.Printout):
     """
     An ListCtrlPrintout is the interface between the wx printing system
-    and ListCtrlPrinter.
+    and LCprinter.
     """
 
     def __init__(self, olvPrinter, margins=None):
@@ -705,7 +698,7 @@ class ReportFormat(object):
         """
         Change the format of the watermark printed on this report.
 
-        The actual text of the water mark is set by `ListCtrlPrinter.Watermark` property.
+        The actual text of the water mark is set by `LCprinter.Watermark` property.
         """
         defaultFaceName = "Stencil"
         self.Watermark.Font = font or wx.FFont(96, wx.FONTFAMILY_DEFAULT, 0, defaultFaceName)
@@ -1685,7 +1678,6 @@ class ReportBlock(Block):
 
         return True
 
-
 # ----------------------------------------------------------------------------
 
 class PageHeaderBlock(ThreeCellBlock):
@@ -1698,7 +1690,6 @@ class PageHeaderBlock(ThreeCellBlock):
         Return the array of texts to be printed in the cells
         """
         return self.engine.pageHeader
-
 
 # ----------------------------------------------------------------------------
 
@@ -1732,7 +1723,6 @@ class PageFooterBlock(ThreeCellBlock):
         """
         RectUtils.MoveBottomBy(self.engine.workBounds, -height)
 
-
 # ----------------------------------------------------------------------------
 
 class PageBreakBlock(Block):
@@ -1755,7 +1745,6 @@ class PageBreakBlock(Block):
         self.ChangeWorkBoundsBy(RectUtils.Height(bounds))
 
         return True
-
 
 # ----------------------------------------------------------------------------
 
@@ -1782,7 +1771,6 @@ class RunningBlockPusher(Block):
             self.engine.RemoveRunningBlock(self.block)
 
         return True
-
 
 # ----------------------------------------------------------------------------
 
@@ -1815,7 +1803,7 @@ class ListBlock(Block):
             if not first:
                 self.engine.AddBlock(PageBreakBlock())
             self.engine.AddBlock(ListHeaderBlock(self.lv, self.title))
-            #self.engine.AddBlock(ListIntroBlock(self.lv, LISTINTRO))
+            self.engine.AddBlock(ListIntroBlock(self.lv, LISTINTRO))
             self.engine.AddBlock(ListSliceBlock(self.lv, left, right, cellWidths))
             self.engine.AddBlock(ListFooterBlock(self.lv, LISTFOOTER))
             first = False
@@ -1866,7 +1854,6 @@ class ListBlock(Block):
 
         return pairs
 
-
 # ----------------------------------------------------------------------------
 
 class ListHeaderBlock(TextBlock):
@@ -1883,7 +1870,6 @@ class ListHeaderBlock(TextBlock):
         Return the text that will be printed in this block
         """
         return self.title
-
 
 # ----------------------------------------------------------------------------
 
@@ -1919,7 +1905,6 @@ class ListFooterBlock(TextBlock):
         """
         return self.text
 
-
 # ----------------------------------------------------------------------------
 
 class GroupTitleBlock(TextBlock):
@@ -1936,7 +1921,6 @@ class GroupTitleBlock(TextBlock):
         Return the text that will be printed in this block
         """
         return self.group.title
-
 
 # ----------------------------------------------------------------------------
 
@@ -2003,7 +1987,6 @@ class ListSliceBlock(Block):
         else:
             return 1
 
-
 # ----------------------------------------------------------------------------
 
 class ColumnBasedBlock(CellBlock):
@@ -2052,7 +2035,6 @@ class ColumnBasedBlock(CellBlock):
         }
         return [mapping[x] for x in listAlignments]
 
-
 # ----------------------------------------------------------------------------
 
 class ColumnHeaderBlock(ColumnBasedBlock):
@@ -2098,8 +2080,6 @@ class ColumnHeaderBlock(ColumnBasedBlock):
         Normally, we don't want to substitute within values that comes from the ListCtrl.
         """
         return False
-
-
 
 class ColumnFooterBlock(ColumnBasedBlock):
     def GetTexts(self):
@@ -2152,7 +2132,6 @@ class ListRowsBlock(Block):
 
         return True
 
-
 # ----------------------------------------------------------------------------
 
 class GroupListRowsBlock(Block):
@@ -2201,7 +2180,6 @@ class GroupListRowsBlock(Block):
         self.engine.AddBlock(self)
 
         return True
-
 
 # ----------------------------------------------------------------------------
 
@@ -2314,7 +2292,6 @@ class RowBlock(ColumnBasedBlock):
     #    modelObjects = self.lv.GetObjectAt(self.rowIndex)
     #    return [self.lv.GetImageAt(modelObjects, i) for i in range(self.left, self.right+1)]
 
-
 # ----------------------------------------------------------------------------
 
 class Decoration(object):
@@ -2356,7 +2333,6 @@ class Decoration(object):
         Draw this decoration
         """
         pass
-
 
 # ----------------------------------------------------------------------------
 
@@ -2438,7 +2414,6 @@ class RectangleDecoration(Decoration):
 
         return bounds
 
-
 # ----------------------------------------------------------------------------
 
 class LineDecoration(Decoration):
@@ -2491,7 +2466,6 @@ class LineDecoration(Decoration):
         dc.SetPen(self.pen)
         dc.DrawLine(pt1[0], pt1[1], pt2[0], pt2[1])
 
-
 # ----------------------------------------------------------------------------
 
 class WatermarkDecoration(Decoration):
@@ -2535,7 +2509,6 @@ class WatermarkDecoration(Decoration):
         y = cy - h / 2 + (w / 2 * math.sin(math.radians(self.angle)))
 
         dc.DrawRotatedText(self.text, x, y, self.angle)
-
 
 # ----------------------------------------------------------------------------
 
@@ -2581,7 +2554,6 @@ class ImageDecoration(Decoration):
 
         dc.DrawBitmap(self.bitmap, x, y, True)
 
-
 # ----------------------------------------------------------------------------
 
 class Bucket(object):
@@ -2595,7 +2567,6 @@ class Bucket(object):
     def __repr__(self):
         strs = ["%s=%r" % kv for kv in self.__dict__.items()]
         return "Bucket(" + ", ".join(strs) + ")"
-
 
 # ----------------------------------------------------------------------------
 
@@ -2729,83 +2700,6 @@ class RectUtils:
     @staticmethod
     def MultiplyOrigin(r, factor):
         return [r[0] * factor, r[1] * factor, r[2], r[3]]
-
-
-# ----------------------------------------------------------------------------
-# TESTING ONLY
-# ----------------------------------------------------------------------------
-
-# if __name__ == '__main__':
-#     import wx
-#     from ObjectListView import ObjectListView, FastObjectListView, GroupListView, ColumnDefn
-#
-#     # Where can we find the Example module?
-#     import sys
-#     sys.path.append("../Examples")
-#
-#     import ExampleModel
-#     import ExampleImages
-#
-#     class MyFrame(wx.Frame):
-#         def __init__(self, *args, **kwds):
-#             kwds["style"] = wx.DEFAULT_FRAME_STYLE
-#             wx.Frame.__init__(self, *args, **kwds)
-#
-#             self.panel = wx.Panel(self, -1)
-#             #self.lv = ObjectListView(self.panel, -1, style=wx.LC_REPORT|wx.SUNKEN_BORDER)
-#             self.lv = GroupListView(self.panel, -1, style=wx.LC_REPORT|wx.SUNKEN_BORDER)
-#             #self.lv = FastObjectListView(self.panel, -1, style=wx.LC_REPORT|wx.SUNKEN_BORDER)
-#
-#             sizer_2 = wx.BoxSizer(wx.VERTICAL)
-#             sizer_2.Add(self.lv, 1, wx.ALL|wx.EXPAND, 4)
-#             self.panel.SetSizer(sizer_2)
-#             self.panel.Layout()
-#
-#             sizer_1 = wx.BoxSizer(wx.VERTICAL)
-#             sizer_1.Add(self.panel, 1, wx.EXPAND)
-#             self.SetSizer(sizer_1)
-#             self.Layout()
-#
-#             musicImage = self.lv.AddImages(ExampleImages.getMusic16Bitmap(), ExampleImages.getMusic32Bitmap())
-#             artistImage = self.lv.AddImages(ExampleImages.getUser16Bitmap(), ExampleImages.getUser32Bitmap())
-#
-#             self.lv.SetColumns([
-#                 ColumnDefn("Title", "left", 200, "title", imageGetter=musicImage),
-#                 ColumnDefn("Artist", "left", 150, "artist", imageGetter=artistImage),
-#                 ColumnDefn("Last Played", "left", 100, "lastPlayed"),
-#                 ColumnDefn("Size", "center", 100, "sizeInBytes"),
-#                 ColumnDefn("Rating", "center", 100, "rating"),
-#              ])
-#
-#             #self.lv.CreateCheckStateColumn()
-#             self.lv.SetSortColumn(self.lv.columns[2])
-#             self.lv.SetObjects(ExampleModel.GetTracks())
-#
-#             wx.CallLater(50, self.run)
-#
-#         def run(self):
-#             printer = ListCtrlPrinter(self.lv, "Playing with ListCtrl Printing")
-#             printer.ReportFormat = ReportFormat.Normal()
-#             printer.ReportFormat.WatermarkFormat(over=True)
-#             printer.ReportFormat.IsColumnHeadingsOnEachPage = True
-#
-#             #printer.ReportFormat.Page.Add(ImageDecoration(ExampleImages.getGroup32Bitmap(), wx.RIGHT, wx.BOTTOM))
-#
-#             #printer.PageHeader("%(listTitle)s") # nice idea but not possible at the moment
-#             printer.PageHeader = "Playing with ListCtrl Printing"
-#             printer.PageFooter = ("Bright Ideas Software", "%(date)s", "%(currentPage)d of %(totalPages)d")
-#             printer.Watermark = "Sloth!"
-#
-#             #printer.PageSetup()
-#             printer.PrintPreview(self)
-#
-#
-#     app = wx.PySimpleApp(0)
-#     wx.InitAllImageHandlers()
-#     frame_1 = MyFrame(None, -1, "")
-#     app.SetTopWindow(frame_1)
-#     frame_1.Show()
-#     app.MainLoop()
 
 if __name__ == '__main__':
     pass
