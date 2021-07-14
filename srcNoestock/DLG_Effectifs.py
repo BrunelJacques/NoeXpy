@@ -152,7 +152,7 @@ def GetMatriceSaisie(dlg):
     # mise en place d'un contrôle sur la date saisie via la matrice
     # matrice[key][0]['ctrlAction'] = dlg.VerifieDate
     dicRetour['matriceSaisie'] = matrice
-    dicRetour['sizeSaisie'] = (200,420)
+    dicRetour['sizeSaisie'] = (500,420)
     return dicRetour
 
 def GetDlgOptions(dlg):

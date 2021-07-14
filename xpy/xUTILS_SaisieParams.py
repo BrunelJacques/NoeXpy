@@ -668,6 +668,10 @@ class PNL_ctrl(wx.Panel):
             value = ''
         self.ctrl.SetValue(value)
         test = self.ctrl.GetValue()
+        if isinstance(test, bool):
+            try:
+                value = bool(value)
+            except: pass
         if str(test) != str(value) and value != 0:
             raise Exception("SetValue échoué pour '%s' = %s(%s)"%(str(test),self.ctrl.name,str(value)))
 
@@ -1337,7 +1341,7 @@ class DLG_vide(wx.Dialog):
         listArbo=os.path.abspath(__file__).split("\\")
         name =      kwds.pop('name',self.__class__.__name__)
         title =     kwds.pop('title',listArbo[-1] + "/" + name)
-        style =     kwds.pop('style',wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
+        style =     kwds.pop('style',wx.DEFAULT_FRAME_STYLE)
         pos =       kwds.pop('pos',(200,100))
         size =      kwds.pop('size',(600, 450))
         minSize =   kwds.pop('minSize',(300, 250))

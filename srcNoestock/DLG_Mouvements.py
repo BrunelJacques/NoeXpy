@@ -587,7 +587,7 @@ class PNL_corps(xgte.PNL_corps):
 
             # stock négatif
             if self.lanceur.sens == "sorties" and (Nz(track.qteStock)- Nz(value)) < 0:
-                wx.MessageBox("Le Stock deviendrait négatif sauf entrée à saisir: Luc 9:13", "Problème stock")
+                wx.MessageBox("Simple remarque!\n\nAvec cette sortie le Stock deviendra négatif", "Problème stock")
 
         if code in ('qte','pxUn','nbAch','pxAch','parAch'):
             # force la tentative d'enregistrement et le calcul même en l'absece de saisie
@@ -633,7 +633,7 @@ class PNL_pied(xgte.PNL_pied):
 
 class DLG(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,sens='entrees',date=None,**kwd):
+    def __init__(self,sens='sorties',date=None,**kwd):
         # gestion des deux sens possibles 'entrees' et 'sorties'
         self.sens = sens
         self.sensNum = 1

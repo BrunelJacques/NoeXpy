@@ -406,6 +406,9 @@ class DLG(xgtr.DLG_tableau):
     def GetTotalImpression(self):
         # génération d'une ligne de synthèse avec éventuellement présence de filtre
         effectifs = nust.GetEffectifs(self,)
+        if len(effectifs) == 0:
+            wx.MessageBox("Pas d'effectif renseignés pour ce jour")
+            return
         nbRepas = effectifs[0][1] + effectifs[0][2]
         nbClients = (effectifs[0][3] + effectifs[0][4])/2
         # recherche filtres
@@ -434,7 +437,6 @@ class DLG(xgtr.DLG_tableau):
         txt = "Coût global: %d€,  par repas servi : %.2f€ , par client : %.2f€"%(modTot,modPxRep, modPxCli)
 
         if yaFiltre:
-
             innerTot, innerNbCli, innerNbRep = 0.0, 0.0, 0.0
             for track in self.ctrlOlv.innerList:
                 innerTot += track.cout

@@ -254,7 +254,10 @@ class DLG(xgtr.DLG_tableau):
         kwds['dicParams'] = GetDicParams()
         #kwds['dicOlv'] = self.dicOlv
         kwds['dicPied'] = dicPied
+
+        xdb.DB().Close()
         kwds['db'] = xdb.DB()
+
 
         super().__init__(None, **kwds)
         self.pnlOlv = PNL_corps(self, self.dicOlv,  **kwds )
