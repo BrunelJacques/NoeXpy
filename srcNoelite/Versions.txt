@@ -1,3 +1,9 @@
+Version 1.2.7.11 (15/07/2021)
+adaptation transferts fichiers
+gestion adresses bug corrigés
+saisie règlements bugs
+xpy: odbc pour base quadra
+
 Version 1.2.7.10 (06/07/2021)
 xpy : adaptations
 
