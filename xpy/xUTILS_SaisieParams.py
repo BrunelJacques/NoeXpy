@@ -1409,7 +1409,7 @@ class DLG_vide(wx.Dialog):
         if event and not event.EventObject.ClassName == 'wxDialog':
             valide = wx.OK
             if self.lanceur and hasattr(self.lanceur,'ValideSaisie'):
-                    valide = self.lanceur.ValideSaisie(self,**self.kwValideSaisie)
+                    valide = self.lanceur.ValideSaisie(self,)
             elif hasattr(self, 'ValideSaisie'):
                 valide = self.ValideSaisie()
             if valide != wx.OK:

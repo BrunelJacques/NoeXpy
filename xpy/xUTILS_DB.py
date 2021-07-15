@@ -300,6 +300,37 @@ class DB():
             wx.MessageBox("xDB: La connexion base de donnée a echoué à l'étape: %s, sur l'erreur :\n\n%s" %(etape,err))
             self.erreur = "%s\n\n: %s"%(err,etape)
 
+    def ConnectAcessOdbc(self):
+        # permet un acces aux bases access sans office
+        if os.path.isfile(self.nomBase) == False:
+            wx.MessageBox("xDB:Le fichier %s demandé n'est pas present sur le disque dur."% self.nomBase, style = wx.ICON_WARNING)
+            return
+        # Initialisation de la connexion
+        try:
+            import pyodbc
+            DRIVER='{Microsoft Access Driver (*.mdb, *.accdb)}'
+            DBQ='c:/temp/qcompta.mdb'
+            PWD = '' # passWord
+            self.connexion = pyodbc.connect('DRIVER={};DBQ={};PWD={}'.format(DRIVER,DBQ,PWD))
+            cursor = self.connexion.cursor()
+            allTables = cursor.tables()
+            if len(allTables) == 0:
+                wx.MessageBox("xDB:La base de donnees %s est présente mais vide " % self.nomBase)
+                return
+            # Exemple code
+            """
+            cursor.execute("select * from Journaux;")
+            for row in cursor.fetchall():
+                print(row)
+            cursor.close()
+            del cursor
+            self.connexion.close()"""
+            self.echec = 0
+        except Exception as err:
+            wx.MessageBox("xDB.ConnectAcessOdbc:La connexion à la base access %s a echoué : \nErreur détectée :%s" %(self.nomBase,err),
+                          style=wx.ICON_WARNING)
+            self.erreur = err
+
     def ConnectAcessADO(self):
         """Important ne tourne qu'avec: 32bit MS driver - 32bit python!
            N'est pas compatible access 95, mais lit comme access 2002"""
@@ -941,18 +972,18 @@ class DB():
 
     def MaFonctionTest(self):
         import pyodbc
-        """Important: 32bit MS driver - 32bit python!"""
-        """N'est pas compatible access 95"""
-        cnxn = pyodbc.connect('DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=c:/temp/test.mdb;')
+        DRIVER='{Microsoft Access Driver (*.mdb, *.accdb)}'
+        DBQ='c:/temp/qcompta.mdb'
+        PWD = '' # passWord
+        cnxn = pyodbc.connect('DRIVER={};DBQ={};PWD={}'.format(DRIVER,DBQ,PWD))
         cursor = cnxn.cursor()
-        cursor.execute("select * from table1")
+        cursor.execute("select * from Journaux;")
         for row in cursor.fetchall():
             print(row)
-
-        csr = cnxn.cursor()
-        csr.close()
-        del csr
+        cursor.close()
+        del cursor
         cnxn.close()
+        return
 
         import mysql
         cnx = mysql.connector.connect(host='192.168.1.43', user='root', database='matthania_data',password='xxxxx')
@@ -967,8 +998,6 @@ class DB():
 
         cursor.close()
         cnx.close()
-
-
 
         import pymysql.cursors
 
@@ -1057,8 +1086,10 @@ if __name__ == "__main__":
     app = wx.App()
     os.chdir("..")
     db = DB()
+    db.MaFonctionTest()
+
     #db.DropUneTable('stArticles')
-    from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
+    #from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
     #db.CreationUneTable(DB_TABLES,'stEffectifs')
     #db.CreationTables(None,dicTables=DB_TABLES,tables=['stArticles','stEffectifs','stMouvements','stInventaires','cpta_analytiques'])
-    db.CreationTousIndex(None,DB_PK,['stEffectifs',])
+    #db.CreationTousIndex(None,DB_PK,['stEffectifs',])

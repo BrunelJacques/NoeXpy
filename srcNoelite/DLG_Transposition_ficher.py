@@ -456,7 +456,7 @@ class Dialog(xusp.DLG_vide):
         mess += "Confirmez-vous l'export ?"
         dlg = wx.MessageDialog(self,mess ,"Lancement de l'export")
         ret = dlg.ShowModal()
-        if ret != wx.ID_YES : return "abandon"
+        if ret != wx.ID_OK : return "abandon"
         champsIn = self.ctrlOlv.lstCodesColonnes
         donnees = []
         # calcul des débit et crédit des pièces
@@ -482,8 +482,9 @@ class Dialog(xusp.DLG_vide):
             if not ret == wx.YES:
                 return wx.CANCEL
 
+        dicParams = self.pnlParams.GetValues()
         exp = UTILS_Compta.Export(self,self.compta)
-        ret = exp.Exporte(params,
+        ret = exp.Exporte(dicParams,
                           donnees,
                           champsIn)
         if not ret == wx.OK:

@@ -45,7 +45,6 @@ def dicOlvIndividus():
                 'lstChamps': lstChamps,
                 'checkColonne': False,
                 'sortColumnIndex': 2,
-                'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 'dictColFooter': {"nom": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},}
                 }
@@ -72,7 +71,6 @@ def dicOlvFamilles():
                 'lstChamps': lstChamps,
                 'checkColonne': False,
                 'sortColumnIndex': 4,
-                'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES|wx.LC_REPORT,
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 'dictColFooter': {"nom": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},}
                 }

@@ -43,7 +43,6 @@ def GetMatriceFamilles():
                 'size':(800,400),
                 'dicBandeau': dicBandeau,
                 'sortColumnIndex': 2,
-                'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 }
 
@@ -146,7 +145,6 @@ def GetMatriceDepots():
                 'dicBandeau': dicBandeau,
                 'sortColumnIndex': 2,
                 'sensTri' : False,
-                'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 'size':(900, 400)                }
 
@@ -764,7 +762,6 @@ class Compte(object):
                     'getDonnees': self.GetComptes,
                     'dicBandeau': dicBandeau,
                     'sortColumnIndex': 2,
-                    'style': wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES,
                     'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                     }
 
