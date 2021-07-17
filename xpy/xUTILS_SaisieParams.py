@@ -1080,7 +1080,7 @@ class TopBoxPanel(wx.Panel):
                 ret = box.GetOneValue(name)
                 if ret != 'ko':
                     valeur = ret
-            if not valeur: mess = "Le pnlCtrl '%s' n'est pas présent dans aucune box" %(name)
+            if valeur == None: mess = "Le pnlCtrl '%s' n'est présent dans aucune box" %(name)
         if mess: wx.MessageBox(mess,"xusp.TopBoxPanel.GetOneValue")
         return valeur
 

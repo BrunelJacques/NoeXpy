@@ -36,7 +36,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table):
     # 'in' est le fichier entrée, 'out' est l'OLV
     lstOut = []
     formatIn = dicParams['fichiers']['formatin']
-    noPiece = dicParams['compta']['piece']
+    noPiece = dicParams['p_export']['piece']
     champsIn = FORMATS_IMPORT[formatIn]['champs']
     nblent = FORMATS_IMPORT[formatIn]['lignesentete']
     # longeur du préfixe ajouté lors du traitement de l'import
@@ -101,35 +101,41 @@ FORMATS_IMPORT = {"LCL carte":{ 'champs':['date','montant','mode',None,'libelle'
 
 # Description des paramètres à choisir en haut d'écran
 MATRICE_PARAMS = {
-("fichiers","Paramètres fichiers"): [
+("fichiers","Fichier à Importer"): [
     {'genre': 'dirfile', 'name': 'path', 'label': "Fichier d'origine",'value': "*.csv",
-                     'help': "Pointez le fichier contenant les valeurs à transposer"},
+                     'help': "Pointez le fichier contenant les valeurs à transposer",'size':(450,30)},
     {'name': 'formatin', 'genre': 'Enum', 'label': 'Format import',
                     'help': "Le choix est limité par la programmation", 'value':0,
                     'values':[x for x in FORMATS_IMPORT.keys()],
-                    'size':(300,30)},
-    {'name': 'formatexp', 'genre': 'Enum', 'label': 'Format export',
-                    'help': "Le choix est limité par la programmation", 'value':0,
-                    'values':[x for x in UTILS_Compta.FORMATS_EXPORT.keys()],
-                    'ctrlAction':'OnChoixExport',
-                    'size':(300,30)},
+                    'size':(250,30)},
     ],
-("compta", "Paramètres comptables"): [
+("p_compta", "Compta en ligne"): [
+    {'name': 'compta', 'genre': 'Combo', 'label': 'Compta','ctrlAction':'OnCtrlCompta',
+                    'help': "Code journal utilisé dans la compta",'size':(230,30),
+                    'values':UTILS_Compta.GetLstComptas(), 'txtSize': 50,},
     {'name': 'journal', 'genre': 'Combo', 'label': 'Journal','ctrlAction':'OnCtrlJournal',
-                    'help': "Code journal utilisé dans la compta",'size':(250,30),
-                    'values':['BQ','LCL','LBP','CCP'],
-                    'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un journal",
-                    'btnAction': 'OnBtnJournal'},
-    {'name': 'contrepartie', 'genre': 'String', 'label': 'Contrepartie',
-                    'help': "Code comptable du compte de contrepartie de la banque",'size':(250,30)},
-    {'name': 'piece',
-                    'genre': 'String',
-                    'label': 'No de pièce commun',
-                    'ctrlAction': "OnPiece",
-                    'txtSize': 130,
-                    'help': "Préciser avant l'import le dernier numéro de pièce à incrémenter",'size':(250,30)},
+     'help': "Code journal utilisé dans la compta",'size':(250,30),'value':'BQ',
+     'values':['BQ','LCL','LBP','CCP'], 'txtSize': 50,
+     'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un journal",
+     'btnAction': 'OnBtnJournal'},
     ],
-("vide", ""): []
+("p_export", "Destination Export"): [
+    {'name': 'piece',
+     'genre': 'String',
+     'label': 'No de pièce commun',
+     'ctrlAction': "OnPiece",
+     'txtSize': 130,
+     'help': "Préciser avant l'import le dernier numéro de pièce à incrémenter",'size':(250,30)},
+    {'name': 'contrepartie', 'genre': 'String', 'label': 'Contrepartie',
+     'help': "Code comptable du compte de contrepartie de la banque",'size':(250,30)},
+    {'name': 'formatexp', 'genre': 'Enum', 'label': 'Format export',
+         'help': "Le choix est limité par la programmation", 'value':0,
+         'values':[x for x in UTILS_Compta.FORMATS_EXPORT.keys()],
+         'ctrlAction':'OnChoixExport',
+         'size':(300,30)}
+    ],
+("vide", ""): [
+    ]
 }
 
 # description des boutons en pied d'écran et de leurs actions
@@ -192,8 +198,9 @@ class PNL_params(xgc.PNL_paramsLocaux):
                 'name':"PNL_params",
                 'matrice':MATRICE_PARAMS,
                 'lblBox':"Paramètres à saisir",
+                'boxesSizes': [None, (200, 80), (240, 110),None],
                 'pathdata':"srcNoelite/Data",
-                'nomfichier':"params",
+                'nomfichier':"compta",
                 'nomgroupe':"transpose"
                 }
         super().__init__(parent, **kwds)
@@ -350,36 +357,38 @@ class Dialog(xusp.DLG_vide):
 
     def OnPiece(self,evt):
         # la modif du numéro de pièce s'applique à toutes les lignes visibles
-        valeur = self.pnlParams.GetOneValue('piece',codeBox='compta')
+        valeur = self.pnlParams.GetOneValue('piece',codeBox='p_export')
         for track in self.ctrlOlv.innerList:
             track.noPiece = valeur
         self.ctrlOlv.RepopulateList()
 
-
     def OnCtrlJournal(self,evt):
         # tronque pour ne garder que le code journal sur trois caractères maxi
-        box = self.pnlParams.GetBox('compta')
-        valeur = self.pnlParams.lstBoxes[1].GetOneValue('journal')
-        box.SetOneValue('journal', valeur)
+        valeur = self.pnlParams.GetOneValue('journal')
+        code = valeur[:3].strip()
         if self.compta:
             item = self.compta.GetOneAuto(table='journaux',filtre=valeur)
             if item:
-                box = self.pnlParams.GetBox('compta')
-                valeur = valeur[:3].strip()
-                box.SetOneValue('journal',valeur)
-                box.SetOneValue('contrepartie',item[2])
+                self.pnlParams.SetOneValue('journal',valeur)
+                self.pnlParams.SetOneValue('contrepartie',item[2])
+                self.pnlParams.Refresh()
 
     def OnBtnJournal(self,evt):
         if self.compta:
             item = self.compta.ChoisirItem(table='journaux')
             if item:
-                box = self.pnlParams.GetBox('compta')
-                box.SetOneValue('journal',item[0])
-                box.SetOneValue('contrepartie',item[2])
+                self.pnlParams.SetOneValue('journal',item[0])
+                self.pnlParams.SetOneValue('contrepartie',item[2])
+
+    def OnCtrlCompta(self,evt):
+        self.compta = self.GetCompta()
 
     def OnChoixExport(self,evt):
         self.compta = self.GetCompta()
         self.table = self.GetTable()
+
+    def OnNameDB(self,evt):
+        return
 
     def InitOlv(self):
         self.pnlParams.GetValues()
@@ -398,14 +407,11 @@ class Dialog(xusp.DLG_vide):
 
     def GetCompta(self):
         dic = self.pnlParams.GetValues()
-        formatExp = dic['fichiers']['formatexp']
-        compta = None
-        if formatExp in UTILS_Compta.FORMATS_EXPORT.keys() :
-            nomCompta = UTILS_Compta.FORMATS_EXPORT[formatExp]['compta']
-            compta = UTILS_Compta.Compta(self, compta=nomCompta)
-            if not compta.db: compta = None
+        nomCompta = dic['p_compta']['compta'].lower()
+        compta = UTILS_Compta.Compta(self, nomCompta=nomCompta)
+        if not compta.db or compta.db.erreur: compta = None
         if not compta:
-            txtInfo = "Echec d'accès à la compta associée à %s!!!"%formatExp
+            txtInfo = "Echec d'accès à la compta associée à %s!!!"%nomCompta
             image = wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16))
         else:
             txtInfo = "Connecté à la compta %s..."%nomCompta
@@ -414,13 +420,15 @@ class Dialog(xusp.DLG_vide):
         # appel des journaux
         if compta:
             lstJournaux = compta.GetJournaux()
-            #lstLibJournaux = [(x[0]+"   ")[:3]+' - '+x[1] for x in lstJournaux]
-            lstLibJournaux = [(x[0]+"   ")[:3] for x in lstJournaux]
-            box = self.pnlParams.GetBox('compta')
+            lstLibJournaux = [(x[0]+"  "+x[1]) for x in lstJournaux]
+            lstCodesJournaux = [x[0] for x in lstJournaux]
+            box = self.pnlParams.GetBox('p_compta')
             valeur = self.pnlParams.lstBoxes[1].GetOneValue('journal')
-            box.SetOneSet('journal',lstLibJournaux)
-            box.SetOneValue('journal',valeur)
-        pnlJournal = self.pnlParams.GetPnlCtrl('journal', 'compta')
+            box.SetOneSet('journal',lstCodesJournaux)
+            if len(valeur)>0 and not valeur in lstCodesJournaux:
+                possibles = [x for x in lstCodesJournaux if valeur[0] == x[0]]
+                box.SetOneValue('journal',possibles[0])
+        pnlJournal = self.pnlParams.GetPnlCtrl('journal', 'p_compta')
         x = False
         if compta : x = True
         pnlJournal.btn.Enable(x)
@@ -447,7 +455,7 @@ class Dialog(xusp.DLG_vide):
             wx.MessageBox(mess,"Export impossible")
             return mess
 
-        params = self.pnlParams.GetValues()['compta']
+        params = self.pnlParams.GetValues(fmtDD=False)
         mess = "Journal '%s' - contrepartie '%s'\n\n"%(params['journal'],params['contrepartie'])
         if len(params['journal'].strip()) == 0 or len(params['contrepartie'].strip()) == 0:
             mess += "Le code journal ou la contrepartie sont mal renseignés"
@@ -498,7 +506,6 @@ class Dialog(xusp.DLG_vide):
 
         # sauvegarde des params
         self.pnlParams.SauveParams(close=True)
-
 
 #------------------------ Lanceur de test  -------------------------------------------
 

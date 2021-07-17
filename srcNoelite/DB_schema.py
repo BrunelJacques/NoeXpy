@@ -163,22 +163,51 @@ DB_TABLES = {
                 ("defaut", "INTEGER", "Modèle par défaut (0/1)"),
                                     ], # Modèles de droits
 
-    "cpta_exercices":[("IDexercice", "INTEGER PRIMARY KEY AUTOINCREMENT", "ID Exercice"),
-                ("nom", "VARCHAR(400)", "Nom de l'exercice"),
-                ("date_debut", "DATE", "Date de début"),
-                ("date_fin", "DATE", "Date de fin"),
-                ("defaut", "INTEGER", "Proposé par défaut (0/1)"),
-                ("actif", "INTEGER", "Actif pour écritures nouvelles (0/1)"),
-                ("cloture", "INTEGER", "Clôturé, l'exercice ne peut plus être actif(0/1)"),
-                                    ], # Compta : Exercices
-
     'cpta_analytiques': [
         ('IDanalytique', 'VARCHAR(8)', "Clé Unique alphanumérique"),
         ('abrege', 'VARCHAR(16)', "cle d'appel ou libelle court du code analytique"),
         ('nom', 'VARCHAR(200)', "Libellé long du code analytique"),
         ('params', 'VARCHAR(400)', "liste texte de paramétrages constructeurs, pour le calcul coût"),
         ('axe', 'VARCHAR(24)', "axe analytique 'VEHICULES' 'CONVOIS' 'PRIXJOUR', defaut = vide")
-    ],
+    ], # Analytique Noethys
+
+    "cptaExercices":[("IDexercice", "INTEGER PRIMARY KEY AUTOINCREMENT", "ID Exercice"),
+                ("nom", "VARCHAR(400)", "Nom de l'exercice"),
+                ("date_debut", "DATE", "Date de début"),
+                ("date_fin", "DATE", "Date de fin"),
+                ("defaut", "INTEGER", "Proposé par défaut (0/1)"),
+                ("actif", "INTEGER", "Actif pour écritures nouvelles (0/1)"),
+                ("cloture", "INTEGER", "Clôturé, l'exercice ne peut plus être actif(0/1)"),
+                                    ], # Exercices comptables
+
+    'cptaComptes': [
+        ('IDcompte', 'VARCHAR(10)', "Clé unique alphanumérique"),
+        ('type', 'VARCHAR(1)', "Client / Fournisseur / Général"),
+        ('libelle', 'VARCHAR(50)', "Description"),
+        ('collectif', 'VARCHAR(10)', "Rattachement au collectif"),
+        ('isCollectif', 'TINYINT(1)', "isCollectif ( à proposer dans les choix)"),
+        ('cle', 'VARCHAR(8)', "Clé d'Appel"),
+        ('motsCles', 'VARCHAR(128)', "Radicaux de recherche"),
+        ('etatRevision', 'VARCHAR(1)', "Révision: I-intermédiaire C-Clôture F-ARevoir"),
+        ('dateRevision', 'DATE', "Date de dernière Revision"),
+        ('analytique', 'VARCHAR(8)', "Famille analytique activité"),
+        ('compteInactif', 'TINYINT(1)', "Compte ne plus utiliser"),
+        ('grpCharges', 'VARCHAR(8)', "Analytique pour grouper les Charges"),
+        ('typeCptTiers', 'VARCHAR(10)', "Type de compte de la contrepartie (T-tiers ou G-général"),
+        ('suiviQuantite', 'TINYINT(1)', "SuiviQuantite proposé en saisie"),
+        ('quantiteLibelle', 'VARCHAR(8)', "Libelle de l'unité de quantité"),
+        ('dateMaj', 'DATE', "Date Creation ou MAJ du compte"),
+        ('user', 'VARCHAR(32)', "User intervenant MAJ"),
+        ('exporte', 'DATE', "Date d'export du compte vers la compta centralisatrice"),
+    ], # Plan comptable
+
+    'cptaJournaux':[
+        ('IDjournal', 'VARCHAR(3)', "Clé unique alphanumérique"),
+        ('Libelle', 'VARCHAR(64)', "Description"),
+        ('Type', 'VARCHAR(2)', "OD VE_vente AC_achat TR_tréso AN_report"),
+        ('NextNumPiece', 'VARCHAR(8)', "Pour numérotation auto de pièces"),
+        ('Contrepartie', 'VARCHAR(10)', "compte de contrepartie automatique"),
+    ], # Journaux comptables
 
     'immobilisations':[
                 ('IDimmo','INTEGER PRIMARY KEY AUTOINCREMENT',"Clé Unique"),
@@ -300,17 +329,20 @@ DB_TABLES = {
                 ('modifiable', 'INTEGER', "0/1 Marque un transfert export  réussi ou import"),], # stocks: inventaire à une date
     }
 
-# PK index clé unique, PRIMARY primary key
+# PK index clé unique, 'PRIMARY' à utiliser exclusivement pour clé à champs multiples sinon 'PK'
 DB_PK = {
+        'PK_cptaComptes_IDcompte': {'table': 'cptaComptes', 'champ': 'IDcompte'},
+        'PK_cptaJournaux_IDjournal': {'table': 'cptaJournaux', 'champ': 'IDjournal'},
         'PK_vehiculesCouts_IDanalytique_cloture': {'table': 'vehiculesCouts', 'champ': 'IDanalytique, cloture'},
         'PK_stArticles_IDarticle': {'table': 'stArticles', 'champ': 'IDarticle'},
-        'PRIMARY_stEffectifs_IDdate_IDanalytique': {'table': 'stEffectifs', 'champ': 'IDdate,IDanalytique'},
+        'PRIMARY_stEffectifs_IDdate_IDanalytique': {'table': 'stEffectifs', 'champ': 'IDdate, IDanalytique'},
         'PK_stInventaires_IDdate_IDarticle': {'table': 'stInventaires', 'champ': 'IDdate,IDarticle'},
         }
 
-# index sans contrainte
+# index sans contrainte, (index_* est un index Noethys
 DB_IX = {
         'index_reglements_IDcompte_payeur': {'table': 'reglements', 'champ': 'IDcompte_payeur'},#index de Noethys
+        'IX_cptaComptes_cle': {'table': 'cptaComptes', 'champ': 'cle'},
         'IX_immobilisations_compteImmo_IDanalytique': {'table': 'immobilisations', 'champ': 'compteImmo,IDanalytique'},
         'IX_immosComposants_IDimmo': {'table': 'immosComposants', 'champ': 'IDimmo'},
         'IX_vehiculesConsos_IDanalytique_cloture': {'table': 'vehiculesConsos',

@@ -64,7 +64,6 @@ class ParamFile():
         self.close = close
         self.dictMem= {}
         self.topWin = False
-
         try :
             topWindow = wx.GetApp().GetTopWindow()
             nomWindow = topWindow.GetName()
@@ -245,16 +244,15 @@ if __name__ == u"__main__":
 
     cfgUser = ParamUser()
     cfgNoelite  = ParamFile('Config',path='C:\\ProgramData\\Noelite',flag='r')
-    #'../../srcNoelite/Data',
-    paramsNoelite  = ParamFile('Geographie.dat',path='../../srcNoelite/Data',flag='r')
+    paramsNoelite  = ParamFile('params.dat',path='..\\..\\srcNoelite\\Data',flag='r')
 
     # del de clés
-    #cfgUser.DelDictConfig(cle=None,groupe='USER')
+    #cfgUser.DelDictConfig(cle=None,groupe='APPLI')
     #cfgUser.DelDictConfig(cle=None,groupe='IDENT')
 
     DumpFile(cfgUser.dictFic)
-    print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Fichiers Noelite Data.Config')
-    DumpFile(paramsNoelite.dictFic)
+    print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Fichiers Noelite Data.params')
+    DumpFile(cfgNoelite.dictFic)
     #print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Fichiers Openref Data.Config')
     #DumpFile(cfgOpen.dictFic)
     #cfg = ParamUser('UserConfig', flag='c')

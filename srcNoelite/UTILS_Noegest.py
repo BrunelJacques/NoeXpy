@@ -305,7 +305,7 @@ class Noegest(object):
         req =   """   
                 SELECT vehiculesConsos.dtFact
                 FROM vehiculesConsos 
-                INNER JOIN cpta_exercices ON vehiculesConsos.cloture = cpta_exercices.date_fin
+                INNER JOIN cptaExercices ON vehiculesConsos.cloture = cptaExercices.date_fin
                 GROUP BY vehiculesConsos.dtFact;
                 """
         retour = self.db.ExecuterReq(req, mess='UTILS_Noegest.GetDatesFactKm')
@@ -564,7 +564,7 @@ class Noegest(object):
         self.ltExercices = []
         lstChamps = ['date_debut', 'date_fin']
         req = """   SELECT %s
-                    FROM cpta_exercices
+                    FROM cptaExercices
                     %s                   
                     """ % (",".join(lstChamps), where)
         retour = self.db.ExecuterReq(req, mess='UTILS_Noegest.GetExercices')

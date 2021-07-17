@@ -271,6 +271,9 @@ class MainFrame(wx.Frame):
         ret = cfg.ShowModal()
         if ret == wx.OK:
             self.MakeStatusText()
+            if not self.dictUser:
+                import xUTILS_Identification
+                xUTILS_Identification.SaisieMotPasse(self)
         return ret
 
 #************************   Pour Test    *******************************

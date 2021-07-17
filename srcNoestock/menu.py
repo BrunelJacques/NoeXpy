@@ -9,7 +9,7 @@
 #------------------------------------------------------------------------
 
 import wx
-from xpy import xUTILS_Identification, xGestionConfig, xUTILS_DB
+from xpy         import xUTILS_Identification, xGestionConfig, xUTILS_DB
 from srcNoestock import DLG_Articles, DLG_Mouvements, DLG_Effectifs, DLG_PrixJour, DLG_Inventaires, UTILS_Stocks
 from srcNoelite  import DB_schema
 
@@ -18,11 +18,9 @@ class MENU():
     def __init__(self,parent):
         self.parent = parent
         self.parent.ConnectBase()
-        self.db = self.parent.db
-        if self.db:
-            xUTILS_DB.Init_tables(parent=self.parent,mode="test",
-                              tables=self.parent.dictAppli['LST_TABLES'],
-                              db_tables=DB_schema.DB_TABLES)
+        xUTILS_DB.Init_tables(parent=self.parent,mode="test",
+                          tables=self.parent.dictAppli['LST_TABLES'],
+                          db_tables=DB_schema.DB_TABLES)
 
     def ParamMenu(self):
         """ appelé pour Construire la barre de menus """

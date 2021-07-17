@@ -8,40 +8,69 @@
 
 import wx
 import datetime
-import xpy.outils.xshelve    as xucfg
+import xpy.outils.xshelve    as xshelve
 import xpy.xGestionConfig   as xgc
 import xpy.xUTILS_DB       as xdb
 import xpy.xGestion_TableauRecherche    as xgtr
 from xpy.outils             import xexport,xformat
 
 # Paramétrage des accès aux bases de données, les 'select' de _COMPTAS doivent respecter 'lstChamps' de  _COMPTES
-MATRICE_COMPTAS = {'quadra': {
-                            'fournisseurs':{'select':'Numero,CleDeux,Intitule',
-                                            'from'  :'Comptes',
-                                            'where' :"Type = 'F'",
-                                            'filtre':"AND (Numero like \"%xxx%\" OR CleDeux like \"%xxx%\" OR Intitule like \"%xxx%\")"},
-                            'clients':  {'select': 'Numero,CleDeux,Intitule',
-                                            'from'  : 'Comptes',
-                                            'where' : "Type = 'C'",
-                                            'filtre':"AND (Numero like \"%xxx%\" OR CleDeux like \"%xxx%\" OR Intitule like \"%xxx%\")"},
-                            'generaux': {'select': 'Numero,CleDeux,Intitule',
-                                            'from'  :'Comptes',
-                                            'where' : "Type = 'G'",
-                                            'filtre':"AND (Numero like \"%xxx%\" OR CleDeux like \"%xxx%\" OR Intitule like \"%xxx%\")"},
-                            'cpt3car': {'select': 'LEFT (Numero,3), MIN(CleDeux),MIN(Intitule)',
-                                            'from'  :'Comptes',
-                                            'where' : "Type = 'G'",
-                                            'filtre':"AND (Numero like \"%xxx%\" OR CleDeux like \"%xxx%\" OR Intitule like \"%xxx%\")",
-                                            'group by':"LEFT(Numero,3)"},
-                            'journaux': {'select': 'Code,Libelle,CompteContrepartie,TypeJournal',
-                                            'from':' Journaux',
-                                            'where': "TypeJournal = 'T'",
-                                            'filtre':"AND (Code like \"%xxx%\" OR Libelle like \"%xxx%\")"},
-                            'journOD': {'select': 'Code,Libelle,CompteContrepartie,TypeJournal',
-                                         'from': ' Journaux',
-                                         'where': "TypeJournal = 'O'",
-                                         'filtre': "AND (Code like \"%xxx%\" OR Libelle like \"%xxx%\")"},
-                        }}
+MATRICE_COMPTAS = {
+        'quadra': {
+                'fournisseurs':{'select':'Numero,CleDeux,Intitule',
+                                'from'  :'Comptes',
+                                'where' :"Type = 'F'",
+                                'filtre':"AND (Numero like \"%xxx%\" OR CleDeux like \"%xxx%\" OR Intitule like \"%xxx%\")"},
+                'clients':  {'select': 'Numero,CleDeux,Intitule',
+                                'from'  : 'Comptes',
+                                'where' : "Type = 'C'",
+                                'filtre':"AND (Numero like \"%xxx%\" OR CleDeux like \"%xxx%\" OR Intitule like \"%xxx%\")"},
+                'generaux': {'select': 'Numero,CleDeux,Intitule',
+                                'from'  :'Comptes',
+                                'where' : "Type = 'G'",
+                                'filtre':"AND (Numero like \"%xxx%\" OR CleDeux like \"%xxx%\" OR Intitule like \"%xxx%\")"},
+                'cpt3car': {'select': 'LEFT (Numero,3), MIN(CleDeux),MIN(Intitule)',
+                                'from'  :'Comptes',
+                                'where' : "Type = 'G'",
+                                'filtre':"AND (Numero like \"%xxx%\" OR CleDeux like \"%xxx%\" OR Intitule like \"%xxx%\")",
+                                'group by':"LEFT(Numero,3)"},
+                'journaux': {'select': 'Code,Libelle,CompteContrepartie,TypeJournal',
+                                'from':' Journaux',
+                                'where': "TypeJournal = 'T'",
+                                'filtre':"AND (Code like \"%xxx%\" OR Libelle like \"%xxx%\")"},
+                'journOD': {'select': 'Code,Libelle,CompteContrepartie,TypeJournal',
+                             'from': ' Journaux',
+                             'where': "TypeJournal = 'O'",
+                             'filtre': "AND (Code like \"%xxx%\" OR Libelle like \"%xxx%\")"},
+                },
+        'noegest': {
+                'fournisseurs':{'select':'IDcompte,cle,libelle',
+                                'from'  :'cptaComptes',
+                                'where' :"Type = 'F'",
+                                'filtre':"AND (IDcompte like \"%xxx%\" OR cle like \"%xxx%\" OR libelle like \"%xxx%\")"},
+                'clients':  {'select': 'IDcompte,cle,libelle',
+                             'from'  : 'cptaComptes',
+                             'where' : "Type = 'C'",
+                             'filtre':"AND (IDcompte like \"%xxx%\" OR cle like \"%xxx%\" OR libelle like \"%xxx%\")"},
+                'generaux': {'select': 'IDcompte,cle,libelle',
+                             'from'  :'cptaComptes',
+                             'where' : "Type = 'G'",
+                             'filtre':"AND (IDcompte like \"%xxx%\" OR cle like \"%xxx%\" OR libelle like \"%xxx%\")"},
+                'cpt3car': {'select': 'LEFT (IDcompte,3), MIN(cle),MIN(libelle)',
+                            'from'  :'cptaComptes',
+                            'where' : "Type = 'G'",
+                            'filtre':"AND (IDcompte like \"%xxx%\" OR cle like \"%xxx%\" OR libelle like \"%xxx%\")",
+                            'group by':"LEFT(IDcompte,3)"},
+                'journaux': {'select': 'IDjournal,libelle,contrepartie,type',
+                             'from':' cptaJournaux',
+                             'where': "type = 'TR'",
+                             'filtre':"AND (IDjournal like \"%xxx%\" OR libelle like \"%xxx%\")"},
+                'journOD': {'select': 'IDjournal,libelle,contrepartie,type',
+                            'from': ' cptaJournaux',
+                            'where': "type = 'OD'",
+                            'filtre': "AND (code like \"%xxx%\" OR libelle like \"%xxx%\")"},
+                },
+        }
 
 MATRICE_COMPTES = {
     'lstChamps': ['ID','cle','libelle'],
@@ -75,12 +104,12 @@ def ComposeFuncExp(dicParams,donnees,champsIn,champsOut):
     typepiece = "B"  # cas par défaut B comme carte Bancaire
     journal = 'OD'
     contrepartie = '58999'
-    if 'typepiece' in dicParams['compta']:
-        typepiece = dicParams['compta']['typepiece']
-    if 'journal' in dicParams['compta']:
-        journal = dicParams['compta']['journal']
-    if 'contrepartie' in dicParams['compta']:
-        contrepartie = dicParams['compta']['contrepartie']
+    if 'typepiece' in dicParams['p_export']:
+        typepiece = dicParams['p_export']['typepiece']
+    if 'journal' in dicParams['p_compta']:
+        journal = dicParams['p_compta']['journal']
+    if 'contrepartie' in dicParams['p_export']:
+        contrepartie = dicParams['p_export']['contrepartie']
 
     # déroulé des lignes puis des champs out
     for ligne in donnees:
@@ -128,7 +157,7 @@ def ComposeFuncExp(dicParams,donnees,champsIn,champsOut):
         if 'contrepartie' in champsIn:
             ligneBanque[champsOut.index('compte')] = ligne[champsIn.index('contrepartie')]
         else:
-            ligneBanque[champsOut.index('compte')] = dicParams['compta']['contrepartie']
+            ligneBanque[champsOut.index('compte')] = dicParams['p_export']['contrepartie']
         if 'debit' in champsOut:
             ligneBanque[champsOut.index('debit')]    = ligneOut[champsOut.index('credit')]
             ligneBanque[champsOut.index('credit')]    = ligneOut[champsOut.index('debit')]
@@ -154,59 +183,85 @@ def ExportQuadra(formatExp, lstValeurs):
     # envois dans un fichier texte
     return xexport.ExportLgFixe(nomfic=formatExp+".txt",matrice=matrice,valeurs=lstValeurs)
 
-FORMATS_EXPORT = {"Quadra via Excel":{  'compta':'quadra',
-                                        'fonction':ComposeFuncExp,
-                                        'matrice':[
-                                                {'code':'journal',   'lg': 40,},
-                                                {'code':'date',      'lg': 80,},
-                                                {'code':'compte',    'lg': 60,},
-                                                {'code':'typepiece', 'lg': 25,},
-                                                {'code':'libelle',   'lg': 240,},
-                                                {'code':'debit',     'lg': 60,},
-                                                {'code':'credit',    'lg': 60,},
-                                                {'code':'piece',     'lg': 60,},
-                                                {'code':'contrepartie','lg': 60,},
-                                                ],
-                                        'genere':ExportExcel},
-                  "Quadra qExport ASCII": { 'compta':'quadra',
-                                        'fonction':ComposeFuncExp,
-                                        'matrice':[
-                                                {'code': 'typ',     'cat': 'const', 'lg': 1, 'constante': "M"},
-                                                {'code': 'compte',  'cat': str, 'lg': 8, 'align': "<"},
-                                                {'code': 'journal',      'cat': str, 'lg': 2, 'align': "<"},
-                                                {'code': 'fol',     'cat': str, 'lg': 3, 'align': "<"},
-                                                #{'code': 'date',    'cat': wx.DateTime, 'lg':6, 'fmt': "%d%m%y"},
-                                                {'code': 'date',    'cat': datetime.date, 'lg':6,'fmt': "{:%d%m%y}" },
-                                                {'code': 'typepiece',     'cat': str, 'lg': 1},
-                                                {'code': 'fil',    'cat': str, 'lg': 20, 'align': ">"},
-                                                {'code': 'sens',    'cat': str, 'lg': 1, 'align': "<"},
-                                                {'code': 'valeur00',  'cat': float, 'lg': 13,'fmt':"{0:+013.0f}"},
-                                                {'code': 'contrepartie','cat': str, 'lg': 8, 'align': "<"},
-                                                {'code': 'fil',    'cat': str, 'lg': 44, 'align': ">"},
-                                                {'code': 'devise',  'cat': str, 'lg': 3, 'align': "<"},
-                                                {'code': 'journal',     'cat': str, 'lg': 3, 'align': "<"},
-                                                {'code': 'fil',    'cat': str, 'lg': 3, 'align': "<"},
-                                                {'code': 'libelle','cat': str, 'lg': 30, 'align': "<"},
-                                                {'code': 'fil',    'cat': str, 'lg': 2, 'align': "<"},
-                                                {'code': 'piece','cat': str, 'lg': 10, 'align': "<"},
-                                                {'code': 'fil',    'cat': str, 'lg': 73, 'align': "<"},
-                                                ],
-                                        'genere':ExportQuadra},
-                  }
+FORMATS_EXPORT = {
+            "Excel façon Quadra":{
+                            'fonction':ComposeFuncExp,
+                            'matrice':[
+                              {'code':'journal',   'lg': 40,},
+                              {'code':'date',      'lg': 80,},
+                              {'code':'compte',    'lg': 60,},
+                              {'code':'typepiece', 'lg': 25,},
+                              {'code':'libelle',   'lg': 240,},
+                              {'code':'debit',     'lg': 60,},
+                              {'code':'credit',    'lg': 60,},
+                              {'code':'piece',     'lg': 60,},
+                              {'code':'contrepartie','lg': 60,},
+                            ],
+                            'genere':ExportExcel},
+            "ASCII pour Quadra": {
+                            'fonction':ComposeFuncExp,
+                            'matrice':[
+                              {'code': 'typ',     'cat': 'const', 'lg': 1, 'constante': "M"},
+                              {'code': 'compte',  'cat': str, 'lg': 8, 'align': "<"},
+                              {'code': 'journal',      'cat': str, 'lg': 2, 'align': "<"},
+                              {'code': 'fol',     'cat': str, 'lg': 3, 'align': "<"},
+                              #{'code': 'date',    'cat': wx.DateTime, 'lg':6, 'fmt': "%d%m%y"},
+                              {'code': 'date',    'cat': datetime.date, 'lg':6,'fmt': "{:%d%m%y}" },
+                              {'code': 'typepiece',     'cat': str, 'lg': 1},
+                              {'code': 'fil',    'cat': str, 'lg': 20, 'align': ">"},
+                              {'code': 'sens',    'cat': str, 'lg': 1, 'align': "<"},
+                              {'code': 'valeur00',  'cat': float, 'lg': 13,'fmt':"{0:+013.0f}"},
+                              {'code': 'contrepartie','cat': str, 'lg': 8, 'align': "<"},
+                              {'code': 'fil',    'cat': str, 'lg': 44, 'align': ">"},
+                              {'code': 'devise',  'cat': str, 'lg': 3, 'align': "<"},
+                              {'code': 'journal',     'cat': str, 'lg': 3, 'align': "<"},
+                              {'code': 'fil',    'cat': str, 'lg': 3, 'align': "<"},
+                              {'code': 'libelle','cat': str, 'lg': 30, 'align': "<"},
+                              {'code': 'fil',    'cat': str, 'lg': 2, 'align': "<"},
+                              {'code': 'piece','cat': str, 'lg': 10, 'align': "<"},
+                              {'code': 'fil',    'cat': str, 'lg': 73, 'align': "<"},
+                            ],
+                            'genere':ExportQuadra},
+            "Excel façon Noegest":{
+                            'fonction':ComposeFuncExp,
+                            'matrice':[
+                                {'code':'journal',   'lg': 40,},
+                                {'code':'date',      'lg': 80,},
+                                {'code':'compte',    'lg': 60,},
+                                {'code':'typepiece', 'lg': 25,},
+                                {'code':'libelle',   'lg': 240,},
+                                {'code':'debit',     'lg': 60,},
+                                {'code':'credit',    'lg': 60,},
+                                {'code':'piece',     'lg': 60,},
+                                {'code':'contrepartie','lg': 60,},
+                            ],
+                            'genere':ExportExcel},
+            }
 
 def GetLstComptas():
-    lstCpta = [x for x in MATRICE_COMPTAS.keys()]
+    lstCpta = [x.capitalize() for x in MATRICE_COMPTAS.keys()]
     return lstCpta
+
+def GetIDcomptaDefaut():
+    # recherche le nom de la compta pointée par la gestion des bases et proposée par défaut
+    paramFile = xshelve.ParamFile(nomFichier="Config")
+    IDcompta = None
+    dicConfig = paramFile.GetDict(None, 'CONFIGS')
+    if 'choixConfigs' in dicConfig:
+        if 'Noelite' in dicConfig['choixConfig']:
+            if 'compta.config' in dicConfig['choixConfig']['compta.config']:
+                IDcompta = dicConfig['choixConfig']['compta.config']['compta.config']
+    return IDcompta
 
 class Export(object):
     # Génération d'un fichier d'export
     def __init__(self,parent,compta):
         self.parent = parent
-        self.nameCpta = compta.nameCpta
+        self.nomCompta = compta.nomCompta
 
     def Exporte(self,dicParams={},donnees=[],champsIn=[]):
         # génération du fichier
-        formatExp = dicParams['fichiers']['formatexp']
+        formatExp = dicParams['p_export']['formatexp']
         champsOut = [x['code'] for x in FORMATS_EXPORT[formatExp]['matrice']]
 
         # transposition des lignes par l'appel de la fonction 'ComposeFuncExp'
@@ -218,69 +273,90 @@ class Export(object):
         ret = FORMATS_EXPORT[formatExp]['genere'](formatExp,lstValeurs)
 
         # mise à jour du dernier numero de pièce affiché avant d'être sauvegardé
-        if 'piece' in champsOut and 'lastPiece' in dicParams['compta']:
+        if 'piece' in champsOut and 'lastPiece' in dicParams['p_export']:
             ixp = champsOut.index('piece')
             lastPiece = lstValeurs[-1][ixp]
-            box = self.parent.pnlParams.GetBox('compta')
+            box = self.parent.pnlParams.GetBox('p_export')
             box.SetOneValue('compta.lastpiece',lastPiece)
         return ret
 
 # ouvre la base de donnée compta et interagit
 class Compta(object):
-    def __init__(self,parent,compta='quadra',exercice=None):
+    def __init__(self,parent,nomCompta=None,exercice=None):
+        ok = True
+        if not nomCompta or len(nomCompta) == 0:
+            wx.MessageBox("Pas de compta définie! précisez")
+            ok = False          
+        self.table = None
+        self.db = None
+        self.nomCompta = nomCompta
         if exercice and len(exercice) == 4:
             self.exercice = exercice
-        else: self.exercice = None
-        self.db = self.DB(parent,compta)
-        if compta in MATRICE_COMPTAS:
-            self.dicTables = MATRICE_COMPTAS[compta]
-        else: wx.MessageBox("Les formats de la compta %s , ne sont pas  paramétrés dans le programme"%compta)
-        self.table = None
-        if self.db and self.db.echec:
-            self.db = None
-        self.nameCpta = compta
+        else: 
+            self.exercice = None
+        if nomCompta in MATRICE_COMPTAS:
+            self.dicTables = MATRICE_COMPTAS[nomCompta]
+        else: 
+            wx.MessageBox("Les formats de la compta %s , ne sont pas  paramétrés dans le programme"%nomCompta)
+            ok = False
+            
+        if ok:
+            cfgCompta = self.GetConfig(nomCompta)        
+            self.db = self.DB(cfgCompta)
+        else: self.db = None
+
+    def GetConfig(self,nomCompta):
+        # recherche des configuration d'accès aux base de données clé 'db_reseau'
+        paramFile = xshelve.ParamFile(nomFichier="Config")
+
+        self.IDconfigCpta = None
+        dicConfig = paramFile.GetDict(None, 'CONFIGS')
+        IDconfig = None
+        cfgCompta = None
+        if 'choixConfigs' in dicConfig:
+            if 'Noelite' in dicConfig['choixConfigs']:
+                if 'Compta.config' in dicConfig['choixConfigs']['Noelite']:
+                    IDconfig = dicConfig['choixConfigs']['Noelite']['Compta.config']
+        if not IDconfig:
+            mess = "Aucune base de compta n'est définie par la gestion du menu_fichier!"
+            wx.MessageBox(mess,style=wx.ID_ABORT)
+            return
+        # transposition entre les noms de configs et les possibilités de la matrice
+        if nomCompta == 'quadra' and 'quad' in IDconfig.lower():
+            # quadratus était par défaut
+            cfgCompta = xgc.GetDdConfig(dicConfig,IDconfig)['db_reseau']
+        elif nomCompta == 'noegest' and not 'quad' in IDconfig.lower():
+            # on prend la compta par défaut
+            cfgCompta = xgc.GetDdConfig(dicConfig,IDconfig)['db_reseau']
+        else:
+            # on tente une recherche directe dans la liste de configs présentes
+            lstConfigs = xgc.GetLstConfigs(dicConfig)
+            lstConfigsOK = lstConfigs[1]
+            lstNoms = [x['db_reseau']['ID'] for x in lstConfigsOK]
+            if nomCompta in lstNoms:
+                ix = lstNoms.index(nomCompta)
+                IDconfig = lstConfigsOK[ix]['db_reseau']['ID']
+                cfgCompta = xgc.GetDdConfig(dicConfig,IDconfig)['db_reseau']
+        if not cfgCompta:
+            wx.MessageBox("Impossible de trouver la configuration correspondant à %s"%nomCompta)
+        return cfgCompta
 
     # connecteur à la base compta
-    def DB(self,parent,compta):
-        # recherche des configuration d'accès aux base de données clé 'db_reseau'
-        paramFile = xucfg.ParamFile(nomFichier="Config")
-        dicConfig = paramFile.GetDict(None, 'CONFIGS')
-        if not 'lstConfigs' in dicConfig.keys(): dicConfig['lstConfigs'] = []
-        if not 'lstIDconfigs' in dicConfig.keys(): dicConfig['lstIDconfigs'] = []
-        lddDonnees = dicConfig['lstConfigs']
-        configCpta = None
-        for config in lddDonnees:
-            if 'db_reseau' in config.keys():
-                if config['db_reseau']['ID'] == compta:
-                    configCpta = config['db_reseau']
-        ret = wx.OK
-        while (ret == wx.OK) and (not configCpta):
-            # gestion d'une configuration nouvelle
-            kwd={'nomConfig':'compta','lblBox':"Paramètres BD de l'accès à la compta"}
-            dlgGest = xgc.DLG_saisieUneConfig(parent,**kwd)
-            ret = dlgGest.ShowModal()
-            if ret == wx.OK:
-                ddDonnees = dlgGest.GetValues()
-                configCpta = dlgGest.GetConfig()
-                # test de l'accès
-                db = xdb.DB(config=configCpta)
-                db.AfficheTestOuverture()
-                echec = db.echec
-                db.Close()
-                if not echec:
-                    # sauve
-                    lddDonnees.append(ddDonnees)
-                    dicConfig['lstIDconfigs'].append(ddDonnees['ID'])
-                    cfg = xucfg.ParamFile()
-                    cfg.SetDict({'lstIDconfigs': dicConfig['lstIDconfigs']}, 'CONFIGS', close=False)
-                    cfg.SetDict({'lstConfigs': lddDonnees}, 'CONFIGS')
+    def DB(self,cfgCompta):
+        if self.db and self.db.echec:
+            self.db = None
+
+        if cfgCompta:
+            # test de l'accès
+            db = xdb.DB(config=cfgCompta)
+            db.Close()
 
         if self.exercice:
-            if 'quadra' in configCpta['serveur'].lower():
+            if 'quadra' in cfgCompta['serveur'].lower():
                 annee = self.exercice
-                configCpta['serveur'] = configCpta['serveur'].replace("\\DC\\","\\DA%s\\"%annee)
-        if configCpta:
-            return xdb.DB(config=configCpta)
+                cfgCompta['serveur'] = cfgCompta['serveur'].replace("\\DC\\","\\DA%s\\"%annee)
+        if cfgCompta:
+            return xdb.DB(config=cfgCompta,mute=True)
 
     # Appel d'une liste extraite de la base de donnée pour table préalablement renseignée
     def GetDonnees(self,**kwds):

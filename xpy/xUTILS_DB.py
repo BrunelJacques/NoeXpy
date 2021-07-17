@@ -78,6 +78,7 @@ class DB():
     # accès à la base de donnees principale
     def __init__(self, IDconnexion = None, config=None, nomFichier=None, mute=False):
         # config peut être soit un nom de config soit un dictionaire
+        #print(config,nomFichier,IDconnexion)
         self.echec = 1
         self.IDconnexion = IDconnexion
         self.nomBase = 'personne!'
@@ -829,19 +830,22 @@ class DB():
 
     def CreationTables(self, parent,dicTables, tables):
         if not tables:
+            #tables = [x for x in dicTables.keys()]
             tables = dicTables.keys()
+        nb = 0
         for nomTable in tables:
             if self.IsTableExists(nomTable):
                 continue
             ret = self.CreationUneTable(dicTables=dicTables,nomTable=nomTable)
             mess = "Création de la table de données %s: %s" %(nomTable,ret)
             print(mess)
+            if ret == 'ok': nb +=1
             # Affichage dans la StatusBar
             if parent:
                 parent.mess += "%s %s, "%(nomTable,ret)
                 parent.SetStatusText(parent.mess[-200:])
         if parent:
-            parent.mess += "- CreaTables Termine"
+            parent.mess += "- Creation %d tables Terminé, "%nb
             parent.SetStatusText(parent.mess[-200:])
 
     def CreationIndex(self,nomIndex=None,dicIndex=None):
@@ -872,7 +876,6 @@ class DB():
     def CreationTousIndex(self,parent,dicIndex,tables):
         """ Création de tous les index """
         for nomIndex, dict in dicIndex.items() :
-
             if not 'table' in dict:
                 raise Exception("Structure incorrecte: shema Index '%s' - absence cle 'table'"%nomIndex)
             if not dict['table'] in tables: continue
@@ -899,7 +902,10 @@ class DB():
                     parent.mess += "%s %s, " % (nomIndex, ret)
                     parent.SetStatusText(parent.mess)
         if parent:
-            parent.mess += "- Index Terminés"
+            if parent.mess[-17:] == "Index PK Terminés":
+                parent.mess += "- Index alt Terminés"
+            else:
+                parent.mess += "- Index PK Terminés"
             parent.SetStatusText(parent.mess[-200:])
 
     def GetDataBases(self):
@@ -1042,20 +1048,25 @@ class DB():
         finally:
             connection.close()
 
-def Init_tables(parent=None, mode="creation",tables=None,db_tables=None,db_ix=None,db_pk=None):
+def Init_tables(parent=None, mode='creation',tables=None,db_tables=None,db_ix=None,db_pk=None):
     # actualise ou vérifie la structure des tables : test, creation, ctrl
     if not tables:
+        if mode in ('creation', 'test'):
+            txt = "de toutes les tables manquantes à l'appli mère"
+        else: txt = "de tous les champs des tables de l'appli mère"
         md = wx.MessageDialog(parent,
-                "%s de toutes les tables\n\ny compris la structure des tables Noethys existantes"%mode.capitalize(),
+                "%s %s:\n\n'%s'"%(mode.capitalize(), txt, str(db_tables.keys())[10:-1]),
                 style=wx.YES_NO)
         if md.ShowModal() != wx.ID_YES:
             return
-    if parent and parent.db:
-        db = parent.db
-    else:
-        db = DB()
+        tables = db_tables.keys()
+
+    db = DB()
+    if db.echec: return
+
     if hasattr(db,'cursor'):
         del db.cursor
+
     db.cursor = db.connexion.cursor(buffered=False)
 
     if mode != "test" and parent:
@@ -1086,9 +1097,8 @@ if __name__ == "__main__":
     app = wx.App()
     os.chdir("..")
     db = DB()
-    db.MaFonctionTest()
-
-    #db.DropUneTable('stArticles')
+    #db.MaFonctionTest()
+    #db.DropUneTable('cpta_journaux')
     #from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
     #db.CreationUneTable(DB_TABLES,'stEffectifs')
     #db.CreationTables(None,dicTables=DB_TABLES,tables=['stArticles','stEffectifs','stMouvements','stInventaires','cpta_analytiques'])

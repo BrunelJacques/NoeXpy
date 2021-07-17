@@ -9,10 +9,16 @@
   <component name="ChangeListManager">
     <list default="true" id="4c63f410-1c6e-41ab-90bc-9449d93a05cf" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/srcNoelite/DLG_Adresses_gestion.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoelite/DLG_Adresses_gestion.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Noelite.py" beforeDir="false" afterPath="$PROJECT_DIR$/Noelite.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/srcNoelite/DB_schema.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoelite/DB_schema.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/srcNoelite/DLG_Transposition_ficher.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoelite/DLG_Transposition_ficher.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/srcNoelite/UTILS_Compta.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoelite/UTILS_Compta.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/srcNoelite/UTILS_Reglements.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoelite/UTILS_Reglements.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/srcNoelite/UTILS_Noegest.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoelite/UTILS_Noegest.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/srcNoelite/menu.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoelite/menu.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/srcNoestock/menu.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/menu.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xpy/outils/xshelve.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/outils/xshelve.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xpy/xAppli.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/xAppli.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xpy/xGestionConfig.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/xGestionConfig.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xpy/xUTILS_DB.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/xUTILS_DB.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xpy/xUTILS_SaisieParams.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/xUTILS_SaisieParams.py" afterDir="false" />
     </list>
@@ -236,7 +242,7 @@
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/srcNoestock" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="settings.editor.selected.configurable" value="preferences.editor" />
     <property name="two.files.diff.last.used.file" value="$USER_HOME$/Desktop/xUTILS_SaisieParamsNew.py" />
   </component>
   <component name="ReaderModeSettings">
@@ -256,49 +262,7 @@
       <recent name="C:\Python37-32\NoeXpy\xpy\outils" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.DLG_Adresses_gestion">
-    <configuration name="DLG_Adresses_gestion" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="NoeXpy" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/srcNoelite" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/srcNoelite/DLG_Adresses_gestion.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="DLG_Reglements_gestion" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="NoeXpy" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/srcNoelite" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/srcNoelite/DLG_Reglements_gestion.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
+  <component name="RunManager" selected="Python.Noelite">
     <configuration name="DLG_Transposition_ficher" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoeXpy" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -341,7 +305,28 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="xUTILS_DB" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="Noestock" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="NoeXpy" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Noestock.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="xGestionConfig" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoeXpy" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -353,7 +338,28 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/xpy/xUTILS_DB.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/xpy/xGestionConfig.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="xshelve" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="NoeXpy" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/xpy/outils" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/xpy/outils/xshelve.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -364,11 +370,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.DLG_Adresses_gestion" />
-        <item itemvalue="Python.DLG_Reglements_gestion" />
         <item itemvalue="Python.DLG_Transposition_ficher" />
         <item itemvalue="Python.Noelite" />
-        <item itemvalue="Python.xUTILS_DB" />
+        <item itemvalue="Python.xGestionConfig" />
+        <item itemvalue="Python.xshelve" />
+        <item itemvalue="Python.Noestock" />
       </list>
     </recent_temporary>
   </component>
@@ -387,20 +393,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1606130437177</updated>
-    </task>
-    <task id="LOCAL-00046" summary="Entrées Stocks">
-      <created>1618433872661</created>
-      <option name="number" value="00046" />
-      <option name="presentableId" value="LOCAL-00046" />
-      <option name="project" value="LOCAL" />
-      <updated>1618433872661</updated>
-    </task>
-    <task id="LOCAL-00047" summary="Sorties Stocks">
-      <created>1618506925833</created>
-      <option name="number" value="00047" />
-      <option name="presentableId" value="LOCAL-00047" />
-      <option name="project" value="LOCAL" />
-      <updated>1618506925833</updated>
     </task>
     <task id="LOCAL-00048" summary="Entrées Stocks">
       <created>1618517600737</created>
@@ -731,7 +723,21 @@
       <option name="project" value="LOCAL" />
       <updated>1626295559857</updated>
     </task>
-    <option name="localTasksCounter" value="95" />
+    <task id="LOCAL-00095" summary="Compta Transpose et saisie reglements">
+      <created>1626358452524</created>
+      <option name="number" value="00095" />
+      <option name="presentableId" value="LOCAL-00095" />
+      <option name="project" value="LOCAL" />
+      <updated>1626358452524</updated>
+    </task>
+    <task id="LOCAL-00096" summary="Compta Transpose et saisie reglements">
+      <created>1626358696465</created>
+      <option name="number" value="00096" />
+      <option name="presentableId" value="LOCAL-00096" />
+      <option name="project" value="LOCAL" />
+      <updated>1626358696465</updated>
+    </task>
+    <option name="localTasksCounter" value="97" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -819,7 +825,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/../OpenRef" />
     </ignored-roots>
-    <MESSAGE value="Saisie dates effectifs" />
     <MESSAGE value="Entrées Effectifs" />
     <MESSAGE value="Réorganisation xgtr" />
     <MESSAGE value="GetBalance" />
@@ -844,17 +849,11 @@
     <MESSAGE value="ACE.OLEDB au lieu de jet.OLEDB" />
     <MESSAGE value="Prix journée" />
     <MESSAGE value="Prix journée détail" />
-    <option name="LAST_COMMIT_MESSAGE" value="Prix journée détail" />
+    <MESSAGE value="Compta Transpose et saisie reglements" />
+    <option name="LAST_COMMIT_MESSAGE" value="Compta Transpose et saisie reglements" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/xpy/outils/xchoixListe.py</url>
-          <line>460</line>
-          <option name="timeStamp" value="131" />
-        </line-breakpoint>
-      </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">
           <properties notifyOnTerminate="true" exception="BaseException">

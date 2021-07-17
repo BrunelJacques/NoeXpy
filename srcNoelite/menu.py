@@ -9,9 +9,9 @@
 #------------------------------------------------------------------------
 
 import wx
-from  srcNoelite import DLG_Km_saisie, DLG_Transposition_ficher, \
-    DLG_Reglements_gestion, DLG_Adresses_gestion
-from xpy import xUTILS_Identification
+from srcNoelite import DLG_Km_saisie, DLG_Transposition_ficher, DLG_Reglements_gestion, DLG_Adresses_gestion
+from srcNoelite import DB_schema
+from xpy        import xUTILS_Identification, xGestionConfig, xUTILS_DB
 
 """ Paramétrage de la construction de la barre de menus """
 class MENU():
@@ -56,7 +56,23 @@ class MENU():
              "infobulle": ("Gestion de bordereau de règlements : remise de chèques, arrivée de virements, de dons..."),
              "image": "Images/16x16/Impayes.png",
              "action": "On_reglements_bordereau", "genre": wx.ITEM_NORMAL},
-        ]}
+        ]},
+
+        # quatrième colonne
+        {"code": "&params\tCtrl-S", "label": ("Système"),
+         "items": [
+             {"code": "gesbases", "label": ("Gestion des bases"),
+              "infobulle": ("Création, copie de bases de données"),
+              "image": "Images/16x16/Utilisateur_reseau.png", "action": "On_gesBases"},
+             {"code": "gestables", "label": ("Ajout tables manquantes"),
+              "infobulle": ("Outil permettant de créer les tables manquantes dans la base"),
+              "image": "Images/16x16/Actualiser2.png",
+              "action": "On_gesTables"},
+             {"code": "ctrltables", "label": ("Ctrl des champs de chaque table"),
+              "infobulle": ("Outil permettant de créer les tables manquantes ou les champs manquants dans la base"),
+              "image": "Images/16x16/Actualiser2.png",
+              "action": "On_ctrlTables"},
+         ]}
         ]
         return menu
 
@@ -96,9 +112,8 @@ class MENU():
 
     def On_config(self,event):
         #lance la configuration initiale à la base de donnée pincipale
-        ret = self.parent.SaisieConfig()
-        if ret == wx.OK:
-            xUTILS_Identification.SaisieMotPasse(self.parent)
+        return self.parent.SaisieConfig()
+
 
     def On_utilisateurs(self,event):
         ret = xUTILS_Identification.AfficheUsers(self.parent)
@@ -110,6 +125,20 @@ class MENU():
     def On_kmSaisie(self,event):
         dlg = DLG_Km_saisie.Dialog()
         dlg.ShowModal()
+
+    def On_gesBases(self,event):
+        dlg = xGestionConfig.DLG_listeConfigs(self.parent)
+        dlg.ShowModal()
+        del dlg
+
+    def On_gesTables(self,event):
+        xUTILS_DB.Init_tables(parent= self.parent,mode= "creation",
+                              db_tables=DB_schema.DB_TABLES,db_ix=DB_schema.DB_IX,db_pk=DB_schema.DB_PK)
+
+    def On_ctrlTables(self,event):
+        xUTILS_DB.Init_tables(parent=self.parent,mode="ctrl",
+                              db_tables=DB_schema.DB_TABLES)
+
 
 if __name__ == "__main__":
     """ Affichage du menu"""

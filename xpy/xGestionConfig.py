@@ -54,7 +54,7 @@ MATRICE_CHOIX_CONFIG = {
                         'btnLabel':"...", 'btnHelp':"Cliquez pour gérer les configurations d'accès aux données",
                         'btnAction':"OnBtnConfig",
                         'txtSize': 85},]}
-# db_reseau et db_fichier sont des types de config, pourront être présentes dans dictAPPLI['TYPE_CONFIG'] et xUTILS_DB
+# db_reseau et db_fichier(non utilisé): types de configs, stockage dans dictAPPLI['TYPE_CONFIG'], gérés par xUTILS_DB
 MATRICE_CONFIGS = {
     ('db_reseau', "Acccès à une base avec authentification"): [
     {'name': 'ID', 'genre': 'String', 'label': 'Désignation config', 'value': 'config1',
@@ -94,13 +94,14 @@ def GetLstCodesMatrice(matrice):
 
 def GetCleMatrice(code,matrice):
     # retourne la clé complète d'une matrice selon son ID
-    cle = None
+    if not code: return
+    retour = None
     for cle in matrice.keys():
-        if not code:
-            break
+        if not retour: retour = cle
         if cle[0] == code:
+            retour = cle
             break
-    return cle
+    return retour
 
 def GetIxLigneMatrice(name,lignes):
     ix = 0
@@ -123,14 +124,17 @@ def GetLstConfigs(configs,typeconfig=None):
                 else: lstConfigsKO.append(config)
     return lstIDconfigs,lstConfigsOK,lstConfigsKO
 
-def GetDdConfig(configs,nomConfig=None):
+def GetDdConfig(configs,nomConfig, typeConfig=None):
     # retourne le fichier de configuration d'une connexion
     ddConfig = {}
     if 'lstConfigs' in configs:
         for dic in configs['lstConfigs']:
-            for typeConfig,config in dic.items():
+            for tipCfg,config in dic.items():
+                # si typeConfig non précisé on cherche partout
+                if typeConfig and typeConfig != tipCfg:
+                    continue
                 if config['ID'] == nomConfig:
-                    ddConfig = {typeConfig:config}
+                    ddConfig = {tipCfg:config}
                     break
     return ddConfig
 
@@ -151,7 +155,7 @@ def GetBases(self,cfgParams=None):
             lstBases = [oldval,'Recherche échouée',]
         return lstBases
 
-# Panel de gestion des configurations
+# Panel de gestion d'une configuration
 class ChoixConfig(xusp.BoxPanel):
     def __init__(self,parent,lblBox, codebox, lignes, dictDonnees):
         # le codebox n'étant pas visible, on écrase le label devant le contrôle
@@ -161,7 +165,7 @@ class ChoixConfig(xusp.BoxPanel):
         self.SetMinSize((350,50))
         self.Name = codebox+"."+lignes[0]['name']
 
-# Ecran de choix des configurations d'implantation
+# Ecran de gestion des différentes configurations pour l'appli
 class DLG_choixConfig(wx.Dialog):
     # Ecran de saisie de paramètres en dialog
     def __init__(self, parent, **kwds):
@@ -260,7 +264,6 @@ class DLG_choixConfig(wx.Dialog):
 
         self.Sizer()
 
-
     def Sizer(self):
         # Déroulé de la composition
         cadre_staticbox = wx.StaticBox(self, -1, label='identification')
@@ -289,7 +292,6 @@ class DLG_choixConfig(wx.Dialog):
             self.echec = DB.echec
             if not mute:
                 DB.AfficheTestOuverture(info=" pour %s"%nomConfig)
-
 
     def OnCtrlAction(self, event):
         # relais des actions sur les ctrls
@@ -339,7 +341,6 @@ class DLG_choixConfig(wx.Dialog):
                 self.SauveConfig()
         else: wx.MessageBox('DLG_listeConfigs : lancement impossible, cf MATRICE_CONFIGS et  TYPE_CONFIG')
 
-
     def SauveParamUser(self):
         # sauve ID dans le registre de la session
         cfg = xshelve.ParamUser()
@@ -381,11 +382,11 @@ class DLG_choixConfig(wx.Dialog):
 # Visu-Choix d'une Liste pour gestion des configs d'accès aux bases de données
 class DLG_listeConfigs(xusp.DLG_listCtrl):
     # Ecran de saisie de paramètres en dialog
-    def __init__(self, parent, *args, **kwds):
-        typeConfig = kwds.pop('typeConfig',None)
+    def __init__(self, parent, typeConfig=None, **kwds):
         select = kwds.pop('select',None)
         kwds['lblList'] = "Configurations actuelles"
-        super().__init__(parent, *args, **kwds)
+        super().__init__(parent, **kwds)
+        if not typeConfig: typeConfig = parent.dictAppli['TYPE_CONFIG']
         self.parent = parent
         self.dlColonnes = {}
         self.lddDonnees = []
@@ -491,10 +492,11 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
         DB.AfficheTestOuverture()
         DB.Close()
 
-# Accès particulier à une config_base de donnée, sans passer par la liste des configs
-class DLG_saisieUneConfig(xusp.DLG_vide):
+# Permet la saisie d'une config sans passer par la liste
+class zzzDLG_saisieUneConfig(xusp.DLG_vide):
     # saisie d'un nouvelle configuration d'accès aux données
     def __init__(self,parent,**kwds):
+        typeConfig = kwds.pop('typeConfig',None)
         nomConfig = kwds.pop('nomConfig',None)
         lblBox =    kwds.pop('lblBox',"Paramètres de la base de donnée")
         modeBase =  kwds.pop('modeBase','pointeur')
@@ -540,7 +542,6 @@ class DLG_saisieUneConfig(xusp.DLG_vide):
         ddConfig = GetDdConfig(grpConfigs,lastConfig)
 
         # récup de la matrice ayant servi à la gestion des données
-        typeConfig = kwds.pop('typeConfig',None)
         if not typeConfig:
             lstcode = GetLstCodesMatrice(MATRICE_CONFIGS)
             typeConfig = lstcode[0]
@@ -549,30 +550,33 @@ class DLG_saisieUneConfig(xusp.DLG_vide):
         self.typeConfig = typeConfig
 
         # ajustement de la matrice selon les modeBase
-        ix = GetIxLigneMatrice('nameDB', matrice[key])
+        ixID = GetIxLigneMatrice('nameDB', matrice[key])
         if self.modeBase == 'pointeur':
-            matrice[key][ix] = {'name': 'nameDB', 'genre': 'combo', 'label': 'Nom de la Base',
-                    'help': "Le nom de la base est le fichier en local, ou son nom sur le serveur",
-                    'ctrlAction': 'OnNameDB',}
+            matrice[key][ixID] = {'name': 'nameDB', 'genre': 'combo', 'label': 'Nom de la Base',
+                                  'help': "Le nom de la base est le fichier en local, ou son nom sur le serveur",
+                                  'ctrlAction': 'OnNameDB',}
 
         elif self.modeBase == 'creation':
-            matrice[key][ix] = {'name': 'nameDB', 'genre': 'texte', 'label': 'Nom de la Base',
-                    'help': "Choisir un base de donnée non présente sur le serveur ou fichier non existant",
-                    'ctrlAction': 'OnNameDB',}
+            matrice[key][ixID] = {'name': 'nameDB', 'genre': 'texte', 'label': 'Nom de la Base',
+                                  'help': "Choisir un base de donnée non présente sur le serveur ou fichier non existant",
+                                  'ctrlAction': 'OnNameDB',}
 
         # place la valeur du champ ID
+        exist = False
         if nomConfig:
-            ix = GetIxLigneMatrice('ID',matrice[key])
-            matrice[key][ix]['value'] = nomConfig
+            ixID = GetIxLigneMatrice('ID',matrice[key])
+            matrice[key][ixID]['value'] = nomConfig
 
         # construction de l'écran de saisie
         self.pnl = xusp.TopBoxPanel(self, matrice=matrice, lblTopBox=None)
-        self.pnl.SetValues(ddConfig)
+
+        if self.typeConfig in ddConfig.keys() and nomConfig == ddConfig[self.typeConfig]['ID']:
+            self.pnl.SetValues(ddConfig)
 
         # grise le champ ID
         ctrlID = self.pnl.GetPnlCtrl('ID')
-        #ctrlID.Enable(False)
-        if self.modeBase == 'creation' :
+        ctrlID.Enable(False)
+        if self.modeBase in ('creation','pointeur') :
             titre = "Création d'une nouvelle base de données"
             texte = "Définissez les pointeurs d'accès et le nom de la base à y créer\n"
             texte += "le mot de passe présenté sera celui  des 'Accès aux bases de données'"
@@ -608,8 +612,8 @@ class DLG_saisieUneConfig(xusp.DLG_vide):
     def GetValues(self):
         return self.pnl.GetValues()
 
-    def GetConfig(self):
-        return self.pnl.GetValues()['db_reseau']
+    def GetConfig(self,typeConfig='db_reseau'):
+        return self.pnl.GetValues()[typeConfig]
 
     def OnNameDB(self,event):
         cfgConfig = self.pnl.GetValues()[self.typeConfig]
@@ -685,8 +689,7 @@ if __name__ == '__main__':
             }
     #frame_1.dlg = DLG_choixConfig(frame_1)
     #frame_1.dlg = DLG_listeConfigs(frame_1)
-    frame_1.dlg = DLG_saisieUneConfig(frame_1, modeBase='creation')
-    #frame_1.dlg = DLG_saisieUneConfig(frame_1, modeBase='pointeur')
+    frame_1.dlg = DLG_listeConfigs(frame_1,)
     frame_1.dlg.ShowModal()
     app.MainLoop()
 

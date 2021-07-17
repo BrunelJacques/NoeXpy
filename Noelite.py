@@ -17,10 +17,12 @@ dictAPPLI = {
             'REP_DATA'              : "C:/ProgramData/Noelite",
             'REP_TEMP'              : "C:/Temp",
             'NOM_FICHIER_LOG'       : "logsNoelite.log",
-            'TYPE_CONFIG'         : 'db_reseau',
-}
+            'TYPE_CONFIG'           : 'db_reseau',
+            'CHOIX_CONFIGS': [('Compta',"Proto compta, servant de relais avec le logiciel comptable"),
+                              ('Noethys', "Base Noethys, peut être locale, réseauLAN ou distanteWAN")],
+            }
 
-class MyFrame(xAppli.MainFrame):
+class NoeliteFrame(xAppli.MainFrame):
     def __init__(self, *args, **kw):
         kw['size'] = (800,600)
         super().__init__( *args, **kw)
@@ -75,7 +77,7 @@ class MyApp(wx.App):
     def OnInit(self):
         xAppli.CrashReport(dictAPPLI)
         # Création de la frame principale
-        myframe = MyFrame(None)
+        myframe = NoeliteFrame(None)
         self.SetTopWindow(myframe)
         return True
 
