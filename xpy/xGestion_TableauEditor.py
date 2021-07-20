@@ -572,9 +572,15 @@ class PanelListView(wx.Panel):
         track = self.ctrlOlv.GetObjectAt(row)
         value = self.ctrlOlv.cellEditor.GetValue()
         code = self.ctrlOlv.lstCodesColonnes[col]
+        if self.ctrlOlv.checkColonne:
+            code = self.ctrlOlv.lstCodesColonnes[col-1]
+
         valueOrigin = eval("track.%s"%code)
         # si pas de saisie on passe
-        if (value == None) or track.oldValue == value:
+        valueIdem = False
+        if hasattr(track,"oldValue") and track.oldValue == value:
+            valueIdem = True
+        if (value == None) or valueIdem:
             track.noSaisie = True
             event.Skip()
             return
@@ -602,6 +608,9 @@ class PanelListView(wx.Panel):
 
             # appel des éventuels spécifiques
             code = self.ctrlOlv.lstCodesColonnes[col]
+            if self.ctrlOlv.checkColonne:
+                code = self.ctrlOlv.lstCodesColonnes[col-1]
+
             if hasattr(self.parent, 'OnEditFinished'):
                 ret = self.parent.OnEditFinished(code, track, editor=event.editor)
 

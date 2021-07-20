@@ -111,7 +111,7 @@ MATRICE_PARAMS = {
     ],
 ("p_compta", "Compta en ligne"): [
     {'name': 'compta', 'genre': 'Combo', 'label': 'Compta','ctrlAction':'OnCtrlCompta',
-                    'help': "Code journal utilisé dans la compta",'size':(230,30),
+                    'help': "Compta choisie parmi les connexions gérées par la gestion des bases",'size':(230,30),
                     'values':UTILS_Compta.GetLstComptas(), 'txtSize': 50,},
     {'name': 'journal', 'genre': 'Combo', 'label': 'Journal','ctrlAction':'OnCtrlJournal',
      'help': "Code journal utilisé dans la compta",'size':(250,30),'value':'BQ',
@@ -425,7 +425,7 @@ class Dialog(xusp.DLG_vide):
             box = self.pnlParams.GetBox('p_compta')
             valeur = self.pnlParams.lstBoxes[1].GetOneValue('journal')
             box.SetOneSet('journal',lstCodesJournaux)
-            if len(valeur)>0 and not valeur in lstCodesJournaux:
+            if len(valeur)>0 and len(lstCodesJournaux) > 0 and not valeur in lstCodesJournaux:
                 possibles = [x for x in lstCodesJournaux if valeur[0] == x[0]]
                 box.SetOneValue('journal',possibles[0])
         pnlJournal = self.pnlParams.GetPnlCtrl('journal', 'p_compta')

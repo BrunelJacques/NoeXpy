@@ -254,7 +254,6 @@ def GetAnterieur(dlg,db=None):
     return dParams
 
 def CalculeLigne(dlg,track):
-
     try: qte = float(track.qteConstat)
     except: qte = 0.0
     try: pu = float(track.pxUn)
@@ -263,8 +262,7 @@ def CalculeLigne(dlg,track):
     track.rations = qte * track.artRations
     track.valide = dlg.date
     deltaQte =  qte - track.qteTous
-    track.qteFin += deltaQte
-    track.qteTous += deltaQte
+    if not track.qteFin: track.qteFin = 0.0
     track.deltaQte = deltaQte
 
 def ValideLigne(dlg,track):
@@ -326,7 +324,6 @@ class PNL_corps(xgte.PNL_corps):
         else:
             self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
 
-
     def OnEditFinishing(self,code=None,value=None,editor=None):
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
         # flagSkipEdit permet d'occulter les évènements redondants. True durant la durée du traitement
@@ -337,13 +334,6 @@ class PNL_corps(xgte.PNL_corps):
         track = self.ctrlOlv.GetObjectAt(row)
 
         # Traitement des spécificités selon les zones
-        if code == 'IDarticle':
-            value = DLG_Articles.GetOneIDarticle(self.db,value)
-            if value:
-                track.IDarticle = value
-                track.dicArticle = nust.SqlDicArticle(self.db,self.ctrlOlv,value)
-                track.nbRations = track.dicArticle['rations']
-                track.qteStock = track.dicArticle['qteStock']
         if code == 'qteStock' or code == 'pxUn':
             # force la tentative d'enregistrement même en l'absece de saisie
             track.noSaisie = False
@@ -363,6 +353,9 @@ class PNL_corps(xgte.PNL_corps):
 
     def SauveLigne(self,track):
         db = self.db
+        track.qteFin += track.deltaQte
+        track.qteTous += track.deltaQte
+        
         # génération de l'od corrective dans un mouvement
         if not hasattr(track,'IDmouvement'):
             track.IDmouvement = None
@@ -370,8 +363,8 @@ class PNL_corps(xgte.PNL_corps):
         lstDonnees = [
             ('IDarticle', track.IDarticle),
             ('prixUnit', track.pxUn),
-            ('ordi', dlg.ordi),
-            ('dateSaisie', dlg.today),
+            ('ordi', self.parent.ordi),
+            ('dateSaisie', self.parent.today),
             ('modifiable', 1),]
         if track.IDmouvement :
             qteMvt = track.deltaQte + track.qteMvtOld
@@ -390,7 +383,6 @@ class PNL_corps(xgte.PNL_corps):
                                ]
                 ret = db.ReqInsert("stMouvements",lstDonnees= lstDonnees, mess="DLG_Inventaires.SauveLigne Insert")
         if ret == 'ok':
-            print("mvt",track.IDmouvement,lstDonnees)
             track.IDmouvement = db.newID
             track.qteMvtOld = qteMvt
 
@@ -404,7 +396,6 @@ class PNL_corps(xgte.PNL_corps):
                               ('dateSaisie',dlg.today)]
         mess = "MAJ article '%s'"%track.IDarticle
         self.db.ReqMAJ('stArticles',lstDonnees,'IDarticle',track.IDarticle,mess=mess,IDestChaine=True)
-        print("art",track.IDarticle,lstDonnees)
 
     def OnEditFunctionKeys(self,event):
         row, col = self.ctrlOlv.cellBeingEdited

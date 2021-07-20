@@ -184,7 +184,6 @@ def SqlInventaire(dlg,*args,**kwd):
     lstDonnees = []
     for record in recordset:
         lstDonnees.append(ComposeLigne(record))
-
     return lstDonnees
 
 def SqlMouvements(db,dParams=None):
@@ -730,6 +729,12 @@ def SauveArticle(dlg,**kwd):
     db = kwd.pop('db',None)
     lstDonnees = []
 
+    # récup des liste de champs dans l'écran de saisie
+    lstChamps = []
+    for partie,lignes in dicOlv['matriceSaisie'].items():
+        lstChamps += [x['name'] for x in lignes]
+
+    # mis à jour des données OLV et enregistremetn db
     ixLigne = kwd.pop('ixLigne',None)
     if ixLigne != None:
         donneesOlv = dlg.ctrlOlv.lstDonnees
@@ -746,9 +751,10 @@ def SauveArticle(dlg,**kwd):
         if ret == 'ok' and ixLigne:
             del donneesOlv[ixLigne]
     else:
+        # récup des données saisies pour constituer les ajouts ou modif
         lstDonnees = []
-        for ix in range(len(donnees)-2):
-            lstDonnees.append((dicOlv['lstChamps'][ix],donnees[ix]))
+        for ix in range(len(donnees)):
+            lstDonnees.append((lstChamps[ix],donnees[ix]))
         lstDonnees +=    [('ordi', dlg.ordi),
                         ('dateSaisie', dlg.today),]
 
@@ -916,25 +922,25 @@ def GetPrixJourDetail(dlg,grouper='date',**kwd):
             date = xformat.DecaleDateTime(date,-1)
         if date > dtFin or date < dtDeb : continue
         IDarticle = ""
-        date, rayon, key = None, None, None
+        date, rayon, keyLigne = None, None, None
 
         if grouper == 'date':
             date, codeRepas, IDarticle, qteConso, prixUnit = record
             date = record[0]
             IDarticle = ""
-            key = date
+            keyLigne = date
         elif grouper == 'article':
             date, codeRepas, IDarticle, qteConso, prixUnit, rayon = record
-            key = IDarticle
+            keyLigne = IDarticle
             date = None
         elif grouper == 'ensemble':
             date, codeRepas, IDarticle, qteConso, prixUnit = record
             date = None
             IDarticle = ""
-            key = 'ensemble'
+            keyLigne = 'ensemble'
 
-        if not key in dicLignes.keys():
-            dicLignes[key] = {'IDarticle': IDarticle,
+        if not keyLigne in dicLignes.keys():
+            dicLignes[keyLigne] = {'IDarticle': IDarticle,
                                 'date': date,
                                 'rayon': rayon,
                                 'qteConso': 0.0,
@@ -942,13 +948,13 @@ def GetPrixJourDetail(dlg,grouper='date',**kwd):
                                 }
             # on garde le distingo par repas à cause des valeurs unitaires à calculer en final
             for code in lstRepasRetenus:
-                dicLignes[key]['cout'][code] = 0.0
-        dicLignes[key]['cout'][codeRepas] += round(-qteConso * prixUnit,6)
-        dicLignes[key]['qteConso'] -= qteConso
+                dicLignes[keyLigne]['cout'][code] = 0.0
+        dicLignes[keyLigne]['cout'][codeRepas] += round(-qteConso * prixUnit,6)
+        dicLignes[keyLigne]['qteConso'] -= qteConso
 
     # Deuxième passage: Calcul des composants de la ligne regroupée -----------------------------------
     lstDonnees = []
-    for key,dic in dicLignes.items():
+    for keyLigne,dic in dicLignes.items():
         # calcul du coût midi et soir
         cout = 0.0
         lstCodRepas = [] # listes des différents repas servis pour cette clé
@@ -971,49 +977,26 @@ def GetPrixJourDetail(dlg,grouper='date',**kwd):
             if dlg.midi: effMidi = True
             if dlg.soir or dlg.matin: effSoir = True
 
-        nbRepasLigne = 0
         nbClientsLigne = 0
         diviseurCli = 0
-        
-        """
-        lstDtesEffectifs = [str(x) for x in dicEffectifs.keys()]
-        if str(date) in lstDtesEffectifs:
-            dicEff = dicEffectifs[str(date)]
-            if effMidi:
-                nbRepas += xformat.Nz(dicEff['midiRepas'])
-                nbClients += xformat.Nz(dicEff['midiClients'])
-                if nbClients > 0: nRepCli +=1
-            if effSoir:
-                nbRepas += xformat.Nz(dicEff['soirRepas'])
-                nbClients += xformat.Nz(dicEff['soirClients'])
-                if nbClients > 0: nRepCli += 1
-        if nRepCli == 0: nRepCli = 1
-        nbClients = nbClients / nRepCli
-
-        """
-        
-        lstDtesEffectifs = [str(x) for x in dicEffectifs.keys()]
-
-        if grouper == 'date' and str(key) in lstDtesEffectifs:
-            # calcul du nombre de client et repas à retenir pour la journée
-            dicEff = dicEffectifs[key]
-            if effMidi:
+        nbRepasLigne = 0
+        for key, dicEff in dicEffectifs.items():
+            # calcul du nombre de client à retenir pour la journée
+            if grouper == 'date':
+                if key != keyLigne:
+                    continue
+            nbRepasLigne = xformat.Nz(dicEff['midiRepas']) + xformat.Nz(dicEff['soirRepas'])
+            # force le service de repas clients si saisie d'effectifs
+            if effMidi or xformat.Nz(dicEff['midiClients']) > 0:
                 # service du midi
-                nbRepasLigne += xformat.Nz(dicEff['midiRepas'])
                 nbClientsLigne += xformat.Nz(dicEff['midiClients'])
                 if nbClientsLigne > 0: diviseurCli +=1
-            if effSoir:
+            if effSoir or xformat.Nz(dicEff['soirClients']) >0:
                 #  ajout du service du soir + 5ème et ptdèjJ1
-                nbRepasLigne += xformat.Nz(dicEff['soirRepas'])
                 nbClientsLigne += xformat.Nz(dicEff['soirClients'])
                 if nbClientsLigne > 0: diviseurCli +=1
-        else: 
-            # le regroupement ensemble totalise les jours de la période
-            for key, dicEff in dicEffectifs.items():
-                nbRepasLigne += xformat.Nz(dicEff['midiRepas']) + xformat.Nz(dicEff['soirRepas'])
-                nbClientsLigne += xformat.Nz(dicEff['midiClients']) + xformat.Nz(dicEff['soirClients'])
-                diviseurCli = 2
-        # le client compte toujours un si présent seulement le midi ou le soir ou toute la journée 
+
+        # le client compte toujours un si présent seulement le midi ou le soir ou toute la journée
         if diviseurCli == 0: diviseurCli = 1
         nbClientsLigne = nbClientsLigne / diviseurCli
         
@@ -1064,337 +1047,6 @@ def GetPrixJourArticle(dlg,**kwd):
     kwd['grouper'] = 'article'
     """vide, date, nbRepas, nbClients, prixRepas, prixClient, cout"""
     return GetPrixJourDetail(dlg,**kwd)
-
-def zzzGetPrixJours(dlg,**kwd):
-    # retourne les données de prix de journée à afficher dans l'olv
-    db = kwd.get('db',dlg.db)
-    # filtrage sur la date
-    dtFin = xformat.DateSqlToDatetime(dlg.periode[1])
-    dtDeb = xformat.DateSqlToDatetime(dlg.periode[0])
-    dtFinJ1 = xformat.DecaleDateTime(dtFin,+1) # pour inclure les ptDèj du lendemain
-
-    # filtrage sur les types de repas demandés
-    lstRepasRetenus = []
-    if dlg.midi:
-        lstRepasRetenus.append(2)
-    if dlg.soir:
-        lstRepasRetenus.append(3)
-    if len(lstRepasRetenus) >0:
-        lstRepasRetenus += [0,5,]# ajout des indifinis sauf si matins seuls
-    if dlg.matin:
-        lstRepasRetenus += [1,4]
-    if lstRepasRetenus == []: return []
-
-    # compose le where sur date et analytique
-    def getWhere(nomDate, deb,fin):
-        wh = """
-                WHERE (%s >= '%s' AND %s <= '%s')
-                    """%(nomDate,deb,nomDate,fin)
-
-        # filtrage sur le code analytique
-        if dlg.cuisine: wh += """
-                        AND ( IDanalytique = '00' OR IDanalytique IS NULL )"""
-        else: wh += """
-                        AND ( IDanalytique = '%s')"""%dlg.analytique
-        return wh
-    where = getWhere('date', dtDeb, dtFinJ1)
-    where += """
-                        AND
-                        origine in ('repas', 'camp')
-                        """
-    # ajoute la condition sur les codes repas choisis
-    if len(lstRepasRetenus) <5:
-        where += """
-                        AND (repas in (%s)
-                            OR (repas IS NULL))"""%str(lstRepasRetenus)[1:-1]
-    lstRepasRetenus.append(None)
-
-
-    #lstChamps = ['date', 'codeRepas', 'IDarticle', 'qteConso', 'prixUnit']
-    req = """
-            SELECT  Date, repas, IDarticle, qte, prixUnit
-            FROM stMouvements 
-            %s
-            ORDER BY stMouvements.Date DESC , stMouvements.repas
-            ; """%(where)
-
-    retour = db.ExecuterReq(req, mess='GetPrixJours')
-    recordset = ()
-    if retour == "ok":
-        recordset = db.ResultatReq()
-
-    # création de dictionnaires de données à partir du recordset
-    dicLignes = {}
-    # Premier passage :Cumul des couts
-    for date, codeRepas, IDarticle, qteConso, prixUnit in recordset:
-        # on ne retient que les repas à inclure
-        if not codeRepas in lstRepasRetenus: continue
-        # seuls les pt dej au delà de date fin sont pris
-        date = xformat.DateSqlToDatetime(date)
-        if codeRepas == 1:
-            # Ptit dèj: reculer d'un jour pour se rattacher au soir
-            date = xformat.DecaleDateTime(date,-1)
-        if date > dtFin or date < dtDeb : continue
-
-        if not date in dicLignes.keys():
-            dicLignes[date] = {'IDdate': date,
-                               'cout': {},
-                               }
-            # on garde le distingo par repas à cause des valeurs unitaires à calculer en final
-            for code in lstRepasRetenus:
-                dicLignes[date]['cout'][code] = 0.0
-        dicLignes[date]['cout'][codeRepas] += round(-qteConso * prixUnit,2)
-
-    # Recherche des effectifs: ['date', 'nbMidiCli', 'nbMidiRep', 'nbSoirCli', 'nbSoirRep']
-    where = getWhere('IDdate', dtDeb,dtFin)
-
-    lstChamps = ['IDdate', 'midiRepas', 'soirRepas', 'midiClients', 'soirClients']
-    req = """
-            SELECT  %s 
-            FROM stEffectifs 
-            %s
-            ORDER BY IDdate DESC
-            ; """%(",".join(lstChamps),where)
-
-    retour = db.ExecuterReq(req, mess='GetPrixJours2')
-    recordset = ()
-    if retour == "ok":
-        recordset = db.ResultatReq()
-
-    # composition du dic des effectifs
-    dicEffectifs = {}
-    for record in recordset:
-        dicEff = xformat.ListToDict(lstChamps,record)
-        dicEffectifs[dicEff['IDdate']] = dicEff
-
-    # Deuxième passage: Calcul des composants de la ligne regroupée par date
-    lstDonnees = []
-    for date,dic in dicLignes.items():
-        # calcul du coût global
-        nbRepas = 0
-        nbClients = 0
-        cout = 0.0
-        for code, value in dic['cout'].items():
-            cout += value
-        # calcul effectif moyen selon les repas servis, saisis dans les mouvements du jour
-        lstCodes = [x for x in dic['cout'].keys()] # listes des différents repas servis ce jour
-        # test présence des différents repas servis
-        effSoir = (1 in lstCodes or 3 in lstCodes or 4 in lstCodes) # présence de repas du soir
-        effMidi = (2 in lstCodes)
-        repasIndef = (5 in lstCodes or 0 in lstCodes or None in lstCodes) # présence de repas indéterminés
-
-        # finalisation selon les cases cochées lors de la demande
-        if dlg.matin and not (dlg.midi or dlg.soir):
-            effSoir = True # le cout matin seul sera divisé par l'effectif du soir seul
-            effMidi = False
-        if repasIndef:
-            # il y a des repas indéfinis, on ne s'occupe que des cases cochées
-            effMidi, effSoir = False, False
-            if dlg.midi: effMidi = True
-            if dlg.soir or dlg.matin: effSoir = True
-
-        nRepCli = 0
-        lstDtesEffectifs = [str(x) for x in dicEffectifs.keys()]
-        if str(date) in lstDtesEffectifs:
-            dicEff = dicEffectifs[str(date)]
-            if effMidi:
-                nbRepas += xformat.Nz(dicEff['midiRepas'])
-                nbClients += xformat.Nz(dicEff['midiClients'])
-                if nbClients > 0: nRepCli +=1
-            if effSoir:
-                nbRepas += xformat.Nz(dicEff['soirRepas'])
-                nbClients += xformat.Nz(dicEff['soirClients'])
-                if nbClients > 0: nRepCli += 1
-        if nRepCli == 0: nRepCli = 1
-        nbClients = nbClients / nRepCli
-
-        prixRepas = cout
-        prixClient = cout
-        if nbRepas > 0:
-            prixRepas = cout / nbRepas
-        if nbClients > 0:
-            prixClient = cout / nbClients
-        ligne = [   None,
-                    date,
-                    nbRepas,
-                    nbClients,
-                    prixRepas,
-                    prixClient,
-                    cout]
-        lstDonnees.append(ligne)
-    return lstDonnees
-
-def zzzGetPrixJourArticle(dlg,**kwd):
-    # retourne les données de prix de journée à afficher dans l'olv
-    db = kwd.get('db',dlg.db)
-
-    # filtrage sur la date
-    dtFin = xformat.DateSqlToDatetime(dlg.periode[1])
-    dtDeb = xformat.DateSqlToDatetime(dlg.periode[0])
-    dtFinJ1 = xformat.DecaleDateTime(dtFin,+1) # pour inclure les ptDèj du lendemain
-
-    # filtrage sur les types de repas demandés
-    lstRepasRetenus = []
-    if dlg.midi:
-        lstRepasRetenus.append(2)
-    if dlg.soir:
-        lstRepasRetenus.append(3)
-    if len(lstRepasRetenus) >0:
-        lstRepasRetenus += [0,5,]# ajout des indifinis sauf si matins seuls
-    if dlg.matin:
-        lstRepasRetenus += [1,4]
-    if lstRepasRetenus == []: return []
-
-    # compose le where sur date et analytique
-    def getWhere(nomDate, deb,fin):
-        wh = """
-                WHERE (%s >= '%s' AND %s <= '%s')
-                    """%(nomDate,deb,nomDate,fin)
-
-        # filtrage sur le code analytique
-        if dlg.cuisine: wh += """
-                        AND ( IDanalytique = '00' OR IDanalytique IS NULL )"""
-        else: wh += """
-                        AND ( IDanalytique = '%s')"""%dlg.analytique
-        return wh
-    where = getWhere('date', dtDeb, dtFinJ1)
-    where += """
-                        AND
-                        origine in ('repas', 'camp')
-                        """
-    # ajoute la condition sur les codes repas choisis
-    if len(lstRepasRetenus) <5:
-        where += """
-                        AND (repas in (%s)
-                            OR (repas IS NULL))"""%str(lstRepasRetenus)[1:-1]
-    lstRepasRetenus.append(None)
-
-
-    #lstChamps = ['date', 'codeRepas', 'IDarticle', 'qteConso', 'prixUnit']
-    req = """
-            SELECT  Date, repas, stMouvements.IDarticle, qte, prixUnit, rayon
-            FROM stMouvements
-            LEFT JOIN stArticles ON stArticles.IDarticle = stMouvements.IDarticle
-            %s
-            ORDER BY stMouvements.Date DESC , stMouvements.repas
-            ; """%(where)
-
-    retour = db.ExecuterReq(req, mess='GetPxJoursDetail')
-    recordset = ()
-    if retour == "ok":
-        recordset = db.ResultatReq()
-
-    # création de dictionnaires de données à partir du recordset
-    dicLignes = {}
-    # Premier passage : regroupement sur les articles
-    for date, codeRepas, IDarticle, qteConso, prixUnit, rayon in recordset:
-        # on ne retient que les repas à inclure
-        if not codeRepas in lstRepasRetenus: continue
-        # seuls les pt dej au delà de date fin sont pris
-        date = xformat.DateSqlToDatetime(date)
-        if codeRepas == 1:
-            # Ptit dèj: reculer d'un jour pour se rattacher au soir
-            date = xformat.DecaleDateTime(date,-1)
-        if date > dtFin or date < dtDeb : continue
-
-        if not IDarticle in dicLignes.keys():
-            dicLignes[IDarticle] = {'IDarticle': IDarticle,
-                                    'rayon': rayon,
-                                    'qteConso': 0.0,
-                                    'cout': {},
-                                    }
-            # on garde le distingo par repas à cause des valeurs unitaires à calculer en final
-            for code in lstRepasRetenus:
-                dicLignes[IDarticle]['cout'][code] = 0.0
-        dicLignes[IDarticle]['cout'][codeRepas] += round(-qteConso * prixUnit,6)
-        dicLignes[IDarticle]['qteConso'] -= qteConso
-
-    # Recherche des effectifs: ['date', 'nbMidiCli', 'nbMidiRep', 'nbSoirCli', 'nbSoirRep']
-    where = getWhere('IDdate', dtDeb,dtFin)
-
-    lstChamps = ['IDdate', 'midiRepas', 'soirRepas', 'midiClients', 'soirClients']
-    req = """
-            SELECT  %s 
-            FROM stEffectifs 
-            %s
-            ORDER BY IDdate DESC
-            ; """%(",".join(lstChamps),where)
-
-    retour = db.ExecuterReq(req, mess='GetPrixJours2')
-    recordset = ()
-    if retour == "ok":
-        recordset = db.ResultatReq()
-
-    # composition du dic des effectifs
-    dicEffectifs = {}
-    for record in recordset:
-        dicEff = xformat.ListToDict(lstChamps,record)
-        dicEffectifs[dicEff['IDdate']] = dicEff
-
-    # Deuxième passage: Calcul des composants de la ligne regroupée par article
-    lstDonnees = []
-    for IDarticle,dic in dicLignes.items():
-        # calcul du coût global des fournitures
-        nbRepas = 0
-        nbClients = 0
-        cout = 0.0
-
-        lstCodRepas = [] # listes des différents repas servis pour cet article
-        for codeRepas, value in dic['cout'].items():
-            cout += value
-            if value >0 and not codeRepas in lstCodRepas:
-                lstCodRepas.append(codeRepas)
-        # test présence des différents repas servis
-        effSoir = (1 in lstCodRepas or 3 in lstCodRepas or 4 in lstCodRepas) # présence de repas du soir
-        effMidi = (2 in lstCodRepas)
-        repasIndef = (5 in lstCodRepas or 0 in lstCodRepas or None in lstCodRepas) # présence de repas indéterminés
-
-        # finalisation selon les cases cochées lors de la demande
-        if dlg.matin and not (dlg.midi or dlg.soir):
-            effSoir = True # le cout matin seul sera divisé par l'effectif du soir seul
-            effMidi = False
-        if repasIndef:
-            # il y a des repas indéfinis, on ne s'occupe que des cases cochées
-            effMidi, effSoir = False, False
-            if dlg.midi: effMidi = True
-            if dlg.soir or dlg.matin: effSoir = True
-
-        for dte, dicEff in dicEffectifs.items():
-            nRepCli = 0
-            if effMidi:
-                nbRepas += xformat.Nz(dicEff['midiRepas'])
-                nbClients += xformat.Nz(dicEff['midiClients'])
-                if nbClients > 0: nRepCli +=1
-            if effSoir:
-                nbRepas += xformat.Nz(dicEff['soirRepas'])
-                nbClients += xformat.Nz(dicEff['soirClients'])
-                if nbClients > 0: nRepCli += 1
-        if nRepCli == 0: nRepCli = 1
-        nbClients = nbClients / nRepCli
-        prixRepas = cout
-        prixClient = cout
-        if nbRepas > 0:
-            prixRepas = cout / nbRepas
-        if nbClients > 0:
-            prixClient = cout / nbClients
-        if abs(dic['qteConso']) > 0:
-            prixUn = cout / dic['qteConso']
-        else:
-            prixUn = cout
-        
-        ligne = [   None,
-                    IDarticle,
-                    dic['rayon'],
-                    dic['qteConso'],
-                    prixUn,
-                    cout,
-                    nbRepas,
-                    prixRepas,
-                    nbClients,
-                    prixClient,
-                    ]
-        lstDonnees.append(ligne)
-    return lstDonnees
 
 
 if __name__ == '__main__':

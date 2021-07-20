@@ -545,13 +545,6 @@ class PNL_ctrl(wx.Panel):
                 self.ctrl.Bind(wx.EVT_COMBOBOX, self.OnCtrlAction)
                 self.ctrl.Bind(wx.EVT_CHECKBOX, self.OnCtrlAction)
 
-    def zzzOnEnter(self, event):
-        # gestion de la validations
-        keycode = event.GetKeyCode()
-        if keycode == wx.WXK_RETURN or keycode == wx.WXK_NUMPAD_ENTER or keycode == wx.WXK_TAB:
-            event.EventObject.Navigate()
-        event.Skip()
-
     def OnCtrlAction(self,event):
         if self.flagSkipEdit: return
         self.flagSkipEdit = True
@@ -658,7 +651,7 @@ class PNL_ctrl(wx.Panel):
             except Exception:
                 value = 0
         elif self.genre in ('datetime','date'):
-            value = xformat.DatetimeToStr(value)
+            value = xformat.DateToFr(value)
         elif self.genre in ('str','string','texte','txt'):
             if value:
                 value = str(value)
