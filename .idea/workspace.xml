@@ -9,11 +9,8 @@
   <component name="ChangeListManager">
     <list default="true" id="4c63f410-1c6e-41ab-90bc-9449d93a05cf" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/srcNoelite/DLG_Transposition_ficher.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoelite/DLG_Transposition_ficher.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/srcNoestock/DLG_Inventaires.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/DLG_Inventaires.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/srcNoestock/UTILS_Stocks.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/UTILS_Stocks.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xpy/xGestion_TableauEditor.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/xGestion_TableauEditor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xpy/xUTILS_SaisieParams.py" beforeDir="false" afterPath="$PROJECT_DIR$/xpy/xUTILS_SaisieParams.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/srcNoestock/DLG_PrixJour.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/DLG_PrixJour.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -255,7 +252,7 @@
       <recent name="C:\Python37-32\NoeXpy\xpy\outils" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.DLG_Inventaires">
+  <component name="RunManager" selected="Python.DLG_PrixJour">
     <configuration name="DLG_Articles" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoeXpy" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -363,9 +360,9 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.DLG_PrixJour" />
         <item itemvalue="Python.DLG_Inventaires" />
         <item itemvalue="Python.Noestock" />
-        <item itemvalue="Python.DLG_PrixJour" />
         <item itemvalue="Python.DLG_Mouvements" />
         <item itemvalue="Python.DLG_Articles" />
       </list>
@@ -386,13 +383,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1606130437177</updated>
-    </task>
-    <task id="LOCAL-00049" summary="Saisie dates effectifs">
-      <created>1618690810096</created>
-      <option name="number" value="00049" />
-      <option name="presentableId" value="LOCAL-00049" />
-      <option name="project" value="LOCAL" />
-      <updated>1618690810096</updated>
     </task>
     <task id="LOCAL-00050" summary="Entrées Effectifs">
       <created>1618739068372</created>
@@ -730,7 +720,14 @@
       <option name="project" value="LOCAL" />
       <updated>1626530347825</updated>
     </task>
-    <option name="localTasksCounter" value="98" />
+    <task id="LOCAL-00098" summary="Stocks inventaires">
+      <created>1626774775966</created>
+      <option name="number" value="00098" />
+      <option name="presentableId" value="LOCAL-00098" />
+      <option name="project" value="LOCAL" />
+      <updated>1626774775966</updated>
+    </task>
+    <option name="localTasksCounter" value="99" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -818,7 +815,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/../OpenRef" />
     </ignored-roots>
-    <MESSAGE value="Réorganisation xgtr" />
     <MESSAGE value="GetBalance" />
     <MESSAGE value="stocks" />
     <MESSAGE value="effectifs et réorganisation xgtr%xgte" />
@@ -843,10 +839,18 @@
     <MESSAGE value="Prix journée détail" />
     <MESSAGE value="Compta Transpose et saisie reglements" />
     <MESSAGE value="Compta Transpose" />
-    <option name="LAST_COMMIT_MESSAGE" value="Compta Transpose" />
+    <MESSAGE value="Stocks inventaires" />
+    <option name="LAST_COMMIT_MESSAGE" value="Stocks inventaires" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/srcNoestock/DLG_PrixJourDetail.py</url>
+          <line>206</line>
+          <option name="timeStamp" value="53" />
+        </line-breakpoint>
+      </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">
           <properties notifyOnTerminate="true" exception="BaseException">

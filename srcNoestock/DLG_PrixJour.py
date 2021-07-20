@@ -144,9 +144,9 @@ def GetDicParams():
 
 def GetBoutons(dlg):
     return  [
-                {'name': 'btnImp', 'label': "Imprimer\npour contrôle",
+                {'name': 'btnImp', 'label': "Imprimer\nla période",
                     'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
-                    'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
+                    'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimerPeriode},
                 {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour sortir",
                     'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnFermer}
             ]
@@ -398,6 +398,63 @@ class DLG(xgtr.DLG_tableau):
         if len(self.analytique) > 0 : tiers = "Camp: %s"%self.analytique.capitalize()
         return "Synthèse des Prix de journée du %s au %s, %s"%( datedeb, datefin, tiers)
 
+    def GetTotalImpression(self):
+        # génération d'une ligne de synthèse avec éventuellement présence de filtre
+        effectifs = nust.GetEffectifs(self,)
+        if len(effectifs) == 0:
+            wx.MessageBox("Pas d'effectif renseignés pour ce jour")
+            return
+        # recherche filtres
+        """
+        yaFiltre = False
+        filtres = self.ctrlOlv.ctrlOutils.barreRecherche.GetValue()
+        if len(filtres) > 0: filtres += ", "
+
+        for filtre in  self.ctrlOlv.listeFiltresColonnes:
+            filtres += "%s %s %s, "%(filtre['titre'] , filtre['choix'], filtre['critere'])
+
+        if len(filtres) > 0 :
+            yaFiltre = True
+            filtres = filtres[:-2] # enlève dernière virgule"""
+
+        # calcul synthèse
+        coutsCli, nbClients, coutsRep, nbRepas = 0.0, 0.0, 0.0, 0.0
+        
+        for track in self.ctrlOlv.modelObjects:
+            if track.nbClients > 0:
+                coutsCli += track.cout
+                nbClients += track.nbClients
+            if track.nbRepas > 0:
+                coutsRep += track.cout
+                nbRepas += track.nbRepas
+        moPxRep, moPxCli = 0.0, 0.0
+        if nbRepas > 0: moPxRep = round(coutsRep / nbRepas,2)
+        if nbClients > 0: moPxCli = round(coutsCli / nbClients,2)
+        coutsRep = round(coutsRep)
+        coutsCli = round(coutsCli)
+
+        # pas de filtre
+        txt = "Coûts :  %d repas à %.2f€ = %.2f€ ,  %d clients à %.2f€ = %.2f€"%(nbRepas,moPxRep, coutsRep,
+                                                                              nbClients,moPxCli, coutsCli)
+
+        """if yaFiltre:
+            innerTot, innerNbCli, innerNbRep = 0.0, 0.0, 0.0
+            for track in self.ctrlOlv.innerList:
+                innerTot += track.cout
+                innerNbCli = max(innerNbCli, track.nbClients)
+                innerNbRep = max(innerNbRep, track.nbRepas)
+            innerPxRep = innerTot
+            innerPxCli = innerTot
+            if innerNbRep > 0: innerPxRep = round(innerTot / innerNbRep,2)
+            if innerNbCli > 0: innerPxCli = round(innerTot / innerNbCli,2)
+            innerTot = round(innerTot)
+            # présence de filtre on affiche le filtré / non filtré
+            txt = "Filtré par : %s\n"%filtres
+            txt += "Coût global - filtré: %d€ - %d€,  "%(modTot,innerTot,)
+            txt += "par repas servi : %.2f€ - %.2f€, par client : %.2f€ - %.2f€"%(modPxRep,innerPxRep,
+                                                                                  modPxCli,innerPxCli)"""
+        return txt
+
     def ValideSaisie(self,dlgSaisie,*args,**kwd):
         #Relais de l'appel de l'écran de saisie en sortie
         kwd['periode'] = self.periode
@@ -409,6 +466,11 @@ class DLG(xgtr.DLG_tableau):
         self.pnlOlv.OnModifier(None)
         self.ctrlOlv.Apercu(None)
         return
+
+    def OnImprimerPeriode(self,event):
+        self.ctrlOlv.Apercu(None)
+        return
+
 
 #------------------------ Lanceur de test  -------------------------------------------
 

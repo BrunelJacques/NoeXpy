@@ -355,7 +355,7 @@ class PNL_corps(xgte.PNL_corps):
         db = self.db
         track.qteFin += track.deltaQte
         track.qteTous += track.deltaQte
-        
+
         # génération de l'od corrective dans un mouvement
         if not hasattr(track,'IDmouvement'):
             track.IDmouvement = None
