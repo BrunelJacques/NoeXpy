@@ -378,7 +378,7 @@ class PNL_corps(xgte.PNL_corps):
             if qteMvt != 0.0:
                 lstDonnees += [('origine', 'od_in'),
                                ('qte', qteMvt),
-                               ('date', dlg.date),
+                               ('date', self.parent.date),
                                ('IDanalytique', '00'),
                                ]
                 ret = db.ReqInsert("stMouvements",lstDonnees= lstDonnees, mess="DLG_Inventaires.SauveLigne Insert")
@@ -392,8 +392,8 @@ class PNL_corps(xgte.PNL_corps):
                       ]
         if track.qteEnt > 0:
             lstDonnees += [('prixActuel',track.mttEnt / track.qteEnt),
-                              ('ordi',dlg.ordi),
-                              ('dateSaisie',dlg.today)]
+                              ('ordi',self.parent.ordi),
+                              ('dateSaisie',self.parent.today)]
         mess = "MAJ article '%s'"%track.IDarticle
         self.db.ReqMAJ('stArticles',lstDonnees,'IDarticle',track.IDarticle,mess=mess,IDestChaine=True)
 
@@ -574,6 +574,6 @@ class DLG(xgte.DLG_tableau):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG()
+    self.parent.date = DLG()
     dlg.ShowModal()
     app.MainLoop()

@@ -10,7 +10,6 @@
     <list default="true" id="4c63f410-1c6e-41ab-90bc-9449d93a05cf" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/srcNoestock/DLG_Inventaires.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/DLG_Inventaires.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/srcNoestock/DLG_PrixJour.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoestock/DLG_PrixJour.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -252,7 +251,7 @@
       <recent name="C:\Python37-32\NoeXpy\xpy\outils" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.DLG_PrixJour">
+  <component name="RunManager" selected="Python.Noestock">
     <configuration name="DLG_Articles" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoeXpy" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -360,9 +359,9 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.DLG_PrixJour" />
-        <item itemvalue="Python.DLG_Inventaires" />
         <item itemvalue="Python.Noestock" />
+        <item itemvalue="Python.DLG_Inventaires" />
+        <item itemvalue="Python.DLG_PrixJour" />
         <item itemvalue="Python.DLG_Mouvements" />
         <item itemvalue="Python.DLG_Articles" />
       </list>
@@ -383,13 +382,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1606130437177</updated>
-    </task>
-    <task id="LOCAL-00050" summary="Entrées Effectifs">
-      <created>1618739068372</created>
-      <option name="number" value="00050" />
-      <option name="presentableId" value="LOCAL-00050" />
-      <option name="project" value="LOCAL" />
-      <updated>1618739068372</updated>
     </task>
     <task id="LOCAL-00051" summary="Entrées Effectifs">
       <created>1618866474630</created>
@@ -727,7 +719,14 @@
       <option name="project" value="LOCAL" />
       <updated>1626774775966</updated>
     </task>
-    <option name="localTasksCounter" value="99" />
+    <task id="LOCAL-00099" summary="Stocks inventaires">
+      <created>1626785099792</created>
+      <option name="number" value="00099" />
+      <option name="presentableId" value="LOCAL-00099" />
+      <option name="project" value="LOCAL" />
+      <updated>1626785099792</updated>
+    </task>
+    <option name="localTasksCounter" value="100" />
     <servers />
   </component>
   <component name="ToolWindowManager">
