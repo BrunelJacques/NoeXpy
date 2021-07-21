@@ -1,4 +1,6 @@
-Version 1.2.7.11 (15/07/2021)
+Version 1.2.7.11 (17/07/2021)
+- plan comptable et journaux en mySql
+
 adaptation transferts fichiers
 gestion adresses bug corrigés
 saisie règlements bugs
