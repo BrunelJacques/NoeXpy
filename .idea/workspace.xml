@@ -8,6 +8,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4c63f410-1c6e-41ab-90bc-9449d93a05cf" name="Default Changelist" comment="Stocks inventaires">
+      <change afterPath="$PROJECT_DIR$/services/authentification.service.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -119,23 +120,23 @@
     </file-type-list>
   </component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/srcNoelite/UTILS_Compta.py" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/srcNoestock/UTILS_Stocks.py" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/xpy/outils/xformat.py" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/Noestock.py" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/srcNoelite/UTILS_Reglements.py" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/xpy/xUTILS_SaisieParams.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/xpy/xGestionConfig.py" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/xpy/xGestion_TableauRecherche.py" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/srcNoestock/DLG_Mouvements.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/xpy/xGestion_TableauEditor.py" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/xpy/xAppli.py" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/srcNoestock/DLG_Inventaires.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/srcNoelite/DLG_Reglements_gestion.py" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/srcNoelite/UTILS_Compta.py" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/xpy/outils/ObjectListView/ObjectListView.py" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/srcNoestock/DLG_PrixJour.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/xpy/outils/ObjectListView/CellEditor.py" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/srcNoestock/DLG_Articles.py" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/xpy/xAppli.py" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/xpy/xGestionConfig.py" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/xpy/xGestion_TableauEditor.py" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Noestock.py" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/xpy/outils/xshelve.py" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="IdeDocumentHistory">
@@ -255,7 +256,7 @@
       <recent name="C:\Python37-32\NoeXpy\xpy\outils" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.DLG_Transposition_ficher">
+  <component name="RunManager" selected="Python.authentification.service">
     <configuration name="DLG_Mouvements" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoeXpy" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -305,9 +306,9 @@
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="" />
+      <option name="SDK_HOME" value="D:\Program Files\Python37\python.exe" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
+      <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Noelite.py" />
@@ -326,9 +327,9 @@
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="" />
+      <option name="SDK_HOME" value="D:\Program Files\Python37\python.exe" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
+      <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Noestock.py" />
@@ -340,19 +341,19 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="xGestion_TableauEditor" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="authentification.service" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoeXpy" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/xpy" />
-      <option name="IS_MODULE_SDK" value="true" />
+      <option name="SDK_HOME" value="D:\Program Files\Python37\python.exe" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/services" />
+      <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/xpy/xGestion_TableauEditor.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/services/authentification.service.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -363,11 +364,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.DLG_Transposition_ficher" />
-        <item itemvalue="Python.Noelite" />
-        <item itemvalue="Python.DLG_Mouvements" />
-        <item itemvalue="Python.xGestion_TableauEditor" />
+        <item itemvalue="Python.authentification.service" />
         <item itemvalue="Python.Noestock" />
+        <item itemvalue="Python.Noelite" />
+        <item itemvalue="Python.DLG_Transposition_ficher" />
+        <item itemvalue="Python.DLG_Mouvements" />
       </list>
     </recent_temporary>
   </component>
@@ -386,13 +387,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1606130437177</updated>
-    </task>
-    <task id="LOCAL-00053" summary="GetBalance">
-      <created>1619016086406</created>
-      <option name="number" value="00053" />
-      <option name="presentableId" value="LOCAL-00053" />
-      <option name="project" value="LOCAL" />
-      <updated>1619016086406</updated>
     </task>
     <task id="LOCAL-00054" summary="stocks">
       <created>1620074248668</created>
@@ -730,7 +724,14 @@
       <option name="project" value="LOCAL" />
       <updated>1626846627755</updated>
     </task>
-    <option name="localTasksCounter" value="102" />
+    <task id="LOCAL-00102" summary="Stocks inventaires">
+      <created>1630783438044</created>
+      <option name="number" value="00102" />
+      <option name="presentableId" value="LOCAL-00102" />
+      <option name="project" value="LOCAL" />
+      <updated>1630783438044</updated>
+    </task>
+    <option name="localTasksCounter" value="103" />
     <servers />
   </component>
   <component name="ToolWindowManager">
