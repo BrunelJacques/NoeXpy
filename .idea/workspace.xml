@@ -7,9 +7,12 @@
     <bookmark url="file://$PROJECT_DIR$/xpy/outils/xdates.py" line="1250" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4c63f410-1c6e-41ab-90bc-9449d93a05cf" name="Default Changelist" comment="Stocks inventaires">
-      <change afterPath="$PROJECT_DIR$/services/authentification.service.py" afterDir="false" />
+    <list default="true" id="4c63f410-1c6e-41ab-90bc-9449d93a05cf" name="Default Changelist" comment="WebServices">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/srcNoelite/DLG_Km_saisie.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoelite/DLG_Km_saisie.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/srcNoelite/UTILS_Compta.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoelite/UTILS_Compta.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/srcNoelite/UTILS_Noegest.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoelite/UTILS_Noegest.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -235,8 +238,8 @@
   </component>
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/srcNoestock" />
-    <property name="settings.editor.selected.configurable" value="preferences.editor" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../matthweb" />
+    <property name="settings.editor.selected.configurable" value="editor.preferences.gutterIcons" />
     <property name="two.files.diff.last.used.file" value="$USER_HOME$/Desktop/xUTILS_SaisieParamsNew.py" />
   </component>
   <component name="ReaderModeSettings">
@@ -256,20 +259,20 @@
       <recent name="C:\Python37-32\NoeXpy\xpy\outils" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.authentification.service">
-    <configuration name="DLG_Mouvements" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python.DLG_Km_saisie">
+    <configuration name="DLG_Km_saisie" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoeXpy" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/srcNoestock" />
-      <option name="IS_MODULE_SDK" value="true" />
+      <option name="SDK_HOME" value="D:\Program Files\Python37\python.exe" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/srcNoelite" />
+      <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/srcNoestock/DLG_Mouvements.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/srcNoelite/DLG_Km_saisie.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -364,11 +367,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.DLG_Km_saisie" />
+        <item itemvalue="Python.Noelite" />
         <item itemvalue="Python.authentification.service" />
         <item itemvalue="Python.Noestock" />
-        <item itemvalue="Python.Noelite" />
         <item itemvalue="Python.DLG_Transposition_ficher" />
-        <item itemvalue="Python.DLG_Mouvements" />
       </list>
     </recent_temporary>
   </component>
@@ -387,13 +390,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1606130437177</updated>
-    </task>
-    <task id="LOCAL-00054" summary="stocks">
-      <created>1620074248668</created>
-      <option name="number" value="00054" />
-      <option name="presentableId" value="LOCAL-00054" />
-      <option name="project" value="LOCAL" />
-      <updated>1620074248668</updated>
     </task>
     <task id="LOCAL-00055" summary="effectifs et réorganisation xgtr%xgte">
       <created>1620247252053</created>
@@ -731,7 +727,14 @@
       <option name="project" value="LOCAL" />
       <updated>1630783438044</updated>
     </task>
-    <option name="localTasksCounter" value="103" />
+    <task id="LOCAL-00103" summary="WebServices">
+      <created>1630784078833</created>
+      <option name="number" value="00103" />
+      <option name="presentableId" value="LOCAL-00103" />
+      <option name="project" value="LOCAL" />
+      <updated>1630784078833</updated>
+    </task>
+    <option name="localTasksCounter" value="104" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -819,7 +822,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/../OpenRef" />
     </ignored-roots>
-    <MESSAGE value="GetBalance" />
     <MESSAGE value="stocks" />
     <MESSAGE value="effectifs et réorganisation xgtr%xgte" />
     <MESSAGE value="Validation de la saisie" />
@@ -844,7 +846,8 @@
     <MESSAGE value="Compta Transpose et saisie reglements" />
     <MESSAGE value="Compta Transpose" />
     <MESSAGE value="Stocks inventaires" />
-    <option name="LAST_COMMIT_MESSAGE" value="Stocks inventaires" />
+    <MESSAGE value="WebServices" />
+    <option name="LAST_COMMIT_MESSAGE" value="WebServices" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -856,7 +859,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/srcNoelite/UTILS_Compta.py</url>
-          <line>272</line>
+          <line>273</line>
           <option name="timeStamp" value="78" />
         </line-breakpoint>
       </breakpoints>
