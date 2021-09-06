@@ -513,10 +513,10 @@ class Dialog(xusp.DLG_vide):
         dic = self.pnlParams.GetValues()
         formatExp = dic['compta']['formatexp']
         compta = None
-        if formatExp in nucompta.FORMATS_EXPORT.keys() :
+        """if formatExp in nucompta.FORMATS_EXPORT.keys():
             nomCompta = nucompta.FORMATS_EXPORT[formatExp]['compta']
             compta = nucompta.Compta(self, compta=nomCompta)
-            if not compta.db: compta = None
+            if not compta.db: compta = None"""
         if not compta:
             txtInfo = "Echec d'accès à la compta associée à %s!!!"%formatExp
             image = wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16))

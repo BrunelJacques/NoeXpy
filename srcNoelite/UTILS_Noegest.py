@@ -411,8 +411,7 @@ class Noegest(object):
         if len(whereFiltre) == 0 and len(filtre)>0:
             whereFiltre = xformat.ComposeWhereFiltre(filtre,lstChamps,lien='AND')
         kwd['reqWhere'] = """
-                WHERE (cpta_analytiques.axe = 'VEHICULES')
-                AND (vehiculesCouts.cloture = '%s') %s"""%(xformat.DateFrToSql(self.cloture),whereFiltre)
+                WHERE (cpta_analytiques.axe = 'VEHICULES')"""
         kwd['reqFrom'] = """
                 FROM    cpta_analytiques   
                 LEFT JOIN vehiculesCouts ON cpta_analytiques.IDanalytique = vehiculesCouts.IDanalytique"""

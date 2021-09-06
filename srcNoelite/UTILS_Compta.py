@@ -197,7 +197,8 @@ FORMATS_EXPORT = {
                               {'code':'noPiece',     'lg': 60,},
                               {'code':'contrepartie','lg': 60,},
                             ],
-                            'genere':ExportExcel},
+                            'genere':ExportExcel,
+                            },
             "ASCII pour Quadra": {
                             'fonction':ComposeFuncExp,
                             'matrice':[
