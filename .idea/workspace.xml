@@ -7,12 +7,13 @@
     <bookmark url="file://$PROJECT_DIR$/xpy/outils/xdates.py" line="1250" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4c63f410-1c6e-41ab-90bc-9449d93a05cf" name="Default Changelist" comment="WebServices">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="b2eda91f-a0a1-4619-8360-afb0be84dbe6" name="Changes" comment="mise en place noegestion">
+      <change beforePath="$PROJECT_DIR$/../NoeGestion/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/../NoeGestion/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/NoeXpy.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/NoeXpy.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/srcNoelite/DLG_Km_saisie.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoelite/DLG_Km_saisie.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/srcNoelite/UTILS_Compta.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoelite/UTILS_Compta.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/srcNoelite/UTILS_Noegest.py" beforeDir="false" afterPath="$PROJECT_DIR$/srcNoelite/UTILS_Noegest.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../matthweb/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../matthweb/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -112,7 +113,7 @@
         <entry key="$PROJECT_DIR$" value="master" />
       </map>
     </option>
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../NoeGestion" />
   </component>
   <component name="GitSEFilterConfiguration">
     <file-type-list>
@@ -238,8 +239,8 @@
   </component>
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../matthweb" />
-    <property name="settings.editor.selected.configurable" value="editor.preferences.gutterIcons" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../NoeGestion" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PythonContentEntriesConfigurable" />
     <property name="two.files.diff.last.used.file" value="$USER_HOME$/Desktop/xUTILS_SaisieParamsNew.py" />
   </component>
   <component name="ReaderModeSettings">
@@ -259,7 +260,7 @@
       <recent name="C:\Python37-32\NoeXpy\xpy\outils" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.DLG_Km_saisie">
+  <component name="RunManager" selected="Python.settings">
     <configuration name="DLG_Km_saisie" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoeXpy" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -273,27 +274,6 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/srcNoelite/DLG_Km_saisie.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="DLG_Transposition_ficher" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="NoeXpy" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/srcNoelite" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/srcNoelite/DLG_Transposition_ficher.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -365,13 +345,34 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="settings" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="NoeGestion" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../NoeGestion/serveur_django" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../NoeGestion/serveur_django/settings.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.settings" />
         <item itemvalue="Python.DLG_Km_saisie" />
         <item itemvalue="Python.Noelite" />
         <item itemvalue="Python.authentification.service" />
         <item itemvalue="Python.Noestock" />
-        <item itemvalue="Python.DLG_Transposition_ficher" />
       </list>
     </recent_temporary>
   </component>
@@ -385,46 +386,11 @@
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="4c63f410-1c6e-41ab-90bc-9449d93a05cf" name="Default Changelist" comment="" />
+      <changelist id="" name="Default Changelist" comment="" />
       <created>1606130437177</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1606130437177</updated>
-    </task>
-    <task id="LOCAL-00055" summary="effectifs et réorganisation xgtr%xgte">
-      <created>1620247252053</created>
-      <option name="number" value="00055" />
-      <option name="presentableId" value="LOCAL-00055" />
-      <option name="project" value="LOCAL" />
-      <updated>1620247252053</updated>
-    </task>
-    <task id="LOCAL-00056" summary="Validation de la saisie">
-      <created>1620383365448</created>
-      <option name="number" value="00056" />
-      <option name="presentableId" value="LOCAL-00056" />
-      <option name="project" value="LOCAL" />
-      <updated>1620383365448</updated>
-    </task>
-    <task id="LOCAL-00057" summary="Validation de la saisie">
-      <created>1620419192135</created>
-      <option name="number" value="00057" />
-      <option name="presentableId" value="LOCAL-00057" />
-      <option name="project" value="LOCAL" />
-      <updated>1620419192135</updated>
-    </task>
-    <task id="LOCAL-00058" summary="Gestion des filtres et boxes">
-      <created>1620681184097</created>
-      <option name="number" value="00058" />
-      <option name="presentableId" value="LOCAL-00058" />
-      <option name="project" value="LOCAL" />
-      <updated>1620681184097</updated>
-    </task>
-    <task id="LOCAL-00059" summary="StSotcks effectifs">
-      <created>1622322867068</created>
-      <option name="number" value="00059" />
-      <option name="presentableId" value="LOCAL-00059" />
-      <option name="project" value="LOCAL" />
-      <updated>1622322867068</updated>
     </task>
     <task id="LOCAL-00060" summary="Sorties Stocks">
       <created>1622407524090</created>
@@ -734,7 +700,42 @@
       <option name="project" value="LOCAL" />
       <updated>1630784078833</updated>
     </task>
-    <option name="localTasksCounter" value="104" />
+    <task id="LOCAL-00104" summary="WebServices">
+      <created>1631112847458</created>
+      <option name="number" value="00104" />
+      <option name="presentableId" value="LOCAL-00104" />
+      <option name="project" value="LOCAL" />
+      <updated>1631112847458</updated>
+    </task>
+    <task id="LOCAL-00105" summary="mise en place noegestion">
+      <created>1631120170029</created>
+      <option name="number" value="00105" />
+      <option name="presentableId" value="LOCAL-00105" />
+      <option name="project" value="LOCAL" />
+      <updated>1631120170029</updated>
+    </task>
+    <task id="LOCAL-00106" summary="mise en place noegestion">
+      <created>1631380577382</created>
+      <option name="number" value="00106" />
+      <option name="presentableId" value="LOCAL-00106" />
+      <option name="project" value="LOCAL" />
+      <updated>1631380577382</updated>
+    </task>
+    <task id="LOCAL-00107" summary="mise en place noegestion">
+      <created>1631385959094</created>
+      <option name="number" value="00107" />
+      <option name="presentableId" value="LOCAL-00107" />
+      <option name="project" value="LOCAL" />
+      <updated>1631385959094</updated>
+    </task>
+    <task id="LOCAL-00108" summary="mise en place noegestion">
+      <created>1631386269832</created>
+      <option name="number" value="00108" />
+      <option name="presentableId" value="LOCAL-00108" />
+      <option name="project" value="LOCAL" />
+      <updated>1631386269832</updated>
+    </task>
+    <option name="localTasksCounter" value="109" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -822,7 +823,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/../OpenRef" />
     </ignored-roots>
-    <MESSAGE value="stocks" />
     <MESSAGE value="effectifs et réorganisation xgtr%xgte" />
     <MESSAGE value="Validation de la saisie" />
     <MESSAGE value="StSotcks effectifs" />
@@ -847,7 +847,8 @@
     <MESSAGE value="Compta Transpose" />
     <MESSAGE value="Stocks inventaires" />
     <MESSAGE value="WebServices" />
-    <option name="LAST_COMMIT_MESSAGE" value="WebServices" />
+    <MESSAGE value="mise en place noegestion" />
+    <option name="LAST_COMMIT_MESSAGE" value="mise en place noegestion" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
