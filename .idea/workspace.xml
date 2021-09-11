@@ -8,12 +8,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b2eda91f-a0a1-4619-8360-afb0be84dbe6" name="Changes" comment="mise en place noegestion">
-      <change beforePath="$PROJECT_DIR$/../NoeGestion/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/../NoeGestion/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/NoeXpy.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/NoeXpy.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../matthweb/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../matthweb/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -239,7 +234,7 @@
   </component>
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../NoeGestion" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../matthweb/matthweb" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PythonContentEntriesConfigurable" />
     <property name="two.files.diff.last.used.file" value="$USER_HOME$/Desktop/xUTILS_SaisieParamsNew.py" />
   </component>
@@ -248,11 +243,11 @@
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\Projets\matthweb\matthweb" />
       <recent name="C:\Python37-32\NoeXpy\srcNoestock" />
       <recent name="C:\Python37-32\NoeXpy\srcNoelite" />
       <recent name="C:\Python37-32\NoeXpy\xpy\outils" />
       <recent name="C:\Python37-32\NoeXpy\xpy\Images\32x32" />
-      <recent name="C:\Python37-32\NoeXpy\xpy\outils\ObjectListView" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Python37-32\NoeXpy\xpy\outils\ObjectListView" />
@@ -391,27 +386,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1606130437177</updated>
-    </task>
-    <task id="LOCAL-00060" summary="Sorties Stocks">
-      <created>1622407524090</created>
-      <option name="number" value="00060" />
-      <option name="presentableId" value="LOCAL-00060" />
-      <option name="project" value="LOCAL" />
-      <updated>1622407524090</updated>
-    </task>
-    <task id="LOCAL-00061" summary="Gestion des mouvements">
-      <created>1622451762063</created>
-      <option name="number" value="00061" />
-      <option name="presentableId" value="LOCAL-00061" />
-      <option name="project" value="LOCAL" />
-      <updated>1622451762063</updated>
-    </task>
-    <task id="LOCAL-00062" summary="Gestion des tables">
-      <created>1622482840118</created>
-      <option name="number" value="00062" />
-      <option name="presentableId" value="LOCAL-00062" />
-      <option name="project" value="LOCAL" />
-      <updated>1622482840118</updated>
     </task>
     <task id="LOCAL-00063" summary="Prix de journée">
       <created>1622533975721</created>
@@ -735,7 +709,28 @@
       <option name="project" value="LOCAL" />
       <updated>1631386269832</updated>
     </task>
-    <option name="localTasksCounter" value="109" />
+    <task id="LOCAL-00109" summary="mise en place noegestion">
+      <created>1631386976801</created>
+      <option name="number" value="00109" />
+      <option name="presentableId" value="LOCAL-00109" />
+      <option name="project" value="LOCAL" />
+      <updated>1631386976801</updated>
+    </task>
+    <task id="LOCAL-00110" summary="mise en place noegestion">
+      <created>1631387160450</created>
+      <option name="number" value="00110" />
+      <option name="presentableId" value="LOCAL-00110" />
+      <option name="project" value="LOCAL" />
+      <updated>1631387160450</updated>
+    </task>
+    <task id="LOCAL-00111" summary="mise en place noegestion">
+      <created>1631391930901</created>
+      <option name="number" value="00111" />
+      <option name="presentableId" value="LOCAL-00111" />
+      <option name="project" value="LOCAL" />
+      <updated>1631391930901</updated>
+    </task>
+    <option name="localTasksCounter" value="112" />
     <servers />
   </component>
   <component name="ToolWindowManager">
