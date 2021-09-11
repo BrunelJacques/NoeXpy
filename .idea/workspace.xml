@@ -8,7 +8,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b2eda91f-a0a1-4619-8360-afb0be84dbe6" name="Changes" comment="mise en place noegestion">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../NoeGestion/serveur_django/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/../NoeGestion/serveur_django/settings.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -387,13 +387,6 @@
       <option name="presentableId" value="Default" />
       <updated>1606130437177</updated>
     </task>
-    <task id="LOCAL-00063" summary="Prix de journée">
-      <created>1622533975721</created>
-      <option name="number" value="00063" />
-      <option name="presentableId" value="LOCAL-00063" />
-      <option name="project" value="LOCAL" />
-      <updated>1622533975721</updated>
-    </task>
     <task id="LOCAL-00064" summary="Gestion des filtres et boxes">
       <created>1622542102663</created>
       <option name="number" value="00064" />
@@ -730,7 +723,14 @@
       <option name="project" value="LOCAL" />
       <updated>1631391930901</updated>
     </task>
-    <option name="localTasksCounter" value="112" />
+    <task id="LOCAL-00112" summary="mise en place noegestion">
+      <created>1631392313631</created>
+      <option name="number" value="00112" />
+      <option name="presentableId" value="LOCAL-00112" />
+      <option name="project" value="LOCAL" />
+      <updated>1631392313631</updated>
+    </task>
+    <option name="localTasksCounter" value="113" />
     <servers />
   </component>
   <component name="ToolWindowManager">
