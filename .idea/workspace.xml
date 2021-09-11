@@ -260,7 +260,7 @@
       <recent name="C:\Python37-32\NoeXpy\xpy\outils" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.settings">
+  <component name="RunManager" selected="Python.Noelite">
     <configuration name="DLG_Km_saisie" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="NoeXpy" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -368,9 +368,9 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.Noelite" />
         <item itemvalue="Python.settings" />
         <item itemvalue="Python.DLG_Km_saisie" />
-        <item itemvalue="Python.Noelite" />
         <item itemvalue="Python.authentification.service" />
         <item itemvalue="Python.Noestock" />
       </list>
