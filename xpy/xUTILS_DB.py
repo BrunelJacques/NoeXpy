@@ -1097,6 +1097,7 @@ if __name__ == "__main__":
     app = wx.App()
     os.chdir("..")
     db = DB()
+    db.AfficheTestOuverture()
     #db.MaFonctionTest()
     #db.DropUneTable('cpta_journaux')
     #from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
