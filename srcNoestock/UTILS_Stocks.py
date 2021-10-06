@@ -7,7 +7,7 @@
 # Licence:         Licence GNU GPL
 # ------------------------------------------------------------------------
 
-import wx, decimal
+import wx, decimal, datetime
 from srcNoelite     import DB_schema
 from xpy.outils     import xformat
 from xpy.outils.xformat import Nz
@@ -185,6 +185,33 @@ def SqlInventaire(dlg,*args,**kwd):
     for record in recordset:
         lstDonnees.append(ComposeLigne(record))
     return lstDonnees
+
+def SqlMouvementsPeriode(debut=None,fin=None):
+    # retourne une  liste de mouvements en forme de liste
+    lstChamps = ['date','origine','stMouvements.IDarticle','qte','prixUnit']
+    if fin == None: fin = datetime.date.today()
+    if debut == None: debut = fin - datetime.timedelta(days=180)
+    finIso = xformat.DatetimeToStr(fin,iso=True)
+    debutIso = xformat.DatetimeToStr(debut,iso=True)
+    db = xdb.DB()
+    # Appelle les mouvements de la période
+    req = """   SELECT %s
+                FROM stMouvements
+                LEFT JOIN stArticles ON stMouvements.IDarticle = stArticles.IDarticle 
+                WHERE   (   (date >= '%s' ) 
+                            AND (date <= '%s' ))
+                ;""" % (",".join(lstChamps),debutIso,finIso)
+
+    retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetMouvementsPeriode')
+    llMouvements = []
+    if retour == "ok":
+        recordset = db.ResultatReq()
+        for record in recordset:
+            mouvement = []
+            for ix  in range(len(lstChamps)):
+                mouvement.append(record[ix])
+            llMouvements.append(mouvement)
+    return llMouvements
 
 def SqlMouvements(db,dParams=None):
     lstChamps = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)

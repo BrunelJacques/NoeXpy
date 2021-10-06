@@ -405,18 +405,18 @@ class DB():
                 self.cursor.Close()
             else:
                 # autres types de connecteurs
-                self.cursor.execute(req)
+                ret = self.cursor.execute(req)
                 self.retourReq = 'ok'
         except Exception as err:
             self.echec = 1
             if mess:
-                self.retourReq = mess +'\n\n'
+                self.retourReq = mess +'\n%s\n'%err
             else: self.retourReq = 'Erreur xUTILS_DB\n\n'
             self.retourReq +=  ("ExecuterReq:\n%s\n\nErreur detectee:\n%s"% (req, str(err)))
             if affichError:
-                wx.MessageBox(self.retourReq)
-        finally:
-            return self.retourReq
+                raise Exception(self.retourReq)
+                print()
+        return self.retourReq
 
     def Executermany(self, req="", lstDonnees=[], commit=True):
         """ Executemany pour local ou réseau """
@@ -975,78 +975,6 @@ class DB():
                     if str(index[2]) != 'PRIMARY':
                         listeIndex.append(str(index[2]))
         return listeIndex
-
-    def MaFonctionTest(self):
-        import pyodbc
-        DRIVER='{Microsoft Access Driver (*.mdb, *.accdb)}'
-        DBQ='c:/temp/qcompta.mdb'
-        PWD = '' # passWord
-        cnxn = pyodbc.connect('DRIVER={};DBQ={};PWD={}'.format(DRIVER,DBQ,PWD))
-        cursor = cnxn.cursor()
-        cursor.execute("select * from Journaux;")
-        for row in cursor.fetchall():
-            print(row)
-        cursor.close()
-        del cursor
-        cnxn.close()
-        return
-
-        import mysql
-        cnx = mysql.connector.connect(host='192.168.1.43', user='root', database='matthania_data',password='xxxxx')
-        cursor = cnx.cursor()
-
-        query = ("SELECT * FROM utilisateurs")
-
-        cursor.execute(query)
-
-        for ligne in cursor:
-          print(ligne)
-
-        cursor.close()
-        cnx.close()
-
-        import pymysql.cursors
-
-        # Connect to the database
-        connection = pymysql.connect(host='192.168.1.43',
-                                     user='root',
-                                     password='xxxxx',
-                                     db='matthania_data',
-                                     charset='utf8mb4',
-                                     cursorclass=pymysql.cursors.DictCursor)
-
-        try:
-            with connection.cursor() as cursor:
-                # Read a single record
-                sql = "SELECT * FROM `utilisateurs` "
-                cursor.execute(sql,)
-                for ligne in cursor:
-                    print(ligne)
-
-                result = cursor.fetchmany(size=2)
-                print(result)
-
-
-            with connection.cursor() as cursor:
-                # Create a new record
-                sql = "SELECT IDutilisateur FROM utilisateurs;"
-                cursor.execute(sql, ('IDutilisateur',))
-                result = cursor.fetchone()
-                print(result)
-
-            # connection is not autocommit by default. So you must commit to save
-            # your changes.
-            connection.commit()
-
-            with connection.cursor() as cursor:
-                # Read a single record
-                sql = "SELECT `id`, `password` FROM `users` WHERE `email`=%s"
-                cursor.execute(sql, ('webmaster@python.org',))
-                result = cursor.fetchone()
-                print(result)
-
-        finally:
-            connection.close()
 
 def Init_tables(parent=None, mode='creation',tables=None,db_tables=None,db_ix=None,db_pk=None):
     # actualise ou vérifie la structure des tables : test, creation, ctrl
