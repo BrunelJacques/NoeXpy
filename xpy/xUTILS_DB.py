@@ -415,7 +415,6 @@ class DB():
             self.retourReq +=  ("ExecuterReq:\n%s\n\nErreur detectee:\n%s"% (req, str(err)))
             if affichError:
                 raise Exception(self.retourReq)
-                print()
         return self.retourReq
 
     def Executermany(self, req="", lstDonnees=[], commit=True):
@@ -488,9 +487,10 @@ class DB():
             lstlstDonnees.append(lsttemp)
         if len(lstChamps)* len(lstlstDonnees) == 0:
             if affichError:
-                wx.MessageBox('%s\n\nChamps ou données absents'%mess,
-                              'Echec ReqInsert', style= wx.ICON_STOP)
-            return '%s\n\nChamps ou données absents'%mess
+                mess = ('%s\n\nChamps ou données absents' % mess)
+                raise Exception(mess)
+            return mess
+
         valeurs = self.DonneesInsert(lstlstDonnees)
         champs = '( ' + str(lstChamps)[1:-1].replace('\'','') +' )'
         req = """INSERT INTO %s 
@@ -514,13 +514,12 @@ class DB():
         except Exception as err:
             self.echec = 1
             if mess:
-                self.retourReq = mess +'\n\n'
+                self.retourReq = mess +'\n%s\n'%err
             else: self.retourReq = 'Erreur xUTILS_DB\n\n'
             self.retourReq +=  ("ReqInsert:\n%s\n\nErreur detectee:\n%s"% (req, str(err)))
             if affichError:
-                wx.MessageBox(self.retourReq)
-        finally:
-            return self.retourReq
+                raise Exception(self.retourReq)
+        return self.retourReq
 
     def CoupleMAJ(self,champ, valeur):
         nonetype = type(None)
@@ -592,14 +591,13 @@ class DB():
         except Exception as err:
             self.echec = 1
             if mess:
-                self.retourReq = mess + '\n\n'
+                self.retourReq = mess + '\n%s\n' % err
             else:
                 self.retourReq = 'Erreur xUTILS_DB\n\n'
             self.retourReq += ("ReqMAJ:\n%s\n\nErreur detectee:\n%s" % (req, str(err)))
             if affichError:
-                wx.MessageBox(self.retourReq)
-        finally:
-            return self.retourReq
+                raise Exception(self.retourReq)
+        return self.retourReq
 
     def ReqDEL(self, nomTable,champID="",ID=None, condition="", commit=True, mess=None, affichError=True):
         """ Suppression d'un enregistrement ou d'un ensemble avec condition de type where"""
@@ -620,9 +618,8 @@ class DB():
                 self.retourReq = 'Erreur xUTILS_DB\n\n'
             self.retourReq += ("ReqMAJ:\n%s\n\nErreur detectee:\n%s" % (req, str(err)))
             if affichError:
-                wx.MessageBox(self.retourReq)
-        finally:
-            return self.retourReq
+                raise Exception(self.retourReq)
+        return self.retourReq
 
     def Commit(self):
         if self.connexion:

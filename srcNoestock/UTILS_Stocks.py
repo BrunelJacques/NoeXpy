@@ -7,7 +7,7 @@
 # Licence:         Licence GNU GPL
 # ------------------------------------------------------------------------
 
-import wx, decimal, datetime
+import wx, decimal, datetime, os
 from srcNoelite     import DB_schema
 from xpy.outils     import xformat
 from xpy.outils.xformat import Nz
@@ -17,7 +17,111 @@ LIMITSQL = 100
 # codes repas [ 1,      2,     3,     4       5]
 CHOIX_REPAS = ['PtDej','Midi','Soir','5eme','Tous']
 
-# Select de données  ------------------------------------------------------------------
+
+# Nouvelle Gestion des inventaires --------------------------------------------
+def PostInventaire(cloture=datetime.date.today(),inventaire=[[],]):
+    # delete puis recrée l'inventaire à la date de cloture
+    if cloture == None:
+        cloture = datetime.date.today()
+    db = xdb.DB()
+    ordi = os.environ['USERDOMAIN']
+    dteSaisie = xformat.DatetimeToStr(datetime.date.today(),iso=True)
+    # Appelle l'inventaire précédent
+    lstChamps = ['IDdate',
+                 'IDarticle',
+                 'qteStock',
+                 'prixMoyen',
+                 'prixActuel',
+                 'ordi',
+                 'dateSaisie',]
+    finIso = xformat.DatetimeToStr(cloture,iso=True)
+    llDonnees = []
+    # lignes reçues [date,article,qte,prixMoyen,montant,lastPrix]
+    for dte,article,qte,pxMoy,mtt,pxLast in inventaire:
+        if dte != str(cloture): raise Exception(
+            "cloture = %s diff de inventaire = %s"%(str(cloture),str(dte)))
+        llDonnees.append([dte,article,qte,pxMoy,pxLast,ordi,dteSaisie])
+
+    # test présence inventaire
+    db = xdb.DB()
+    finIso = xformat.DatetimeToStr(cloture,iso=True)
+    condition = "stInventaires.IDdate = '%s'"%finIso
+    req = """   SELECT *
+                FROM stInventaires
+                WHERE %s
+                ;""" %(condition)
+
+    retour = db.ExecuterReq(req, mess='UTILS_Stocks.testPrésenceInventaire')
+    if retour == "ok":
+        recordset = db.ResultatReq()
+        if len(recordset) > 0:
+            mess = "UTILS_Stoks.PostInventaire.ReqDel"
+            ret = db.ReqDEL('stInventaires',condition=condition,mess=mess)
+            print()
+
+    ret = db.ReqInsert('stInventaires',lstChamps=lstChamps,lstlstDonnees=llDonnees,
+                 mess="UTILS_Stocks.PostInventaires")
+
+    if ret == 'ok':
+        return True
+    return ret
+
+def SqlLastInventaire(cloture=None):
+    # retourne l'inventaire précédent la date de cloture
+    if cloture == None:
+        cloture = datetime.date.today()
+    db = xdb.DB()
+    # Appelle l'inventaire précédent
+    lstChamps = ['IDdate','IDarticle','qteStock','prixMoyen',]
+    finIso = xformat.DatetimeToStr(cloture,iso=True)
+    req = """   SELECT %s
+                FROM stInventaires
+                WHERE   (stInventaires.IDdate = 
+                            (SELECT MAX(stInv.IDdate) 
+                            FROM stInventaires as stInv
+                            WHERE stInv.IDdate < '%s'
+                            GROUP BY stInv.IDdate)
+                        )
+                ;""" % (",".join(lstChamps),finIso)
+
+    retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlLastInventaire')
+    llInventaire = []
+    if retour == "ok":
+        recordset = db.ResultatReq()
+        for record in recordset:
+            mouvement = []
+            for ix  in range(len(lstChamps)):
+                mouvement.append(record[ix])
+            llInventaire.append(mouvement)
+    return llInventaire
+
+def SqlMouvementsPeriode(debut=None,fin=None):
+    # retourne une  liste de mouvements en forme de liste
+    lstChamps = ['date','origine','stMouvements.IDarticle','qte','prixUnit']
+    if fin == None: fin = datetime.date.today()
+    if debut == None: debut = fin - datetime.timedelta(days=180)
+    finIso = xformat.DatetimeToStr(fin,iso=True)
+    debutIso = xformat.DatetimeToStr(debut,iso=True)
+    db = xdb.DB()
+    # Appelle les mouvements de la période
+    req = """   SELECT %s
+                FROM stMouvements
+                WHERE   (   (date > '%s' ) 
+                            AND (date <= '%s' ))
+                ;""" % (",".join(lstChamps),debutIso,finIso)
+
+    retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlMouvementsPeriode')
+    llMouvements = []
+    if retour == "ok":
+        recordset = db.ResultatReq()
+        for record in recordset:
+            mouvement = []
+            for ix  in range(len(lstChamps)):
+                mouvement.append(record[ix])
+            llMouvements.append(mouvement)
+    return llMouvements
+
+# Select de données  ----------------------------------------------------------
 
 def MouvementsPosterieurs(dlg):
     db = dlg.db
@@ -185,33 +289,6 @@ def SqlInventaire(dlg,*args,**kwd):
     for record in recordset:
         lstDonnees.append(ComposeLigne(record))
     return lstDonnees
-
-def SqlMouvementsPeriode(debut=None,fin=None):
-    # retourne une  liste de mouvements en forme de liste
-    lstChamps = ['date','origine','stMouvements.IDarticle','qte','prixUnit']
-    if fin == None: fin = datetime.date.today()
-    if debut == None: debut = fin - datetime.timedelta(days=180)
-    finIso = xformat.DatetimeToStr(fin,iso=True)
-    debutIso = xformat.DatetimeToStr(debut,iso=True)
-    db = xdb.DB()
-    # Appelle les mouvements de la période
-    req = """   SELECT %s
-                FROM stMouvements
-                LEFT JOIN stArticles ON stMouvements.IDarticle = stArticles.IDarticle 
-                WHERE   (   (date >= '%s' ) 
-                            AND (date <= '%s' ))
-                ;""" % (",".join(lstChamps),debutIso,finIso)
-
-    retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetMouvementsPeriode')
-    llMouvements = []
-    if retour == "ok":
-        recordset = db.ResultatReq()
-        for record in recordset:
-            mouvement = []
-            for ix  in range(len(lstChamps)):
-                mouvement.append(record[ix])
-            llMouvements.append(mouvement)
-    return llMouvements
 
 def SqlMouvements(db,dParams=None):
     lstChamps = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
