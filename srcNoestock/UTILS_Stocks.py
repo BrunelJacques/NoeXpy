@@ -79,8 +79,7 @@ def SqlLastInventaire(cloture=None):
                 WHERE   (stInventaires.IDdate = 
                             (SELECT MAX(stInv.IDdate) 
                             FROM stInventaires as stInv
-                            WHERE stInv.IDdate < '%s'
-                            GROUP BY stInv.IDdate)
+                            WHERE stInv.IDdate < '%s')
                         )
                 ;""" % (",".join(lstChamps),finIso)
 
@@ -1151,7 +1150,6 @@ def GetPrixJourArticle(dlg,**kwd):
     kwd['grouper'] = 'article'
     """vide, date, nbRepas, nbClients, prixRepas, prixClient, cout"""
     return GetPrixJourDetail(dlg,**kwd)
-
 
 if __name__ == '__main__':
     import os
