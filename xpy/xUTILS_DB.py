@@ -542,7 +542,7 @@ class DB():
             for (champ,valeur) in donnees:
                 couple = self.CoupleMAJ(champ, valeur)
                 donneesCouples += "%s"%(couple)
-        elif isinstance((donnees,dict)):
+        elif isinstance(donnees,dict):
             for (champ, valeur) in donnees.items():
                 couple = self.CoupleMAJ(champ, valeur)
                 donneesCouples += "%s" % (couple)

@@ -19,11 +19,26 @@ CHOIX_REPAS = ['PtDej','Midi','Soir','5eme','Tous']
 
 
 # Nouvelle Gestion des inventaires --------------------------------------------
+def PostMouvements(champs=[],mouvements=[[],]):
+    # uddate des champs d'un mouvement, l'ID en dernière position
+    db = xdb.DB()
+
+    retour = True
+    for mouvement in mouvements:
+        ret = db.ReqMAJ('stMouvements',
+                    nomChampID=champs[-1],
+                    ID = mouvement[-1],
+                    lstChamps=champs[:-1],lstValues=mouvement[:-1],
+                    mess="UTILS_Stocks.PostMouvements")
+        if ret != 'ok':
+            retour = False
+    db.Close()
+    return retour
+
 def PostInventaire(cloture=datetime.date.today(),inventaire=[[],]):
     # delete puis recrée l'inventaire à la date de cloture
     if cloture == None:
         cloture = datetime.date.today()
-    db = xdb.DB()
     ordi = os.environ['USERDOMAIN']
     dteSaisie = xformat.DatetimeToStr(datetime.date.today(),iso=True)
     # Appelle l'inventaire précédent
@@ -34,7 +49,6 @@ def PostInventaire(cloture=datetime.date.today(),inventaire=[[],]):
                  'prixActuel',
                  'ordi',
                  'dateSaisie',]
-    finIso = xformat.DatetimeToStr(cloture,iso=True)
     llDonnees = []
     # lignes reçues [date,article,qte,prixMoyen,montant,lastPrix]
     for dte,article,qte,pxMoy,mtt,pxLast in inventaire:
@@ -57,11 +71,10 @@ def PostInventaire(cloture=datetime.date.today(),inventaire=[[],]):
         if len(recordset) > 0:
             mess = "UTILS_Stoks.PostInventaire.ReqDel"
             ret = db.ReqDEL('stInventaires',condition=condition,mess=mess)
-            print()
 
     ret = db.ReqInsert('stInventaires',lstChamps=lstChamps,lstlstDonnees=llDonnees,
                  mess="UTILS_Stocks.PostInventaires")
-
+    db.Close()
     if ret == 'ok':
         return True
     return ret
@@ -92,11 +105,12 @@ def SqlLastInventaire(cloture=None):
             for ix  in range(len(lstChamps)):
                 mouvement.append(record[ix])
             llInventaire.append(mouvement)
+    db.Close()
     return llInventaire
 
 def SqlMouvementsPeriode(debut=None,fin=None):
     # retourne une  liste de mouvements en forme de liste
-    lstChamps = ['date','origine','stMouvements.IDarticle','qte','prixUnit']
+    lstChamps = ['date','origine','stMouvements.IDarticle','qte','prixUnit','IDmouvement']
     if fin == None: fin = datetime.date.today()
     if debut == None: debut = fin - datetime.timedelta(days=180)
     finIso = xformat.DatetimeToStr(fin,iso=True)
@@ -118,6 +132,7 @@ def SqlMouvementsPeriode(debut=None,fin=None):
             for ix  in range(len(lstChamps)):
                 mouvement.append(record[ix])
             llMouvements.append(mouvement)
+    db.Close()
     return llMouvements
 
 # Select de données  ----------------------------------------------------------
