@@ -1,5 +1,4 @@
-# Il faudra optimiser les fonctions de ce fichier mais plus tard
-SYMBOLE = "€"
+# Recueil de fonctions diverses pour OLV ou autres
 
 import wx
 import datetime
@@ -864,17 +863,14 @@ if __name__ == '__main__':
     import os
     os.chdir("..")
     app = wx.App(0)
-    """
     print(FmtDecimal(1230.05189),FmtDecimal(-1230.05189),FmtDecimal(0))
     print(FmtSolde(8520.547),FmtSolde(-8520.547),FmtSolde(0))
     print(FmtMontant(8520.547),FmtMontant(-8520.547),FmtMontant(0))
     print(FmtDate('01022019'))
     print(NoAccents("ÊLève!"))
     ret = FmtTelephone('0494149367')
-    """
     ret = DateToFr(None)
     print(ret +'|')
-
 
 
 
