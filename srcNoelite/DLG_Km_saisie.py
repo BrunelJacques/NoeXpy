@@ -120,14 +120,16 @@ MATRICE_PARAMS = {
                     'help': "Le choix est limité par la programmation", 'value':0,
                     'values':[x for x in nucompta.FORMATS_EXPORT.keys()],
                     'ctrlAction':'OnChoixExport',
-                    'size':(300,30)},
+                    'size':(300,30),'txtSize':100},
     {'name': 'journal', 'genre': 'Combo', 'label': 'Journal','ctrlAction':'OnCtrlJournal',
-                    'help': "Code journal utilisé dans la compta",'size':(350,30),
+                    'help': "Code journal utilisé dans la compta",
+                    'size':(280,30),'txtSize':100,
                     'value':'CI','values':['CI','OD'],
                     'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un journal",
                     'btnAction': 'OnBtnJournal'},
-    {'name': 'forcer', 'genre': 'Bool', 'label': 'Exporter les écritures déjà transférées','value':False,
-     'help': "Pour forcer un nouvel export d'écritures déjà transférées!", 'size': (250, 30)},
+    {'name': 'forcer', 'genre': 'Bool', 'label': 'Exporter le déjà transféré','value':False,
+     'help': "Pour forcer un nouvel export d'écritures déjà transférées!",
+     'size': (300, 30),'txtSize':100},
     ],
 ("comptes", "Comptes à mouvementer"): [
     {'name': 'revente', 'genre': 'String', 'label': 'Vente interne km',
@@ -407,7 +409,6 @@ class Dialog(xusp.DLG_vide):
         self.ctrlOlv = self.pnlOlv.ctrlOlv
         # connexion compta et affichage bas d'écran
         self.compta = self.GetCompta()
-        self.table = self.GetTable()
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
         self.pnlParams.SetOneValue('forcer',False)
         self.OnCloture(None)
@@ -439,6 +440,7 @@ class Dialog(xusp.DLG_vide):
         self.lstVehicules = [x[0] for x in self.noegest.GetVehicules(lstChamps=['abrege'])]
         box.SetOneSet('vehicule',self.lstVehicules)
         self.ctrlOlv.dicChoices[self.ctrlOlv.lstCodesColonnes.index('vehicule')]= self.lstVehicules
+        box.SetOneValue('datefact',xformat.DatetimeToStr(self.exercice[1],iso=True))
         self.lstActivites = [x[0]+" "+x[1] for x in self.noegest.GetActivites(lstChamps=['IDanalytique','nom'])]
         self.noegest.GetConsosKm()
 
@@ -477,7 +479,6 @@ class Dialog(xusp.DLG_vide):
 
     def OnChoixExport(self,evt):
         self.compta = self.GetCompta()
-        self.table = self.GetTable()
 
     def InitOlv(self):
         self.pnlParams.GetValues()
@@ -521,7 +522,7 @@ class Dialog(xusp.DLG_vide):
             txtInfo = "Echec d'accès à la compta associée à %s!!!"%formatExp
             image = wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16))
         else:
-            txtInfo = "Connecté à la compta %s..."%nomCompta
+            txtInfo = "Connecté à la compta ..."
             image = wx.ArtProvider.GetBitmap(wx.ART_TIP, wx.ART_OTHER, (16, 16))
         self.pnlPied.SetItemsInfos(txtInfo,image)
         # appel des journaux
