@@ -60,7 +60,6 @@ def GetFichierXlsx(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):
         if len(sansNull)>0:
             for cell in values:
                 if cell:
-
                     break
                 else:
                     # une colonne ignorée
@@ -73,7 +72,7 @@ def GetFichierXlsx(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):
 
     #loop through range values
     for values in ws.iter_rows(min_row=minrow,max_row=maxrow,min_col=mincol,max_col=maxcol,values_only=True,):
-        sansNull = [x for x in values]
+        sansNull = [x for x in values if x]
         if len(sansNull)>0:
             lstDonnees.append(values)
     return lstDonnees

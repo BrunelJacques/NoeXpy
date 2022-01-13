@@ -26,9 +26,9 @@ INTRO = "Importez un fichier ou saisissez les consommations de km, avant de l'ex
 # Infos d'aide en pied d'écran
 DIC_INFOS = {'date':"Flèche droite pour le mois et l'année, Entrée pour valider.\nC'est la date",
             'vehicule':    "<F4> Choix d'un véhicule, ou saisie directe de l'abrégé",
-            'IDtiers':    "<F4> Choix d'une section ou d'un tiers pour l'affectation du coût",
-            'dtkmdeb':     "formats date acceptés : j/m/a jjmmaa jjmmaaaa",
-            'dtkmfin':     "formats date acceptés : j/m/a jjmmaa jjmmaaaa",
+            'IDactivite':    "<F4> Choix d'une section pour l'affectation du coût",
+            'datekmdeb':     "formats date acceptés : j/m/a jjmmaa jjmmaaaa",
+            'datekmfin':     "formats date acceptés : j/m/a jjmmaa jjmmaaaa",
             'observation':     "S'il y a lieu précisez des circonstances particulières",
             'montant':      "Montant en €",
              }
@@ -39,9 +39,9 @@ INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
 # Fonctions de transposition entrée à gérer pour chaque item FORMAT_xxxx pour les spécificités
 def ComposeFuncImp(dlg,entete,donnees):
     # Fonction import pour composition
-    colonnesIn =    ["Code Véhicule       ","Date Début     ","Membre        ","Partenaire  ","Activité ",
+    colonnesIn =    ["Code Véhicule       ","Date Fin     ","Membre        ","Activité ",
                      "KM Début       ","KM Fin   "]
-    champsIn =      ['vehicule','dtkmdeb','membre','partenaire','activite','kmdeb','kmfin']
+    champsIn =      ['vehicule','datekmfin','membre','activite','kmdeb','kmfin']
     lstOut = [] # sera composé selon champs out
     champsOut = dlg.ctrlOlv.lstCodesColonnes
     # teste la cohérence de la première ligne importée
@@ -54,44 +54,71 @@ def ComposeFuncImp(dlg,entete,donnees):
         return lstOut
     # déroulé du fichier entrée, composition des lignes de sortie
     for ligneIn in donnees:
-        if len(champsIn) < len(ligneIn):
+        if len(champsIn) > len(ligneIn):
             # ligneIn batarde ignorée
             continue
         ligneOut = [None,]*len(champsOut)
         #champs communs aux listIn et listOut
-        for champ in ('vehicule','dtkmdeb','kmdeb','kmfin'):
+        for champ in ('vehicule','datekmfin','kmdeb','kmfin'):
             value = ligneIn[champsIn.index(champ)]
             if isinstance(value,datetime.datetime):
                 value = datetime.date(value.year,value.month,value.day)
             ligneOut[champsOut.index(champ)] = value
         # calcul auto d'une date fin de mois
-        findemois = xformat.FinDeMois(ligneIn[champsIn.index('dtkmdeb')])
-        ligneOut[champsOut.index('dtkmfin')] = findemois
+        findemois = xformat.FinDeMois(ligneIn[champsIn.index('datekmfin')])
+        ligneOut[champsOut.index('datekmfin')] = findemois
         # recherche champ libellé véhicule
         dicVehicule = dlg.noegest.GetVehicule(mode='auto',filtre=ligneIn[champsIn.index('vehicule')])
         if dicVehicule:
             ligneOut[champsOut.index('IDvehicule')] = dicVehicule['idanalytique']
             ligneOut[champsOut.index('vehicule')] =  dicVehicule['abrege']
             ligneOut[champsOut.index('nomvehicule')] = dicVehicule['nom']
-        # détermine le type de tiers
+        # appel des éléments détaillés de l'activité saisie
+        dicActivite = None
         if ligneIn[champsIn.index('activite')]:
-            ligneOut[champsOut.index('typetiers')] = 'A'
-            ligneOut[champsOut.index('IDtiers')] =  ligneIn[champsIn.index('activite')]
-            dicActivite = dlg.noegest.GetActivite(mode='auto', filtre=ligneIn[champsIn.index('activite')])
-            if dicActivite:
-                ligneOut[champsOut.index('IDtiers')] = dicActivite['idanalytique']
-                ligneOut[champsOut.index('nomtiers')] = dicActivite['nom']
-        elif ligneIn[champsIn.index('partenaire')]:
-            ligneOut[champsOut.index('typetiers')] = 'P'
-            ligneOut[champsOut.index('nomtiers')] = ligneIn[champsIn.index('partenaire')]
-        elif ligneIn[champsIn.index('membre')]:
-            ligneOut[champsOut.index('typetiers')] = 'C'
-            ligneOut[champsOut.index('nomtiers')] = ligneIn[champsIn.index('membre')]
+            IDactivite = ("00" + str(ligneIn[champsIn.index('activite')]))[-2:]
+            dicActivite = dlg.noegest.GetActivite(mode='auto', filtre=IDactivite)
+        # préparation de variables utiles
+        nomTiers = str(ligneIn[champsIn.index('membre')])
+        if 'None' in nomTiers or '???' in nomTiers or len(nomTiers.strip()) == 0:
+            nomTiers = 'Inconnu'
+        libelle = (str(ligneIn[champsIn.index('activite')]) + nomTiers).lower()
         # calcul conso
-        kmdeb = xformat.Nz(ligneOut[champsOut.index('kmdeb')])
-        kmfin = xformat.Nz(ligneOut[champsOut.index('kmfin')])
-        if kmdeb <= kmfin and kmdeb > 0:
-            ligneOut[champsOut.index('conso')] = kmfin - kmdeb
+        try:
+            kmdeb = int(ligneIn[champsIn.index('kmdeb')])
+            if kmdeb == 0: kmdeb = None
+        except: kmdeb = None
+        try:
+            kmfin = int(ligneIn[champsIn.index('kmfin')])
+            if kmfin == 0: kmfin = None
+        except: kmfin = None
+        try:
+            nbkm = kmfin - kmdeb
+        except: nbkm = None
+        if nbkm and nbkm > 0:
+            ligneOut[champsOut.index('conso')] = nbkm
+
+        # le code activité est bien une activité pas un véhicule, c'est le cas général
+        if dicActivite and dicActivite['axe'] == 'ACTIVITES':
+            ligneOut[champsOut.index('typetiers')] = 'A'
+            ligneOut[champsOut.index('IDactivite')] =  dicActivite['idanalytique']
+            ligneOut[champsOut.index('nomtiers')] = dicActivite['abrege']
+        # le libelle contient l'item 'fact' c'est un partenaire
+        elif 'fact' in libelle:
+            ligneOut[champsOut.index('typetiers')] = 'P'
+            ligneOut[champsOut.index('IDactivite')] = dicVehicule['idanalytique']
+            ligneOut[champsOut.index('nomtiers')] = nomTiers
+        # le code activité est celui d'un véhicule
+        elif dicActivite and dicActivite['axe'] == 'VEHICULES':
+            ligneOut[champsOut.index('typetiers')] = 'T'
+            ligneOut[champsOut.index('IDactivite')] = dicVehicule['idanalytique']
+            ligneOut[champsOut.index('nomtiers')] = nomTiers
+        # ni activité ni membre
+        else:
+            ligneOut[champsOut.index('typetiers')] = 'S'
+            ligneOut[champsOut.index('IDactivite')] = '00'
+            ligneOut[champsOut.index('nomtiers')] = nomTiers
+
         lstOut.append(ligneOut)
     return lstOut
 
@@ -181,15 +208,16 @@ def GetOlvColonnes(dlg):
             ColumnDefn("Nom Véhicule", 'left', 120, 'nomvehicule',
                        isSpaceFilling=True, isEditable=False),
             ColumnDefn("Type Tiers", 'center', 40, 'typetiers', isSpaceFilling=False,valueSetter='A',
-                       cellEditorCreator=CellEditor.ChoiceEditor,choices=['A analytique','C client','P partenaire' ] ),
-            ColumnDefn("Activité", 'center', 60, 'IDtiers', isSpaceFilling=False),
+                       cellEditorCreator=CellEditor.ChoiceEditor,
+                       choices=['A analytique','T tiers','P partenaire','S structure']),
+            ColumnDefn("Activité", 'center', 60, 'IDactivite', isSpaceFilling=False),
             ColumnDefn("Nom tiers/activité", 'left', 130, 'nomtiers',
                        isSpaceFilling=True, isEditable=False),
-            ColumnDefn("Date Début", 'center', 85, 'dtkmdeb',
+            ColumnDefn("Date Deb", 'center', 85, 'datekmdeb',
                        stringConverter=xformat.FmtDate, isSpaceFilling=False),
             ColumnDefn("KM début", 'right', 90, 'kmdeb', isSpaceFilling=False,valueSetter=0,
                        stringConverter=xformat.FmtInt),
-            ColumnDefn("Date Fin", 'center', 85, 'dtkmfin',
+            ColumnDefn("Date Fin", 'center', 85, 'datekmfin',
                        stringConverter=xformat.FmtDate, isSpaceFilling=False),
             ColumnDefn("KM fin", 'right', 90, 'kmfin', isSpaceFilling=False,valueSetter=0,
                        stringConverter=xformat.FmtInt),
@@ -305,19 +333,19 @@ class PNL_corps(xgte.PNL_corps):
             track.donnees[col] = track.vehicule
             self.ctrlOlv.Refresh()
 
-        if code == 'IDtiers':
+        if code == 'IDactivite':
             # vérification de l'unicité du code saisi
             dicActivite = self.parent.noegest.GetActivite(filtre=value)
             if dicActivite:
-                track.IDtiers = dicActivite['idanalytique']
+                track.IDactivite = dicActivite['idanalytique']
                 track.nomtiers = dicActivite['nom']
             else:
-                track.IDtiers = ''
+                track.IDactivite = ''
                 track.nomtiers = ''
             self.ctrlOlv.Refresh()
 
         if code == 'typetiers':
-            ixtiers = self.ctrlOlv.lstCodesColonnes.index('IDtiers')
+            ixtiers = self.ctrlOlv.lstCodesColonnes.index('IDactivite')
             ixnomtiers = self.ctrlOlv.lstCodesColonnes.index('nomtiers')
             if value[:1]!='A':
                 self.ctrlOlv.lstColonnes[ixtiers].isEditable = False
@@ -370,12 +398,12 @@ class PNL_corps(xgte.PNL_corps):
                 track.vehicule = dict['abrege']
                 track.nomvehicule = dict['nom']
                 track.IDvehicule = dict['idanalytique']
-        elif event.GetKeyCode() == wx.WXK_F4 and code == 'IDtiers':
+        elif event.GetKeyCode() == wx.WXK_F4 and code == 'IDactivite':
             # F4 Choix
-            dict = self.parent.noegest.GetActivite(filtre=track.IDtiers,mode='f4')
+            dict = self.parent.noegest.GetActivite(filtre=track.IDactivite,mode='f4')
             if dict:
-                self.OnEditFinishing('IDtiers',dict['idanalytique'])
-                track.IDtiers = dict['idanalytique']
+                self.OnEditFinishing('IDactivite',dict['idanalytique'])
+                track.IDactivite = dict['idanalytique']
                 track.nomtiers = dict['nom']
 
 class PNL_pied(xgte.PNL_pied):

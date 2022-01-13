@@ -167,7 +167,7 @@ DB_TABLES = {
         ('IDanalytique', 'VARCHAR(8)', "Clé Unique alphanumérique"),
         ('abrege', 'VARCHAR(16)', "cle d'appel ou libelle court du code analytique"),
         ('nom', 'VARCHAR(200)', "Libellé long du code analytique"),
-        ('params', 'VARCHAR(400)', "liste texte de paramétrages constructeurs, pour le calcul coût"),
+        ('params', 'VARCHAR(400)', "liste texte pseudo json pour paramétrages constructeurs du calcul coût"),
         ('axe', 'VARCHAR(24)', "axe analytique 'VEHICULES' 'CONVOIS' 'PRIXJOUR', defaut = vide")
     ], # Analytique Noethys
 
@@ -262,7 +262,7 @@ DB_TABLES = {
                 ('IDconso','INTEGER PRIMARY KEY AUTOINCREMENT',"Clé Unique"),
                 ('IDanalytique','VARCHAR(8)',"Id du véhicule"),
                 ('cloture','DATE',"Date de clôture de l'exercice"),
-                ('typeTiers','VARCHAR(1)',"'C'lient, 'A'analytique,'P'partenaires,'E'mployés"),
+                ('typeTiers','VARCHAR(1)',"'A analytique','T tiers','P partenaire','S structure'"),
                 ('IDtiers','VARCHAR(8)',"Section analytique consommatrice ou no client"),
                 ('dteKmDeb','DATE',"Date du relevé km début"),
                 ('kmDeb','INTEGER',"kilométrage de départ"),
