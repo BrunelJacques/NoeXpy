@@ -338,7 +338,7 @@ class Noegest(object):
         where =''
         if dateFact and len(dateFact) > 0:
             where += "\n            AND (consos.dtFact = '%s')"%dateFact
-        if vehicule and len(vehicule) > 0:
+        if vehicule and len(vehicule) > 0 and not 'Tous' in vehicule:
             where += "\n            AND ( vehic.abrege = '%s')"%vehicule
 
         lstChamps = ['consos.'+x[0] for x in DB_TABLES["vehiculesConsos"]]
@@ -411,7 +411,8 @@ class Noegest(object):
         if len(whereFiltre) == 0 and len(filtre)>0:
             whereFiltre = xformat.ComposeWhereFiltre(filtre,lstChamps,lien='AND')
         kwd['reqWhere'] = """
-                WHERE (cpta_analytiques.axe = 'VEHICULES')"""
+                WHERE (cpta_analytiques.axe = 'VEHICULES')
+                %s"""%(whereFiltre)
         kwd['reqFrom'] = """
                 FROM    cpta_analytiques   
                 LEFT JOIN vehiculesCouts ON cpta_analytiques.IDanalytique = vehiculesCouts.IDanalytique"""

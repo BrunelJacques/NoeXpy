@@ -286,8 +286,7 @@ class Compta(object):
     def __init__(self,parent,nomCompta=None,exercice=None):
         ok = True
         if not nomCompta or len(nomCompta) == 0:
-            wx.MessageBox("Pas de compta définie! précisez")
-            ok = False          
+            ok = False
         self.table = None
         self.db = None
         self.nomCompta = nomCompta
@@ -297,8 +296,9 @@ class Compta(object):
             self.exercice = None
         if nomCompta in MATRICE_COMPTAS:
             self.dicTables = MATRICE_COMPTAS[nomCompta]
-        else: 
-            wx.MessageBox("Les formats de la compta %s , ne sont pas  paramétrés dans le programme"%nomCompta)
+        else:
+            if nomCompta:
+                wx.MessageBox("Les formats de la compta %s , ne sont pas  paramétrés dans le programme"%nomCompta)
             ok = False
             
         if ok:

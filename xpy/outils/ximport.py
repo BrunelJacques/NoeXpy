@@ -51,10 +51,29 @@ def GetFichierXlsx(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):
     wk = load_workbook(filename=nomFichier)
     #get active worksheet or wk['some_worksheet']
     ws = wk.active
-    #loop through range values
+
     lstDonnees = []
-    for values in ws.iter_rows(min_row=minrow,max_row=maxrow,min_col=mincol,max_col=maxcol,values_only=True):
+    # ajustement zone de cellules non vides, choix entête
+    for values in ws.iter_rows(min_row=minrow,max_row=maxrow,min_col=mincol,max_col=maxcol,values_only=True,):
         sansNull = [x for x in values if x]
+        # balaye jusqu'à trouver une ligne non vide
+        if len(sansNull)>0:
+            for cell in values:
+                if cell:
+
+                    break
+                else:
+                    # une colonne ignorée
+                    mincol += 1
+                    maxcol += 1
+            break
+        else:
+            # une ligne ignorée
+            minrow +=1
+
+    #loop through range values
+    for values in ws.iter_rows(min_row=minrow,max_row=maxrow,min_col=mincol,max_col=maxcol,values_only=True,):
+        sansNull = [x for x in values]
         if len(sansNull)>0:
             lstDonnees.append(values)
     return lstDonnees

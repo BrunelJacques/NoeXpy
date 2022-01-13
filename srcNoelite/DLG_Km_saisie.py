@@ -19,7 +19,7 @@ from xpy.outils.ObjectListView  import ColumnDefn, CellEditor
 from xpy.outils                 import xformat,xbandeau,ximport,xexport
 
 #---------------------- Paramètres du programme -------------------------------------
-MODULE = 'DLG_Transposition_fichier'
+MODULE = 'DLG_Km_saisie'
 TITRE = "Saisie des consommations de km"
 INTRO = "Importez un fichier ou saisissez les consommations de km, avant de l'exporter dans un autre format"
 
@@ -98,21 +98,24 @@ def ComposeFuncImp(dlg,entete,donnees):
 # Description des paramètres à choisir en haut d'écran
 MATRICE_PARAMS = {
 ("filtres","Filtre des données"): [
-    {'name': 'cloture', 'genre': 'Enum', 'label': 'Exercice clôturant',
+    {'name': 'cloture', 'genre': 'Enum', 'label': 'Exercice',
                     'help': "Choisir un exercice ouvert pour pouvoir saisir, sinon il sera en consultation", 'value':0,
                     'values': [],
                     'ctrlAction':'OnCloture',
-                    'size':(300,30)},
+                    'txtSize': 100,
+                    'size':(210,30)},
     {'name': 'datefact', 'genre': 'Enum', 'label': 'Date facturation',
                     'help': "Date de facturation pour l'export ou pour consulter l'antérieur",
                     'value':0,
                     'values':[],
                     'ctrlAction': 'OnDateFact',
-                    'size':(300,30)},
+                    'txtSize': 100,
+                    'size':(210,30)},
     {'name': 'vehicule', 'genre': 'Enum', 'label': "Véhicule",
                     'help': "Pour filtrer les écritures d'un seul véhicule, saisir sa clé d'appel",
                     'value':0, 'values':['',],
-                    'ctrlAction': 'OnDateFact',
+                    'ctrlAction': 'OnVehicule',
+                    'txtSize': 60,
                     'size':(300,30)},
     ],
 ("compta", "Paramètres export"): [
@@ -120,27 +123,33 @@ MATRICE_PARAMS = {
                     'help': "Le choix est limité par la programmation", 'value':0,
                     'values':[x for x in nucompta.FORMATS_EXPORT.keys()],
                     'ctrlAction':'OnChoixExport',
-                    'size':(300,30),'txtSize':100},
+                    'txtSize': 80,
+                    'size':(240,30)},
     {'name': 'journal', 'genre': 'Combo', 'label': 'Journal','ctrlAction':'OnCtrlJournal',
                     'help': "Code journal utilisé dans la compta",
-                    'size':(280,30),'txtSize':100,
+                    'txtSize': 80,
+                    'size':(270,30),
                     'value':'CI','values':['CI','OD'],
                     'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un journal",
                     'btnAction': 'OnBtnJournal'},
-    {'name': 'forcer', 'genre': 'Bool', 'label': 'Exporter le déjà transféré','value':False,
+    {'name': 'forcer', 'genre': 'Bool', 'label': 'Exporter les écritures déjà transférées','value':False,
      'help': "Pour forcer un nouvel export d'écritures déjà transférées!",
-     'size': (300, 30),'txtSize':100},
+     'txtSize': 100,
+     'size': (300, 30)},
     ],
 ("comptes", "Comptes à mouvementer"): [
     {'name': 'revente', 'genre': 'String', 'label': 'Vente interne km',
+     'value':'790',
      'help': "Code comptable du compte crédité de la rétrocession", 'size': (250, 30),
      'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un compte comptable",
      'btnAction': 'OnBtnCompte'},
     {'name': 'achat', 'genre': 'String', 'label': 'Achat interne km',
+     'value':'693',
      'help': "Code comptable du compte débité de la rétrocession interne", 'size': (250, 30),
      'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un compte comptable",
      'btnAction': 'OnBtnCompte'},
     {'name': 'tiers', 'genre': 'string', 'label': 'km faits par tiers',
+     'value':'692',
      'help': "Code comptable du compte crédité de la rétrocession à refacturer aux clients", 'size': (250, 30),
      'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un compte comptable",
      'btnAction': 'OnBtnCompte'},
@@ -193,7 +202,7 @@ def GetOlvColonnes(dlg):
 # paramètre les options de l'OLV
 def GetOlvOptions(dlg):
     return {
-            'minSize': (600,300),
+            'minSize': (1200,300),
             'checkColonne': False,
             'recherche': True,
             'autoAddRow':True,
@@ -215,6 +224,7 @@ class PNL_params(xgc.PNL_paramsLocaux):
                 'name':"PNL_params",
                 'matrice':MATRICE_PARAMS,
                 'lblBox':None,
+                'boxesSizes': [(250, 90), (290, 80)],
                 'pathdata':"srcNoelite/Data",
                 'nomfichier':"params",
                 'nomgroupe':"saisieKM"
@@ -409,18 +419,19 @@ class Dialog(xusp.DLG_vide):
         self.ctrlOlv = self.pnlOlv.ctrlOlv
         # connexion compta et affichage bas d'écran
         self.compta = self.GetCompta()
+        self.table = self.GetTable()
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
         self.pnlParams.SetOneValue('forcer',False)
         self.OnCloture(None)
 
     def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
-        sizer_base.Add(self.pnlBandeau, 1, wx.TOP | wx.EXPAND, 3)
-        sizer_base.Add(self.pnlParams, 1, wx.TOP | wx.EXPAND, 3)
+        sizer_base.Add(self.pnlBandeau, 0, wx.TOP | wx.EXPAND, 3)
+        sizer_base.Add(self.pnlParams, 0, wx.TOP | wx.EXPAND, 3)
         sizer_base.Add(self.pnlOlv, 1, wx.TOP | wx.EXPAND, 3)
         sizer_base.Add(self.pnlPied, 0, wx.ALL | wx.EXPAND, 3)
         sizer_base.AddGrowableCol(0)
-        sizer_base.AddGrowableRow(1)
+        sizer_base.AddGrowableRow(2)
         self.CenterOnScreen()
         self.SetSizerAndFit(sizer_base)
         self.CenterOnScreen()
@@ -438,9 +449,11 @@ class Dialog(xusp.DLG_vide):
             self.exercice = self.noegest.ltExercices[lClotures.index(self.noegest.cloture)]
         except: pass
         self.lstVehicules = [x[0] for x in self.noegest.GetVehicules(lstChamps=['abrege'])]
+        self.lstVehicules.append('--Tous--')
+        self.lstVehicules.sort()
         box.SetOneSet('vehicule',self.lstVehicules)
+        box.SetOneValue('vehicule',self.lstVehicules[0])
         self.ctrlOlv.dicChoices[self.ctrlOlv.lstCodesColonnes.index('vehicule')]= self.lstVehicules
-        box.SetOneValue('datefact',xformat.DatetimeToStr(self.exercice[1],iso=True))
         self.lstActivites = [x[0]+" "+x[1] for x in self.noegest.GetActivites(lstChamps=['IDanalytique','nom'])]
         self.noegest.GetConsosKm()
 
@@ -479,6 +492,7 @@ class Dialog(xusp.DLG_vide):
 
     def OnChoixExport(self,evt):
         self.compta = self.GetCompta()
+        self.table = self.GetTable()
 
     def InitOlv(self):
         self.pnlParams.GetValues()
@@ -500,13 +514,13 @@ class Dialog(xusp.DLG_vide):
         if entrees:
             for ix in range(len(entrees)):
                 sansNull= [x for x in entrees[ix] if x]
-                if len(sansNull)>5:
+                if len(sansNull)>4:
                     entete = entrees[ix]
                     entrees = entrees[ix + 1:]
                     break
         if not entete:
             wx.MessageBox("Fichier non reconnu!\n\n"+
-                          "Aucune ligne avec 6 cellules non nulles définissant une entête des colonnes!")
+                          "Aucune ligne avec 5 cellules non nulles définissant une entête des colonnes!")
             entrees = None
         return entete,entrees
 
@@ -514,15 +528,17 @@ class Dialog(xusp.DLG_vide):
         dic = self.pnlParams.GetValues()
         formatExp = dic['compta']['formatexp']
         compta = None
-        """if formatExp in nucompta.FORMATS_EXPORT.keys():
-            nomCompta = nucompta.FORMATS_EXPORT[formatExp]['compta']
-            compta = nucompta.Compta(self, compta=nomCompta)
-            if not compta.db: compta = None"""
+        if formatExp in nucompta.FORMATS_EXPORT.keys() :
+            nomCompta = None
+            if 'compta' in nucompta.FORMATS_EXPORT[formatExp].keys():
+                nomCompta = nucompta.FORMATS_EXPORT[formatExp]['compta']
+            compta = nucompta.Compta(self, nomCompta=nomCompta)
+            if not compta.db: compta = None
         if not compta:
-            txtInfo = "Echec d'accès à la compta associée à %s!!!"%formatExp
+            txtInfo = "Pas d'accès à la compta!!!"
             image = wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16))
         else:
-            txtInfo = "Connecté à la compta ..."
+            txtInfo = "Connecté à la compta %s..."%nomCompta
             image = wx.ArtProvider.GetBitmap(wx.ART_TIP, wx.ART_OTHER, (16, 16))
         self.pnlPied.SetItemsInfos(txtInfo,image)
         # appel des journaux
@@ -540,6 +556,7 @@ class Dialog(xusp.DLG_vide):
         return compta
 
     def GetTable(self):
+        # accès à la compta abandonné car impossible avec Quadra en Windows 10
         return None
 
     def OnImporter(self,event):
