@@ -586,7 +586,7 @@ def NoPunctuation(txt= '',punct= "'!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'"):
     regex = re.compile('[%s]' % re.escape(punct))
     return regex.sub(' ', txt)
 
-def NoLettre(txt = ''):
+def NoLettre(txt=''):
     if isinstance(txt,str):
         chiffres = "0123456789.,-+"
         newtxt = ''
@@ -605,6 +605,20 @@ def NoAccents(texte,lower=True):
     if lower: code = code.lower()
     code = ''.join(car for car in code if car not in " %)(.[]',;/\n")
     return code
+
+def TextToDict(txt):
+    # convertit un texte pseudo json avec séparateurs ':' et ';' sans '"'en dictionnaire python
+    dic = {}
+    lstDonnees = txt.split(";")
+    if len(lstDonnees) == 1:
+        lstDonnees = txt.split(",")
+    for donnee in lstDonnees:
+        lstElem = donnee.split(":")
+        if len(lstElem) >= 2:
+            key = lstElem[0]
+            value = lstElem[1]
+            dic[key] = value
+    return dic
 
 # Diverses fonctions-------------------------------------------------------------------------------------------
 
@@ -863,6 +877,7 @@ if __name__ == '__main__':
     import os
     os.chdir("..")
     app = wx.App(0)
+    """
     print(FmtDecimal(1230.05189),FmtDecimal(-1230.05189),FmtDecimal(0))
     print(FmtSolde(8520.547),FmtSolde(-8520.547),FmtSolde(0))
     print(FmtMontant(8520.547),FmtMontant(-8520.547),FmtMontant(0))
@@ -870,7 +885,9 @@ if __name__ == '__main__':
     print(NoAccents("ÊLève!"))
     ret = FmtTelephone('0494149367')
     ret = DateToFr(None)
-    print(ret +'|')
-
+    ret = TextToDict("Immatriculation:FR-224:-JV;Energie:GO;Mise'EnService:2004-06-11;DateAchat:2020-07-16;Places:9;Puissance:7;Compte:61624;PrixKM:0,63")
+    """
+    ret = None
+    print(str(ret) +'|')
 
 
