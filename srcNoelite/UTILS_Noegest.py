@@ -38,7 +38,10 @@ class ToComptaKm(object):
         self.cptTiers = dicParams['comptes']['tiers'].strip()
         self.forcer = dicParams['compta']['forcer']
         self.dicPrixVte = noegest.GetdicPrixVteKm()
-        self.dateFact = dicParams['filtres']['datefact']
+        if dicParams['filtres']['datefact'] > dicParams['filtres']['cloture']:
+            self.dateFact = dicParams['filtres']['cloture']
+        else:
+            self.dateFact = dicParams['filtres']['datefact']
         annee = dicParams['filtres']['cloture'][:4]
         self.piece = 'km' + dicParams['filtres']['cloture'][:4]
 
