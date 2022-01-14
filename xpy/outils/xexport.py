@@ -40,24 +40,27 @@ class DataType(object):
         ret_val = ""
 
         # gestion des valeurs nulles selon la catégorie attendue
-        if data == None:
-            if self.cat in (int,float,bool,decimal.Decimal): data = self.cat(0)
-            elif self.cat == str:           data = ''
-            elif self.cat == wx.DateTime:   data = wx.DateTime.FromDMY(1,0,1900)
-            elif self.cat == datetime.date: data = datetime.date(1900,1,1)
+        if data == None or data == '':
+            if self.cat in (int,float,bool,decimal.Decimal):
+                data = self.cat(0)
+            elif self.cat == str:
+                data = ''
 
         # avec un format spécifique fourni
         if self.fmt: # attention la catégorie doit bien correspondre à la réalité attendue par le format
-            if self.cat == wx.DateTime:
-                # exemple data.Format("%d%m%y")
-                ret_val = data.Format(self.fmt)
-            elif self.cat == datetime.date:
-                # exemple '{:%d%m%y}'.format(data)
-                ret_val = self.fmt.format(data)
-            else:
-                # exemple "{0:{align}0{length}.{precision}f}".format(+1254.126,align=">",length=10,precision=2)
-                # ou directement "{0:+010.0f}".format(+1254.126) pour '+000001254'
-                ret_val = self.fmt.format(data,align=self.align,length=self.length,prec=self.precision)
+            try:
+                if self.cat == wx.DateTime:
+                    # exemple data.Format("%d%m%y")
+                    ret_val = data.Format(self.fmt)
+                elif self.cat == datetime.date:
+                    # exemple '{:%d%m%y}'.format(data)
+                    ret_val = self.fmt.format(data)
+                else:
+                    # exemple "{0:{align}0{length}.{precision}f}".format(+1254.126,align=">",length=10,precision=2)
+                    # ou directement "{0:+010.0f}".format(+1254.126) pour '+000001254'
+                    ret_val = self.fmt.format(data,align=self.align,length=self.length,prec=self.precision)
+            except:
+                    ret_val = ' ' * self.length
 
         elif self.cat == int:                        #si l'on veux des entier
             if data!="":

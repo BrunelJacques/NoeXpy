@@ -26,7 +26,7 @@ INTRO = "Importez un fichier ou saisissez les consommations de km, avant de l'ex
 # Infos d'aide en pied d'écran
 DIC_INFOS = {'date':"Flèche droite pour le mois et l'année, Entrée pour valider.\nC'est la date",
             'vehicule':    "<F4> Choix d'un véhicule, ou saisie directe de l'abrégé",
-            'IDactivite':    "<F4> Choix d'une section pour l'affectation du coût",
+            'idactivite':    "<F4> Choix d'une section pour l'affectation du coût",
             'datekmdeb':     "formats date acceptés : j/m/a jjmmaa jjmmaaaa",
             'datekmfin':     "formats date acceptés : j/m/a jjmmaa jjmmaaaa",
             'observation':     "S'il y a lieu précisez des circonstances particulières",
@@ -41,7 +41,7 @@ def ComposeFuncImp(dlg,entete,donnees):
     # Fonction import pour composition
     colonnesIn =    ["Code Véhicule       ","Date Fin     ","Membre        ","Activité ",
                      "KM Début       ","KM Fin   "]
-    champsIn =      ['vehicule','datekmfin','membre','activite','kmdeb','kmfin']
+    champsIn =      ['idvehicule','datekmfin','membre','activite','kmdeb','kmfin']
     lstOut = [] # sera composé selon champs out
     champsOut = dlg.ctrlOlv.lstCodesColonnes
     # teste la cohérence de la première ligne importée
@@ -59,7 +59,7 @@ def ComposeFuncImp(dlg,entete,donnees):
             continue
         ligneOut = [None,]*len(champsOut)
         #champs communs aux listIn et listOut
-        for champ in ('vehicule','datekmfin','kmdeb','kmfin'):
+        for champ in ('idvehicule','datekmfin','kmdeb','kmfin'):
             value = ligneIn[champsIn.index(champ)]
             if isinstance(value,datetime.datetime):
                 value = datetime.date(value.year,value.month,value.day)
@@ -68,16 +68,16 @@ def ComposeFuncImp(dlg,entete,donnees):
         findemois = xformat.FinDeMois(ligneIn[champsIn.index('datekmfin')])
         ligneOut[champsOut.index('datekmfin')] = findemois
         # recherche champ libellé véhicule
-        dicVehicule = dlg.noegest.GetVehicule(mode='auto',filtre=ligneIn[champsIn.index('vehicule')])
+        dicVehicule = dlg.noegest.GetVehicule(mode='auto',filtre=ligneIn[champsIn.index('idvehicule')])
         if dicVehicule:
-            ligneOut[champsOut.index('IDvehicule')] = dicVehicule['idanalytique']
+            ligneOut[champsOut.index('idvehicule')] = dicVehicule['idanalytique']
             ligneOut[champsOut.index('vehicule')] =  dicVehicule['abrege']
-            ligneOut[champsOut.index('nomvehicule')] = dicVehicule['nom']
+            #ligneOut[champsOut.index('nomvehicule')] = dicVehicule['nom']
         # appel des éléments détaillés de l'activité saisie
         dicActivite = None
         if ligneIn[champsIn.index('activite')]:
-            IDactivite = ("00" + str(ligneIn[champsIn.index('activite')]))[-2:]
-            dicActivite = dlg.noegest.GetActivite(mode='auto', filtre=IDactivite)
+            idactivite = ("00" + str(ligneIn[champsIn.index('activite')]))[-2:]
+            dicActivite = dlg.noegest.GetActivite(mode='auto', filtre=idactivite, axe=None)
         # préparation de variables utiles
         nomTiers = str(ligneIn[champsIn.index('membre')])
         if 'None' in nomTiers or '???' in nomTiers or len(nomTiers.strip()) == 0:
@@ -101,22 +101,22 @@ def ComposeFuncImp(dlg,entete,donnees):
         # le code activité est bien une activité pas un véhicule, c'est le cas général
         if dicActivite and dicActivite['axe'] == 'ACTIVITES':
             ligneOut[champsOut.index('typetiers')] = 'A'
-            ligneOut[champsOut.index('IDactivite')] =  dicActivite['idanalytique']
+            ligneOut[champsOut.index('idactivite')] =  dicActivite['idanalytique']
             ligneOut[champsOut.index('nomtiers')] = dicActivite['abrege']
         # le libelle contient l'item 'fact' c'est un partenaire
         elif 'fact' in libelle:
             ligneOut[champsOut.index('typetiers')] = 'P'
-            ligneOut[champsOut.index('IDactivite')] = dicVehicule['idanalytique']
+            ligneOut[champsOut.index('idactivite')] = dicVehicule['idanalytique']
             ligneOut[champsOut.index('nomtiers')] = nomTiers
         # le code activité est celui d'un véhicule
         elif dicActivite and dicActivite['axe'] == 'VEHICULES':
             ligneOut[champsOut.index('typetiers')] = 'T'
-            ligneOut[champsOut.index('IDactivite')] = dicVehicule['idanalytique']
+            ligneOut[champsOut.index('idactivite')] = dicVehicule['idanalytique']
             ligneOut[champsOut.index('nomtiers')] = nomTiers
         # ni activité ni membre
         else:
             ligneOut[champsOut.index('typetiers')] = 'S'
-            ligneOut[champsOut.index('IDactivite')] = '00'
+            ligneOut[champsOut.index('idactivite')] = '00'
             ligneOut[champsOut.index('nomtiers')] = nomTiers
 
         lstOut.append(ligneOut)
@@ -202,16 +202,13 @@ def GetOlvColonnes(dlg):
     return [
             ColumnDefn("IDconso", 'centre', 0, 'IDconso',
                        isEditable=False),
-            ColumnDefn("IDvehicule", 'centre', 0, 'IDvehicule',
-                       isEditable=False),
-            ColumnDefn("Véhicule", 'center', 70, 'vehicule', isSpaceFilling=False,),
-            ColumnDefn("Nom Véhicule", 'left', 120, 'nomvehicule',
-                       isSpaceFilling=True, isEditable=False),
+            ColumnDefn("IDvehicule", 'centre', 50, 'idvehicule', isEditable=True),
+            ColumnDefn("Véhicule", 'center', 90, 'vehicule', isSpaceFilling=False,isEditable=False),
             ColumnDefn("Type Tiers", 'center', 40, 'typetiers', isSpaceFilling=False,valueSetter='A',
                        cellEditorCreator=CellEditor.ChoiceEditor,
-                       choices=['A analytique','T tiers','P partenaire','S structure']),
-            ColumnDefn("Activité", 'center', 60, 'IDactivite', isSpaceFilling=False),
-            ColumnDefn("Nom tiers/activité", 'left', 130, 'nomtiers',
+                       choices=['A activité','T tiers','P partenaire','S structure']),
+            ColumnDefn("Activité", 'center', 60, 'idactivite', isSpaceFilling=False),
+            ColumnDefn("Nom tiers/activité", 'left', 100, 'nomtiers',
                        isSpaceFilling=True, isEditable=False),
             ColumnDefn("Date Deb", 'center', 85, 'datekmdeb',
                        stringConverter=xformat.FmtDate, isSpaceFilling=False),
@@ -234,12 +231,12 @@ def GetOlvOptions(dlg):
             'checkColonne': False,
             'recherche': True,
             'autoAddRow':True,
+            'sortColumnIndex': 0,
             'msgIfEmpty':"Saisir ou importer un fichier !",
             'dictColFooter': {'tiers': {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
                               'observation': {"mode": "texte", "alignement": wx.ALIGN_LEFT, "texte": 'km imputés'},
                               'conso': {"mode": "total"}, }
     }
-
 
 #----------------------- Parties de l'écrans -----------------------------------------
 
@@ -298,12 +295,13 @@ class PNL_corps(xgte.PNL_corps):
             eval("track.oldValue = track.%s"%code)
         except: pass
 
-    def OnEditFinishing(self,code=None,value=None,parent=None):
+    def OnEditFinishing(self,code=None,value=None,event=None):
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
         # flagSkipEdit permet d'occulter les évènements redondants. True durant la durée du traitement
-        row, col = self.ctrlOlv.cellBeingEdited
         if self.flagSkipEdit : return
         self.flagSkipEdit = True
+
+        (row, col) = self.ctrlOlv.cellBeingEdited
         track = self.ctrlOlv.GetObjectAt(row)
 
         # si pas de saisie on passe
@@ -319,42 +317,29 @@ class PNL_corps(xgte.PNL_corps):
             # vérification de l'unicité du code saisi
             dicVehicule = self.parent.noegest.GetVehicule(filtre=value)
             if dicVehicule:
-                track.IDvehicule = dicVehicule['idanalytique']
+                track.idvehicule = dicVehicule['idanalytique']
                 track.vehicule = dicVehicule['abrege']
                 track.nomvehicule = dicVehicule['nom']
             else:
                 track.vehicule = ''
-                track.IDvehicule = ''
+                track.idvehicule = ''
                 track.nomvehicule = ''
-            if parent:
-                # la modification de la cellule éditée ne doit pas être écrasée par le finish
-                parent.valeur = track.vehicule
-                parent.event.cellValue = track.vehicule
             track.donnees[col] = track.vehicule
-            self.ctrlOlv.Refresh()
+            value = track.idvehicule
 
-        if code == 'IDactivite':
+        if code == 'idactivite':
             # vérification de l'unicité du code saisi
-            dicActivite = self.parent.noegest.GetActivite(filtre=value)
+            dicActivite = self.parent.noegest.GetActivite(filtre=value, axe=None)
             if dicActivite:
-                track.IDactivite = dicActivite['idanalytique']
+                track.idactivite = dicActivite['idanalytique']
                 track.nomtiers = dicActivite['nom']
             else:
-                track.IDactivite = ''
+                track.idactivite = ''
                 track.nomtiers = ''
             self.ctrlOlv.Refresh()
 
         if code == 'typetiers':
-            ixtiers = self.ctrlOlv.lstCodesColonnes.index('IDactivite')
-            ixnomtiers = self.ctrlOlv.lstCodesColonnes.index('nomtiers')
-            if value[:1]!='A':
-                self.ctrlOlv.lstColonnes[ixtiers].isEditable = False
-                self.ctrlOlv.lstColonnes[ixnomtiers].isEditable = True
-            else:
-                self.ctrlOlv.lstColonnes[ixtiers].isEditable = True
-                self.ctrlOlv.lstColonnes[ixnomtiers].isEditable = False
-            if parent:
-                parent.valeur = value[0]
+            value = value[0]
 
         if code in ['kmdeb','kmfin']:
             kmdeb,kmfin = 9999999,0
@@ -382,8 +367,9 @@ class PNL_corps(xgte.PNL_corps):
         # enlève l'info de bas d'écran
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
         self.flagSkipEdit = False
+        return value
 
-    def OnDelete(self,noligne,track,parent=None):
+    def OnDelete(self,track):
         self.parent.noegest.DeleteLigne(track)
 
     def OnEditFunctionKeys(self,event):
@@ -397,13 +383,13 @@ class PNL_corps(xgte.PNL_corps):
                 self.OnEditFinishing('vehicule',dict['abrege'])
                 track.vehicule = dict['abrege']
                 track.nomvehicule = dict['nom']
-                track.IDvehicule = dict['idanalytique']
-        elif event.GetKeyCode() == wx.WXK_F4 and code == 'IDactivite':
+                track.idvehicule = dict['idanalytique']
+        elif event.GetKeyCode() == wx.WXK_F4 and code == 'idactivite':
             # F4 Choix
-            dict = self.parent.noegest.GetActivite(filtre=track.IDactivite,mode='f4')
+            dict = self.parent.noegest.GetActivite(filtre=track.idactivite,mode='f4')
             if dict:
-                self.OnEditFinishing('IDactivite',dict['idanalytique'])
-                track.IDactivite = dict['idanalytique']
+                self.OnEditFinishing('idactivite',dict['idanalytique'])
+                track.idactivite = dict['idanalytique']
                 track.nomtiers = dict['nom']
 
 class PNL_pied(xgte.PNL_pied):

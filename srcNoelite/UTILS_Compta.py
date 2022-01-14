@@ -187,15 +187,18 @@ FORMATS_EXPORT = {
             "Excel façon Quadra":{
                             'fonction':ComposeFuncExp,
                             'matrice':[
-                              {'code':'journal',   'lg': 40,},
-                              {'code':'date',      'lg': 80,},
-                              {'code':'compte',    'lg': 60,},
-                              {'code':'typepiece', 'lg': 25,},
-                              {'code':'libelle',   'lg': 240,},
-                              {'code':'debit',     'lg': 60,},
-                              {'code':'credit',    'lg': 60,},
-                              {'code':'noPiece',     'lg': 60,},
-                              {'code':'contrepartie','lg': 60,},
+                                {'code':'journal',   'lg': 40,},
+                                {'code':'date',      'lg': 80,},
+                                {'code':'compte',    'lg': 60,},
+                                {'code':'typepiece', 'lg': 25,},
+                                {'code':'libelle',   'lg': 240,},
+                                {'code':'debit',     'lg': 60,},
+                                {'code':'credit',    'lg': 60,},
+                                {'code':'noPiece',   'lg': 60,},
+                                {'code':'contrepartie','lg': 60,},
+                                {'code':'qte',      'lg': 60,},
+                                {'code':'lettrage', 'lg': 40,},
+                                {'code':'echeance', 'lg': 80,},
                             ],
                             'genere':ExportExcel,
                             },
@@ -205,17 +208,21 @@ FORMATS_EXPORT = {
                               {'code': 'typ',     'cat': 'const', 'lg': 1, 'constante': "M"},
                               {'code': 'compte',  'cat': str, 'lg': 8, 'align': "<"},
                               {'code': 'journal',      'cat': str, 'lg': 2, 'align': "<"},
-                              {'code': 'fol',     'cat': str, 'lg': 3, 'align': "<"},
-                              #{'code': 'date',    'cat': wx.DateTime, 'lg':6, 'fmt': "%d%m%y"},
+                              {'code': 'fol',     'cat': int, 'lg': 3, 'fmt':"{0:03.0f}"},
                               {'code': 'date',    'cat': datetime.date, 'lg':6,'fmt': "{:%d%m%y}" },
                               {'code': 'typepiece',     'cat': str, 'lg': 1},
                               {'code': 'fil',    'cat': str, 'lg': 20, 'align': ">"},
-                              {'code': 'sens',    'cat': str, 'lg': 1, 'align': "<"},
-                              {'code': 'valeur00',  'cat': float, 'lg': 13,'fmt':"{0:+013.0f}"},
+                              {'code': 'sens',   'cat': str, 'lg': 1, 'align': "<"},
+                              {'code': 'valeur00','cat': float, 'lg': 13,'fmt':"{0:+013.0f}"},
                               {'code': 'contrepartie','cat': str, 'lg': 8, 'align': "<"},
-                              {'code': 'fil',    'cat': str, 'lg': 44, 'align': ">"},
-                              {'code': 'devise',  'cat': str, 'lg': 3, 'align': "<"},
-                              {'code': 'journal',     'cat': str, 'lg': 3, 'align': "<"},
+                              {'code': 'echeance','cat': datetime.date, 'lg':6,'fmt': "{%d%m%y}" },
+                              {'code': 'lettrage','cat': str, 'lg': 2, 'align': "<"},
+                              {'code': 'fil',    'cat': str, 'lg': 3, 'align': ">"},
+                              {'code': 'fil',    'cat': str, 'lg': 15, 'align': ">"},
+                              {'code': 'qte',    'cat': float, 'lg': 10,'fmt':"{0:10.2f}"},
+                              {'code': 'fil',    'cat': str, 'lg': 8, 'align': ">"},
+                              {'code': 'devise', 'cat': str, 'lg': 3, 'align': "<"},
+                              {'code': 'journal','cat': str, 'lg': 3, 'align': "<"},
                               {'code': 'fil',    'cat': str, 'lg': 3, 'align': "<"},
                               {'code': 'libelle','cat': str, 'lg': 30, 'align': "<"},
                               {'code': 'fil',    'cat': str, 'lg': 2, 'align': "<"},
@@ -233,8 +240,11 @@ FORMATS_EXPORT = {
                                 {'code':'libelle',   'lg': 240,},
                                 {'code':'debit',     'lg': 60,},
                                 {'code':'credit',    'lg': 60,},
-                                {'code':'piece',     'lg': 60,},
+                                {'code':'noPiece',    'lg': 60,},
                                 {'code':'contrepartie','lg': 60,},
+                                {'code':'qte',        'lg': 60,},
+                                {'code':'lettrage',   'lg': 40,},
+                                {'code':'echeance',   'lg': 80,},
                             ],
                             'genere':ExportExcel},
             }
@@ -258,10 +268,16 @@ class Export(object):
     # Génération d'un fichier d'export
     def __init__(self,parent,compta):
         self.parent = parent
-        self.nomCompta = compta.nomCompta
+        try:
+            self.nomCompta = compta.nomCompta
+        except: self.nomCompta = "ecritures_compta"
 
     def Exporte(self,dicParams={},donnees=[],champsIn=[]):
         # génération du fichier
+        if not 'p_export' in dicParams.keys():
+            dicParams['p_export'] = dicParams['compta']
+            dicParams['p_compta'] = dicParams['compta']
+
         formatExp = dicParams['p_export']['formatexp']
         champsOut = [x['code'] for x in FORMATS_EXPORT[formatExp]['matrice']]
 
@@ -274,8 +290,8 @@ class Export(object):
         ret = FORMATS_EXPORT[formatExp]['genere'](formatExp,lstValeurs)
 
         # mise à jour du dernier numero de pièce affiché avant d'être sauvegardé
-        if 'piece' in champsOut and 'lastPiece' in dicParams['p_export']:
-            ixp = champsOut.index('piece')
+        if 'noPiece' in champsOut and 'lastPiece' in dicParams['p_export']:
+            ixp = champsOut.index('noPiece')
             lastPiece = lstValeurs[-1][ixp]
             box = self.parent.pnlParams.GetBox('p_export')
             box.SetOneValue('compta.lastpiece',lastPiece)
