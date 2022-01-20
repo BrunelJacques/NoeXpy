@@ -61,14 +61,18 @@ class ToComptaKm(object):
             libVehicule = libVehicule[0:min(len(libVehicule),lgMax-len(libTiers))]
 
         libelle = "%s%s/%s %s"%(typeTiers, libTiers, libVehicule, libKm)
+        # activité cession interne
         if tip == 'A':
             contrepartie = self.cptAch + donnees[self.champsIn.index('idactivite')]
+        # partenaire facturé selon une convention
         elif tip == 'P':
             contrepartie = self.cptVte + donnees[self.champsIn.index('idvehicule')]
+        # tiers participant au frais en nature
         elif tip == 'T':
             contrepartie = self.cptTiers + donnees[self.champsIn.index('idvehicule')]
+        # supporté par la structure
         else:
-            contrepartie = self.cptTiers + "00"
+            contrepartie = self.cptAch + "00"
 
         donnees.append(self.dateFact)
         donnees.append(self.cptVte + donnees[self.champsIn.index('idvehicule')])

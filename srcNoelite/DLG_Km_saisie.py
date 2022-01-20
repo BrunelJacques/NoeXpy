@@ -176,7 +176,7 @@ MATRICE_PARAMS = {
      'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un compte comptable",
      'btnAction': 'OnBtnCompte'},
     {'name': 'tiers', 'genre': 'string', 'label': 'km faits par tiers',
-     'value':'692',
+     'value':'691',
      'help': "Code comptable du compte crédité de la rétrocession à refacturer aux clients", 'size': (250, 30),
      'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un compte comptable",
      'btnAction': 'OnBtnCompte'},
