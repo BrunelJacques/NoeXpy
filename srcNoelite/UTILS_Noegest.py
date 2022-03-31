@@ -31,38 +31,56 @@ def GetDatesFactKm():
 
 class ToComptaKm(object):
     def __init__(self,dicParams,champsIn,noegest):
-        addChamps = ['date','compte','piece','libelle','montant','contrepartie']
+        addChamps = ['date','compte','noPiece','libelle','montant','contrepartie','qte']
         self.champsIn = champsIn + addChamps
         self.cptVte = dicParams['comptes']['revente'].strip()
         self.cptAch = dicParams['comptes']['achat'].strip()
         self.cptTiers = dicParams['comptes']['tiers'].strip()
         self.forcer = dicParams['compta']['forcer']
         self.dicPrixVte = noegest.GetdicPrixVteKm()
-        self.dateFact = dicParams['filtres']['datefact']
-        self.piece = 'km' + dicParams['filtres']['cloture'][-4:]
+        if dicParams['filtres']['datefact'] > dicParams['filtres']['cloture']:
+            self.dateFact = dicParams['filtres']['cloture']
+        else:
+            self.dateFact = dicParams['filtres']['datefact']
+        annee = dicParams['filtres']['cloture'][:4]
+        self.piece = 'km' + dicParams['filtres']['cloture'][:4]
 
     def AddDonnees(self,donnees=[]):
-        #add ['date', 'compte', 'piece', 'libelle', 'montant', contrepartie ]
+        #add ['date', 'compte', 'noPiece', 'libelle', 'montant', contrepartie,qte]
         tip=donnees[self.champsIn.index('typetiers')]
+        typeTiers = tip + ":"
+        # libelle écriture
+        libTiers = xformat.Supprespaces(donnees[self.champsIn.index('nomtiers')])
+        libVehicule = xformat.Supprespaces(donnees[self.champsIn.index('vehicule')])
+        libKm = '%dkm'%donnees[self.champsIn.index('conso')]
+        lgMax = 30 - (len(typeTiers) + len(libKm) + 2)
+        # Tronque un libellé suppérieur à 30 caractères au final
+        if len(libTiers + libVehicule) > lgMax:
+            libTiers = libTiers[0:min(len(libTiers),int(lgMax / 2))]
+        if len(libTiers + libVehicule) > lgMax:
+            libVehicule = libVehicule[0:min(len(libVehicule),lgMax-len(libTiers))]
+
+        libelle = "%s%s/%s %s"%(typeTiers, libTiers, libVehicule, libKm)
+        # activité cession interne
         if tip == 'A':
-            contrepartie = self.cptAch+ donnees[self.champsIn.index('IDtiers')]
-            typetiers = "Act:"
-        elif tip == 'C':
-            contrepartie = self.cptTiers
-            typetiers = "Cli:"
+            contrepartie = self.cptAch + donnees[self.champsIn.index('idactivite')]
+        # partenaire facturé selon une convention
+        elif tip == 'P':
+            contrepartie = self.cptVte + donnees[self.champsIn.index('idvehicule')]
+        # tiers participant au frais en nature
+        elif tip == 'T':
+            contrepartie = self.cptTiers + donnees[self.champsIn.index('idvehicule')]
+        # supporté par la structure
         else:
-            contrepartie = self.cptTiers
-            typetiers = ""
+            contrepartie = self.cptAch + "00"
 
         donnees.append(self.dateFact)
-        donnees.append(self.cptVte + donnees[self.champsIn.index('IDvehicule')])
+        donnees.append(self.cptVte + donnees[self.champsIn.index('idvehicule')])
         donnees.append(self.piece)
-        donnees.append("%s %d km /%s %s"%(donnees[self.champsIn.index('vehicule')],
-                                    donnees[self.champsIn.index('conso')],
-                                    typetiers,
-                                    donnees[self.champsIn.index('nomtiers')]))
-        donnees.append(donnees[self.champsIn.index('conso')] * self.dicPrixVte[donnees[self.champsIn.index('IDvehicule')]])
-        donnees.append(contrepartie)
+        donnees.append(libelle)
+        donnees.append(donnees[self.champsIn.index('conso')] * self.dicPrixVte[donnees[self.champsIn.index('idvehicule')]])
+        donnees.append(contrepartie),
+        donnees.append(donnees[self.champsIn.index('conso')])
 
 class Noegest(object):
     def __init__(self,parent=None):
@@ -217,42 +235,54 @@ class Noegest(object):
 
     def GetAnalytique(self,**kwd):
         # choix d'un code analytique, retourne un dict,
-        # Le mode:'auto' permet un automatisme d'affectation, 'dlg' force écran
-        mode = kwd.pop('mode','dlg')
+        # Le mode:'auto' permet un automatisme d'affectation sans un arrêt, pour tous les autres cas =>affichage
+        mode = kwd.pop('mode',None)
         axe = kwd.pop('axe',None)
+        nbChampsTestes = kwd.pop('axe',3)
+        #Pour une recherche sur tous les axes on ne teste que le champ ID pour éviter les ambiguités
+        if not axe: nbChampsTestes = 1
         filtre = kwd.pop('filtre',None)
         getAnalytiques = kwd.pop('getAnalytiques', None)
-        lstNomsCol = kwd.pop('lstNomsCol',['IDanalytique', 'abrégé', 'nom'])
+        lstNomsCol = kwd.pop('lstNomsCol',['IDanalytique','abrégé','nom','params','axe'])
         lstChamps = kwd.pop('lstChamps',['cpta_analytiques.IDanalytique', 'cpta_analytiques.abrege',
-                                         'cpta_analytiques.nom'
+                                         'cpta_analytiques.nom', 'cpta_analytiques.params', 'cpta_analytiques.axe'
                                          ])
         lstTypes = kwd.pop('lstTypes',None)
         if not lstTypes:
             lstTypes = [y for x,y,z in DB_TABLES['cpta_analytiques']]
         lstCodesColonnes = [xformat.NoAccents(x).lower() for x in lstNomsCol]
-        lstCodesColonnes.append("axe")
 
-        if not mode: mode = 'normal'
+        if not mode: mode = 'dlg'
         dicAnalytique = None
         nb = 0
         # Test préalable sur début de clé seulement
         if filtre and len(str(filtre))>0:
-            # déroule les champs progresivement, jusqu'à trouver un item unique
-            for ix in range(len(lstChamps)):
+            # pour recherche sur un seul axre, on déroule les champs progresivement, jusqu'à trouver un item unique
+            for ix in range(nbChampsTestes):
                 kwd['whereFiltre']  = """
                     AND (%s LIKE '%s%%' )"""%(lstChamps[ix],filtre)
                 kwd['lstChamps'] = lstChamps
+                kwd['mode'] = mode
+                kwd['axe'] = axe
                 ltAnalytiques = getAnalytiques(**kwd)
                 nb = len(ltAnalytiques)
                 if nb == 1:
+                    # une seule occurrence trouvée c'est ok dans tous les cas
                     dicAnalytique={}
-                    for ix in range(len(ltAnalytiques[0])):
-                        dicAnalytique[lstCodesColonnes[ix]] = ltAnalytiques[0][ix]
+                    for ix2 in range(len(ltAnalytiques[0])):
+                        dicAnalytique[lstCodesColonnes[ix2]] = ltAnalytiques[0][ix2]
+                    break
+                elif nb > 1 and mode.lower() == 'auto':
+                    # Le mode auto prend la première occurrence trouvée même s'il y en a d'autres
+                    dicAnalytique={}
+                    for ix2 in range(len(ltAnalytiques[0])):
+                        dicAnalytique[lstCodesColonnes[ix2]] = ltAnalytiques[0][ix2]
                     break
                 elif nb > 1:
+                    # dès le premier champ trop d'occurrences, il faut les afficher
                     break
-        if (mode.lower() in ('auto')): return dicAnalytique
-        if dicAnalytique and mode.lower() == 'normal':  return dicAnalytique
+        if mode.lower() == 'auto' or nb == 1:
+            return dicAnalytique
 
         # le filtre semble trop peu sélectif pour un f4 on le supprime
         if nb < 2: filtre = None
@@ -280,6 +310,11 @@ class Noegest(object):
                 dicAnalytique[dicOlv['listeCodesColonnes'][ix]] = donnees[ix]
         dlg.Destroy()
         return dicAnalytique
+
+    def GetAnalytiques(self,**kwd):
+        # idem GetActivites mais avec axes étendus
+        kwd['axe'] = None
+        return self.GetActivites(**kwd)
 
     def SqlAnalytiques(self,**kwd):
         lstChamps = kwd.pop('lstChamps',['*',])
@@ -338,7 +373,7 @@ class Noegest(object):
         where =''
         if dateFact and len(dateFact) > 0:
             where += "\n            AND (consos.dtFact = '%s')"%dateFact
-        if vehicule and len(vehicule) > 0:
+        if vehicule and len(vehicule) > 0 and not 'Tous' in vehicule:
             where += "\n            AND ( vehic.abrege = '%s')"%vehicule
 
         lstChamps = ['consos.'+x[0] for x in DB_TABLES["vehiculesConsos"]]
@@ -348,8 +383,9 @@ class Noegest(object):
             FROM (vehiculesConsos AS consos
             INNER JOIN cpta_analytiques AS vehic ON consos.IDanalytique = vehic.IDanalytique) 
             LEFT JOIN cpta_analytiques AS activ ON consos.IDtiers = activ.IDanalytique
-            WHERE ((vehic.axe IS NULL OR vehic.axe='VEHICULES') AND (activ.axe IS NULL OR activ.axe = 'ACTIVITES')
-                    %s);
+            WHERE ((vehic.axe IS NULL OR vehic.axe='VEHICULES')
+                    %s)
+            ORDER BY consos.IDconso;
             """ % (",".join(lstChamps),where)
         lstDonnees = []
         retour = self.db.ExecuterReq(req, mess='UTILS_Noegest.GetConsosKm')
@@ -366,7 +402,6 @@ class Noegest(object):
                     dicDonnees["consos.IDconso"],
                     dicDonnees["consos.IDanalytique"],
                     dicDonnees["vehic.abrege"],
-                    dicDonnees["vehic.nom"],
                     dicDonnees["consos.typeTiers"],
                     dicDonnees["consos.IDtiers"],
                     dicDonnees["activ.nom"],
@@ -411,20 +446,24 @@ class Noegest(object):
         if len(whereFiltre) == 0 and len(filtre)>0:
             whereFiltre = xformat.ComposeWhereFiltre(filtre,lstChamps,lien='AND')
         kwd['reqWhere'] = """
-                WHERE (cpta_analytiques.axe = 'VEHICULES')"""
+                WHERE (cpta_analytiques.axe = 'VEHICULES')
+                %s"""%(whereFiltre)
         kwd['reqFrom'] = """
                 FROM    cpta_analytiques   
                 LEFT JOIN vehiculesCouts ON cpta_analytiques.IDanalytique = vehiculesCouts.IDanalytique"""
         kwd['lstChamps'] = lstChamps
         return self.SqlAnalytiques(**kwd)
 
-    def GetActivite(self,filtre='', mode=None):
-        # choix d'une activité et retour de son dict, mute sert pour automatisme d'affectation
+    def GetActivite(self,filtre='',mode=None,axe='ACTIVITES'):
+        # choix d'une activité et retour de son dict, auto sert pour automatisme d'affectation
         kwd = {
-            'axe': 'ACTIVITES',
+            'axe': axe,
             'mode' : mode,
             'filtre' : filtre,
             'getAnalytiques': self.GetActivites}
+        # axe = None, cherche pour tous les axes sur le seul champ ID
+        if axe == None:
+            kwd['getAnalytiques'] = self.GetAnalytiques
         dicActivite = self.GetAnalytique(**kwd)
         return dicActivite
 
@@ -435,15 +474,19 @@ class Noegest(object):
         if (not lstChamps) and 'lstChamps' in matriceOlv:
             lstChamps = matriceOlv['lstChamps']
         kwd['lstChamps'] = lstChamps
-
+        axe = kwd.pop('axe','ACTIVITES')
+        if (not axe) or len(axe) == 0:
+            whereAxe = 'TRUE'
+        else:
+            whereAxe = "axe = '%s' "%axe
         filtre = kwd.pop('filtre','')
         kwd['filtre'] = filtre
         whereFiltre = kwd.pop('whereFiltre','')
         if len(whereFiltre) == 0 and len(filtre)>0:
             whereFiltre = self.ComposeWhereFiltre(filtre,lstChamps)
         kwd['reqWhere'] = """
-            WHERE cpta_analytiques.axe = 'ACTIVITES' %s
-            """%(whereFiltre)
+            WHERE %s %s
+            """%(whereAxe,whereFiltre)
         kwd['reqFrom'] = """
             FROM cpta_analytiques"""
         return self.SqlAnalytiques(**kwd)
@@ -454,18 +497,19 @@ class Noegest(object):
         if track.observation == None: track.observation = ""
         if track.typetiers != 'A' and track.nomtiers and len(track.nomtiers.strip())>0:
             if not (track.nomtiers.strip() in track.observation):
-                track.observation = "%s / %s"%(track.nomtiers.strip(),track.observation)
-        if track.IDtiers == None: track.IDtiers = ''
+                track.nomtiers = track.nomtiers.replace('/','-')
+                track.observation = "%s / %s"%(track.nomtiers.strip(),track.observation.strip())
+        if track.idactivite == None: track.idactivite = ''
 
         lstDonnees = [
             ("IDconso", track.IDconso),
-            ("IDanalytique", track.IDvehicule),
+            ("IDanalytique", track.idvehicule),
             ("cloture", xformat.DateFrToSql(self.cloture)),
             ("typeTiers", track.typetiers[:1]),
-            ("IDtiers", track.IDtiers),
-            ("dteKmDeb", xformat.DateFrToSql(track.dtkmdeb)),
+            ("IDtiers", track.idactivite),
+            ("dteKmDeb", xformat.DateFrToSql(track.datekmdeb)),
             ("kmDeb", track.kmdeb),
-            ("dteKmFin", xformat.DateFrToSql(track.dtkmfin)),
+            ("dteKmFin", xformat.DateFrToSql(track.datekmfin)),
             ("kmFin", track.kmfin),
             ("observation", track.observation),
             ("dtFact", xformat.DateFrToSql(dteFacturation)),
@@ -482,7 +526,7 @@ class Noegest(object):
             ret = self.db.ReqMAJ("vehiculesConsos", lstDonnees, "IDconso", track.IDconso)
             IDcategorie = 7
             categorie = "Modification"
-
+        """
         # --- Mémorise l'action dans l'historique ---
         if ret == 'ok':
             nuh.InsertActions([{
@@ -490,6 +534,7 @@ class Noegest(object):
                                 "action": "Noelite %s de la conso ID%d : %s %s %s" % (
                                 categorie, track.IDconso, track.nomvehicule,track.nomtiers,track.observation,),
                                 }, ],db=self.db)
+        """
         return ret
 
     def CalculeLigne(self,track):
@@ -507,16 +552,16 @@ class Noegest(object):
         if not track.conso or track.conso == 0:
             track.messageRefus += "Le nombre de km consommés est à zéro\n"
 
-        # DateKmDeb
-        if not xformat.DateFrToSql(track.dtkmdeb) :
+        # DateKmFin
+        if not xformat.DateFrToSql(track.datekmfin) :
             track.messageRefus += "Vous devez obligatoirement saisir une date de début !\n"
 
         # véhicule
-        if track.IDvehicule == None:
+        if track.idvehicule == None:
             track.messageRefus += "Vous devez obligatoirement sélectionner un véhicle reconnu !\n"
 
         # activité
-        if track.typetiers == 'A' and (not track.IDtiers or len(str(track.IDtiers))==0):
+        if track.typetiers == 'A' and (not track.idactivite or len(str(track.idactivite))==0):
             track.messageRefus += "Vous devez obligatoirement sélectionner une activité !\n"
         if (not track.nomtiers or len(str(track.nomtiers))==0):
             track.messageRefus += "Vous devez obligatoirement sélectionner un nom de tiers ou d'activité !\n"

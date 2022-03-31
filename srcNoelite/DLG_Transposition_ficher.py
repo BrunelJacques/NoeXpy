@@ -36,7 +36,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table):
     # 'in' est le fichier entrée, 'out' est l'OLV
     lstOut = []
     formatIn = dicParams['fichiers']['formatin']
-    noPiece = dicParams['p_export']['piece']
+    noPiece = dicParams['p_export']['noPiece']
     champsIn = FORMATS_IMPORT[formatIn]['champs']
     nblent = FORMATS_IMPORT[formatIn]['lignesentete']
     # longeur du préfixe ajouté lors du traitement de l'import
@@ -120,7 +120,7 @@ MATRICE_PARAMS = {
      'btnAction': 'OnBtnJournal'},
     ],
 ("p_export", "Destination Export"): [
-    {'name': 'piece',
+    {'name': 'noPiece',
      'genre': 'String',
      'label': 'No de pièce commun',
      'ctrlAction': "OnPiece",
@@ -357,7 +357,7 @@ class Dialog(xusp.DLG_vide):
 
     def OnPiece(self,evt):
         # la modif du numéro de pièce s'applique à toutes les lignes visibles
-        valeur = self.pnlParams.GetOneValue('piece',codeBox='p_export')
+        valeur = self.pnlParams.GetOneValue('noPiece',codeBox='p_export')
         for track in self.ctrlOlv.innerList:
             track.noPiece = valeur
         self.ctrlOlv.RepopulateList()

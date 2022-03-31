@@ -580,6 +580,16 @@ def FmtSolde(montant):
     return strMtt
 
 # Formatage de textes
+def Supprespaces(txt='',camelCase=True):
+    txt = txt.strip()
+    if camelCase:
+        lstTxt = txt.split(' ')
+        txt = ''
+        for mot in lstTxt:
+            txt += mot.capitalize()
+    else:
+        txt = txt.replace(' ','')
+    return txt
 
 def NoPunctuation(txt= '',punct= "'!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'"):
     import re
