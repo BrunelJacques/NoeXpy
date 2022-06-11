@@ -50,7 +50,6 @@ __version__ = "1.0"
 
 
 # si past n'est pas chargé il faut lancer 'pip install future' dans la console à l'emplacement python3
-from past.builtins import basestring
 from builtins import object
 from builtins import range
 import datetime
@@ -311,7 +310,7 @@ class EditorRegistry(object):
     def _MakeDateTimeEditor(olv, rowIndex, subItemIndex):
         dte = DateTimeEditor(olv,rowIndex, subItemIndex, validator=NumericValidator("0123456789/-"))
         column = olv.columns[subItemIndex]
-        if isinstance(column.stringConverter, basestring):
+        if isinstance(column.stringConverter, str):
             dte.formatString = column.stringConverter
         return dte
 
@@ -330,7 +329,7 @@ class EditorRegistry(object):
         editor = TimeEditor(olv,rowIndex, subItemIndex)
 
         column = olv.columns[subItemIndex]
-        if isinstance(column.stringConverter, basestring):
+        if isinstance(column.stringConverter, str):
             editor.formatString = column.stringConverter
 
         return editor

@@ -184,9 +184,6 @@ def GetOlvOptions(dlg):
                               "montant": {"mode": "total"}, }
     }
 
-# fonction d'enrichissement des champs
-
-
 #----------------------- Parties de l'écrans -----------------------------------------
 
 class PNL_params(xgc.PNL_paramsLocaux):
