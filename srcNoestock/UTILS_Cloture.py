@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ------------------------------------------------------------------------
-# stModule: fonctions pour gestion des stocks
+# stModule: fonctions pour gestion des stocks à la clôture comptable
 # ------------------------------------------------------------------------
-import copy
 import datetime
-from  UTILS_Stocks import SqlMouvementsPeriode as GetMouvements
-from  UTILS_Stocks import SqlLastInventaire as GetLastInventaire
+from  UTILS_Stocks import GetMvtsPeriode
+from  UTILS_Stocks import GetLastInventaire
 from  UTILS_Stocks import PostInventaire, PostMouvements
 from xpy.outils    import xformat
 
@@ -22,9 +21,6 @@ class Inventaire:
         self.lastInventaire = GetLastInventaire(cloture)
         if len(self.lastInventaire) == 0:
             self.lastInventaire = None
-        else:
-            for ligne in self.lastInventaire:
-                mvtInv = ligne
 
     def _IsAchat(self,origine):
         ok = False
@@ -35,9 +31,10 @@ class Inventaire:
     def PostInventaire(self):
         # Enregistre les lignes d'inventaire à la date cloture
         ret = self.RecalculPrixSorties()
-        if ret: llinventaire = self.CalculInventaire()
-        ok = PostInventaire(self.cloture, llinventaire)
-        return ok
+        if ret:
+            llinventaire = self.CalculInventaire()
+            ret = PostInventaire(self.cloture, llinventaire)
+        return ret
 
     def _xAjoutInventaire(self,lstMmouvements):
         # ajout de la reprise d'inventaire
@@ -57,7 +54,7 @@ class Inventaire:
             debut = xformat.DateSqlToDatetime(self.lastInventaire[0][0])
 
         #['jour', 'origine', 'nomArticle', 'qteMouvement','prixUnit']
-        llMouvements = GetMouvements(debut=debut,fin=fin)
+        llMouvements = GetMvtsPeriode(debut=debut,fin=fin)
         self._xAjoutInventaire(llMouvements)
 
         # liste préalable pour traitement par article
@@ -140,7 +137,7 @@ class Inventaire:
             debut = xformat.DateSqlToDatetime(self.lastInventaire[0][0])
 
         #['jour', 'origine', 'nomArticle', 'qteMouvement','prixUnit']
-        self.mvtsCorriges = GetMouvements(debut=debut,fin=fin)
+        self.mvtsCorriges = GetMvtsPeriode(debut=debut,fin=fin)
         self._xAjoutInventaire(self.mvtsCorriges)
         self.mvtsCorriges.sort()
 
@@ -272,7 +269,7 @@ if __name__ == '__main__':
     os.chdir("..")
     inv = Inventaire(datetime.date(2021,9,30))
     #test = Tests()
-    #test = Tests("CalculInventaire")
+    #test = Tests("CalculeInventaire")
     #test = inv.RecalculPrixSorties()
     test = inv.PostInventaire()
     print(test)

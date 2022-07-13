@@ -199,21 +199,19 @@ def GetOlvColonnes(dlg):
                                         stringConverter=xformat.FmtDecimal),
             ColumnDefn("Mtt TTC", 'right', 100, 'mttTTC',  valueSetter=0.0,isSpaceFilling=False,
                         isEditable=False, stringConverter=xformat.FmtDecimal, ),
-            ColumnDefn("QteMini", 'right', 80, 'mini',  valueSetter=0.0,isSpaceFilling=False,
+            ColumnDefn("QteMini", 'right', 80, 'qteMini',  valueSetter=0.0,isSpaceFilling=False,
                         isEditable=False, stringConverter=xformat.FmtDecimal, ),
             ColumnDefn("Nbre Rations", 'right', 80, 'rations',  valueSetter=0.0,isSpaceFilling=False,
                         isEditable=False, stringConverter=xformat.FmtDecimal, ),
-            ColumnDefn("Vérifié au", 'left', 80, 'IDdate', valueSetter=datetime.date.today(),isSpaceFilling=False,
+            ColumnDefn("Maj Prix", 'left', 80, 'lastBuy', valueSetter=datetime.date.today(),isSpaceFilling=False,
                         isEditable=False, stringConverter=xformat.FmtDate,),
             ]
     return lstCol
 
 def GetOlvCodesSup():
     # codes dans les données olv, mais pas dans les colonnes, attributs des tracks non visibles en tableau
-    return ['qteMvt','mttMvt','qteEnt','mttEnt',
-            'qteInv', 'pxMoyInv','pxActInv',
-            'qteFin','qteTous',
-            'artRations','qteArt','qteMini','qteSaison']
+    return ['qteMvts','qteAchats','mttAchats',
+            'artRations']
 
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
@@ -261,8 +259,7 @@ def CalculeLigne(dlg,track):
     track.mttTTC = qte * pu
     track.rations = qte * track.artRations
     track.valide = dlg.date
-    deltaQte =  qte - track.qteTous
-    if not track.qteFin: track.qteFin = 0.0
+    deltaQte =  qte - track.qteMvts
     track.deltaQte = deltaQte
 
 def ValideLigne(dlg,track):
@@ -353,13 +350,12 @@ class PNL_corps(xgte.PNL_corps):
 
     def SauveLigne(self,track):
         db = self.db
-        track.qteFin += track.deltaQte
-        track.qteTous += track.deltaQte
+        track.qteMvts += track.deltaQte
 
         # génération de l'od corrective dans un mouvement
         if not hasattr(track,'IDmouvement'):
             track.IDmouvement = None
-            track.qteMvtOld = 0.0
+            track.qteMvtsOld = 0.0
         lstDonnees = [
             ('IDarticle', track.IDarticle),
             ('prixUnit', track.pxUn),
@@ -367,31 +363,31 @@ class PNL_corps(xgte.PNL_corps):
             ('dateSaisie', self.parent.today),
             ('modifiable', 1),]
         if track.IDmouvement :
-            qteMvt = track.deltaQte + track.qteMvtOld
-            lstDonnees += [('qte', qteMvt),]
+            qteMvts = track.deltaQte + track.qteMvtsOld
+            lstDonnees += [('qte', qteMvts),]
             ret = db.ReqMAJ("stMouvements", lstDonnees,
                             "IDmouvement", track.IDmouvement,
                             mess="DLG_Inventaires.SauveLigne Modif: %d"%track.IDmouvement)
         else:
-            qteMvt = track.deltaQte
+            qteMvts = track.deltaQte
             ret = 'abort'
-            if qteMvt != 0.0:
+            if qteMvts != 0.0:
                 lstDonnees += [('origine', 'od_in'),
-                               ('qte', qteMvt),
+                               ('qte', qteMvts),
                                ('date', self.parent.date),
                                ('IDanalytique', '00'),
                                ]
                 ret = db.ReqInsert("stMouvements",lstDonnees= lstDonnees, mess="DLG_Inventaires.SauveLigne Insert")
         if ret == 'ok':
             track.IDmouvement = db.newID
-            track.qteMvtOld = qteMvt
+            track.qteMvtsOld = qteMvts
 
         # MAJ de l'article
-        lstDonnees = [('qteStock',track.qteFin),
+        lstDonnees = [('qteStock',track.qteMvts),
                       ('prixMoyen',track.pxUn),
                       ]
-        if track.qteEnt > 0:
-            lstDonnees += [('prixActuel',track.mttEnt / track.qteEnt),
+        if track.qteAchats > 0:
+            lstDonnees += [('prixActuel',track.mttAchats / track.qteAchats),
                               ('ordi',self.parent.ordi),
                               ('dateSaisie',self.parent.today)]
         mess = "MAJ article '%s'"%track.IDarticle
@@ -527,7 +523,19 @@ class DLG(xgte.DLG_tableau):
         if idem : return
 
         # appel des données de l'Olv principal à éditer
-        lstDonnees = nust.SqlInventaire(self)
+        ixQte = self.dicOlv['lstCodes'].index('qteConstat')
+        ixMini = self.dicOlv['lstCodes'].index('qteMini')
+        def filtreQte(lDonnees):
+            if not self.qteZero and lDonnees[ixQte] == 0.0:
+                return False
+            if (not self.qteMini) and lDonnees[ixMini]:
+                if lDonnees[ixQte] >= lDonnees[ixMini]:
+                    return False
+            return True
+
+
+        lstDonnees = [x for x in nust.CalculeInventaire(self) if filtreQte(x)]
+
         self.mouvementsPost = nust.MouvementsPosterieurs(self)
         if self.mouvementsPost:
             self.pnlPied.SetItemsInfos("Présence de mouvements postérieurs\nLe stock dans l'article n'est pas mis à jour",
@@ -554,7 +562,6 @@ class DLG(xgte.DLG_tableau):
         zer = 'Sans'
         if self.qteZero: zer = 'Avec'
         return "Inventaire STOCKS du %s, Qtés à zéro: %s, Qtés au dessus du minimum: %s"%(date, zer, mini)
-
 
     def OnImprimer(self,event):
         self.ctrlOlv.Apercu(None)
