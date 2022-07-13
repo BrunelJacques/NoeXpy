@@ -533,7 +533,6 @@ class DLG(xgte.DLG_tableau):
             self.pnlPied.SetItemsInfos("Présence de mouvements postérieurs\nLe stock dans l'article n'est pas mis à jour",
                                        wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
 
-
         # l'appel des données peut avoir retourné d'autres paramètres, il faut mettre à jour l'écran
         if len(lstDonnees) > 0:
             # set date du lot importé
@@ -574,6 +573,6 @@ class DLG(xgte.DLG_tableau):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    self.parent.date = DLG()
+    dlg = DLG()
     dlg.ShowModal()
     app.MainLoop()

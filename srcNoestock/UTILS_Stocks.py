@@ -7,11 +7,11 @@
 # Licence:         Licence GNU GPL
 # ------------------------------------------------------------------------
 
-import wx, decimal, datetime, os
+import wx, decimal, datetime
 from srcNoelite     import DB_schema
 from xpy.outils     import xformat
 from xpy.outils.xformat import Nz
-from xpy            import xUTILS_DB as xdb
+from xpy  import xUTILS_DB as xdb
 
 LIMITSQL = 100
 # codes repas [ 1,      2,     3,     4       5]
@@ -158,7 +158,7 @@ def MouvementsPosterieurs(dlg):
 def SqlInventaire(dlg,*args,**kwd):
     # met à jour les quantités dans article et appelle les données pour OLV
     db = dlg.db
-    # MAJ des quantités en stock dans les articles
+    # préalable MAJ des quantités en stock dans les articles
     req = """
             UPDATE stArticles 
             INNER JOIN (
@@ -179,7 +179,7 @@ def SqlInventaire(dlg,*args,**kwd):
     req = """FLUSH  TABLES stArticles;"""
     retour = db.ExecuterReq(req, mess='SqlInventaires flush')
 
-    # appel des données
+    # appel des données : constitution des filtres SQL
     where = ''
     if not dlg.qteZero:
         where += '( art.qte > 0) '
@@ -195,7 +195,7 @@ def SqlInventaire(dlg,*args,**kwd):
         where += 'AND '
     where = 'WHERE %s'%where
 
-    # limitation à la date d'analyse, mais art.qte est l'ensemble des mouvements
+    # limitation à la date d'analyse, attention art.qte est l'ensemble des mouvements
     where += " ((stMouvements.date <= '%s') OR (stMouvements.date IS NULL)) "%dlg.date
 
 
@@ -620,6 +620,8 @@ def SqlInvAnte(**kwd):
     return lstDonnees
 
 def MakeChoiceActivite(analytique):
+    if not analytique:
+        return "???"
     if isinstance(analytique,(list,tuple)):
         choice = "%s %s"%(analytique[0],analytique[1])
     else:
