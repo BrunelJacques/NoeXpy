@@ -172,7 +172,7 @@ def PxUnitInventaire(db, IDarticle, qteStock, dteAnalyse):
         pxUn = round(cumMttAch / cumQteAch,4)
         if not achatsPost:
             ltModifs = [('prixMoyen', pxUn),
-                        ('ordi', 'PU inventaire'),
+                        ('ordi', 'Calc_inventaire'),
                         ('dateSaisie', xformat.DatetimeToStr(datetime.date.today())) ]
             db.ReqMAJ('stArticles',ltModifs,'IDarticle',IDarticle,
                       mess = "UTILS_Stocks.PxUnitInventaire",
@@ -250,7 +250,7 @@ def CalculeInventaire(dlg, *args, **kwd):
         GROUP BY stArticles.IDarticle,
                 stArticles.fournisseur, magasin, rayon, 
                 qteMini, qteSaison, 
-                rations, prixMoyen, prixActuel
+                rations, prixMoyen, prixActuel,stArticles.dernierAchat
         ;""" % where
     retour = db.ExecuterReq(req, mess="UTILS_Stocks.CalculeInventaire Select")
     recordset = ()

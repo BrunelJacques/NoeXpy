@@ -24,9 +24,12 @@ from xpy.outils.xformat         import Nz
 
 #---------------------- Matrices de paramétres -------------------------------------
 
-TITRE = {'entrees':"Entrées en stock",'sorties':"Sorties de stock"}
+TITRE = {'entrees':"Entrées en stock",
+         'sorties':"Sorties de stock",
+         'article':"Détail des mouvements"}
 INTRO = {'entrees':"Gestion des entrées dans le stock, par livraison, retour ou autre ",
-        'sorties':"Gestion des sorties du stock, par repas multicamp, pour un camp ou autre ",}
+         'sorties':"Gestion des sorties du stock, par repas multicamp, pour un camp ou autre ",
+         'article':"Détail des mouvements d'un article, à des fins de correction.",}
 
 DICORIGINES = {
                 'entrees':{'codes': ['achat','retour','od_in'],
@@ -34,10 +37,16 @@ DICORIGINES = {
                            'values': ['achat livraison', 'retour camp', 'od entrée']},
                 'sorties': {'codes': ['repas', 'camp', 'od_out'],
                            'label':"Nature  sortie",
-                           'values': ['vers cuisine', 'revente ou camp', 'od sortie']}}
+                           'values': ['vers cuisine', 'revente ou camp', 'od sortie']},
+                'article': {'codes': ['repas', 'camp', 'od'],
+                            'label': "Nature Mouvement",
+                            'values': ['vers cuisine', 'revente ou camp', 'od']},
+                }
 
 DICDATE = {     'entrees':{'label':"Date d' entrée"},
-                'sorties':{'label':"Date de sortie",}}
+                'sorties':{'label':"Date de sortie",},
+                'article': {'label': "xxxxx", }
+                }
 
 DIC_INFOS = {
             'IDarticle': "<F4> Choix d'un article, ou saisie directe de son code",
@@ -685,6 +694,12 @@ class DLG(xusp.DLG_vide):
                                                nomImage="xpy/Images/80x80/Entree.png",
                                                sizeImage=(60,40))
             self.pnlBandeau.SetBackgroundColour(wx.Colour(220, 250, 220))
+        if self.sens == 'article':
+            self.pnlBandeau = xbandeau.Bandeau(self, TITRE[self.sens],
+                                               INTRO[self.sens], hauteur=20,
+                                               nomImage="xpy/Images/80x80/Loupe.png",
+                                               sizeImage=(60, 40))
+            self.pnlBandeau.SetBackgroundColour(wx.Colour(250, 216, 53))
         else:
             self.pnlBandeau = xbandeau.Bandeau(self,TITRE[self.sens],INTRO[self.sens], hauteur=20,
                                                 nomImage="xpy/Images/80x80/Sortie.png",

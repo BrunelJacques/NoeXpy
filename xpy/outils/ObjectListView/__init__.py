@@ -7,11 +7,6 @@
 # Copyright:    (c) 2008 by Phillip Piper
 # License:      wxWindows license
 #----------------------------------------------------------------------------
-# Change log:
-# 2008/08/02  JPP   Added list printing material
-# 2008/07/24  JPP   Added list group related material
-# 2008/06/19  JPP   Added sort event related material
-# 2008/04/11  JPP   Initial Version
 
 """
 An ObjectListView provides a more convienent and powerful interface to a ListCtrl.
@@ -62,4 +57,6 @@ __all__ = [
     "SortEvent",
     "VirtualObjectListView",
     "BarreRecherche",
-    "CTRL_Outils"]
+    "CTRL_Outils",
+    "CellEditor",
+    ]
