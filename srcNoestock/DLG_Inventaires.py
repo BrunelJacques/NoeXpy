@@ -348,7 +348,7 @@ class PNL_corps(xgte.PNL_corps):
         # Relais de l'appel par former Track
         CalculeLigne(self.parent,track)
 
-    def SauveLigne(self,track):
+    def auveLigne(self,track):
         db = self.db
         track.qteMvts += track.deltaQte
 
