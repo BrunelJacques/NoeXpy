@@ -29,7 +29,7 @@ TITRE = {'entrees':"Entrées en stock",
          'article':"Détail des mouvements"}
 INTRO = {'entrees':"Gestion des entrées dans le stock, par livraison, retour ou autre ",
          'sorties':"Gestion des sorties du stock, par repas multicamp, pour un camp ou autre ",
-         'article':"Détail des mouvements d'un article, à des fins de correction.",}
+         'article':"Détail des mouvements d'un article, avec possibilité de corriger ou supprimer des lignes.",}
 
 DICORIGINES = {
                 'entrees':{'codes': ['achat','retour','od_in'],
@@ -38,9 +38,11 @@ DICORIGINES = {
                 'sorties': {'codes': ['repas', 'camp', 'od_out'],
                            'label':"Nature  sortie",
                            'values': ['vers cuisine', 'revente ou camp', 'od sortie']},
-                'article': {'codes': ['repas', 'camp', 'od'],
+                'article': {'codes': ['tous','achat','retour','od_in',
+                                      'repas', 'camp', 'od_out'],
                             'label': "Nature Mouvement",
-                            'values': ['vers cuisine', 'revente ou camp', 'od']},
+                            'values': ['tous...','achat livraison', 'retour camp', 'od entrée',
+                                       'vers cuisine', 'revente ou camp', 'od sortie']},
                 }
 
 DICDATE = {     'entrees':{'label':"Date d' entrée"},
@@ -261,6 +263,7 @@ def GetOlvOptions(dlg):
             'recherche': True,
             'minSize': (600, 100),
             'dictColFooter': {"IDarticle": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
+                                  "qte": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
                                   "mttHT": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
                                   "mttTTC": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
                                   },
@@ -489,7 +492,7 @@ class PNL_params(xgte.PNL_params):
     #panel de paramètres de l'application
     def __init__(self, parent, **kwds):
         self.parent = parent
-        kwds = GetDicParams(parent)
+        kwds = parent.GetDicParams(parent)
         super().__init__(parent, **kwds)
         if hasattr(parent,'lanceur'):
             self.lanceur = parent.lanceur
@@ -550,8 +553,10 @@ class PNL_corps(xgte.PNL_corps):
 
         if code == 'repas':
             editor.Set(nust.CHOIX_REPAS)
-            editor.SetStringSelection(track.repas)
-
+            if track.repas:
+                editor.SetStringSelection(track.repas)
+            else:
+                editor.SetSelection(1)
         try:
             IDmvt = int(track.IDmouvement)
         except: IDmvt = 0
@@ -584,9 +589,9 @@ class PNL_corps(xgte.PNL_corps):
                 # stock négatif
                 if self.lanceur.sens == "sorties" and (Nz(track.qteStock)) < 0:
                     ret = wx.MessageBox("Le Stock est vide! Erreur d'article ou Entrée manquante")
-                event.Veto(False)
+                if event: event.Veto(False)
             else:
-                event.Veto(True)
+                if event: event.Veto(True)
 
         if code == 'qte':
             # saisie négative en sortie
@@ -644,13 +649,15 @@ class DLG(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,sens='sorties',date=None,**kwd):
         # gestion des deux sens possibles 'entrees' et 'sorties'
+        if not sens: sens = 'article'
         self.sens = sens
         self.sensNum = 1
         if self.sens == "sorties":
             self.sensNum = -1
+        self.GetDicParams = GetDicParams
         kwds = GetDlgOptions(self)
         listArbo=os.path.abspath(__file__).split("\\")
-        kwds['title'] = listArbo[-1] + "/" + self.__class__.__name__
+        kwds['title'] = kwd.pop('title',listArbo[-1] + "/" + self.__class__.__name__)
         super().__init__(None,**kwds)
         # l'appel des colonnes se fera dans OnOrigine
         self.dicOlv = {'lstCodesSup': GetOlvCodesSup()}
@@ -670,19 +677,20 @@ class DLG(xusp.DLG_vide):
 
         ret = self.Init()
         if ret == wx.ID_ABORT: self.Destroy()
-        self.ht_ttc = self.pnlParams.GetOneValue('ht_ttc',codeBox='param3')
-        self.origine = self.GetOrigine()
-        self.OnOrigine(None)
-        self.OnBtnAnterieur(None) # appel de la saisie du jour encours
+        try:
+            self.ht_ttc = self.pnlParams.GetOneValue('ht_ttc',codeBox='param3')
+            self.origine = self.GetOrigine()
+            self.OnOrigine(None)
+            self.OnBtnAnterieur(None) # appel de la saisie du jour encours
+        except:
+            pass
         self.GetDonnees()
         self.Sizer()
-
 
     def Init(self):
         self.db = xdb.DB()
         # définition de l'OLV
         self.ctrlOlv = None
-
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
         self.txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"
         lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),self.txtInfo]

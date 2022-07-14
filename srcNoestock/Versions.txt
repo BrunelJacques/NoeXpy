@@ -1,3 +1,6 @@
+Version 1.1.2.10 (14/07/2022 11:50)
+- bug inventaires
+
 Version 1.1.2.9 (14/07/2022)
 - inventaires réécriture
 

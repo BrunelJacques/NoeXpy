@@ -9,49 +9,78 @@
 
 import wx
 import os
-import srcNoestock.DLG_Mouvements      as DLG_Mouvements
+import datetime
+import srcNoestock.DLG_Mouvements      as dlgMvts
+import srcNoestock.DLG_Articles        as dlgArt
 import srcNoestock.UTILS_Stocks        as nust
 import xpy.xUTILS_DB                   as xdb
-from xpy.outils                 import xformat,xbandeau
-from xpy.outils.ObjectListView  import ColumnDefn
+from xpy.outils.ObjectListView.ObjectListView   import ColumnDefn
+from xpy.outils.ObjectListView.CellEditor       import ChoiceEditor
+from xpy.outils                        import xformat,xbandeau
+
 
 MATRICE_PARAMS = {
-("param1", "Paramètres"): [
-    {'name': 'article', 'genre': 'Choice', 'label': 'Article',
+("param0", "Article"): [
+    {'name': 'article', 'genre': 'texte', 'label': 'Article',
                     'help': "Le choix de l'article génère la liste ci-dessous'",
-                    'value':0,'values':[''],
+                    'value':0,
                     'ctrlAction':'OnArticle',
                      'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un article",
                      'btnAction': 'OnBtnArticle',
                     'size':(250,35),
                     'ctrlMaxSize':(250,35),
-                    'txtSize': 70,
+                    'txtSize': 50,
      },
+    ],
+("param2", "Periode"): [
+    {'name': 'depuis', 'genre': 'Texte', 'label': "Depuis le",
+                    'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
+                                          "Les séparateurs ne sont pas obligatoires en saisie.",
+                                          "Saisissez la date de l'entrée en stock sans séparateurs, "),
+                    'value':xformat.DatetimeToStr(datetime.date.today()-datetime.timedelta(180)),
+                    'ctrlAction': 'OnDepuis',
+                    'ctrlMaxSize':(150,35),
+                    'txtSize': 50},
+    ],
+("param1", "Origine"): [
+    {'name': 'origine', 'genre': 'Choice', 'label': "Mouvements",
+                    'help': "Le choix de la nature modifie certains contrôles",
+                    'value':0, 'values':[],
+                    'ctrlAction': 'OnOrigine',
+                    'ctrlMaxSize':(350,35),
+                    'txtSize': 120},
     ],
 }
 
-def GetDicParams(dlg):
+def GetDicParams(*args):
     matrice = xformat.CopyDic(MATRICE_PARAMS)
+    xformat.SetItemInMatrice(matrice,'origine','values', dlgMvts.DICORIGINES['article']['values'])
+    xformat.SetItemInMatrice(matrice,'origine','label', dlgMvts.DICORIGINES['article']['label'])
     return {
                 'name':"PNL_params",
                 'matrice':matrice,
                 'lblBox':None,
-                'boxesSizes': [(350, 50),None,],
+                'boxesSizes': [(300,50), (250, 50),(250, 50), None],
                 'pathdata':"srcNoelite/Data",
                 'nomfichier':"stparams",
                 'nomgroupe':"article",
             }
 
+def ValideParams(*arg,**kwds):
+    return True
+
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
-    if dlg.sens == 'entrees':
-        titlePrix = "PxParPièce"
-    else: titlePrix = "Prix Unit."
+    titlePrix = "Prix Unit."
     lstCol = [
             ColumnDefn("ID", 'centre', 0, 'IDmouvement',
                        isEditable=False),
+            ColumnDefn("Date Mvt", 'left', 80, 'date', isSpaceFilling=False,
+                       stringConverter=xformat.FmtDate),
+            ColumnDefn("Mouvement", 'left', 80, 'origine',
+                                cellEditorCreator=ChoiceEditor),
             ColumnDefn("Repas", 'left', 60, 'repas',
-                                cellEditorCreator=CellEditor.ChoiceEditor),
+                                cellEditorCreator=ChoiceEditor),
             ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",isSpaceFilling=True),
             ColumnDefn("Quantité", 'right', 80, 'qte', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtQte),
@@ -61,8 +90,6 @@ def GetOlvColonnes(dlg):
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Nbre Rations", 'right', 80, 'nbRations', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Mtt HT", 'right', 80, 'mttHT', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Mtt TTC", 'right', 80, 'mttTTC', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("PrixStock", 'right', 80, 'pxMoy', isSpaceFilling=False, valueSetter=0.0,
@@ -70,69 +97,89 @@ def GetOlvColonnes(dlg):
             ColumnDefn("Qté stock", 'right', 80, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
             ]
-    if dlg.sens == 'entrees':
-        # supprime la saisie du repas
-        del lstCol[1]
-    if dlg.origine[:5] == 'achat':
-        dlg.typeAchat = True
-        for col in lstCol:
-            if col.valueGetter in ('qte','pxUn'):
-                col.isEditable = False
-        lstColAchat = [
-            ColumnDefn("Nb Unités", 'right', 80, 'nbAch', isSpaceFilling=False, valueSetter=0.0,
-                       stringConverter=xformat.FmtDecimal, isEditable=True),
-            ColumnDefn("Prix unité", 'right', 80, 'pxAch', isSpaceFilling=False, valueSetter=0.0,
-                       stringConverter=xformat.FmtDecimal, isEditable=True),
-            ColumnDefn("Qte/unité", 'right', 80, 'parAch', isSpaceFilling=False, valueSetter=1.0,
-                       stringConverter=xformat.FmtQte, isEditable=True),
-            ]
-        lstCol = lstCol[:2] + lstColAchat + lstCol[2:]
-    else: dlg.typeAchat = False
     return lstCol
 
+def GetMouvements(dlg, dParams):
+    # retourne la liste des données de l'OLv de DlgEntree
+    ctrlOlv = dlg.ctrlOlv
+    ldMouvements = nust.GetMvtsOneArticle(dlg.db, dParams)
+    # appel des dicArticles des mouvements
+    ddArticles = {}
+    for dMvt in ldMouvements:
+        ddArticles[dMvt['IDarticle']] = nust.SqlDicArticle(dlg.db,dlg.ctrlOlv,dMvt['IDarticle'])
 
+    # composition des données
+    lstDonnees = []
+    lstCodesCol = ctrlOlv.GetLstCodesColonnes()
 
+    # Enrichissement des lignes pour olv à partir des mouvements remontés
+    for dMvt in ldMouvements:
+        donnees = []
+        dArticle = ddArticles[dMvt['IDarticle']]
+        # alimente les données des colonnes
+        for code in lstCodesCol:
+            # ajout de la donnée dans le mouvement
+            if code == 'pxUn' :
+                donnees.append(dArticle['prixMoyen'])
+                continue
+            if code == 'pxMoy':
+                donnees.append(dArticle['prixMoyen'])
+                continue
+            if code in dMvt.keys():
+                donnees.append(dMvt[code])
+                continue
+            # ajout de l'article associé
+            if code in dArticle.keys():
+                donnees.append(dArticle)
+                continue
 
-class DLG(DLG_Mouvements.DLG):
+            donnees.append(None)
+            continue
+        # codes supplémentaires de track non affichés('prixTTC','IDmouvement','dicArticle','dicMvt) dlg.dicOlv['lstCodesSup']
+        donnees += [dArticle,
+                    dMvt,]
+        lstDonnees.append(donnees)
+    return lstDonnees
+
+class DLG(dlgMvts.DLG):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,sens='article',**kwds):
+    def __init__(self,sens='article',  **kwds):
         # gestion des deux sens possibles 'entrees' et 'sorties'
         self.sens = sens
-        kwds['sens'] = self.sens
+        listArbo=os.path.abspath(__file__).split("\\")
+        kwds['title'] = listArbo[-1] + "/" + self.__class__.__name__
         super().__init__(None,**kwds)
 
     def Init(self):
         self.db = xdb.DB()
+        self.GetDicParams = GetDicParams
         # définition de l'OLV
         self.ctrlOlv = None
+        self.typeAchat = None
+        self.article = None
+        self.origine = 'tous'
+        self.depuis = None
 
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
         self.txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"
         lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),self.txtInfo]
-        dicPied = {'lstBtns': DLG_Mouvements.GetBoutons(self), "lstInfos": lstInfos}
+        dicPied = {'lstBtns': dlgMvts.GetBoutons(self), "lstInfos": lstInfos}
 
         # lancement de l'écran en blocs principaux
-        self.pnlBandeau = xbandeau.Bandeau(self, DLG_Mouvements.TITRE[self.sens],
-                                           DLG_Mouvements.INTRO[self.sens], hauteur=20,
+        self.pnlBandeau = xbandeau.Bandeau(self, dlgMvts.TITRE[self.sens],
+                                           dlgMvts.INTRO[self.sens], hauteur=20,
                                            nomImage="xpy/Images/80x80/Loupe.png",
                                            sizeImage=(60, 40))
-        self.pnlBandeau.SetBackgroundColour(wx.Colour(250, 216, 53))
-        self.pnlParams = PNL_params(self)
-        self.pnlOlv = PNL_corps(self, self.dicOlv)
-        self.pnlPied = PNL_pied(self, dicPied)
+        self.pnlBandeau.SetBackgroundColour(wx.Colour(250, 250, 180))
+
+        self.pnlParams = dlgMvts.PNL_params(self)
+        self.pnlOlv = dlgMvts.PNL_corps(self, self.dicOlv)
+        self.pnlOlv.ValideParams = self.ValideParams
+        self.pnlOlv.ValideLigne = self.ValideLigne
+        self.pnlPied = dlgMvts.PNL_pied(self, dicPied)
         self.ctrlOlv = self.pnlOlv.ctrlOlv
 
         # charger les valeurs de pnl_params
-        self.pnlParams.SetOneSet('fournisseur',values=nust.SqlFournisseurs(self.db),codeBox='param2')
-        self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
-        self.valuesAnalytiques = ['',] + [nust.MakeChoiceActivite(x) for x in self.lstAnalytiques]
-        self.codesAnalytiques = [x[:2] for x in self.valuesAnalytiques]
-        self.codesAnalytiques[0] = '00'
-        if len(self.codesAnalytiques) == 1:
-            wx.MessageBox("Aucune activité définie!\n\nLes affectations analytiques ne seront pas possibles par camp")
-        self.pnlParams.SetOneSet('analytique',values=self.valuesAnalytiques,codeBox='param2')
-        self.SetAnalytique('00')
-        self.pnlParams.SetOneValue('origine',valeur=DICORIGINES[self.sens]['values'][0],codeBox='param1')
         self.Bind(wx.EVT_CLOSE,self.OnClose)
 
     def Sizer(self):
@@ -150,37 +197,65 @@ class DLG(DLG_Mouvements.DLG):
     # ------------------- Gestion des actions -----------------------
 
     def InitOlv(self):
-        self.origine = self.GetOrigine()
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
         self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
         self.ctrlOlv.InitObjectListView()
         self.Refresh()
 
-    # gestion des ctrl choices avec codes différents des items
+    def ValideParams(self):
+        ValideParams(None,None)
+
+    def ValideLigne(self,*args,**kwds):
+        wx.MessageBox("Validation de la ligne...")
+
+    def OnArticle(self,event):
+        saisie = self.pnlParams.GetOneValue('article',codeBox='param0')
+        # vérification de m'éxistance et choix si nécessaire
+        self.article = dlgArt.GetOneIDarticle(self.db,saisie.upper())
+        if self.article:
+            self.pnlParams.SetOneValue('article', self.article, codeBox='param0')
+            self.GetDonnees(self.GetParams())
+
+    def OnBtnArticle(self,event):
+        # Appel du choix d'un ARTICLE via un écran complet
+        # id = DLG_Articles.GetOneIDarticle(db,value,f4=f4)
+        self.article = dlgArt.GetOneIDarticle(self.db,"")
+        self.pnlParams.SetOneValue('article',self.article,codeBox='param0')
+        if self.article:
+            self.GetDonnees(self.GetParams())
+
+    def OnDepuis(self,event):
+        saisie = self.pnlParams.GetOneValue('depuis',codeBox='param2')
+        saisie = xformat.FmtDate(saisie)
+        self.depuis = xformat.DateFrToDatetime(saisie)
+        self.pnlParams.SetOneValue('depuis',valeur=xformat.FmtDate(saisie),codeBox='param2')
+        if self.article:
+            self.GetDonnees(self.GetParams())
+
+    # gestion des actions ctrl
+    def OnOrigine(self,event):
+        if event:
+            self.ctrlOlv.lstDonnees = []
+            self.oldParams = {}
+        self.origine = self.GetOrigine()
+        self.dicOlv.update({'lstColonnes': GetOlvColonnes(self)})
+        if event: event.Skip()
+        if self.article:
+            self.GetDonnees(self.GetParams())
+
+    def GetParams(self):
+        dParams = {'article':self.article,
+                   'origine': self.origine,
+                   'depuis': self.depuis}
+        return dParams
+
     def GetDonnees(self,dParams=None):
-        if not dParams:
-            dParams = {'origine':self.origine,
-                         'date':self.date,
-                         'fournisseur':self.fournisseur,
-                         'analytique':self.analytique,
-                         'ht_ttx':self.ht_ttc,
-                         'sensNum': self.sensNum,}
-        valide = ValideParams(self.pnlParams,dParams, mute=False)
-        if not valide: return
-        idem = True
-        if self.oldParams == None :
-            idem = False
-        else:
-            for key in ('origine','date','analytique','fournisseur','ht_ttx'):
-                if not key in self.oldParams.keys(): idem = False
-                elif not key in dParams.keys(): idem = False
-                elif self.oldParams[key] != dParams[key]: idem = False
-        if idem : return
+
         # forme la grille, puis création d'un premier modelObjects par init
         self.InitOlv()
-
+        if not dParams:
+            return
         # appel des données de l'Olv principal à éditer
-        self.oldParams = xformat.CopyDic(dParams)
         self.ctrlOlv.lstDonnees = [x for x in GetMouvements(self,dParams)]
         lstNoModif = [1 for rec in  self.ctrlOlv.lstDonnees if not (rec[-1])]
 
@@ -189,25 +264,6 @@ class DLG(DLG_Mouvements.DLG):
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
             self.pnlPied.SetItemsInfos("NON MODIFIABLE: enregistrements transféré ",
                                        wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
-
-        # l'appel des données peut avoir retourné d'autres paramètres, il faut mettre à jour l'écran
-        if len(self.ctrlOlv.lstDonnees) > 0:
-            # set origine
-
-            ixo = DICORIGINES[self.sens]['codes'].index(dParams['origine'])
-            self.pnlParams.SetOneValue('origine',DICORIGINES[self.sens]['values'][ixo])
-            self.OnOrigine(None)
-
-            # set date du lot importé
-            self.pnlParams.SetOneValue('date',xformat.FmtDate(dParams['date']),'param1')
-            self.date = dParams['date']
-
-            # set Fournisseur et analytique
-            self.pnlParams.SetOneValue('fournisseur',dParams['fournisseur'],'param2')
-            self.fournisseur = dParams['fournisseur']
-            self.SetAnalytique(dParams['analytique'])
-
-        # maj écritures reprises sont censées être valides, mais il faut les compléter
         self.ctrlOlv.MAJ()
 
 #------------------------ Lanceur de test  -------------------------------------------

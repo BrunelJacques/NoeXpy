@@ -840,7 +840,10 @@ class DLG_tableau(xusp.DLG_vide):
         if 'lstNomsBtns' in self.dicOlv.keys():
             self.pnlOlv.OnModifier(event)
         else:
-            self.OnFermer(end=wx.OK)
+            end = wx.OK
+            if not len(self.pnlOlv.olv.GetSelectedObjects()):
+                end = wx.ID_CANCEL
+            self.OnFermer(end=end)
 
     def OnFermer(self, *arg, **kwd):
         end = kwd.pop('end',wx.OK)

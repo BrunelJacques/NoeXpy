@@ -575,7 +575,6 @@ class PanelListView(wx.Panel):
         if self.ctrlOlv.checkColonne:
             code = self.ctrlOlv.lstCodesColonnes[col-1]
 
-        valueOrigin = eval("track.%s"%code)
         # si pas de saisie on passe
         valueIdem = False
         if hasattr(track,"oldValue") and track.oldValue == value:

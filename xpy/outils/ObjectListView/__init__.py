@@ -58,5 +58,4 @@ __all__ = [
     "VirtualObjectListView",
     "BarreRecherche",
     "CTRL_Outils",
-    "CellEditor",
     ]

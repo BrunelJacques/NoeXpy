@@ -375,7 +375,6 @@ def GetMvtsOneDate(db, dParams=None):
     lstChamps = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
     lstChamps.append('stArticles.qteStock')
     lstChamps.append('stArticles.prixMoyen')
-    sensNum = dParams['sensNum']
 
     # Appelle les mouvements associés à un dic de choix de param et retour d'une liste de dic
     req = """   SELECT %s
@@ -391,6 +390,37 @@ def GetMvtsOneDate(db, dParams=None):
                 ;""" % (",".join(lstChamps),dParams['date'],dParams['origine'],dParams['fournisseur'],dParams['analytique'])
 
     retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetMouvements')
+    ldMouvements = []
+    if retour == "ok":
+        recordset = db.ResultatReq()
+        for record in recordset:
+            dMouvement = {}
+            for ix  in range(len(lstChamps)):
+                champ = lstChamps[ix].split('.')[1]
+                # transposition du code repas en libellé
+                if champ == 'repas' and record[ix]:
+                    dMouvement[champ] = CHOIX_REPAS[record[ix]-1]
+                # transposition du sens du nombre pour les quantités
+                #elif champ == 'qte' and record[ix]:
+                #    dMouvement[champ] = record[ix] * sensNum
+                else:
+                    dMouvement[champ] = record[ix]
+            ldMouvements.append(dMouvement)
+    return ldMouvements
+
+def GetMvtsOneArticle(db, dParams=None):
+    lstChamps = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
+    lstChamps.append('stArticles.qteStock')
+    lstChamps.append('stArticles.prixMoyen')
+
+    # Appelle les mouvements associés à un dic de choix de param et retour d'une liste de dic
+    req = """   SELECT %s
+                FROM stMouvements
+                LEFT JOIN stArticles ON stMouvements.IDarticle = stArticles.IDarticle 
+                WHERE (stMouvements.IDarticle = '%s' )
+                ;""" % (",".join(lstChamps),dParams['article'])
+
+    retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetMvtsOneArticle')
     ldMouvements = []
     if retour == "ok":
         recordset = db.ResultatReq()
