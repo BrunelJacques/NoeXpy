@@ -13,7 +13,10 @@ import os
 import datetime
 import xpy.xUTILS_SaisieParams as xusp
 from xpy.outils                 import xbandeau,xformat, xboutons
-from xpy.outils.ObjectListView  import  ObjectListView, ColumnDefn, Footer, CTRL_Outils, OLVEvent,CellEditor
+import xpy.outils.ObjectListView.ObjectListView as ObjectListView
+from xpy.outils.ObjectListView.ObjectListView  import  ColumnDefn
+from xpy.outils.ObjectListView import Footer, CTRL_Outils, OLVEvent,CellEditor
+
 from xpy.outils.xconst          import *
 
 # ----------  Objets  ObjectListView --------------------------------------------------------
@@ -552,7 +555,7 @@ class PanelListView(wx.Panel):
             track.oldValue = None
         if not (hasattr(self.ctrlOlv,'error')):
             self.ctrlOlv.error = None
-        if not self.ctrlOlv.error:
+        if not self.ctrlOlv.error and hasattr(track,"%s" % code):
             track.oldValue = eval("track.%s"%code)
         else: track.oldValue = None
 

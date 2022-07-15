@@ -776,6 +776,7 @@ class ObjectListView(wx.ListCtrl):
         wx.ListCtrl.DeleteAllItems(self)
         self.SetObjects(list())
         self.lastGetObjectIndex = -1
+        self.modelObjects = []
 
     def EnsureCellVisible(self, rowIndex, subItemIndex):
         """

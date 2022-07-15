@@ -27,24 +27,33 @@ MATRICE_PARAMS = {
                     'ctrlAction':'OnArticle',
                      'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un article",
                      'btnAction': 'OnBtnArticle',
-                    'size':(250,35),
-                    'ctrlMaxSize':(250,35),
+                    'size':(250,28),
+                    'ctrlMaxSize':(250,28),
+                    'txtSize': 50,
+     },
+    {'name': 'tous', 'genre': 'check', 'label': 'Tous',
+                    'help': "Cochez pour prendre tous les articles, la date 'Après le' détermine le nombre de lignes!",
+                    'value':False,
+                    'ctrlAction':'OnTous',
+                    'size':(250,25),
+                    'ctrlMaxSize':(250,25),
                     'txtSize': 50,
      },
     ],
+# param2 pour periode car interaction avec super (DLG_Mouvements)
 ("param2", "Periode"): [
-    {'name': 'depuis', 'genre': 'Texte', 'label': "Depuis le",
+    {'name': 'postDate', 'genre': 'Texte', 'label': "Après le",
                     'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
                                           "Les séparateurs ne sont pas obligatoires en saisie.",
                                           "Saisissez la date de l'entrée en stock sans séparateurs, "),
-                    'value':xformat.DatetimeToStr(datetime.date.today()-datetime.timedelta(180)),
-                    'ctrlAction': 'OnDepuis',
+                    'value':'',
+                    'ctrlAction': 'OnPostDate',
                     'ctrlMaxSize':(150,35),
                     'txtSize': 50},
     ],
 ("param1", "Origine"): [
     {'name': 'origine', 'genre': 'Choice', 'label': "Mouvements",
-                    'help': "Le choix de la nature modifie certains contrôles",
+                    'help': "Le choix de la nature filtrera les lignes sur une valeur",
                     'value':0, 'values':[],
                     'ctrlAction': 'OnOrigine',
                     'ctrlMaxSize':(350,35),
@@ -142,7 +151,7 @@ def GetMouvements(dlg, dParams):
     return lstDonnees
 
 class DLG(dlgMvts.DLG):
-    # ------------------- Composition de l'écran de gestion----------
+    # ------------------- Composition de l'écran de gestion-----------------------------
     def __init__(self,sens='article',  **kwds):
         # gestion des deux sens possibles 'entrees' et 'sorties'
         self.sens = sens
@@ -158,7 +167,7 @@ class DLG(dlgMvts.DLG):
         self.typeAchat = None
         self.article = None
         self.origine = 'tous'
-        self.depuis = None
+        today = datetime.date.today()
 
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
         self.txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"
@@ -178,9 +187,13 @@ class DLG(dlgMvts.DLG):
         self.pnlOlv.ValideLigne = self.ValideLigne
         self.pnlPied = dlgMvts.PNL_pied(self, dicPied)
         self.ctrlOlv = self.pnlOlv.ctrlOlv
-
+        self.ctrlOlv.DeleteAllItems()
         # charger les valeurs de pnl_params
         self.Bind(wx.EVT_CLOSE,self.OnClose)
+        self.postDate = nust.GetLastInventaire(today, lstChamps=['IDdate',],
+                                             retourLignes=False)
+        self.pnlParams.SetOneValue('postDate',valeur=xformat.FmtDate(self.postDate),
+                                   codeBox='param2')
 
     def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
@@ -194,7 +207,7 @@ class DLG(dlgMvts.DLG):
         self.SetSizer(sizer_base)
         self.CenterOnScreen()
 
-    # ------------------- Gestion des actions -----------------------
+    # ------------------- Gestion des actions ------------------------------------------
 
     def InitOlv(self):
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
@@ -208,45 +221,10 @@ class DLG(dlgMvts.DLG):
     def ValideLigne(self,*args,**kwds):
         wx.MessageBox("Validation de la ligne...")
 
-    def OnArticle(self,event):
-        saisie = self.pnlParams.GetOneValue('article',codeBox='param0')
-        # vérification de m'éxistance et choix si nécessaire
-        self.article = dlgArt.GetOneIDarticle(self.db,saisie.upper())
-        if self.article:
-            self.pnlParams.SetOneValue('article', self.article, codeBox='param0')
-            self.GetDonnees(self.GetParams())
-
-    def OnBtnArticle(self,event):
-        # Appel du choix d'un ARTICLE via un écran complet
-        # id = DLG_Articles.GetOneIDarticle(db,value,f4=f4)
-        self.article = dlgArt.GetOneIDarticle(self.db,"")
-        self.pnlParams.SetOneValue('article',self.article,codeBox='param0')
-        if self.article:
-            self.GetDonnees(self.GetParams())
-
-    def OnDepuis(self,event):
-        saisie = self.pnlParams.GetOneValue('depuis',codeBox='param2')
-        saisie = xformat.FmtDate(saisie)
-        self.depuis = xformat.DateFrToDatetime(saisie)
-        self.pnlParams.SetOneValue('depuis',valeur=xformat.FmtDate(saisie),codeBox='param2')
-        if self.article:
-            self.GetDonnees(self.GetParams())
-
-    # gestion des actions ctrl
-    def OnOrigine(self,event):
-        if event:
-            self.ctrlOlv.lstDonnees = []
-            self.oldParams = {}
-        self.origine = self.GetOrigine()
-        self.dicOlv.update({'lstColonnes': GetOlvColonnes(self)})
-        if event: event.Skip()
-        if self.article:
-            self.GetDonnees(self.GetParams())
-
     def GetParams(self):
         dParams = {'article':self.article,
                    'origine': self.origine,
-                   'depuis': self.depuis}
+                   'postDate': self.postDate}
         return dParams
 
     def GetDonnees(self,dParams=None):
@@ -257,14 +235,87 @@ class DLG(dlgMvts.DLG):
             return
         # appel des données de l'Olv principal à éditer
         self.ctrlOlv.lstDonnees = [x for x in GetMouvements(self,dParams)]
-        lstNoModif = [1 for rec in  self.ctrlOlv.lstDonnees if not (rec[-1])]
-
-        # présence de lignes déjà transférées compta
-        if len(lstNoModif) >0:
-            self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
-            self.pnlPied.SetItemsInfos("NON MODIFIABLE: enregistrements transféré ",
-                                       wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
         self.ctrlOlv.MAJ()
+
+    # gestion des actions évènements sur les ctrl
+
+    def GetOneArticle(self,saisie):
+        # recherche d'un article, Désactive cellEdit pour éviter l'écho des double clics
+        self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
+        article = dlgArt.GetOneIDarticle(self.db, saisie.upper())
+        self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK #réactive dblClic
+        return article
+
+    def OnArticle(self,event):
+        # éviter la redondance de l'évènement 'Enter'
+        if event and event.EventType != wx.EVT_KILL_FOCUS.evtType[0]:
+            return
+        saisie = self.pnlParams.GetOneValue('article',codeBox='param0')
+        # vérification de m'éxistance et choix si nécessaire
+        self.article = self.GetOneArticle(saisie.upper())
+        if self.article:
+            self.pnlParams.SetOneValue('article', self.article, codeBox='param0')
+            self.GetDonnees(self.GetParams())
+
+    def OnBtnArticle(self,event):
+        # Appel du choix d'un ARTICLE via un écran complet
+        # id = DLG_Articles.GetOneIDarticle(db,value,f4=f4)
+        self.article = self.GetOneArticle("")
+        self.pnlParams.SetOneValue('article',self.article,codeBox='param0')
+        if self.article:
+            self.GetDonnees(self.GetParams())
+
+    def OnTous(self,event):
+        # éviter la redondance de l'évènement 'Check' et kill focus
+        if event and event.EventType == wx.EVT_KILL_FOCUS.evtType[0]:
+            return
+        self.tous = self.pnlParams.GetOneValue('tous', codeBox='param0')
+        if self.tous:
+            self.article = 'Tous'
+            flag = False
+        else:
+            self.article = ''
+            flag = True
+        self.pnlParams.SetOneValue('article', self.article, codeBox='param0')
+        pnlCtrl = self.pnlParams.GetPnlCtrl('article', codebox='param0')
+        # active ou désactive le choix de l'article
+        pnlCtrl.txt.Enable(flag)
+        pnlCtrl.ctrl.Enable(flag)
+        pnlCtrl.btn.Enable(flag)
+        if self.tous:
+            self.GetDonnees(self.GetParams())
+
+    def OnPostDate(self,event):
+        # éviter la redondance de l'évènement 'Enter'
+        if event and event.EventType != wx.EVT_KILL_FOCUS.evtType[0]:
+            return
+        saisie = self.pnlParams.GetOneValue('postDate',codeBox='param2')
+        saisie = xformat.FmtDate(saisie)
+        self.postDate = xformat.DateFrToDatetime(saisie)
+        lastInvent = xformat.DateSqlToDatetime(nust.GetLastInventaire(None, lstChamps=['IDdate',],
+                                             retourLignes=False))
+        self.pnlParams.SetOneValue('postDate',valeur=xformat.FmtDate(saisie),codeBox='param2')
+        if self.postDate < lastInvent:
+            self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
+            mess = "Désactivation des modifications\n\n"
+            mess += "Un inventaire a été archivé au '%s', "% xformat.FmtDate(lastInvent)
+            mess += "la modification de mouvements pouvant être antérieurs n'est pas possible"
+            mess += ", mais vous pouvez les consulter."
+            wx.MessageBox(mess,"Information",style = wx.ICON_INFORMATION)
+        else:
+            self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK  # réactive dblClic
+        if self.article:
+            self.GetDonnees(self.GetParams())
+
+    def OnOrigine(self,event):
+        if event:
+            self.ctrlOlv.lstDonnees = []
+            self.oldParams = {}
+        self.origine = self.GetOrigine()
+        self.dicOlv.update({'lstColonnes': GetOlvColonnes(self)})
+        if event: event.Skip()
+        if self.article:
+            self.GetDonnees(self.GetParams())
 
 #------------------------ Lanceur de test  -------------------------------------------
 

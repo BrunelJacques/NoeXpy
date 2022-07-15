@@ -80,6 +80,27 @@ def CompareModels(original,actuel):
         elif not track.vierge: lstNews.append(track.donnees)
     return lstNews,lstCancels,lstModifs
 
+def AppendConditionWhere(anterieur,lstAjouts,lien='AND',retrait=16):
+    # ajoute une liste de conditions à un existant
+    if not isinstance(lstAjouts, list):
+        lstAjouts = [lstAjouts,]
+    spaces = ' ' * retrait
+    anterieur = anterieur.strip()
+    prefixe = ''
+    if anterieur.upper().startswith('WHERE'):
+        prefixe = "WHERE"
+        anterieur = anterieur[6:]
+    condition = "%s    %s" % (spaces,anterieur)
+    for ajout in lstAjouts:
+        if (not ajout) or len(ajout) == 0:
+            continue
+        if len(anterieur.strip()) > 0 :
+            lie = '    %s%s' % (spaces,lien)
+        else: lie = spaces
+        condition = "%s    (%s\n    %s %s)" %(spaces,condition.strip(),lie,ajout)
+    debut = "%s%s" % (prefixe,spaces)
+    return "%s\n%s" % (debut,condition)
+
 def ComposeWhereFiltre(filtre,lstChamps,lstColonnes=None, lien='WHERE'):
         if lstColonnes:
             lstNames = [x.valueGetter for x in lstColonnes]

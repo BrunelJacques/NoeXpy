@@ -80,23 +80,28 @@ def PostInventaire(cloture=datetime.date.today(),inventaire=[[],]):
         return True
     return ret
 
-def GetLastInventaire(dteAnalyse=None,lstChamps=None):
-    # retourne l'inventaire précédent la date de dteAnalyse
-    if dteAnalyse == None:
-        dteAnalyse = datetime.date.today()
+def GetLastInventaire(dteAnalyse=None,lstChamps=None,retourLignes=True):
+    # return: lignes de l'inventaire précédant dteAnalyse ou seulement sa date
     db = xdb.DB()
-    # Appelle l'inventaire précédent
+    limit = ""
+    if not retourLignes:
+        # pour trouver seulement la date une ligne suffira
+        limit = "LIMIT 1"
+    # Appelle l'inventaire précédent en une seule requête polyvalente
     if not lstChamps:
         lstChamps = ['IDdate','IDarticle','qteStock','prixMoyen']
-    finIso = xformat.DatetimeToStr(dteAnalyse,iso=True)
+    whereDate = ""
+    dteIso = xformat.DatetimeToStr(dteAnalyse, iso=True)
+    if dteIso and len(dteIso)>0:
+        whereDate = "WHERE stInv.IDdate < '%s' " % dteIso
     req = """   SELECT %s
                 FROM stInventaires
                 WHERE   (stInventaires.IDdate = 
                             (SELECT MAX(stInv.IDdate) 
                             FROM stInventaires as stInv
-                            WHERE stInv.IDdate < '%s')
+                            %s)
                         )
-                ;""" % (",".join(lstChamps),finIso)
+                %s;""" % (",".join(lstChamps),whereDate, limit)
 
     retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetLastInventaire')
     llInventaire = []
@@ -108,6 +113,8 @@ def GetLastInventaire(dteAnalyse=None,lstChamps=None):
                 mouvement.append(record[ix])
             llInventaire.append(mouvement)
     db.Close()
+    if not retourLignes:
+        return llInventaire[0][0]
     return llInventaire
 
 def GetMvtsPeriode(debut=None, fin=None):
@@ -413,14 +420,39 @@ def GetMvtsOneArticle(db, dParams=None):
     lstChamps.append('stArticles.qteStock')
     lstChamps.append('stArticles.prixMoyen')
 
+    # composition des filtres
+    article = dParams.get('article','')
+    if article .lower() == 'tous' :
+        condArticle = ""
+    else:
+        condArticle = "stMouvements.IDarticle = '%s'" % article
+
+    origine = dParams.get('origine','')
+    if origine .lower() == 'tous':
+        condOrigine = ""
+    else:
+        condOrigine = "origine = '%s'" % origine
+
+    postDate = dParams.get('postDate',None)
+    if not postDate:
+        condDate = ''
+    else:
+        condDate = "date > '%s'" % postDate
+
+    where = "WHERE %s" % condDate
+    lstCond = [condArticle,condOrigine,]
+    where = xformat.AppendConditionWhere(where,lstCond)
+
     # Appelle les mouvements associés à un dic de choix de param et retour d'une liste de dic
-    req = """   SELECT %s
+    req = """   
+                SELECT %s
                 FROM stMouvements
                 LEFT JOIN stArticles ON stMouvements.IDarticle = stArticles.IDarticle 
-                WHERE (stMouvements.IDarticle = '%s' )
-                ;""" % (",".join(lstChamps),dParams['article'])
+                %s
+                ;""" % (",".join(lstChamps),where)
 
     retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetMvtsOneArticle')
+    print(req)
     ldMouvements = []
     if retour == "ok":
         recordset = db.ResultatReq()

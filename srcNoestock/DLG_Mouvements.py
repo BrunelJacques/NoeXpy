@@ -40,7 +40,7 @@ DICORIGINES = {
                            'values': ['vers cuisine', 'revente ou camp', 'od sortie']},
                 'article': {'codes': ['tous','achat','retour','od_in',
                                       'repas', 'camp', 'od_out'],
-                            'label': "Nature Mouvement",
+                            'label': "Nature Mouvements",
                             'values': ['tous...','achat livraison', 'retour camp', 'od entrée',
                                        'vers cuisine', 'revente ou camp', 'od sortie']},
                 }
