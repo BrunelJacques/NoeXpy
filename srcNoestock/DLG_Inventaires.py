@@ -344,10 +344,6 @@ class PNL_corps(xgte.PNL_corps):
         # Relais de l'appel par cellEditor à chaque colonne
         ValideLigne(self.parent,track)
 
-    def zzCalculeLigne(self,code,track):
-        # Relais de l'appel par former Track
-        CalculeLigne(self.parent,track)
-
     def SauveLigne(self,track):
         db = self.db
         track.qteMvts += track.deltaQte
@@ -391,7 +387,7 @@ class PNL_corps(xgte.PNL_corps):
                               ('ordi',self.parent.ordi),
                               ('dateSaisie',self.parent.today)]
         mess = "MAJ article '%s'"%track.IDarticle
-        self.db.ReqMAJ('stArticles',lstDonnees,'IDarticle',track.IDarticle,mess=mess,IDestChaine=True)
+        db.ReqMAJ('stArticles',lstDonnees,'IDarticle',track.IDarticle,mess=mess,IDestChaine=True)
 
     def OnEditFunctionKeys(self,event):
         row, col = self.ctrlOlv.cellBeingEdited
@@ -444,7 +440,6 @@ class DLG(xgte.DLG_tableau):
         (self.qteZero, self.qteMini) = (True, True)
         self.OnSaison(None)
 
-
     def Init(self):
         self.db = xdb.DB()
         # définition de l'OLV
@@ -461,10 +456,6 @@ class DLG(xgte.DLG_tableau):
         self.ctrlOlv = self.pnlOlv.ctrlOlv
         self.Bind(wx.EVT_CLOSE,self.OnClose)
         self.InitOlv()
-        """
-        self.flagSkipEdit = False
-        self.oldRow = None
-        """
 
     # ------------------- Gestion des actions -----------------------
 
@@ -570,6 +561,7 @@ class DLG(xgte.DLG_tableau):
         #wx.MessageBox("Traitement de sortie")
         if event:
             event.Skip()
+        self.db.Close()
         if self.IsModal():
             self.EndModal(wx.ID_CANCEL)
         else:

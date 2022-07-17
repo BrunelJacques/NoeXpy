@@ -19,7 +19,6 @@ from xpy.outils.ObjectListView.ObjectListView   import ColumnDefn
 from xpy.outils.ObjectListView.CellEditor       import ChoiceEditor
 from xpy.outils                                 import xformat,xbandeau
 
-
 MATRICE_PARAMS = {
 ("param0", "Article"): [
     {'name': 'article', 'genre': 'texte', 'label': 'Article',
@@ -118,11 +117,6 @@ def ValideLigne(dlg, track):
         track.valide = False
     else:
         track.messageRefus = ""
-
-    """ret  = wx.MessageBox("Enregistrement de la modification","Confirmez!",style=wx.YES_NO)
-    if ret == wx.YES:
-        return True
-    else: return False"""
 
 def CalculeLigne(dlg, track):
     if not hasattr(track, 'dicArticle'): return

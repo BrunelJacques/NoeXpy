@@ -223,8 +223,8 @@ def CalculeInventaire(dlg, *args, **kwd):
 
     # limitation à la date d'analyse
     dteFin = xformat.DatetimeToStr(dlg.date,iso=True)
-    if len(llInventaire) ==  0:
-        dteDeb = llInventaire[0][1]
+    if len(llInventaire) !=  0:
+        dteDeb = llInventaire[0][0]
     else:
         # date des premiers enregistrements si aucun inventaire stocké
         dteDeb = "2020-01-01"
@@ -267,7 +267,6 @@ def CalculeInventaire(dlg, *args, **kwd):
     #transforme le recordset en dd avec 1ère clé: article
     ddMouvements = {}
     for ligne in recordset:
-
         dLigne = xformat.ListToDict(lstChamps, ligne)
         ddMouvements[ligne[0]] = dLigne
 
@@ -286,7 +285,7 @@ def CalculeInventaire(dlg, *args, **kwd):
                         'artRations', 'prixActuel', 'lastBuy',
                         'qteMvts', 'mttMvts',
                         'qteAchats', 'mttAchats',]"""
-            if dInvent['qteConstat']: 
+            if dInvent['qteConstat']:
                 dInvent['qteStock'] = dInvent['qteConstat']
             dMvts['qteMvts'] += dInvent['qteStock']
             dMvts['mttMvts'] += dInvent['qteStock'] * dInvent['prixMoyen']
@@ -347,15 +346,14 @@ def CalculeInventaire(dlg, *args, **kwd):
         return donnees
 
     # composition des lignes
-    db = xdb.DB()
+    timedeb = datetime.datetime.now()
     for key, donnees in ddMouvements.items():
-        if key.startswith('BISCUITS B-N'):
-            print()
         if key in ddInventaire:
             lstDonnees.append(ComposeLigne(db,donnees, ddInventaire[key]))
         else:
             lstDonnees.append(ComposeLigne(db,donnees))
-    db.Close()
+    duree = datetime.datetime.now()-timedeb
+    print("durée: ",duree)
     return lstDonnees
 
 # Select de données  ----------------------------------------------------------
