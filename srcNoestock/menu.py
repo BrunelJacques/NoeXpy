@@ -10,7 +10,8 @@
 
 import wx
 from xpy         import xUTILS_Identification, xGestionConfig, xUTILS_DB
-from srcNoestock import DLG_Articles, DLG_Mouvements, DLG_Effectifs, DLG_PrixJour, DLG_Inventaires, UTILS_Stocks
+from srcNoestock import DLG_Articles, DLG_Mouvements, DLG_MvtOneArticle
+from srcNoestock import DLG_Effectifs, DLG_PrixJour, DLG_Inventaires
 from srcNoelite  import DB_schema
 
 """ Paramétrage de la construction de la barre de menus """
@@ -56,6 +57,12 @@ class MENU():
               "image": "Images/80x80/Sortie.png",
               "action": "On_outStock", "genre": wx.ITEM_NORMAL},
 
+             {"code": "oneArticle", "label": ("&Suivi mouvements"),
+              "infobulle": (
+                  "Suivi des mouvements d'un article particulier ou de tous les mouvements d'une période"),
+              "image": "Images/80x80/Validation.png",
+              "action": "On_oneArticle", "genre": wx.ITEM_NORMAL},
+
              {"code": "effectifs", "label": ("&Effectifs présents"),
               "infobulle": ("Gestion des effectifs journaliers des couverts"),
               "image": "Images/80x80/Famille.png",
@@ -68,7 +75,7 @@ class MENU():
 
              {"code": "prixJournee", "label": ("&Prix journée"),
               "infobulle": ("Calcul du prix de journée après saisie des sorties et de l'effectif"),
-              "image": "Images/80x80/Loupe.png",
+              "image": "Images/80x80/Euro.png",
               "action": "On_prixJournee", "genre": wx.ITEM_NORMAL},
          ]},
         # troisième colonne
@@ -121,6 +128,12 @@ class MENU():
              "image": "Images/80x80/Sortie.png",
              "action": self.menuClass.On_outStock, "genre": wx.ITEM_NORMAL},
 
+            {"code": "oneArticle", "label": ("&Suivi mouvements"),
+             "infobulle": (
+                 "Suivi des mouvements d'un article particulier ou de tous les mouvements d'une période"),
+             "image": "Images/80x80/Validation.png",
+             "action": self.menuClass.On_oneArticle, "genre": wx.ITEM_NORMAL},
+
             {"code": "effectifs", "label": ("&Effectifs présents"),
              "infobulle": ("Gestion des effectifs journaliers des couverts"),
              "image": "Images/80x80/Famille.png",
@@ -133,7 +146,7 @@ class MENU():
 
             {"code": "prixJournee", "label": ("&Prix journée"),
              "infobulle": ("Calcul du prix de journée après saisie des sorties et de l'effectif"),
-             "image": "Images/80x80/Loupe.png",
+             "image": "Images/80x80/Euro.png",
              "action": self.menuClass.On_prixJournee, "genre": wx.ITEM_NORMAL},
         ]
         return lstItems
@@ -187,6 +200,12 @@ class MENU():
 
     def On_outStock(self,event):
         dlg = DLG_Mouvements.DLG(sens='sorties')
+        ret = dlg.ShowModal()
+        dlg.Destroy()
+        del dlg
+
+    def On_oneArticle(self,event):
+        dlg = DLG_MvtOneArticle.DLG()
         ret = dlg.ShowModal()
         dlg.Destroy()
         del dlg

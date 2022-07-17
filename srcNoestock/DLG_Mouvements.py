@@ -27,6 +27,7 @@ from xpy.outils.xformat         import Nz
 TITRE = {'entrees':"Entrées en stock",
          'sorties':"Sorties de stock",
          'article':"Détail des mouvements"}
+
 INTRO = {'entrees':"Gestion des entrées dans le stock, par livraison, retour ou autre ",
          'sorties':"Gestion des sorties du stock, par repas multicamp, pour un camp ou autre ",
          'article':"Détail des mouvements d'un article, avec possibilité de corriger ou supprimer des lignes.",}
@@ -429,7 +430,7 @@ def CalculeLigne(dlg,track):
     track.prixTTC = round(PxUnToTTC(dlg.ht_ttc,txTva) * pxUn,6)
     track.qteStock = track.dicArticle['qteStock'] + (Nz(track.qte) * dlg.sensNum)
 
-    if isinstance(track.IDmouvement,int):
+    if isinstance(track.IDmouvement,int) and track.IDarticle.strip() != '':
         # Le mouvement est déjà comptabilisé dans le stock
         qteStock = dlg.ctrlOlv.buffArticles[track.IDarticle]['qteStock']
         if hasattr(track,'dicMvt') and track.IDarticle != track.dicMvt['IDarticle']:
@@ -551,12 +552,22 @@ class PNL_corps(xgte.PNL_corps):
             if h < 17: ch=2
             track.repas = nust.CHOIX_REPAS[ch-1]
 
+        if code == 'origine':
+            lstChoix = DICORIGINES[self.parent.sens]['codes'][1:]
+            editor.Set(lstChoix)
+            if self.parent.sens != 'article':
+                if track.origine:
+                    editor.SetStringSelection(track.origine)
+                else:
+                    editor.SetSelection(0)
+
         if code == 'repas':
             editor.Set(nust.CHOIX_REPAS)
             if track.repas:
                 editor.SetStringSelection(track.repas)
             else:
                 editor.SetSelection(1)
+
         try:
             IDmvt = int(track.IDmouvement)
         except: IDmvt = 0

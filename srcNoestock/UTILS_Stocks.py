@@ -452,7 +452,6 @@ def GetMvtsOneArticle(db, dParams=None):
                 ;""" % (",".join(lstChamps),where)
 
     retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetMvtsOneArticle')
-    print(req)
     ldMouvements = []
     if retour == "ok":
         recordset = db.ResultatReq()

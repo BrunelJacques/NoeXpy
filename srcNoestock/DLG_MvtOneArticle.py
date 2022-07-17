@@ -14,9 +14,10 @@ import srcNoestock.DLG_Mouvements      as dlgMvts
 import srcNoestock.DLG_Articles        as dlgArt
 import srcNoestock.UTILS_Stocks        as nust
 import xpy.xUTILS_DB                   as xdb
+from xpy.outils.xformat                         import Nz
 from xpy.outils.ObjectListView.ObjectListView   import ColumnDefn
 from xpy.outils.ObjectListView.CellEditor       import ChoiceEditor
-from xpy.outils                        import xformat,xbandeau
+from xpy.outils                                 import xformat,xbandeau
 
 
 MATRICE_PARAMS = {
@@ -77,6 +78,96 @@ def GetDicParams(*args):
 
 def ValideParams(*arg,**kwds):
     return True
+
+def ValideLigne(dlg, track):
+    # validation de la ligne de mouvement
+    track.valide = True
+    track.messageRefus = "Saisie incomplète\n\n"
+    CalculeLigne(dlg, track)
+
+    # IDmouvement manquant
+    if track.IDmouvement in (None, 0):
+        track.messageRefus += "L'IDmouvement n'a pas été déterminé\n"
+
+    # Repas non renseigné
+    if dlg.sens == 'sorties' and track.repas in (None, 0, ''):
+        track.messageRefus += "Le repas pour imputer la sortie n'est pas saisi\n"
+
+    # article manquant
+    if track.IDarticle in (None, 0, ''):
+        track.messageRefus += "L'article n'est pas saisi\n"
+
+    # qte null
+    try:
+        track.qte = float(track.qte)
+    except:
+        track.qte = None
+    if not track.qte or track.qte == 0.0:
+        track.messageRefus += "La quantité est à zéro, mouvement inutile à supprimer\n"
+
+    # pxUn null
+    try:
+        track.pxUn = float(track.pxUn)
+    except:
+        track.pxUn = None
+    if not track.pxUn or track.pxUn == 0.0:
+        track.messageRefus += "Le pxUn est à zéro, indispensable pour le prix de journée, fixez un prix!\n"
+
+    # envoi de l'erreur
+    if track.messageRefus != "Saisie incomplète\n\n":
+        track.valide = False
+    else:
+        track.messageRefus = ""
+
+    """ret  = wx.MessageBox("Enregistrement de la modification","Confirmez!",style=wx.YES_NO)
+    if ret == wx.YES:
+        return True
+    else: return False"""
+
+def CalculeLigne(dlg, track):
+    if not hasattr(track, 'dicArticle'): return
+    try:
+        qte = float(track.qte)
+    except:
+        qte = 0.0
+    try:
+        rations = track.dicArticle['rations']
+    except:
+        rations = 1
+    track.qteStock = track.dicArticle['qteStock'] + (Nz(track.qte))
+
+    try: pxUn = float(track.pxUn)
+    except: pxUn = 0.0
+
+    try: rations = track.dicArticle['rations']
+    except: rations = 1
+    txTva = track.dicArticle['txTva']
+    track.mttHT = dlgMvts.PxUnToHT(dlg.ht_ttc,txTva) * pxUn * qte
+    track.mttTTC = dlgMvts.PxUnToTTC(dlg.ht_ttc,txTva) * pxUn * qte
+    track.prixTTC = round(dlgMvts.PxUnToTTC(dlg.ht_ttc,txTva) * pxUn,6)
+    track.qteStock = track.dicArticle['qteStock'] + (Nz(track.qte) * dlg.sensNum)
+
+    if isinstance(track.IDmouvement,int) and track.IDarticle.strip() != '':
+        # Le mouvement est déjà comptabilisé dans le stock
+        qteStock = dlg.ctrlOlv.buffArticles[track.IDarticle]['qteStock']
+        if hasattr(track, 'dicMvt') and track.IDarticle != track.dicMvt['IDarticle']:
+            # le mouvement chargé n'est plus celui de l'article
+            track.qteStock = qteStock + track.qte * dlg.sensNum
+        elif hasattr(track, 'dicMvt'):
+            # le mouvement est celui de la ligne
+            track.qteStock = qteStock + (track.qte * dlg.sensNum) - track.dicMvt[
+                'qte']
+        else:
+            track.qteStock = qteStock
+
+    lstCodesColonnes = dlg.ctrlOlv.lstCodesColonnes
+    track.nbRations = qte * rations
+    if track.nbRations > 0:
+        track.pxRation = track.prixTTC / track.nbRations
+    else:
+        track.pxRation = 0.0
+    for ix in range(len(lstCodesColonnes)):
+        track.donnees[ix] = eval("track.%s" % lstCodesColonnes[ix])
 
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
@@ -154,10 +245,10 @@ class DLG(dlgMvts.DLG):
     # ------------------- Composition de l'écran de gestion-----------------------------
     def __init__(self,sens='article',  **kwds):
         # gestion des deux sens possibles 'entrees' et 'sorties'
-        self.sens = sens
+        kwds['sens'] = sens
         listArbo=os.path.abspath(__file__).split("\\")
         kwds['title'] = listArbo[-1] + "/" + self.__class__.__name__
-        super().__init__(None,**kwds)
+        super().__init__(**kwds)
 
     def Init(self):
         self.db = xdb.DB()
@@ -218,8 +309,14 @@ class DLG(dlgMvts.DLG):
     def ValideParams(self):
         ValideParams(None,None)
 
-    def ValideLigne(self,*args,**kwds):
-        wx.MessageBox("Validation de la ligne...")
+
+    def ValideLigne(self,code,track):
+        # Relais de l'appel par cellEditor à chaque colonne
+        ValideLigne(self,track)
+
+    def CalculeLigne(self,code,track):
+        # Relais de l'appel par par GetDonnnees
+        CalculeLigne(self,track)
 
     def GetParams(self):
         dParams = {'article':self.article,
