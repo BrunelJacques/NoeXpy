@@ -268,7 +268,7 @@ class DLG(dlgMvts.DLG):
         # lancement de l'écran en blocs principaux
         self.pnlBandeau = xbandeau.Bandeau(self, dlgMvts.TITRE[self.sens],
                                            dlgMvts.INTRO[self.sens], hauteur=20,
-                                           nomImage="xpy/Images/80x80/Loupe.png",
+                                           nomImage="xpy/Images/80x80/Validation.png",
                                            sizeImage=(60, 40))
         self.pnlBandeau.SetBackgroundColour(wx.Colour(250, 250, 180))
 
