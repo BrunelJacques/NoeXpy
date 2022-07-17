@@ -644,6 +644,8 @@ class PanelListView(wx.Panel):
         # teste old donnees % en cas de modif lance le sauve ligne du parent
         if hasattr(self.parent, 'SauveLigne'):
             self.parent.SauveLigne(track)
+        else:
+            wx.MessageBox("Fonction Enregistrement de ligne non trouvé!!!","Erreur du programme",style = wx.ICON_ERROR)
 
     # Initialisation d'une nouvelle track
     def InitTrackVierge(self,track,modelObject):
