@@ -1,3 +1,7 @@
+Version 1.1.2.11 (18/07/2022 12:30)
+- Colorisation des inventaires
+- Modif dans le calcul stock des mouvements d'articles
+
 Version 1.1.2.11 (17/07/2022)
 - Mise en service: Suivi des Mouvements d'article(s)
 - Correction bug sauvegarde correction inventaire
