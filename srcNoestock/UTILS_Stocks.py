@@ -162,22 +162,23 @@ def PxUnitInventaire(db, IDarticle, qteStock, dteAnalyse):
     pxUn = None
     cumQteAch = 0.0
     cumMttAch = 0.0
-    achatsPost = False
+    achatsLater = False
+    qteStockW = qteStock
     for dte, qteAchat, prixUnit in recordset:
         if dte > dteAnalyse:
-            achatsPost = True
+            achatsLater = True
             continue
         qteAchat = Nz(qteAchat)
         prixUnit = Nz(prixUnit)
-        qteAchat = min(qteStock,qteAchat)
+        qteAchat = min(qteStockW,qteAchat)
         cumQteAch += qteAchat
         cumMttAch += qteAchat * prixUnit
-        qteStock -= qteAchat
-        if qteStock < 0.0001:
+        qteStockW -= qteAchat
+        if qteStockW < 0.0001:
             break
     if cumQteAch > 0.0:
-        pxUn = round(cumMttAch / cumQteAch,4)
-        if not achatsPost:
+        pxUn = round(cumMttAch / cumQteAch,6)
+        if not achatsLater:
             ltModifs = [('prixMoyen', pxUn),
                         ('ordi', 'Calc_inventaire'),
                         ('dateSaisie', xformat.DatetimeToStr(datetime.date.today())) ]
@@ -500,6 +501,7 @@ def SqlArticles(**kwd):
     req = """   SELECT %s 
                 FROM stArticles 
                 %s
+                ORDER BY IDarticle
                 %s ;""" % (",".join(lstChamps),where,limit)
 
     retour = db.ExecuterReq(req, mess="UTILS_Stocks.SqlArticles Select" )

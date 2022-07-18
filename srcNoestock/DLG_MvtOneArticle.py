@@ -133,8 +133,6 @@ def CalculeLigne(dlg, track):
     try: pxUn = float(track.pxUn)
     except: pxUn = 0.0
 
-    try: rations = track.dicArticle['rations']
-    except: rations = 1
     txTva = track.dicArticle['txTva']
     track.mttHT = dlgMvts.PxUnToHT(dlg.ht_ttc,txTva) * pxUn * qte
     track.mttTTC = dlgMvts.PxUnToTTC(dlg.ht_ttc,txTva) * pxUn * qte
@@ -214,21 +212,17 @@ def GetMouvements(dlg, dParams):
         for code in lstCodesCol:
             # ajout de la donnée dans le mouvement
             if code == 'pxUn' :
+                donnees.append(dMvt['prixUnit'])
+            elif code == 'mttTTC' :
+                donnees.append(round(dMvt['prixUnit'] * dMvt['qte'],2))
+            elif code == 'pxMoy':
                 donnees.append(dArticle['prixMoyen'])
-                continue
-            if code == 'pxMoy':
-                donnees.append(dArticle['prixMoyen'])
-                continue
-            if code in dMvt.keys():
+            elif code in dMvt.keys():
                 donnees.append(dMvt[code])
-                continue
-            # ajout de l'article associé
-            if code in dArticle.keys():
+            elif code in dArticle.keys():
                 donnees.append(dArticle)
-                continue
-
-            donnees.append(None)
-            continue
+            else:
+                donnees.append(None)
         # codes supplémentaires de track non affichés('prixTTC','IDmouvement','dicArticle','dicMvt) dlg.dicOlv['lstCodesSup']
         donnees += [dArticle,
                     dMvt,]
@@ -237,9 +231,9 @@ def GetMouvements(dlg, dParams):
 
 class DLG(dlgMvts.DLG):
     # ------------------- Composition de l'écran de gestion-----------------------------
-    def __init__(self,sens='article',  **kwds):
+    def __init__(self,article='',  **kwds):
         # gestion des deux sens possibles 'entrees' et 'sorties'
-        kwds['sens'] = sens
+        kwds['sens'] = 'article'
         listArbo=os.path.abspath(__file__).split("\\")
         kwds['title'] = listArbo[-1] + "/" + self.__class__.__name__
         super().__init__(**kwds)
@@ -302,7 +296,6 @@ class DLG(dlgMvts.DLG):
 
     def ValideParams(self):
         ValideParams(None,None)
-
 
     def ValideLigne(self,code,track):
         # Relais de l'appel par cellEditor à chaque colonne
@@ -413,6 +406,6 @@ class DLG(dlgMvts.DLG):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(sens='article')
+    dlg = DLG()
     dlg.ShowModal()
     app.MainLoop()

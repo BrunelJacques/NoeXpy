@@ -205,6 +205,8 @@ def GetOlvColonnes(dlg):
                         isEditable=False, stringConverter=xformat.FmtDecimal, ),
             ColumnDefn("Maj Prix", 'left', 80, 'lastBuy', valueSetter=datetime.date.today(),isSpaceFilling=False,
                         isEditable=False, stringConverter=xformat.FmtDate,),
+            ColumnDefn("Prix Actuel", 'left', 40, 'prixActuel', valueSetter= 0.0,isSpaceFilling=False,
+                        isEditable=False, stringConverter=xformat.FmtDecimal),
             ]
     return lstCol
 
@@ -291,6 +293,31 @@ def ValideLigne(dlg,track):
         track.valide = False
     else: track.messageRefus = ""
     return
+
+def RowFormatter(listItem, track):
+    anomalie = None
+    if track.qteAchats != 0:
+        puAchats = round(track.mttAchats/track.qteAchats,6)
+    else: puAchats = track.pxUn
+    if abs(1 - (track.pxUn / puAchats)) >= 0.05:
+        anomalie = 1
+    elif track.prixActuel != 0 and abs((track.prixActuel - track.pxUn) / track.prixActuel) >= 5:
+        anomalie = 2
+    elif track.pxUn <= 0:
+        anomalie = 3
+    if anomalie:
+        # anomalie rouge / fushia
+        listItem.SetTextColour(wx.RED)
+        listItem.SetBackgroundColour(wx.Colour(255, 180, 200))
+    elif track.qteConstat < 0 or track.rations > 1000:
+        # stock négatif ou plus de 1000 rations: écrit en rouge
+        listItem.SetTextColour(wx.RED)
+    elif track.qteMini > 0 and track.qteConstat < track.qteMini:
+        # niveau bas dans le stock fond rose
+        listItem.SetBackgroundColour(wx.Colour(255, 205, 210))
+    elif track.qteConstat == 0:
+        # stock à zero: fond vert
+        listItem.SetBackgroundColour(wx.Colour(220, 237, 200))
 
 class PNL_corps(xgte.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
@@ -462,6 +489,7 @@ class DLG(xgte.DLG_tableau):
     def InitOlv(self):
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
         self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
+        self.ctrlOlv.rowFormatter = RowFormatter
         self.ctrlOlv.InitObjectListView()
 
     def OnDate(self,event):

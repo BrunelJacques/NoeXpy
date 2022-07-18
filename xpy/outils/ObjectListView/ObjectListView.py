@@ -2374,7 +2374,7 @@ class ObjectListView(wx.ListCtrl):
             False)
 
         self.GetEventHandler().ProcessEvent(evt)
-        if not evt.IsVetoed() and evt.cellValue is not None:
+        if not evt.IsVetoed() and not (evt.cellValue in(None,'')):
             self.columns[subItemIndex].SetValue(rowModel, evt.cellValue)
             self.RefreshIndex(rowIndex, rowModel)
         else:
