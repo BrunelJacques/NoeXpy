@@ -22,6 +22,7 @@ from . CellEditor import CellEditorRegistry, MakeAutoCompleteTextBox, MakeAutoCo
 from . ListCtrlPrinter import ReportFormat, BlockFormat, LineDecoration, RectangleDecoration, ImageDecoration
 from . ObjectListView import ObjectListView, ColumnDefn, VirtualObjectListView, FastObjectListView, GroupListView, ListGroup, BatchedUpdate, BarreRecherche, CTRL_Outils
 from . import Filter
+from . import Footer
 
 __all__ = [
     "BatchedUpdate",
@@ -58,4 +59,5 @@ __all__ = [
     "VirtualObjectListView",
     "BarreRecherche",
     "CTRL_Outils",
+    "Footer",
     ]

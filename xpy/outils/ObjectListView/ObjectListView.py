@@ -827,7 +827,12 @@ class ObjectListView(wx.ListCtrl):
             item.SetBackgroundColour(self.newRowsBackColor)
 
         if self.rowFormatter is not None:
-            self.rowFormatter(item, model)
+            try:
+                self.rowFormatter(item, model)
+            except Exception as err:
+                print(
+                    "self.rowFormater Err: %s - Pour model: %s" % (err, model.donnees))
+                raise err
 
     def RepopulateList(self):
         """
@@ -851,11 +856,10 @@ class ObjectListView(wx.ListCtrl):
             for (index, model) in enumerate(self.innerList):
                 item.Clear()
                 self._InsertUpdateItem(item, index, model, True)
-
             # Auto-resize once all the data has been added
             self.AutoSizeColumns()
         except Exception as err:
-            print(err)
+            print("ObjectListView.RepopulateList: ",err)
         finally:
             self.Thaw()
 
@@ -872,27 +876,19 @@ class ObjectListView(wx.ListCtrl):
         if isInsert:
             listItem.SetId(index)
             listItem.SetData(index)
-
         listItem.SetText(self.GetStringValueAt(modelObject, 0))
         listItem.SetImage(self.GetImageAt(modelObject, 0))
         self._FormatOneItem(listItem, index, modelObject)
-
         if isInsert:
             self.InsertItem(listItem)
         else:
             self.SetItem(listItem)
 
         for iCol in range(1, len(self.columns)):
-            if 'phoenix' in wx.PlatformInfo:
-                self.SetItem(
-                    index, iCol, self.GetStringValueAt(
-                        modelObject, iCol), self.GetImageAt(
-                        modelObject, iCol))
-            else:
-                self.SetStringItem(
-                    index, iCol, self.GetStringValueAt(
-                        modelObject, iCol), self.GetImageAt(
-                        modelObject, iCol))
+            self.SetItem(
+                index, iCol, self.GetStringValueAt(
+                    modelObject, iCol), self.GetImageAt(
+                    modelObject, iCol))
 
     def RefreshObject(self, modelObject):
         """

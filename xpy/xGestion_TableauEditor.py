@@ -15,8 +15,10 @@ import xpy.xUTILS_SaisieParams as xusp
 from xpy.outils                 import xbandeau,xformat, xboutons
 import xpy.outils.ObjectListView.ObjectListView as ObjectListView
 from xpy.outils.ObjectListView.ObjectListView  import  ColumnDefn
-from xpy.outils.ObjectListView import Footer, CTRL_Outils, OLVEvent,CellEditor
-
+import xpy.outils.ObjectListView.Footer as Footer
+from xpy.outils.ObjectListView.ObjectListView import CTRL_Outils
+import xpy.outils.ObjectListView.OLVEvent as OLVEvent
+import xpy.outils.ObjectListView.CellEditor as CellEditor
 from xpy.outils.xconst          import *
 
 # ----------  Objets  ObjectListView --------------------------------------------------------

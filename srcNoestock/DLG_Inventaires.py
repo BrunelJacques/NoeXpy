@@ -296,12 +296,13 @@ def ValideLigne(dlg,track):
 
 def RowFormatter(listItem, track):
     anomalie = None
+    pxAct = track.prixActuel
     if track.qteAchats != 0:
         puAchats = round(track.mttAchats/track.qteAchats,6)
     else: puAchats = track.pxUn
     if abs(1 - (track.pxUn / puAchats)) >= 0.05:
         anomalie = 1
-    elif track.prixActuel != 0 and abs((track.prixActuel - track.pxUn) / track.prixActuel) >= 5:
+    elif pxAct and pxAct != 0 and abs((pxAct - track.pxUn) / pxAct) >= 5:
         anomalie = 2
     elif track.pxUn <= 0:
         anomalie = 3
