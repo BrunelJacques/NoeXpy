@@ -303,11 +303,12 @@ def RowFormatter(listItem, track):
     #if track.IDarticle == "AROME MAGGI BT":
     #    test
     anomalie = None
+
     pxAct = track.prixActuel
     if track.qteAchats != 0:
         puAchats = round(track.mttAchats/track.qteAchats,6)
     else: puAchats = track.pxUn
-    if abs(1 - (track.pxUn / puAchats)) >= 0.05:
+    if abs(1 - (track.pxUn / puAchats)) >= 0.10:
         # Prix mouvements diffère de 5% du prix moyen derniers achats
         anomalie = 1
     elif pxAct and pxAct != 0.0 and ((track.pxUn / pxAct) > 5 or (track.pxUn / pxAct < 0.2)):
@@ -324,8 +325,8 @@ def RowFormatter(listItem, track):
         # stock négatif ou plus de 1000 rations: écrit en rouge
         listItem.SetTextColour(wx.RED)
     elif track.qteMini > 0 and track.qteConstat < track.qteMini:
-        # niveau de stock  inférieur au minimum saison: fond rose
-        listItem.SetBackgroundColour(wx.Colour(255, 205, 210))
+        # niveau de stock  inférieur au minimum saison: fond jaune
+        listItem.SetBackgroundColour(wx.Colour(255, 245, 160))
     elif track.qteConstat == 0:
         # stock à zero: fond vert
         listItem.SetBackgroundColour(wx.Colour(220, 237, 200))

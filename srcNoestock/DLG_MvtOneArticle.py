@@ -233,6 +233,7 @@ class DLG(dlgMvts.DLG):
     # ------------------- Composition de l'écran de gestion-----------------------------
     def __init__(self, **kwds):
         # gestion des deux sens possibles 'entrees' et 'sorties'
+        self.article = kwds.pop('article',None)
         kwds['sens'] = 'article'
         listArbo=os.path.abspath(__file__).split("\\")
         kwds['title'] = listArbo[-1] + "/" + self.__class__.__name__
@@ -244,7 +245,6 @@ class DLG(dlgMvts.DLG):
         # définition de l'OLV
         self.ctrlOlv = None
         self.typeAchat = None
-        self.article = None
         self.origine = 'tous'
         today = datetime.date.today()
 
@@ -273,6 +273,9 @@ class DLG(dlgMvts.DLG):
                                              retourLignes=False)
         self.pnlParams.SetOneValue('postDate',valeur=xformat.FmtDate(self.postDate),
                                    codeBox='param2')
+        if self.article:
+            self.pnlParams.SetOneValue('article',self.article,codeBox='param0')
+            self.OnArticle(None)
 
     def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
