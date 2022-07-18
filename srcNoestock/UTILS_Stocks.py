@@ -215,6 +215,8 @@ def CalculeInventaire(dlg, *args, **kwd):
     # appel du dernier inventaire
     lstChamps = ['IDdate','IDarticle','qteStock','prixMoyen','qteConstat','prixActuel',]
     llInventaire = GetLastInventaire(dlg.date, lstChamps)
+    # renomage prixMoyen pour éviter la conusion avec le champ de l'article
+    lstChamps[lstChamps.index('prixMoyen')] = 'prixInvent'
     ddInventaire = {}
 
     #transforme l'inventaire ll en dd avec 1ère clé: article
@@ -275,11 +277,11 @@ def CalculeInventaire(dlg, *args, **kwd):
     lstCodes = dlg.dicOlv['lstCodes'] + dlg.dicOlv['lstCodesSup']
     lstDonnees = []
 
-    # fusion des deux dictionnaires mouvements période et inventaire début
+    # fusion des deux dictionnaires mouvements période et inventaire début --------------
     def ComposeLigne(db, dMvts, dInvent=None):
         if dInvent:
             # cumul de l'inventaire dans les mouvements
-            """ dInvent['IDdate','IDarticle','qteStock','prixMoyen','qteConstat','prixActuel',]
+            """ dInvent['IDdate','IDarticle','qteStock','prixInvent','qteConstat','prixActuel',]
                 dMvts [ 'IDarticle',
                         'fournisseur', 'magasin', 'rayon',
                         'qteMini', 'qteSaison',
@@ -287,15 +289,15 @@ def CalculeInventaire(dlg, *args, **kwd):
                         'qteMvts', 'mttMvts',
                         'qteAchats', 'mttAchats',]"""
             if dInvent['qteConstat']:
-                dInvent['qteStock'] = dInvent['qteConstat']
+                dInvent['qteStock'] = dInvent['qteConstat'] # priorité au constat s'il y a
             dMvts['qteMvts'] += dInvent['qteStock']
-            dMvts['mttMvts'] += dInvent['qteStock'] * dInvent['prixMoyen']
-            if (not dMvts['prixActuel']) or round(dMvts['prixActuel'],4) == 0.0:
+            dMvts['mttMvts'] += dInvent['qteStock'] * dInvent['prixInvent']
+            if (not dMvts['prixActuel']) or round(dMvts['prixActuel'],6) == 0.0:
                 dMvts['prixActuel'] = dInvent['prixActuel']
             if dMvts['qteAchats'] == 0:
-                dMvts['prixActuel'] += dInvent['prixMoyen']
+                dMvts['prixActuel'] += dInvent['prixInvent']
                 dMvts['qteAchats'] += dInvent['qteStock']
-                dMvts['mttAchats'] += (dInvent['qteStock'] * dInvent['prixMoyen'])
+                dMvts['mttAchats'] += (dInvent['qteStock'] * dInvent['prixInvent'])
 
         donnees = [None, ] * len(lstCodes)
         # reprise des champs transposés en l'état (même nom)
@@ -306,24 +308,31 @@ def CalculeInventaire(dlg, *args, **kwd):
                     value = round(float(value),4)
                 donnees[lstCodes.index(code)] = value
 
-        # Les champs lus doivent être assemblés pour certains
-        qteMvts = Nz(dMvts['qteMvts'])
-        pxUn = Nz(dMvts['prixMoyen'])
+        # Champs utiles pour contrôles
+        qteMvts = Nz(dMvts['qteMvts']) # quantité du stock
+        mttMvts = Nz(dMvts['mttMvts']) # cumul des mouvements c'est le reste en stock
+        pxUn = Nz(dMvts['prixMoyen']) # c'est le prix dans l'article
         pxAct = dMvts['prixActuel']
-        # contrôle du prix moyen
+        mttStock = pxUn * qteMvts
+        deltaValoSt = abs(mttStock - mttMvts) # ecart cumulé des mvts stocks
+
+        # contrôle pxUn: prix unitaire de l'article % aux mouvements
         if qteMvts != 0:
             qteAchats = Nz(dMvts['qteAchats'])
             mttAchats = Nz(dMvts['mttAchats'])
-            # il y a eu des achats dans la période
+            # il y a eu des achats dans la période: plusieurs tests
             if qteAchats * mttAchats > 0:
+                txErreur = deltaValoSt / mttAchats
                 puAchats = round(mttAchats / qteAchats, 4)
                 if puAchats == 0:
                     pass
                 if abs(1 - (pxUn / puAchats)) < 0.05:
-                    # l'ensemble des achats confirme le prix moyen
+                    # le prix moyen de tous les achats confirme le prix moyen
                     pass
                 elif pxAct > 0 and abs(1 - (pxUn / pxAct)) < 0.05:
                     # le dernier prix à confirmé le prix moyen
+                    pass
+                elif abs(txErreur) <= 0.05 or deltaValoSt < 10: # errreur faible
                     pass
                 else:
                     # prix moyen en distorsion: on recalcule selon les derniers achats
@@ -346,6 +355,8 @@ def CalculeInventaire(dlg, *args, **kwd):
             mini = 0
         donnees[lstCodes.index('qteMini')] = mini
         return donnees
+    # fin de ComposeLigne --------------------------------------------------------------
+
 
     # composition des lignes
     timedeb = datetime.datetime.now()
