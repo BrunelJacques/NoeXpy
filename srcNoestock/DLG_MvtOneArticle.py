@@ -231,7 +231,7 @@ def GetMouvements(dlg, dParams):
 
 class DLG(dlgMvts.DLG):
     # ------------------- Composition de l'écran de gestion-----------------------------
-    def __init__(self,article='',  **kwds):
+    def __init__(self, **kwds):
         # gestion des deux sens possibles 'entrees' et 'sorties'
         kwds['sens'] = 'article'
         listArbo=os.path.abspath(__file__).split("\\")

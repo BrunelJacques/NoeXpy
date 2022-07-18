@@ -22,6 +22,7 @@ import xpy.xGestion_TableauEditor      as xgte
 import xpy.xGestion_TableauRecherche   as xgtr
 import xpy.xUTILS_Identification       as xuid
 import xpy.xUTILS_DB                   as xdb
+from srcNoestock                import DLG_MvtOneArticle
 from srcNoestock                import DLG_Articles
 from srcNoelite                 import DB_schema
 from xpy.outils.ObjectListView  import ColumnDefn
@@ -172,15 +173,19 @@ def GetDicParams(dlg):
 
 def GetBoutons(dlg):
     return  [
-                {'name': 'btnVerif', 'label': "Conserver cet \ninventaire",
-                    'help': "Confirme et historise les quantités en stock vérifiées ce jour.\nTout cocher et cliquer à l'inventaire de clôture",
-                    'size': (150, 35),'onBtn':dlg.OnImprimer},
-                {'name': 'btnImp', 'label': "Imprimer\nl'inventaire",
-                    'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
-                    'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
-                {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour sortir",
-                    'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnClose}
-            ]
+        {'name': 'btnOneArticle', 'label': "Mouvements \narticle",
+         'help': "Permet de visualiser les mouvements de l'article sélectionné",
+         'size': (150, 35), 'onBtn': dlg.OnOneArticle},
+
+        {'name': 'btnVerif', 'label': "Conserver cet \ninventaire",
+            'help': "Confirme et historise les quantités en stock vérifiées ce jour.\nTout cocher et cliquer à l'inventaire de clôture",
+            'size': (150, 35),'onBtn':dlg.OnImprimer},
+        {'name': 'btnImp', 'label': "Imprimer\nl'inventaire",
+            'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
+            'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
+        {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour sortir",
+            'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnClose}
+    ]
 
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
@@ -295,16 +300,21 @@ def ValideLigne(dlg,track):
     return
 
 def RowFormatter(listItem, track):
+    #if track.IDarticle == "AROME MAGGI BT":
+    #    test
     anomalie = None
     pxAct = track.prixActuel
     if track.qteAchats != 0:
         puAchats = round(track.mttAchats/track.qteAchats,6)
     else: puAchats = track.pxUn
     if abs(1 - (track.pxUn / puAchats)) >= 0.05:
+        # Prix mouvements diffère de 5% du prix moyen derniers achats
         anomalie = 1
-    elif pxAct and pxAct != 0 and abs((pxAct - track.pxUn) / pxAct) >= 5:
+    elif pxAct and pxAct != 0.0 and ((track.pxUn / pxAct) > 5 or (track.pxUn / pxAct < 0.2)):
+        # ¨Prix mouvements diffère du dernier achat rapport 1 à 5
         anomalie = 2
     elif track.pxUn <= 0:
+        # prix Négatif
         anomalie = 3
     if anomalie:
         # anomalie rouge / fushia
@@ -314,7 +324,7 @@ def RowFormatter(listItem, track):
         # stock négatif ou plus de 1000 rations: écrit en rouge
         listItem.SetTextColour(wx.RED)
     elif track.qteMini > 0 and track.qteConstat < track.qteMini:
-        # niveau bas dans le stock fond rose
+        # niveau de stock  inférieur au minimum saison: fond rose
         listItem.SetBackgroundColour(wx.Colour(255, 205, 210))
     elif track.qteConstat == 0:
         # stock à zero: fond vert
@@ -582,6 +592,16 @@ class DLG(xgte.DLG_tableau):
         zer = 'Sans'
         if self.qteZero: zer = 'Avec'
         return "Inventaire STOCKS du %s, Qtés à zéro: %s, Qtés au dessus du minimum: %s"%(date, zer, mini)
+
+    def OnOneArticle(self,event):
+        selection = self.ctrlOlv.GetSelectedObject()
+        if not selection:
+            wx.MessageBox("Veuillez sélectionner un article...","pas de sélection",
+                          style= wx.ICON_INFORMATION)
+            return
+        dlg = DLG_MvtOneArticle.DLG(article=selection.IDarticle)
+        dlg.ShowModal()
+        #self.GetDonnees()
 
     def OnImprimer(self,event):
         self.ctrlOlv.Apercu(None)
