@@ -1,4 +1,4 @@
-Version 1.1.2.13 (18/07/2022 16:30)
+Version 1.1.2.13 (18/07/2022 18:00)
 - Intégration du suivi mouvements dans l'inventaire
 - Modif colorisation inventaires
 
