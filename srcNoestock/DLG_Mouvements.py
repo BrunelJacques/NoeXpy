@@ -713,7 +713,7 @@ class DLG(xusp.DLG_vide):
                                                nomImage="xpy/Images/80x80/Entree.png",
                                                sizeImage=(60,40))
             self.pnlBandeau.SetBackgroundColour(wx.Colour(220, 250, 220))
-        if self.sens == 'article':
+        elif self.sens == 'article':
             self.pnlBandeau = xbandeau.Bandeau(self, TITRE[self.sens],
                                                INTRO[self.sens], hauteur=20,
                                                nomImage="xpy/Images/80x80/Loupe.png",

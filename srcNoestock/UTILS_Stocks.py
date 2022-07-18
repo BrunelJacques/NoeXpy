@@ -327,6 +327,7 @@ def CalculeInventaire(dlg, *args, **kwd):
                     pass
                 else:
                     # prix moyen en distorsion: on recalcule selon les derniers achats
+                    print("Recalcul: ",dMvts['IDarticle'])
                     pxUn = PxUnitInventaire(db, dMvts['IDarticle'], qteMvts, dteFin)
                     if not pxUn:
                         pxUn = pxAct

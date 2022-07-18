@@ -303,20 +303,22 @@ def RowFormatter(listItem, track):
     #if track.IDarticle == "AROME MAGGI BT":
     #    test
     anomalie = None
+    if track.qteConstat != 0:
+        pxAct = track.prixActuel
+        pxUn = track.pxUn
+        if track.qteAchats != 0:
+            puAchats = round(track.mttAchats/track.qteAchats,6)
+        else: puAchats = pxUn
 
-    pxAct = track.prixActuel
-    if track.qteAchats != 0:
-        puAchats = round(track.mttAchats/track.qteAchats,6)
-    else: puAchats = track.pxUn
-    if abs(1 - (track.pxUn / puAchats)) >= 0.10:
-        # Prix mouvements diffère de 5% du prix moyen derniers achats
-        anomalie = 1
-    elif pxAct and pxAct != 0.0 and ((track.pxUn / pxAct) > 5 or (track.pxUn / pxAct < 0.2)):
-        # ¨Prix mouvements diffère du dernier achat rapport 1 à 5
-        anomalie = 2
-    elif track.pxUn <= 0:
-        # prix Négatif
-        anomalie = 3
+        if abs(1 - (pxUn / puAchats)) <= 0.10:
+            # Prix mouvements diffère de 5% du prix moyen derniers achats
+            anomalie = None
+        elif pxAct and pxAct != 0.0 and ((pxUn / pxAct) > 5 or (pxUn / pxAct < 0.2)):
+            # ¨Prix mouvements diffère du dernier achat rapport 1 à 5
+            anomalie = 2
+        elif pxUn <= 0:
+            # prix Négatif
+            anomalie = 3
     if anomalie:
         # anomalie rouge / fushia
         listItem.SetTextColour(wx.RED)
