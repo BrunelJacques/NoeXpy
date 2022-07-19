@@ -348,8 +348,9 @@ def GetMouvements(dlg, dParams):
     ldMouvements = nust.GetMvtsOneDate(dlg.db, dParams)
     # appel des dicArticles des mouvements
     ddArticles = {}
-    for dMvt in ldMouvements:
-        ddArticles[dMvt['IDarticle']] = nust.SqlDicArticle(dlg.db,dlg.ctrlOlv,dMvt['IDarticle'])
+    lstArticles = [x['IDarticle'] for x in ldMouvements]
+
+    ddArticles = nust.SqlDicArticles(dlg.db, dlg.ctrlOlv,lstArticles )
 
     # composition des données
     lstDonnees = []
@@ -592,7 +593,8 @@ class PNL_corps(xgte.PNL_corps):
             value = self.GetOneIDarticle(self.db,value)
             track.IDarticle = value
             if value:
-                track.dicArticle = nust.SqlDicArticle(self.db,self.ctrlOlv,value)
+                ddArticles = nust.SqlDicArticles(self.db, self.ctrlOlv, [value,])
+                track.dicArticle = ddArticles[value]
                 track.nbRations = track.dicArticle['rations']
                 track.qteStock = track.dicArticle['qteStock']
                 track.pxUn = track.dicArticle['prixMoyen'] / PxUnToTTC(self.lanceur.ht_ttc,track.dicArticle['txTva'])

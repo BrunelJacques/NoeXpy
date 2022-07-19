@@ -14,6 +14,7 @@ import srcNoestock.DLG_Mouvements      as dlgMvts
 import srcNoestock.DLG_Articles        as dlgArt
 import srcNoestock.UTILS_Stocks        as nust
 import xpy.xUTILS_DB                   as xdb
+from srcNoelite                                 import DB_schema
 from xpy.outils.xformat                         import Nz
 from xpy.outils.ObjectListView.ObjectListView   import ColumnDefn
 from xpy.outils.ObjectListView.CellEditor       import ChoiceEditor
@@ -42,12 +43,12 @@ MATRICE_PARAMS = {
     ],
 # param2 pour periode car interaction avec super (DLG_Mouvements)
 ("param2", "Periode"): [
-    {'name': 'postDate', 'genre': 'Texte', 'label': "Après le",
+    {'name': 'laterDate', 'genre': 'Texte', 'label': "Après le",
                     'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
                                           "Les séparateurs ne sont pas obligatoires en saisie.",
                                           "Saisissez la date de l'entrée en stock sans séparateurs, "),
                     'value':'',
-                    'ctrlAction': 'OnPostDate',
+                    'ctrlAction': 'OnLaterDate',
                     'ctrlMaxSize':(150,35),
                     'txtSize': 50},
     ],
@@ -112,6 +113,11 @@ def ValideLigne(dlg, track):
     if not track.pxUn or track.pxUn == 0.0:
         track.messageRefus += "Le pxUn est à zéro, indispensable pour le prix de journée, fixez un prix!\n"
 
+    # modif bloquée selon nature
+    if track.origine in ('achat', 'inventaire'):
+        track.messageRefus = "La modification des achats et de l'inventaire sont impossible ici\n"
+        wx.MessageBox(track.messageRefus,"Non modifiable",style=wx.ICON_STOP)
+
     # envoi de l'erreur
     if track.messageRefus != "Saisie incomplète\n\n":
         track.valide = False
@@ -170,10 +176,11 @@ def GetOlvColonnes(dlg):
             ColumnDefn("Date Mvt", 'left', 80, 'date', isSpaceFilling=False,
                        stringConverter=xformat.FmtDate),
             ColumnDefn("Mouvement", 'left', 80, 'origine',
-                                cellEditorCreator=ChoiceEditor),
+                                cellEditorCreator=ChoiceEditor,isEditable=False),
             ColumnDefn("Repas", 'left', 60, 'repas',
                                 cellEditorCreator=ChoiceEditor),
-            ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",isSpaceFilling=True),
+            ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",
+                       isSpaceFilling=True, isEditable=False),
             ColumnDefn("Quantité", 'right', 80, 'qte', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtQte),
             ColumnDefn(titlePrix, 'right', 80, 'pxUn', isSpaceFilling=False, valueSetter=0.0,
@@ -188,17 +195,20 @@ def GetOlvColonnes(dlg):
                    stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Qté stock", 'right', 80, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
+            ColumnDefn("Saisie", 'left', 80, 'dateSaisie', isSpaceFilling=False,
+                       stringConverter=xformat.FmtDate, isEditable=False),
+            ColumnDefn("Ordi", 'left', 100, 'ordi', valueSetter="",isSpaceFilling=False,
+                       isEditable=False),
             ]
     return lstCol
 
-def GetMouvements(dlg, dParams):
+def ComposeDonnees(db,dlg,ldMouvements):
     # retourne la liste des données de l'OLv de DlgEntree
     ctrlOlv = dlg.ctrlOlv
-    ldMouvements = nust.GetMvtsOneArticle(dlg.db, dParams)
-    # appel des dicArticles des mouvements
-    ddArticles = {}
-    for dMvt in ldMouvements:
-        ddArticles[dMvt['IDarticle']] = nust.SqlDicArticle(dlg.db,dlg.ctrlOlv,dMvt['IDarticle'])
+
+    # liste des articles contenus dans les lignes (un ou tous)
+    lstArticles = [x['IDarticle'] for x in ldMouvements]
+    ddArticles = nust.SqlDicArticles(dlg.db, dlg.ctrlOlv,lstArticles)
 
     # composition des données
     lstDonnees = []
@@ -223,9 +233,8 @@ def GetMouvements(dlg, dParams):
                 donnees.append(dArticle)
             else:
                 donnees.append(None)
-        # codes supplémentaires de track non affichés('prixTTC','IDmouvement','dicArticle','dicMvt) dlg.dicOlv['lstCodesSup']
-        donnees += [dArticle,
-                    dMvt,]
+        # codes supplémentaires de track non affichés
+        donnees += [dArticle, dMvt,]
         lstDonnees.append(donnees)
     return lstDonnees
 
@@ -269,9 +278,10 @@ class DLG(dlgMvts.DLG):
         self.ctrlOlv.DeleteAllItems()
         # charger les valeurs de pnl_params
         self.Bind(wx.EVT_CLOSE,self.OnClose)
-        self.postDate = nust.GetLastInventaire(today, lstChamps=['IDdate',],
+        self.laterDate = nust.GetLastInventaire(today, lstChamps=['IDdate',],
                                              retourLignes=False)
-        self.pnlParams.SetOneValue('postDate',valeur=xformat.FmtDate(self.postDate),
+        self.withInvent = True
+        self.pnlParams.SetOneValue('laterDate',valeur=xformat.FmtDate(self.laterDate),
                                    codeBox='param2')
         if self.article:
             self.pnlParams.SetOneValue('article',self.article,codeBox='param0')
@@ -311,7 +321,8 @@ class DLG(dlgMvts.DLG):
     def GetParams(self):
         dParams = {'article':self.article,
                    'origine': self.origine,
-                   'postDate': self.postDate}
+                   'laterDate': self.laterDate,
+                   'withInvent': self.withInvent}
         return dParams
 
     def GetDonnees(self,dParams=None):
@@ -321,7 +332,12 @@ class DLG(dlgMvts.DLG):
         if not dParams:
             return
         # appel des données de l'Olv principal à éditer
-        self.ctrlOlv.lstDonnees = [x for x in GetMouvements(self,dParams)]
+        dParams['lstChamps'] = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
+        ldMouvements = []
+        if dParams['withInvent']:
+            ldMouvements = [x for x in nust.GetLastInventOneArt(self.db,dParams)]
+        ldMouvements += [x for x in nust.GetMvtsOneArticle(self.db, dParams)]
+        self.ctrlOlv.lstDonnees = ComposeDonnees(self.db,dlg,ldMouvements)
         self.ctrlOlv.MAJ()
 
     # gestion des actions évènements sur les ctrl
@@ -372,17 +388,18 @@ class DLG(dlgMvts.DLG):
         if self.tous:
             self.GetDonnees(self.GetParams())
 
-    def OnPostDate(self,event):
+    def OnLaterDate(self,event):
         # éviter la redondance de l'évènement 'Enter'
         if event and event.EventType != wx.EVT_KILL_FOCUS.evtType[0]:
             return
-        saisie = self.pnlParams.GetOneValue('postDate',codeBox='param2')
+        saisie = self.pnlParams.GetOneValue('laterDate',codeBox='param2')
         saisie = xformat.FmtDate(saisie)
-        self.postDate = xformat.DateFrToDatetime(saisie)
+        self.laterDate = xformat.DateFrToDatetime(saisie)
         lastInvent = xformat.DateSqlToDatetime(nust.GetLastInventaire(None, lstChamps=['IDdate',],
                                              retourLignes=False))
-        self.pnlParams.SetOneValue('postDate',valeur=xformat.FmtDate(saisie),codeBox='param2')
-        if self.postDate < lastInvent:
+        self.pnlParams.SetOneValue('laterDate',valeur=xformat.FmtDate(saisie),codeBox='param2')
+        self.withInvent = False
+        if self.laterDate < lastInvent:
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
             mess = "Désactivation des modifications\n\n"
             mess += "Un inventaire a été archivé au '%s', "% xformat.FmtDate(lastInvent)
@@ -390,6 +407,8 @@ class DLG(dlgMvts.DLG):
             mess += ", mais vous pouvez les consulter."
             wx.MessageBox(mess,"Information",style = wx.ICON_INFORMATION)
         else:
+            if len(lastInvent) > 0:
+                self.withInvent = lastInvent
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK  # réactive dblClic
         if self.article:
             self.GetDonnees(self.GetParams())

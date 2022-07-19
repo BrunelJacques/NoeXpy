@@ -80,7 +80,7 @@ def PostInventaire(cloture=datetime.date.today(),inventaire=[[],]):
         return True
     return ret
 
-def GetLastInventaire(dteAnalyse=None,lstChamps=None,retourLignes=True):
+def GetLastInventaire(dteAnalyse=None,lstChamps=None,retourLignes=True,oneArticle=None):
     # return: lignes de l'inventaire précédant dteAnalyse ou seulement sa date
     db = xdb.DB()
     limit = ""
@@ -90,6 +90,9 @@ def GetLastInventaire(dteAnalyse=None,lstChamps=None,retourLignes=True):
     # Appelle l'inventaire précédent en une seule requête polyvalente
     if not lstChamps:
         lstChamps = ['IDdate','IDarticle','qteStock','prixMoyen']
+    condArticle = ""
+    if oneArticle:
+        condArticle = "AND (IDarticle = '%s')" % oneArticle
     whereDate = ""
     dteIso = xformat.DatetimeToStr(dteAnalyse, iso=True)
     if dteIso and len(dteIso)>0:
@@ -101,7 +104,8 @@ def GetLastInventaire(dteAnalyse=None,lstChamps=None,retourLignes=True):
                             FROM stInventaires as stInv
                             %s)
                         )
-                %s;""" % (",".join(lstChamps),whereDate, limit)
+                %s
+                %s;""" % (",".join(lstChamps),whereDate,condArticle,limit)
 
     retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetLastInventaire')
     llInventaire = []
@@ -116,6 +120,41 @@ def GetLastInventaire(dteAnalyse=None,lstChamps=None,retourLignes=True):
     if not retourLignes:
         return llInventaire[0][0]
     return llInventaire
+
+def GetLastInventOneArt(dlg,dParams):
+    # retourne des pseudos mouvements pour enrichir  des lignes 'à Nouveau'
+    oneArticle = None
+    lstChampsInvent = ['IDdate','IDarticle','qteStock','prixMoyen','dateSaisie','ordi']
+    champsTransposes = ['date','IDarticle','qte','prixUnit','dateSaisie','ordi']
+    if 'lstChamps' in dParams:
+        lstChampsMvt = dParams['lstChamps']
+    else:
+        lstChampsMvt = champsTransposes
+
+    if dParams['article'] and len(dParams['article']) > 0:
+        oneArticle = dParams['article']
+    if oneArticle.lower() == "tous":
+        oneArticle = None
+    kwd = {'dteAnalyse': dParams['withInvent'],
+           'lstChamps': lstChampsInvent,
+           'oneArticle': oneArticle}
+    llInventaire = GetLastInventaire(**kwd)
+    ldMouvements = []
+    for ligne in llInventaire:
+        dicMvt = {}
+        for champ  in lstChampsMvt:
+            champ = champ.split('.')[1]
+            valeur = None
+            # les champs renseignés seront ceux présents dans stInventaires ou composés
+            if champ in champsTransposes:
+                valeur = ligne[champsTransposes.index(champ)]
+            elif champ == 'origine':  valeur = 'Inventaire'
+            elif champ == 'IDmouvement':  valeur = 0
+            elif champ == 'IDanalytique':  valeur = '00'
+            elif champ == 'modifiabme':  valeur = 0
+            dicMvt[champ] = valeur
+        ldMouvements.append(dicMvt)
+    return ldMouvements
 
 def GetMvtsPeriode(debut=None, fin=None):
     # retourne une  liste de mouvements en forme de liste
@@ -213,7 +252,7 @@ def CalculeInventaire(dlg, *args, **kwd):
     if ret != 'ok': return []
 
     # appel du dernier inventaire
-    lstChamps = ['IDdate','IDarticle','qteStock','prixMoyen','qteConstat','prixActuel',]
+    lstChamps = ['IDdate','IDarticle','qteStock','prixMoyen','prixActuel',]
     llInventaire = GetLastInventaire(dlg.date, lstChamps)
     # renomage prixMoyen pour éviter la conusion avec le champ de l'article
     lstChamps[lstChamps.index('prixMoyen')] = 'prixInvent'
@@ -281,15 +320,13 @@ def CalculeInventaire(dlg, *args, **kwd):
     def ComposeLigne(db, dMvts, dInvent=None):
         if dInvent:
             # cumul de l'inventaire dans les mouvements
-            """ dInvent['IDdate','IDarticle','qteStock','prixInvent','qteConstat','prixActuel',]
+            """ dInvent['IDdate','IDarticle','qteStock','prixInvent','prixActuel',]
                 dMvts [ 'IDarticle',
                         'fournisseur', 'magasin', 'rayon',
                         'qteMini', 'qteSaison',
                         'artRations', 'prixActuel', 'lastBuy',
                         'qteMvts', 'mttMvts',
                         'qteAchats', 'mttAchats',]"""
-            if dInvent['qteConstat']:
-                dInvent['qteStock'] = dInvent['qteConstat'] # priorité au constat s'il y a
             dMvts['qteMvts'] += dInvent['qteStock']
             dMvts['mttMvts'] += dInvent['qteStock'] * dInvent['prixInvent']
             if (not dMvts['prixActuel']) or round(dMvts['prixActuel'],6) == 0.0:
@@ -343,7 +380,7 @@ def CalculeInventaire(dlg, *args, **kwd):
         pxUn = max(0.0, pxUn)
         donnees[lstCodes.index('pxUn')] = pxUn
         donnees[lstCodes.index('mttTTC')] = round(qteMvts * pxUn,2)
-        donnees[lstCodes.index('qteConstat')] = qteMvts
+        donnees[lstCodes.index('qteStock')] = qteMvts
         donnees[lstCodes.index('qteMvts')] = qteMvts
         donnees[lstCodes.index('rations')] = qteMvts * Nz(dMvts['artRations'])
 
@@ -427,9 +464,10 @@ def GetMvtsOneDate(db, dParams=None):
     return ldMouvements
 
 def GetMvtsOneArticle(db, dParams=None):
-    lstChamps = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
-    lstChamps.append('stArticles.qteStock')
-    lstChamps.append('stArticles.prixMoyen')
+    if not 'lstChamps' in dParams:
+        lstChamps = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
+    else:
+        lstChamps = dParams['lstChamps']
 
     # composition des filtres
     article = dParams.get('article','')
@@ -444,11 +482,11 @@ def GetMvtsOneArticle(db, dParams=None):
     else:
         condOrigine = "origine = '%s'" % origine
 
-    postDate = dParams.get('postDate',None)
-    if not postDate:
+    laterDate = dParams.get('laterDate',None)
+    if not laterDate:
         condDate = ''
     else:
-        condDate = "date > '%s'" % postDate
+        condDate = "date > '%s'" % laterDate
 
     where = "WHERE %s" % condDate
     lstCond = [condArticle,condOrigine,]
@@ -458,7 +496,6 @@ def GetMvtsOneArticle(db, dParams=None):
     req = """   
                 SELECT %s
                 FROM stMouvements
-                LEFT JOIN stArticles ON stMouvements.IDarticle = stArticles.IDarticle 
                 %s
                 ;""" % (",".join(lstChamps),where)
 
@@ -473,9 +510,6 @@ def GetMvtsOneArticle(db, dParams=None):
                 # transposition du code repas en libellé
                 if champ == 'repas' and record[ix]:
                     dMouvement[champ] = CHOIX_REPAS[record[ix]-1]
-                # transposition du sens du nombre pour les quantités
-                #elif champ == 'qte' and record[ix]:
-                #    dMouvement[champ] = record[ix] * sensNum
                 else:
                     dMouvement[champ] = record[ix]
             ldMouvements.append(dMouvement)
@@ -545,45 +579,52 @@ def SqlOneArticle(db,value,flou=True):
             recordset = db.ResultatReq()
     return recordset
 
-def SqlDicArticle(db,olv,IDarticle):
+def SqlDicArticles(db, olv, lstArticles):
     # retourne les valeurs de l'article sous forme de dict à partir du buffer < fichier starticles
-    dicArticle = {}
-    dlg = olv.lanceur
-    if len(IDarticle)>0:
-        if not hasattr(olv, 'buffArticles'):
-            olv.buffArticles = {}
-        if IDarticle in olv.buffArticles.keys():
-            # renvoie l'article présent
-            dicArticle = olv.buffArticles[IDarticle]
-        else:
-            # charge l'article non encore présent
-            table = DB_schema.DB_TABLES['stArticles']
-            lstChamps = xformat.GetLstChamps(table)
-            lstNomsColonnes = xformat.GetLstChamps(table)
-            lstSetterValues = xformat.GetValeursDefaut(table)
-            req = """   SELECT %s
-                            FROM stArticles
-                            WHERE IDarticle LIKE '%%%s%%'
-                            ;""" % (','.join(lstChamps),IDarticle)
-            retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlOneArticle req1')
-            if retour == "ok":
-                recordset = db.ResultatReq()
-                if len(recordset) > 0:
-                    for key in  lstNomsColonnes:
-                        ix = lstNomsColonnes.index(key)
-                        valeur = recordset[0][ix]
-                        if not valeur:
-                            valeur = lstSetterValues[ix]
-                        dicArticle[key] = valeur
-            # bufferisation avec tuple (qteStock,prixMoyen) pour calcul des variations lors des entrées
-            olv.buffArticles[IDarticle] =dicArticle
+    if not hasattr(olv, 'buffArticles'):
+        olv.buffArticles = {}
+    lstManquants = [x for x in lstArticles if not x in olv.buffArticles]
+
+    # compléter buffArticles
+    if len(lstManquants) == 1:
+        condArticle = "IDarticle LIKE '%%%s%%'" % lstManquants[0]
+    elif len(lstManquants) >1:
+        condArticle = "IDarticle in (%s)" % str(lstManquants)[1:-1]
+    else: condArticle = None
+
+    # appelle les articles non encore présent dans le buffer
+    if condArticle:
+        table = DB_schema.DB_TABLES['stArticles']
+        lstChamps = xformat.GetLstChamps(table)
+        lstNomsColonnes = xformat.GetLstChamps(table)
+        lstSetterValues = xformat.GetValeursDefaut(table)
+        req = """   SELECT %s
+                        FROM stArticles
+                        WHERE %s
+                        ;""" % (','.join(lstChamps),condArticle)
+        retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlOneArticle req1')
+        if retour == "ok":
+            recordset = db.ResultatReq()
+            for record in recordset:
+                dicArticle = {}
+                for key in  lstNomsColonnes:
+                    ix = lstNomsColonnes.index(key)
+                    valeur = record[ix]
+                    if not valeur:
+                        valeur = lstSetterValues[ix]
+                    dicArticle[key] = valeur
+                IDarticle = dicArticle['IDarticle']
+                olv.buffArticles[IDarticle] = dicArticle
 
         # vérif taux TVA
-        try:
-            txTva = dicArticle['txTva']
-        except:
-            dicArticle['txTva'] = 0.0
-    return dicArticle
+        if not dicArticle['txTva']:
+            dicArticle['txTva'] = 5.5
+
+    # composition du retour à partir du buffer
+    ddArticles = {}
+    for article in lstArticles:
+        ddArticles[article] = olv.buffArticles[article]
+    return ddArticles
 
 def SqlFournisseurs(db=None, **kwd):
     lstDonnees = []

@@ -321,7 +321,7 @@ DB_TABLES = {
                 ('IDdate', 'DATE', "PK Date de l'inventaire copie des stocks confirmée"),
                 ('IDarticle', 'VARCHAR(32)', "PK Désignation du produit"),
                 ('qteStock', 'INTEGER', "Qté reportée par calcul depuis dernier constat"),
-                ('qteConstat', 'INTEGER', "Qté constatée, lors d'un inventaire"),
+                ('qteConstat', 'INTEGER', "Non utilisée en stockage"),
                 ('prixMoyen', 'FLOAT', "Prix unitaire moyen historique du stock"),
                 ('prixActuel', 'FLOAT', "Prix forcé pour valorisation de l'inventaire"),
                 ('ordi', 'VARCHAR(16)', "Nom de l'ordi utilisé pour l'entrée ou la modif"),

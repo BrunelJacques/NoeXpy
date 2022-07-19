@@ -41,7 +41,7 @@ DIC_INFOS = {
         'fournisseur': "Nom du fournisseur à enregistrer dans l'article",
         'magasin': "<F4> Choix d'un magasin",
         'rayon': "<F4> Choix d'un rayon",
-        'qteConstat': "L'unité est celle  qui sert au décompte du stock\nQuantité en stock au jour de l'inventaire",
+        'qteStock': "L'unité est celle  qui sert au décompte du stock\nQuantité en stock au jour de l'inventaire",
         'pxUn': "Prix dans l'inventaire d'une unité sortie",
          }
 
@@ -198,7 +198,7 @@ def GetOlvColonnes(dlg):
                        isEditable=False),
             ColumnDefn("Rayon", 'left', 100, 'rayon', valueSetter=" ",isSpaceFilling=True,
                        isEditable=False),
-            ColumnDefn("Qté stock", 'right', 80, 'qteConstat',  valueSetter=0.0,isSpaceFilling=False,
+            ColumnDefn("Qté stock", 'right', 80, 'qteStock',  valueSetter=0.0,isSpaceFilling=False,
                                         stringConverter=xformat.FmtDecimal),
             ColumnDefn("Prix Unit Moy", 'right', 85, 'pxUn',  valueSetter=0.0,isSpaceFilling=False,
                                         stringConverter=xformat.FmtDecimal),
@@ -259,7 +259,7 @@ def GetAnterieur(dlg,db=None):
     return dParams
 
 def CalculeLigne(dlg,track):
-    try: qte = float(track.qteConstat)
+    try: qte = float(track.qteStock)
     except: qte = 0.0
     try: pu = float(track.pxUn)
     except: pu = 0.0
@@ -279,10 +279,10 @@ def ValideLigne(dlg,track):
 
     # qte négative
     try:
-        track.qteConstat = float(track.qteConstat)
+        track.qteStock = float(track.qteStock)
     except:
-        track.qteConstat = 0.0
-    if track.qteConstat < 0.0:
+        track.qteStock = 0.0
+    if track.qteStock < 0.0:
         track.messageRefus += "La quantité ne peut être négative\n"
 
     # pxUn null
@@ -303,7 +303,9 @@ def RowFormatter(listItem, track):
     #if track.IDarticle == "AROME MAGGI BT":
     #    test
     anomalie = None
-    if track.qteConstat != 0:
+    if not track.qteStock:
+        track.qteStock = 0
+    if track.qteStock != 0:
         pxAct = track.prixActuel
         pxUn = track.pxUn
         if track.qteAchats != 0:
@@ -323,13 +325,13 @@ def RowFormatter(listItem, track):
         # anomalie rouge / fushia
         listItem.SetTextColour(wx.RED)
         listItem.SetBackgroundColour(wx.Colour(255, 180, 200))
-    elif track.qteConstat < 0 or track.rations > 1000:
+    elif track.qteStock < 0 or track.rations > 1000:
         # stock négatif ou plus de 1000 rations: écrit en rouge
         listItem.SetTextColour(wx.RED)
-    elif track.qteMini > 0 and track.qteConstat < track.qteMini:
+    elif track.qteMini > 0 and track.qteStock < track.qteMini:
         # niveau de stock  inférieur au minimum saison: fond jaune
         listItem.SetBackgroundColour(wx.Colour(255, 245, 160))
-    elif track.qteConstat == 0:
+    elif track.qteStock == 0:
         # stock à zero: fond vert
         listItem.SetBackgroundColour(wx.Colour(220, 237, 200))
 
@@ -380,6 +382,10 @@ class PNL_corps(xgte.PNL_corps):
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
         self.flagSkipEdit = False
         return value
+
+    def CalculeLigne(self,code,track):
+        # Relais de l'appel par par GetDonnnees
+        CalculeLigne(self.parent,track)
 
     def ValideLigne(self,code,track):
         # Relais de l'appel par cellEditor à chaque colonne
@@ -556,7 +562,7 @@ class DLG(xgte.DLG_tableau):
         if idem : return
 
         # appel des données de l'Olv principal à éditer
-        ixQte = self.dicOlv['lstCodes'].index('qteConstat')
+        ixQte = self.dicOlv['lstCodes'].index('qteStock')
         ixMini = self.dicOlv['lstCodes'].index('qteMini')
         def filtreQte(lDonnees):
             if not self.qteZero and lDonnees[ixQte] == 0.0:
