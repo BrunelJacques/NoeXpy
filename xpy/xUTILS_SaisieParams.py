@@ -7,6 +7,7 @@
 # Copyright:       (c) 2019-04     Cerfrance Provence, Matthania
 # Licence:         Licence GNU GPL
 #----------------------------------------------------------------------------------------------
+import decimal
 
 import wx
 import datetime
@@ -476,6 +477,7 @@ class PNL_ctrl(wx.Panel):
                 self.ctrl = eval(action)
             else:
                 self.ctrl = ctrl(self)
+
         elif not lgenre:
             self.ctrl = (10,10)
         else:
@@ -661,7 +663,10 @@ class PNL_ctrl(wx.Panel):
             value = ''
         self.ctrl.SetValue(value)
         test = self.ctrl.GetValue()
-        if isinstance(test, bool):
+        if self.genre == 'anyctrl' and isinstance(test,(decimal.Decimal,float,int)):
+            test = int(test)
+            value = int(test)
+        elif isinstance(test, bool):
             try:
                 value = bool(value)
             except: pass

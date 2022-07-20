@@ -8,8 +8,9 @@
 #------------------------------------------------------------------------
 
 import wx, copy
-from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn, Filter, CTRL_Outils
-import xpy.xUTILS_DB           as xdb
+import decimal
+from xpy.outils.ObjectListView.ObjectListView import FastObjectListView, ColumnDefn, CTRL_Outils
+#import xpy.outils.ObjectListView.Filter as Filter
 import xpy.outils.xbandeau      as xbd
 from xpy.outils import xformat
 
@@ -20,6 +21,50 @@ class Track(object):
             champ= champs[ix]
             commande = "self.%s = donnees[ix]"%(champ)
             exec(commande)
+
+class CTRL_Solde(wx.Panel):
+    def __init__(self, parent, toolTip=None, size=(100, 30)):
+        wx.Panel.__init__(self, parent, id=-1, name='ctrl_solde',
+                          style=wx.BORDER_SUNKEN,
+                          size=size)
+        # Solde du compte
+        self.ctrl_solde = wx.TextCtrl(self, -1,style=wx.TE_READONLY|wx.TE_RIGHT)
+        font = wx.Font(11, wx.SWISS, wx.NORMAL, wx.BOLD)
+        self.ctrl_solde.SetFont(font)
+        self.bgCouleurs = [wx.Colour(220, 237, 200), # vert positif
+                           wx.Colour(255, 205, 210), # Rouge négatif
+                           "#e0e0e0",                # gris null
+                           ]
+        self.SetBackgroundColour(self.bgCouleurs[2])  # gris
+        # Layout
+        grid_sizer_base = wx.FlexGridSizer(rows=1, cols=1, vgap=5, hgap=5)
+        grid_sizer_base.Add(self.ctrl_solde, 0,
+                            wx.ALIGN_RIGHT|wx.EXPAND, 0)
+        self.SetSizer(grid_sizer_base)
+        grid_sizer_base.Fit(self)
+        grid_sizer_base.AddGrowableCol(0)
+        grid_sizer_base.AddGrowableRow(0)
+        if toolTip:
+            self.ctrl_solde.SetToolTip(toolTip)
+
+    def SetValue(self, montant):
+        """ MAJ intégrale du controle avec MAJ des donnees """
+        if montant > 0.0:
+            label = "+ %.2f " % montant
+            self.ctrl_solde.SetBackgroundColour(self.bgCouleurs[0])
+        elif montant == 0.0:
+            label = "0.00 "
+            self.ctrl_solde.SetBackgroundColour(self.bgCouleurs[2])  # gris
+        else:
+            label = "- %.2f " % (-montant,)
+            self.ctrl_solde.SetBackgroundColour(self.bgCouleurs[1])  # Rouge
+        self.ctrl_solde.SetValue(label)
+        self.Layout()
+        self.Refresh()
+
+    def GetValue(self):
+        value = xformat.NoLettre(self.ctrl_solde.GetValue())
+        return decimal.Decimal(value)
 
 class DialogLettrage(wx.Dialog):
     # Non encore utilisé en python3 cf xGestion_TableauVentilation déjà implémenté

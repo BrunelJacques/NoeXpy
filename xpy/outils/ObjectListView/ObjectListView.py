@@ -102,9 +102,10 @@ import operator
 import time
 import six
 import unicodedata
-from . import OLVEvent, CellEditor
-from . import Filter
-from . import ListeFiltres
+import xpy.outils.ObjectListView.OLVEvent as OLVEvent
+import xpy.outils.ObjectListView.CellEditor as CellEditor
+import xpy.outils.ObjectListView.Filter as Filter
+import xpy.outils.ObjectListView.ListeFiltres as ListeFiltres
 
 
 __author__ = "Phillip Piper"

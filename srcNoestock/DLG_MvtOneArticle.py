@@ -14,11 +14,16 @@ import srcNoestock.DLG_Mouvements      as dlgMvts
 import srcNoestock.DLG_Articles        as dlgArt
 import srcNoestock.UTILS_Stocks        as nust
 import xpy.xUTILS_DB                   as xdb
+import xpy.xUTILS_SaisieParams         as xusp
 from srcNoelite                                 import DB_schema
 from xpy.outils.xformat                         import Nz
 from xpy.outils.ObjectListView.ObjectListView   import ColumnDefn
 from xpy.outils.ObjectListView.CellEditor       import ChoiceEditor
-from xpy.outils                                 import xformat,xbandeau
+from xpy.outils                                 import xformat,xbandeau,xchoixListe
+
+class CTRL_calcul(xchoixListe.CTRL_Solde):
+    def __init__(self,parent,):
+        super().__init__(parent,size=(80,35))
 
 MATRICE_PARAMS = {
 ("param0", "Article"): [
@@ -36,8 +41,8 @@ MATRICE_PARAMS = {
                     'help': "Cochez pour prendre tous les articles, la date 'Après le' détermine le nombre de lignes!",
                     'value':False,
                     'ctrlAction':'OnTous',
-                    'size':(250,25),
-                    'ctrlMaxSize':(250,25),
+                    'size':(250,35),
+                    'ctrlMaxSize':(250,35),
                     'txtSize': 50,
      },
     ],
@@ -62,6 +67,39 @@ MATRICE_PARAMS = {
     ],
 }
 
+HELP_CALCULS = "de tous les mouvements ou seulement des codhés"
+
+MATRICE_CALCULS = {
+("param_calcVide", ""): [],
+("param_calc0", "Prix"): [
+    {'name': 'pxAchats', 'genre': 'anyctrl', 'label': 'PrixUnit moyen Achats',
+                     'txtSize': 140,
+                     'ctrlMaxSize': (250,35),
+                     'help': "Prix moyen des achats, %s" % HELP_CALCULS,
+                     'ctrl': CTRL_calcul,
+     },
+    {'name': 'pxStock', 'genre': 'anyctrl','label': 'PxUnit théorique Stock',
+                    'txtSize': 140,
+                    'ctrlMaxSize':(250,35),
+                    'help': "Prix Théorique FIFO du stock restant, selon les derniers achats" ,
+                    'ctrl': CTRL_calcul,},
+    ],
+("param_calc1", "Mouvements"): [
+    {'name': 'mttStock', 'genre': 'anyctrl','label': 'Valeur du Stock',
+                    'txtSize': 120,
+                    'ctrlMaxSize':(240,35),
+                    'help': "Valeur du stock au prix de l'article, %s" % HELP_CALCULS,
+                    'ctrl': CTRL_calcul,
+                     },
+    {'name': 'erreur', 'genre': 'anyctrl', 'label': 'Erreur sur sorties',
+                     'txtSize': 120,
+                     'ctrlMaxSize': (240,35),
+                     'help': "Différence entre le total mouvements et la valeur du stock",
+                     'ctrl': CTRL_calcul,
+     },
+    ],
+}
+
 def GetDicParams(*args):
     matrice = xformat.CopyDic(MATRICE_PARAMS)
     xformat.SetItemInMatrice(matrice,'origine','values', dlgMvts.DICORIGINES['article']['values'])
@@ -76,8 +114,61 @@ def GetDicParams(*args):
                 'nomgroupe':"article",
             }
 
+def GetDicCalculs(*args):
+    matrice = xformat.CopyDic(MATRICE_CALCULS)
+    return {
+            'name':"PNL_calculs",
+            'matrice':matrice,
+            'lblBox':None,
+            'boxesSizes': [None,(300, 70),(300, 70)],
+            }
+
+def GetBoutons(dlg):
+    return  [
+                {'name': 'btnImp', 'label': "Imprimer\npour contrôle",
+                    'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
+                    'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
+                {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour sortir",
+                    'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnClose}
+            ]
+
 def ValideParams(*arg,**kwds):
     return True
+
+def GetOlvColonnes(dlg):
+    # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
+    titlePrix = "Prix Unit."
+    lstCol = [
+            ColumnDefn("ID", 'centre', 0, 'IDmouvement',
+                       isEditable=False),
+            ColumnDefn("Date Mvt", 'left', 80, 'date', isSpaceFilling=False,
+                       stringConverter=xformat.FmtDate),
+            ColumnDefn("Mouvement", 'left', 80, 'origine',
+                                cellEditorCreator=ChoiceEditor,isEditable=False),
+            ColumnDefn("Repas", 'left', 60, 'repas',
+                                cellEditorCreator=ChoiceEditor),
+            ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",
+                       isSpaceFilling=True, isEditable=False),
+            ColumnDefn("Quantité", 'right', 80, 'qte', isSpaceFilling=False, valueSetter=0.0,
+                                stringConverter=xformat.FmtQte),
+            ColumnDefn(titlePrix, 'right', 80, 'pxUn', isSpaceFilling=False, valueSetter=0.0,
+                                stringConverter=xformat.FmtDecimal),
+            ColumnDefn("Coût Ration", 'right', 80, 'pxRation', isSpaceFilling=False, valueSetter=0.0,
+                                stringConverter=xformat.FmtDecimal, isEditable=False),
+            ColumnDefn("Nbre Rations", 'right', 80, 'nbRations', isSpaceFilling=False, valueSetter=0.0,
+                                stringConverter=xformat.FmtDecimal, isEditable=False),
+            ColumnDefn("Mtt TTC", 'right', 80, 'mttTTC', isSpaceFilling=False, valueSetter=0.0,
+                                stringConverter=xformat.FmtDecimal, isEditable=False),
+            ColumnDefn("PrixStock", 'right', 80, 'pxMoy', isSpaceFilling=False, valueSetter=0.0,
+                   stringConverter=xformat.FmtDecimal, isEditable=False),
+            ColumnDefn("Qté stock", 'right', 80, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
+                                stringConverter=xformat.FmtDecimal, isEditable=False),
+            ColumnDefn("Saisie", 'left', 80, 'dateSaisie', isSpaceFilling=False,
+                       stringConverter=xformat.FmtDate, isEditable=False),
+            ColumnDefn("Ordi", 'left', 100, 'ordi', valueSetter="",isSpaceFilling=False,
+                       isEditable=False),
+            ]
+    return lstCol
 
 def ValideLigne(dlg, track):
     # validation de la ligne de mouvement
@@ -124,7 +215,26 @@ def ValideLigne(dlg, track):
     else:
         track.messageRefus = ""
 
+def CalculeTotaux(dlg):
+    ctrlOlv = dlg.ctrlOlv
+    lstChecked = ctrlOlv.GetCheckedObjects()
+    if len(lstChecked) == 0:
+        lstChecked = ctrlOlv.innerList
+
+    # calcul prix d'achat moyen
+    mttAchats = 0.0
+    qteAchats = 0.0
+    for track in lstChecked:
+        qteAchats += track.qte
+        mttAchats += track.qte * track.pxUn
+    if qteAchats != 0:
+        pxAchats = mttAchats / qteAchats
+    else: pxAchats = 0.0
+    ctrlMttAchats =  dlg.pnlCalculs.GetPnlCtrl('pxAchats')
+    dlg.pnlCalculs.GetPnlCtrl('pxAchats').SetValue(pxAchats)
+
 def CalculeLigne(dlg, track):
+    # après chaque saisie d'une valeur on recalcule les champs dépendants
     if not hasattr(track, 'dicArticle'): return
     try:
         qte = float(track.qte)
@@ -166,41 +276,7 @@ def CalculeLigne(dlg, track):
         track.pxRation = 0.0
     for ix in range(len(lstCodesColonnes)):
         track.donnees[ix] = eval("track.%s" % lstCodesColonnes[ix])
-
-def GetOlvColonnes(dlg):
-    # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
-    titlePrix = "Prix Unit."
-    lstCol = [
-            ColumnDefn("ID", 'centre', 0, 'IDmouvement',
-                       isEditable=False),
-            ColumnDefn("Date Mvt", 'left', 80, 'date', isSpaceFilling=False,
-                       stringConverter=xformat.FmtDate),
-            ColumnDefn("Mouvement", 'left', 80, 'origine',
-                                cellEditorCreator=ChoiceEditor,isEditable=False),
-            ColumnDefn("Repas", 'left', 60, 'repas',
-                                cellEditorCreator=ChoiceEditor),
-            ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",
-                       isSpaceFilling=True, isEditable=False),
-            ColumnDefn("Quantité", 'right', 80, 'qte', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtQte),
-            ColumnDefn(titlePrix, 'right', 80, 'pxUn', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal),
-            ColumnDefn("Coût Ration", 'right', 80, 'pxRation', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Nbre Rations", 'right', 80, 'nbRations', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Mtt TTC", 'right', 80, 'mttTTC', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("PrixStock", 'right', 80, 'pxMoy', isSpaceFilling=False, valueSetter=0.0,
-                   stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Qté stock", 'right', 80, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Saisie", 'left', 80, 'dateSaisie', isSpaceFilling=False,
-                       stringConverter=xformat.FmtDate, isEditable=False),
-            ColumnDefn("Ordi", 'left', 100, 'ordi', valueSetter="",isSpaceFilling=False,
-                       isEditable=False),
-            ]
-    return lstCol
+    CalculeTotaux(dlg)
 
 def ComposeDonnees(db,dlg,ldMouvements):
     # retourne la liste des données de l'OLv de DlgEntree
@@ -238,6 +314,15 @@ def ComposeDonnees(db,dlg,ldMouvements):
         lstDonnees.append(donnees)
     return lstDonnees
 
+class PNL_calculs(xusp.TopBoxPanel):
+    def __init__(self, parent, *args, **kwds):
+        kwdsTopBox = {}
+        kwds = GetDicCalculs(parent)
+        for key in xusp.OPTIONS_TOPBOX:
+            if key in kwds.keys(): kwdsTopBox[key] = kwds[key]
+        super().__init__(parent, *args, **kwdsTopBox)
+        self.parent = parent
+
 class DLG(dlgMvts.DLG):
     # ------------------- Composition de l'écran de gestion-----------------------------
     def __init__(self, **kwds):
@@ -251,6 +336,7 @@ class DLG(dlgMvts.DLG):
     def Init(self):
         self.db = xdb.DB()
         self.GetDicParams = GetDicParams
+        self.pnlCalculs = PNL_calculs(self)
         # définition de l'OLV
         self.ctrlOlv = None
         self.typeAchat = None
@@ -260,7 +346,7 @@ class DLG(dlgMvts.DLG):
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
         self.txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"
         lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),self.txtInfo]
-        dicPied = {'lstBtns': dlgMvts.GetBoutons(self), "lstInfos": lstInfos}
+        dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
 
         # lancement de l'écran en blocs principaux
         self.pnlBandeau = xbandeau.Bandeau(self, dlgMvts.TITRE[self.sens],
@@ -270,13 +356,21 @@ class DLG(dlgMvts.DLG):
         self.pnlBandeau.SetBackgroundColour(wx.Colour(250, 250, 180))
 
         self.pnlParams = dlgMvts.PNL_params(self)
+
+        self.dicOlv['checkColonne'] = True
         self.pnlOlv = dlgMvts.PNL_corps(self, self.dicOlv)
         self.pnlOlv.ValideParams = self.ValideParams
         self.pnlOlv.ValideLigne = self.ValideLigne
         self.pnlPied = dlgMvts.PNL_pied(self, dicPied)
         self.ctrlOlv = self.pnlOlv.ctrlOlv
         self.ctrlOlv.DeleteAllItems()
+
         # charger les valeurs de pnl_params
+        pnlErreur = self.pnlCalculs.GetPnlCtrl('erreur')
+        pnlErreur.ctrl.bgCouleurs = [wx.Colour(255, 205, 210), # Rouge positif
+                                   wx.Colour(255, 205, 210), # Rouge négatif
+                                   "#e0e0e0",                # gris null
+                                   ]
         self.Bind(wx.EVT_CLOSE,self.OnClose)
         self.laterDate = nust.GetLastInventaire(today, lstChamps=['IDdate',],
                                              retourLignes=False)
@@ -288,10 +382,11 @@ class DLG(dlgMvts.DLG):
             self.OnArticle(None)
 
     def Sizer(self):
-        sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
+        sizer_base = wx.FlexGridSizer(rows=5, cols=1, vgap=0, hgap=0)
         sizer_base.Add(self.pnlBandeau, 0, wx.TOP | wx.EXPAND, 3)
         sizer_base.Add(self.pnlParams, 0, wx.TOP | wx.EXPAND, 3)
         sizer_base.Add(self.pnlOlv, 1, wx.TOP | wx.EXPAND, 3)
+        sizer_base.Add(self.pnlCalculs, 1, wx.TOP | wx.EXPAND, 3)
         sizer_base.Add(self.pnlPied, 0, wx.ALL | wx.EXPAND, 3)
         sizer_base.AddGrowableCol(0)
         sizer_base.AddGrowableRow(2)
@@ -305,6 +400,8 @@ class DLG(dlgMvts.DLG):
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
         self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
         self.ctrlOlv.InitObjectListView()
+        if self.article:
+            CalculeTotaux(self)
         self.Refresh()
 
     def ValideParams(self):
