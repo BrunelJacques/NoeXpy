@@ -212,6 +212,8 @@ class ListView( ObjectListView):
         if self.ctrl_footer and self.pnlFooter:
             self.ctrl_footer.MAJ_totaux()
             self.ctrl_footer.MAJ_affichage()
+        if hasattr(self,'MAJ_calculs'):
+            self.MAJ_calculs(self.lanceur)
 
     def AddTracks(self,lstDonnees):
         tracks = []

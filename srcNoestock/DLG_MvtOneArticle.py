@@ -78,7 +78,7 @@ MATRICE_CALCULS = {
                      'help': "Prix moyen des achats, %s" % HELP_CALCULS,
                      'ctrl': CTRL_calcul,
      },
-    {'name': 'pxStock', 'genre': 'anyctrl','label': 'PxUnit théorique Stock',
+    {'name': 'pxMvts', 'genre': 'anyctrl','label': 'PxUnit théorique Stock',
                     'txtSize': 140,
                     'ctrlMaxSize':(250,35),
                     'help': "Prix Théorique FIFO du stock restant, selon les derniers achats" ,
@@ -159,7 +159,7 @@ def GetOlvColonnes(dlg):
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Mtt TTC", 'right', 80, 'mttTTC', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("PrixStock", 'right', 80, 'pxMoy', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("PrixStock", 'right', 80, 'pxMoyen', isSpaceFilling=False, valueSetter=0.0,
                    stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Qté stock", 'right', 80, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
@@ -215,23 +215,55 @@ def ValideLigne(dlg, track):
     else:
         track.messageRefus = ""
 
-def CalculeTotaux(dlg):
+def MAJ_calculs(dlg):
     ctrlOlv = dlg.ctrlOlv
     lstChecked = ctrlOlv.GetCheckedObjects()
     if len(lstChecked) == 0:
         lstChecked = ctrlOlv.innerList
 
-    # calcul prix d'achat moyen
-    mttAchats = 0.0
-    qteAchats = 0.0
+    # lecture des lignes checkées
+    mttAchats, qteAchats = 0.0, 0.0
+    mttMvts, qteMvts = 0.0, 0.0
+    mttStock = 0.0
     for track in lstChecked:
-        qteAchats += track.qte
-        mttAchats += track.qte * track.pxUn
-    if qteAchats != 0:
-        pxAchats = mttAchats / qteAchats
-    else: pxAchats = 0.0
-    ctrlMttAchats =  dlg.pnlCalculs.GetPnlCtrl('pxAchats')
+        qteMvts += track.qte
+        mttMvts += track.qte * track.pxUn
+        mttStock += track.qte * track.pxMoyen
+        if track.origine == 'achat':
+            qteAchats += track.qte
+            mttAchats += track.qte * track.pxUn
+
+    # calcul prix d'achat moyen
+    pxAchats = nust.PxUnitStock(lstChecked)
     dlg.pnlCalculs.GetPnlCtrl('pxAchats').SetValue(pxAchats)
+    
+    # calcul prix du stock
+    if qteMvts != 0:
+        pxMvts = mttMvts / qteMvts
+    else:
+        pxMvts = 0.0
+    erreur = mttStock - mttMvts
+    dlg.pnlCalculs.GetPnlCtrl('pxMvts').SetValue(pxMvts)
+    dlg.pnlCalculs.GetPnlCtrl('mttStock').SetValue(mttStock)
+
+    # gestion de la couleur de l'erreur
+    if abs(erreur) <= 0.01:
+        bgCouleur = wx.Colour(220, 237, 200)  # vert null
+        fgCouleur = wx.Colour(553,90,11) # vert sombre
+    elif abs(erreur) < 1:
+        bgCouleur = wx.Colour(220, 237, 200)  # vert null
+        fgCouleur = wx.BLUE
+    elif abs(erreur) < 5:
+        bgCouleur = wx.Colour(255, 205, 210)  # Rouge positif
+        fgCouleur = wx.RED
+    else:
+        bgCouleur = wx.Colour(255, 61, 0)
+        fgCouleur = wx.BLACK
+
+    # force la couleur unique déterminée ci dessus
+    dlg.pnlCalculs.GetPnlCtrl('erreur').ctrl.bgCouleurs = [bgCouleur,] * 3
+    dlg.pnlCalculs.GetPnlCtrl('erreur').ctrl.ctrl_solde.SetForegroundColour(fgCouleur)
+    dlg.pnlCalculs.GetPnlCtrl('erreur').SetValue(erreur)
 
 def CalculeLigne(dlg, track):
     # après chaque saisie d'une valeur on recalcule les champs dépendants
@@ -276,7 +308,7 @@ def CalculeLigne(dlg, track):
         track.pxRation = 0.0
     for ix in range(len(lstCodesColonnes)):
         track.donnees[ix] = eval("track.%s" % lstCodesColonnes[ix])
-    CalculeTotaux(dlg)
+    MAJ_calculs(dlg)
 
 def ComposeDonnees(db,dlg,ldMouvements):
     # retourne la liste des données de l'OLv de DlgEntree
@@ -301,7 +333,7 @@ def ComposeDonnees(db,dlg,ldMouvements):
                 donnees.append(dMvt['prixUnit'])
             elif code == 'mttTTC' :
                 donnees.append(round(dMvt['prixUnit'] * dMvt['qte'],2))
-            elif code == 'pxMoy':
+            elif code == 'pxMoyen':
                 donnees.append(dArticle['prixMoyen'])
             elif code in dMvt.keys():
                 donnees.append(dMvt[code])
@@ -366,11 +398,7 @@ class DLG(dlgMvts.DLG):
         self.ctrlOlv.DeleteAllItems()
 
         # charger les valeurs de pnl_params
-        pnlErreur = self.pnlCalculs.GetPnlCtrl('erreur')
-        pnlErreur.ctrl.bgCouleurs = [wx.Colour(255, 205, 210), # Rouge positif
-                                   wx.Colour(255, 205, 210), # Rouge négatif
-                                   "#e0e0e0",                # gris null
-                                   ]
+
         self.Bind(wx.EVT_CLOSE,self.OnClose)
         self.laterDate = nust.GetLastInventaire(today, lstChamps=['IDdate',],
                                              retourLignes=False)
@@ -380,6 +408,10 @@ class DLG(dlgMvts.DLG):
         if self.article:
             self.pnlParams.SetOneValue('article',self.article,codeBox='param0')
             self.OnArticle(None)
+
+        # le bind check item met à jour les soustotaux puis cherche MAJ_calculs
+        self.ctrlOlv.MAJ_calculs = MAJ_calculs
+
 
     def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=5, cols=1, vgap=0, hgap=0)
@@ -400,8 +432,6 @@ class DLG(dlgMvts.DLG):
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
         self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
         self.ctrlOlv.InitObjectListView()
-        if self.article:
-            CalculeTotaux(self)
         self.Refresh()
 
     def ValideParams(self):
@@ -423,7 +453,6 @@ class DLG(dlgMvts.DLG):
         return dParams
 
     def GetDonnees(self,dParams=None):
-
         # forme la grille, puis création d'un premier modelObjects par init
         self.InitOlv()
         if not dParams:
@@ -436,6 +465,8 @@ class DLG(dlgMvts.DLG):
         ldMouvements += [x for x in nust.GetMvtsOneArticle(self.db, dParams)]
         self.ctrlOlv.lstDonnees = ComposeDonnees(self.db,dlg,ldMouvements)
         self.ctrlOlv.MAJ()
+        if self.article:
+            MAJ_calculs(self)
 
     # gestion des actions évènements sur les ctrl
 

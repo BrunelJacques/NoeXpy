@@ -46,10 +46,14 @@ class CTRL_Solde(wx.Panel):
         grid_sizer_base.AddGrowableRow(0)
         if toolTip:
             self.ctrl_solde.SetToolTip(toolTip)
+    def SetDefaultStyle(self,couleur):
+        self.ctrl_solde.SetDefaultStyle(couleur)
 
     def SetValue(self, montant):
         """ MAJ intégrale du controle avec MAJ des donnees """
-        if montant > 0.0:
+        if not montant or montant == '':
+            label = ''
+        elif montant > 0.0:
             label = "+ %.2f " % montant
             self.ctrl_solde.SetBackgroundColour(self.bgCouleurs[0])
         elif montant == 0.0:

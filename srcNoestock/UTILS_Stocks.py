@@ -52,10 +52,10 @@ def PostInventaire(cloture=datetime.date.today(),inventaire=[[],]):
                  'dateSaisie',]
     llDonnees = []
     # lignes reçues [date,article,qte,prixMoyen,montant,lastPrix]
-    for dte,article,qte,pxMoy,mtt,pxLast in inventaire:
+    for dte,article,qte,pxMoyen,mtt,pxLast in inventaire:
         if dte != str(cloture): raise Exception(
             "cloture = %s diff de inventaire = %s"%(str(cloture),str(dte)))
-        llDonnees.append([dte,article,qte,pxMoy,pxLast,ordi,dteSaisie])
+        llDonnees.append([dte,article,qte,pxMoyen,pxLast,ordi,dteSaisie])
 
     # test présence inventaire
     db = xdb.DB()
@@ -183,8 +183,53 @@ def GetMvtsPeriode(debut=None, fin=None):
     db.Close()
     return llMouvements
 
+def PxUnitStock(modelObjects):
+    # retourne le prix FIFO du stock restant, dans modelObjects
+    lstArticles = []
+    dQtesFin = {}
+
+    # calcul des quantités en stock et articles présents
+    for track in modelObjects:
+        if track.IDarticle not in lstArticles:
+            lstArticles.append(track.IDarticle)
+            dQtesFin[track.IDarticle] = 0
+        dQtesFin[track.IDarticle] += track.qte
+
+    lastArticle = None
+    qteAchats = 0.0
+    mttAchats = 0.0
+    finArticle = False
+
+    # recherche des prix d'achat sur liste triée dates décroissantes après articles
+    for track in sorted(modelObjects, key=lambda trk: (trk.IDarticle,trk.date),reverse=True):
+        article = track.IDarticle
+        if not lastArticle:
+            # skip premier item
+            lastArticle = article
+        if track.origine not in ('achat','inventaire'):
+            continue
+        # rupture article,
+        if lastArticle != article:
+            finArticle = False
+        if finArticle:
+            continue # jusqu'à rupture
+        qteAchat = Nz(track.qte)
+        prixUnit = Nz(track.pxUn)
+        qteAchat = min(dQtesFin[article],qteAchat)
+        qteAchats += qteAchat
+        mttAchats += qteAchat * prixUnit
+        dQtesFin[article] -= qteAchat
+        if dQtesFin[article] < 0.0001:
+            #provoque la rupture en sautant la suite de l'article
+            finArticle = True
+    if qteAchats != 0:
+        prixMoyen =  mttAchats / qteAchats
+    else: prixMoyen = None
+    return prixMoyen
+
+
 def PxUnitInventaire(db, IDarticle, qteStock, dteAnalyse):
-    # retourne le prix moyen de la quantité d'articles achetés avant la dteAnalyse
+    # Appelle les mouvements retourne le prix FIFO du stock restant
     if Nz(qteStock) == 0:
         return None
     req = """    
@@ -218,6 +263,7 @@ def PxUnitInventaire(db, IDarticle, qteStock, dteAnalyse):
     if cumQteAch > 0.0:
         pxUn = round(cumMttAch / cumQteAch,6)
         if not achatsLater:
+            # enregistrement du calcul dans le prix de l'article
             ltModifs = [('prixMoyen', pxUn),
                         ('ordi', 'Calc_inventaire'),
                         ('dateSaisie', xformat.DatetimeToStr(datetime.date.today())) ]
@@ -893,9 +939,9 @@ def MAJarticle(db,dlg,track):
                 prixMoyen = dicArticle['prixMoyen']
             else:
                 prixMoyen = (newValSt / dicArt['qteStock'] )
-            track.pxMoy = prixMoyen
+            track.pxMoyen = prixMoyen
             if dlg.ht_ttc == 'HT':
-                track.pxMoy = prixMoyen / (1 + (dicArt['txTva'] / 100))
+                track.pxMoyen = prixMoyen / (1 + (dicArt['txTva'] / 100))
 
         # Maj dicMvt
         newDicMvt['IDmouvement'] = track.IDmouvement
