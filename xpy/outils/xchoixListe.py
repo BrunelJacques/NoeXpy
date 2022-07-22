@@ -68,6 +68,7 @@ class CTRL_Solde(wx.Panel):
 
     def GetValue(self):
         value = xformat.NoLettre(self.ctrl_solde.GetValue())
+        if value == "": value = 0.0
         return decimal.Decimal(value)
 
 class DialogLettrage(wx.Dialog):

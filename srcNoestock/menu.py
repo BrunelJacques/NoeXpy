@@ -206,7 +206,7 @@ class MENU():
 
     def On_oneArticle(self,event):
         dlg = DLG_MvtOneArticle.DLG()
-        ret = dlg.ShowModal()
+        dlg.ShowModal()
         dlg.Destroy()
         del dlg
 

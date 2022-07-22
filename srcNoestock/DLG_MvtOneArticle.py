@@ -366,6 +366,7 @@ class DLG(dlgMvts.DLG):
         super().__init__(**kwds)
 
     def Init(self):
+        self.lanceur = self
         self.db = xdb.DB()
         self.GetDicParams = GetDicParams
         self.pnlCalculs = PNL_calculs(self)
@@ -463,7 +464,7 @@ class DLG(dlgMvts.DLG):
         if dParams['withInvent']:
             ldMouvements = [x for x in nust.GetLastInventOneArt(self.db,dParams)]
         ldMouvements += [x for x in nust.GetMvtsOneArticle(self.db, dParams)]
-        self.ctrlOlv.lstDonnees = ComposeDonnees(self.db,dlg,ldMouvements)
+        self.ctrlOlv.lstDonnees = ComposeDonnees(self.db,self,ldMouvements)
         self.ctrlOlv.MAJ()
         if self.article:
             MAJ_calculs(self)
