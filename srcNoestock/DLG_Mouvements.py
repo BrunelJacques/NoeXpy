@@ -345,7 +345,7 @@ def GetMouvements(dlg, dParams):
     # retourne la liste des données de l'OLv de DlgEntree
     ctrlOlv = dlg.ctrlOlv
 
-    ldMouvements = nust.GetMvtsOneDate(dlg.db, dParams)
+    ldMouvements = nust.GetMvtsByDate(dlg.db, dParams)
     # appel des dicArticles des mouvements
     ddArticles = {}
     lstArticles = [x['IDarticle'] for x in ldMouvements]

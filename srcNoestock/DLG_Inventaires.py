@@ -475,8 +475,6 @@ class DLG(xgte.DLG_tableau):
 
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
-        if not date:
-            date = self.today
         self.date = date
         self.lstSaisons = SAISONS
         ret = self.Init()
@@ -489,6 +487,9 @@ class DLG(xgte.DLG_tableau):
 
     def Init(self):
         self.db = xdb.DB()
+        if not self.date:
+            self.date = xformat.DateSqlToDatetime(nust.GetDateLastMvt(self.db))
+        self.pnlParams.SetOneValue('date',self.date, codeBox='param1')
         # définition de l'OLV
         self.ctrlOlv = None
         # récup des modesReglements nécessaires pour passer du texte à un ID d'un mode ayant un mot en commun
@@ -549,6 +550,7 @@ class DLG(xgte.DLG_tableau):
         if event: event.Skip()
 
     def GetDonnees(self,dParams=None):
+        # test si les paramètres ont changé
         if not dParams:
             dParams = self.pnlParams.GetValues(fmtDD=False)
         idem = True
@@ -564,6 +566,7 @@ class DLG(xgte.DLG_tableau):
         # appel des données de l'Olv principal à éditer
         ixQte = self.dicOlv['lstCodes'].index('qteStock')
         ixMini = self.dicOlv['lstCodes'].index('qteMini')
+
         def filtreQte(lDonnees):
             if not self.qteZero and lDonnees[ixQte] == 0.0:
                 return False
@@ -571,20 +574,12 @@ class DLG(xgte.DLG_tableau):
                 if lDonnees[ixQte] >= lDonnees[ixMini]:
                     return False
             return True
-
-
-        lstDonnees = [x for x in nust.CalculeInventaire(self) if filtreQte(x)]
+        lstDonnees = [x for x in nust.CalculeInventaire(self,dParams) if filtreQte(x)]
 
         self.mouvementsPost = nust.MouvementsPosterieurs(self)
         if self.mouvementsPost:
-            self.pnlPied.SetItemsInfos("Présence de mouvements postérieurs\nLe stock dans l'article n'est pas mis à jour",
+            self.pnlPied.SetItemsInfos("Présence de mouvements postérieurs\nLe stock dans l'article en tient compte",
                                        wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
-
-        # l'appel des données peut avoir retourné d'autres paramètres, il faut mettre à jour l'écran
-        if len(lstDonnees) > 0:
-            # set date du lot importé
-            self.pnlParams.SetOneValue('date',xformat.DateSqlToDatetime(dParams['date']),'param1')
-            self.date = dParams['date']
 
         # alimente la grille, puis création de modelObejects pr init
         self.ctrlOlv.lstDonnees = lstDonnees

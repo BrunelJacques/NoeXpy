@@ -141,7 +141,8 @@ def GetOlvColonnes(dlg):
     lstCol = [
             ColumnDefn("ID", 'centre', 0, 'IDmouvement',
                        isEditable=False),
-            ColumnDefn("Date Mvt", 'left', 80, 'date', isSpaceFilling=False,
+            ColumnDefn("Date Mvt", 'left', 80, 'date',
+                       isEditable=False, isSpaceFilling=False,
                        stringConverter=xformat.FmtDate),
             ColumnDefn("Mouvement", 'left', 80, 'origine',
                                 cellEditorCreator=ChoiceEditor,isEditable=False),
@@ -206,8 +207,13 @@ def ValideLigne(dlg, track):
 
     # modif bloquée selon nature
     if track.origine in ('achat', 'inventaire'):
-        track.messageRefus = "La modification des achats et de l'inventaire sont impossible ici\n"
-        wx.MessageBox(track.messageRefus,"Non modifiable",style=wx.ICON_STOP)
+        if track.origine == 'inventaire':
+            track.messageRefus = "La modification de l'inventaire est impossible ici\n"
+            mess = track.messageRefus
+        if track.origine == 'achat':
+            mess = "Modif des achats = Distorsion possible avec le montant en compta\n"
+            mess += "Notez le montant de cette ligne, mtt = qte * pxUnitaire\n"
+        wx.MessageBox(mess,"Non modifiable",style=wx.ICON_STOP)
 
     # envoi de l'erreur
     if track.messageRefus != "Saisie incomplète\n\n":
@@ -234,7 +240,7 @@ def MAJ_calculs(dlg):
             mttAchats += track.qte * track.pxUn
 
     # calcul prix d'achat moyen
-    pxAchats = nust.PxUnitStock(lstChecked)
+    pxAchats, dicPxAchats = nust.PxUnitStock(lstChecked)
     dlg.pnlCalculs.GetPnlCtrl('pxAchats').SetValue(pxAchats)
     
     # calcul prix du stock
@@ -413,7 +419,6 @@ class DLG(dlgMvts.DLG):
         # le bind check item met à jour les soustotaux puis cherche MAJ_calculs
         self.ctrlOlv.MAJ_calculs = MAJ_calculs
 
-
     def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=5, cols=1, vgap=0, hgap=0)
         sizer_base.Add(self.pnlBandeau, 0, wx.TOP | wx.EXPAND, 3)
@@ -462,8 +467,8 @@ class DLG(dlgMvts.DLG):
         dParams['lstChamps'] = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
         ldMouvements = []
         if dParams['withInvent']:
-            ldMouvements = [x for x in nust.GetLastInventOneArt(self.db,dParams)]
-        ldMouvements += [x for x in nust.GetMvtsOneArticle(self.db, dParams)]
+            ldMouvements = [x for x in nust.GetLastInventForMvts(self.db, dParams)]
+        ldMouvements += [x for x in nust.GetMvtsByArticles(self.db, dParams)]
         self.ctrlOlv.lstDonnees = ComposeDonnees(self.db,self,ldMouvements)
         self.ctrlOlv.MAJ()
         if self.article:
@@ -536,7 +541,7 @@ class DLG(dlgMvts.DLG):
             mess += ", mais vous pouvez les consulter."
             wx.MessageBox(mess,"Information",style = wx.ICON_INFORMATION)
         else:
-            if len(lastInvent) > 0:
+            if len(str(lastInvent)) > 0:
                 self.withInvent = lastInvent
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK  # réactive dblClic
         if self.article:

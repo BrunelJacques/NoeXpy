@@ -1,3 +1,7 @@
+Version 1.1.2.14 (22/07/2022 8:40)
+- Ajout de compteurs dans le suivi mouvements
+- Recalcul des prix de stock
+
 Version 1.1.2.13 (18/07/2022 18:00)
 - Intégration du suivi mouvements dans l'inventaire
 - Modif colorisation inventaires

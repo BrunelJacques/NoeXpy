@@ -96,7 +96,7 @@ def GetLastInventaire(dteAnalyse=None,lstChamps=None,retourLignes=True,oneArticl
     whereDate = ""
     dteIso = xformat.DatetimeToStr(dteAnalyse, iso=True)
     if dteIso and len(dteIso)>0:
-        whereDate = "WHERE stInv.IDdate < '%s' " % dteIso
+        whereDate = "WHERE stInv.IDdate <= '%s' " % dteIso
     req = """   SELECT %s
                 FROM stInventaires
                 WHERE   (stInventaires.IDdate = 
@@ -121,8 +121,8 @@ def GetLastInventaire(dteAnalyse=None,lstChamps=None,retourLignes=True,oneArticl
         return llInventaire[0][0]
     return llInventaire
 
-def GetLastInventOneArt(dlg,dParams):
-    # retourne des pseudos mouvements pour enrichir  des lignes 'à Nouveau'
+def GetLastInventForMvts(dlg, dParams):
+    # retourne ld de pseudos mouvements pour enrichir  des lignes 'reprise à Nouveau'
     oneArticle = None
     lstChampsInvent = ['IDdate','IDarticle','qteStock','prixMoyen','dateSaisie','ordi']
     champsTransposes = ['date','IDarticle','qte','prixUnit','dateSaisie','ordi']
@@ -183,11 +183,23 @@ def GetMvtsPeriode(debut=None, fin=None):
     db.Close()
     return llMouvements
 
+def GetDateLastMvt(db):
+    # retourne la date de la dernière écriture de mouvement
+    req = """    
+        SELECT MAX(date)
+        FROM stMouvements
+        ;"""
+    mess = "Echec UTILS_Stocks.GetLastMouvement"
+    ret = db.ExecuterReq(req, mess=mess, affichError=True)
+    if ret != 'ok': return datetime.date.today()
+    recordset = db.ResultatReq()
+    return recordset[0][0]
+
 def PxUnitStock(modelObjects):
-    # retourne le prix FIFO du stock restant, dans modelObjects
+    # retourne px moyen et dic par article, prix FIFO du stock restant dans modelObjects
     lstArticles = []
     dQtesFin = {}
-
+    dicPxStock = {}
     # calcul des quantités en stock et articles présents
     for track in modelObjects:
         if track.IDarticle not in lstArticles:
@@ -196,9 +208,11 @@ def PxUnitStock(modelObjects):
         dQtesFin[track.IDarticle] += track.qte
 
     lastArticle = None
-    qteAchats = 0.0
-    mttAchats = 0.0
+    qteAchatsTous = 0.0
+    mttAchatsTous = 0.0
     finArticle = False
+    qteAchatsArt = 0.0
+    mttAchatsArt = 0.0
 
     # recherche des prix d'achat sur liste triée dates décroissantes après articles
     for track in sorted(modelObjects, key=lambda trk: (trk.IDarticle,trk.date),reverse=True):
@@ -211,22 +225,28 @@ def PxUnitStock(modelObjects):
         # rupture article,
         if lastArticle != article:
             finArticle = False
+            qteAchatsArt = 0.0
+            mttAchatsArt = 0.0
         if finArticle:
             continue # jusqu'à rupture
         qteAchat = Nz(track.qte)
         prixUnit = Nz(track.pxUn)
         qteAchat = min(dQtesFin[article],qteAchat)
-        qteAchats += qteAchat
-        mttAchats += qteAchat * prixUnit
+        qteAchatsTous += qteAchat
+        mttAchatsTous += qteAchat * prixUnit
+        qteAchatsArt += qteAchat
+        mttAchatsArt += qteAchat * prixUnit
         dQtesFin[article] -= qteAchat
         if dQtesFin[article] < 0.0001:
             #provoque la rupture en sautant la suite de l'article
             finArticle = True
-    if qteAchats != 0:
-        prixMoyen =  mttAchats / qteAchats
-    else: prixMoyen = None
-    return prixMoyen
+        if qteAchatsArt != 0:
+            dicPxStock[article] =  mttAchatsArt / qteAchatsArt
 
+    if qteAchatsTous != 0:
+        prixMoyen =  mttAchatsTous / qteAchatsTous
+    else: prixMoyen = None
+    return prixMoyen, dicPxStock
 
 def PxUnitInventaire(db, IDarticle, qteStock, dteAnalyse):
     # Appelle les mouvements retourne le prix FIFO du stock restant
@@ -272,7 +292,10 @@ def PxUnitInventaire(db, IDarticle, qteStock, dteAnalyse):
                       IDestChaine = True)
     return pxUn
 
-def CalculeInventaire(dlg, *args, **kwd):
+def CalculeInventaire(dlg, dParams):
+    # appel des mouvements de la période
+
+
     # met à jour les quantités dans article et appelle les données pour OLV
     db = dlg.db
     # préalable MAJ des quantités en stock dans les articles
@@ -448,8 +471,7 @@ def CalculeInventaire(dlg, *args, **kwd):
             lstDonnees.append(ComposeLigne(db,donnees, ddInventaire[key]))
         else:
             lstDonnees.append(ComposeLigne(db,donnees))
-    duree = datetime.datetime.now()-timedeb
-    print("durée: ",duree)
+    print(datetime.datetime.now()-timedeb)
     return lstDonnees
 
 # Select de données  ----------------------------------------------------------
@@ -472,7 +494,8 @@ def MouvementsPosterieurs(dlg):
         return True
     return False
 
-def GetMvtsOneDate(db, dParams=None):
+def GetMvtsByDate(db, dParams=None):
+    # retourne l'ensemble des mouvements pour une date donnée et d'autres params
     lstChamps = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
     lstChamps.append('stArticles.qteStock')
     lstChamps.append('stArticles.prixMoyen')
@@ -509,7 +532,8 @@ def GetMvtsOneDate(db, dParams=None):
             ldMouvements.append(dMouvement)
     return ldMouvements
 
-def GetMvtsOneArticle(db, dParams=None):
+def GetMvtsByArticles(db, dParams=None):
+    # Retourne une liste de dictionnaires d'articles selon autres params
     if not 'lstChamps' in dParams:
         lstChamps = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
     else:
@@ -545,7 +569,7 @@ def GetMvtsOneArticle(db, dParams=None):
                 %s
                 ;""" % (",".join(lstChamps),where)
 
-    retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetMvtsOneArticle')
+    retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetMvtsByArticles')
     ldMouvements = []
     if retour == "ok":
         recordset = db.ResultatReq()
