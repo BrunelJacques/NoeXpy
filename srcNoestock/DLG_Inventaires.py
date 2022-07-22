@@ -217,8 +217,7 @@ def GetOlvColonnes(dlg):
 
 def GetOlvCodesSup():
     # codes dans les données olv, mais pas dans les colonnes, attributs des tracks non visibles en tableau
-    return ['qteMvts','qteAchats','mttAchats',
-            'artRations']
+    return ['qteMvts','artRations','deltaValo']
 
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
@@ -303,24 +302,10 @@ def RowFormatter(listItem, track):
     #if track.IDarticle == "AROME MAGGI BT":
     #    test
     anomalie = None
-    if not track.qteStock:
-        track.qteStock = 0
-    if track.qteStock != 0:
-        pxAct = track.prixActuel
-        pxUn = track.pxUn
-        if track.qteAchats != 0:
-            puAchats = round(track.mttAchats/track.qteAchats,6)
-        else: puAchats = pxUn
-
-        if abs(1 - (pxUn / puAchats)) <= 0.10:
-            # Prix mouvements diffère de 5% du prix moyen derniers achats
-            anomalie = None
-        elif pxAct and pxAct != 0.0 and ((pxUn / pxAct) > 5 or (pxUn / pxAct < 0.2)):
-            # ¨Prix mouvements diffère du dernier achat rapport 1 à 5
-            anomalie = 2
-        elif pxUn <= 0:
-            # prix Négatif
-            anomalie = 3
+    if track.deltaQte > 0:
+        anomalie = True
+    if track.deltaValo and track.deltaValo > 5:
+        anomalie = True
     if anomalie:
         # anomalie rouge / fushia
         listItem.SetTextColour(wx.RED)

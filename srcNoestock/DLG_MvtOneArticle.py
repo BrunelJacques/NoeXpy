@@ -72,7 +72,7 @@ HELP_CALCULS = "de tous les mouvements ou seulement des codhés"
 MATRICE_CALCULS = {
 ("param_calcVide", ""): [],
 ("param_calc0", "Prix"): [
-    {'name': 'pxAchats', 'genre': 'anyctrl', 'label': 'PrixUnit moyen Achats',
+    {'name': 'pxAchatsStock', 'genre': 'anyctrl', 'label': 'PxUnit achats du stock',
                      'txtSize': 140,
                      'ctrlMaxSize': (250,35),
                      'help': "Prix moyen des achats, %s" % HELP_CALCULS,
@@ -207,13 +207,15 @@ def ValideLigne(dlg, track):
 
     # modif bloquée selon nature
     if track.origine in ('achat', 'inventaire'):
+        mess = None
         if track.origine == 'inventaire':
             track.messageRefus = "La modification de l'inventaire est impossible ici\n"
             mess = track.messageRefus
         if track.origine == 'achat':
             mess = "Modif des achats = Distorsion possible avec le montant en compta\n"
             mess += "Notez le montant de cette ligne, mtt = qte * pxUnitaire\n"
-        wx.MessageBox(mess,"Non modifiable",style=wx.ICON_STOP)
+        if mess:
+            wx.MessageBox(mess,"Non modifiable",style=wx.ICON_STOP)
 
     # envoi de l'erreur
     if track.messageRefus != "Saisie incomplète\n\n":
@@ -239,9 +241,9 @@ def MAJ_calculs(dlg):
             qteAchats += track.qte
             mttAchats += track.qte * track.pxUn
 
-    # calcul prix d'achat moyen
-    pxAchats, dicPxAchats = nust.PxUnitStock(lstChecked)
-    dlg.pnlCalculs.GetPnlCtrl('pxAchats').SetValue(pxAchats)
+    # calcul prix d'achat moyen pour stock
+    pxAchatsStock = nust.PxAchatsStock(lstChecked)
+    dlg.pnlCalculs.GetPnlCtrl('pxAchatsStock').SetValue(pxAchatsStock)
     
     # calcul prix du stock
     if qteMvts != 0:
@@ -414,7 +416,7 @@ class DLG(dlgMvts.DLG):
                                    codeBox='param2')
         if self.article:
             self.pnlParams.SetOneValue('article',self.article,codeBox='param0')
-            self.OnArticle(None)
+            self.OnArticle()
 
         # le bind check item met à jour les soustotaux puis cherche MAJ_calculs
         self.ctrlOlv.MAJ_calculs = MAJ_calculs
@@ -483,12 +485,12 @@ class DLG(dlgMvts.DLG):
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK #réactive dblClic
         return article
 
-    def OnArticle(self,event):
+    def OnArticle(self,event=None):
         # éviter la redondance de l'évènement 'Enter'
         if event and event.EventType != wx.EVT_KILL_FOCUS.evtType[0]:
             return
         saisie = self.pnlParams.GetOneValue('article',codeBox='param0')
-        # vérification de m'éxistance et choix si nécessaire
+        # vérification de l'existence et choix si nécessaire
         self.article = self.GetOneArticle(saisie.upper())
         if self.article:
             self.pnlParams.SetOneValue('article', self.article, codeBox='param0')
