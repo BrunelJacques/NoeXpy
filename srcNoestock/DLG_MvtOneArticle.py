@@ -404,7 +404,7 @@ class DLG(dlgMvts.DLG):
         self.pnlOlv.ValideLigne = self.ValideLigne
         self.pnlPied = dlgMvts.PNL_pied(self, dicPied)
         self.ctrlOlv = self.pnlOlv.ctrlOlv
-        self.ctrlOlv.DeleteAllItems()
+        #self.ctrlOlv.DeleteAllItems()
 
         # charger les valeurs de pnl_params
 
@@ -462,9 +462,9 @@ class DLG(dlgMvts.DLG):
 
     def GetDonnees(self,dParams=None):
         # forme la grille, puis création d'un premier modelObjects par init
-        self.InitOlv()
         if not dParams:
             return
+        self.InitOlv()
         # appel des données de l'Olv principal à éditer
         dParams['lstChamps'] = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
         ldMouvements = []
@@ -564,6 +564,6 @@ class DLG(dlgMvts.DLG):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG()
+    dlg = DLG(zzarticle="BANANES KG")
     dlg.ShowModal()
     app.MainLoop()

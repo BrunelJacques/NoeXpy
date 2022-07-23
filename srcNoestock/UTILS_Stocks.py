@@ -582,7 +582,7 @@ def zzzCalculeInventaire(dlg, dParams):
         pxUn = Nz(dMvts['prixMoyen']) # c'est le prix dans l'article
         pxAct = dMvts['prixActuel']
         mttStock = pxUn * qteMvts
-        deltaValoSt = abs(mttStock - mttMvts) # ecart cumulé des mvts stocks
+        deltaValo = abs(mttStock - mttMvts) # ecart cumulé des mvts stocks
 
         # contrôle pxUn: prix unitaire de l'article % aux mouvements
         if qteMvts != 0:
@@ -590,7 +590,7 @@ def zzzCalculeInventaire(dlg, dParams):
             mttAchats = Nz(dMvts['mttAchats'])
             # il y a eu des achats dans la période: plusieurs tests
             if qteAchats * mttAchats > 0:
-                txErreur = deltaValoSt / mttAchats
+                txErreur = deltaValo / mttAchats
                 puAchats = round(mttAchats / qteAchats, 4)
                 if puAchats == 0:
                     pass
@@ -600,7 +600,7 @@ def zzzCalculeInventaire(dlg, dParams):
                 elif pxAct > 0 and abs(1 - (pxUn / pxAct)) < 0.05:
                     # le dernier prix à confirmé le prix moyen
                     pass
-                elif abs(txErreur) <= 0.05 or deltaValoSt < 10: # errreur faible
+                elif abs(txErreur) <= 0.05 or deltaValo < 10: # errreur faible
                     pass
                 else:
                     # prix moyen en distorsion: on recalcule selon les derniers achats
