@@ -1,4 +1,4 @@
-Version 1.1.2.14 (22/07/2022 8:40)
+Version 1.1.2.15 (23/07/2022 9:33)
 - Ajout de compteurs dans le suivi mouvements
 - Recalcul des prix de stock
 
