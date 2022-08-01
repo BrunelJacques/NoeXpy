@@ -11,7 +11,10 @@ import wx
 import os
 import xpy.xUTILS_SaisieParams  as xusp
 from xpy.outils import xbandeau,xformat,xboutons,xshelve
-from xpy.outils.ObjectListView import ObjectListView, ColumnDefn, CTRL_Outils, Footer
+import xpy.outils.ObjectListView.ObjectListView as ObjectListView
+import xpy.outils.ObjectListView.Footer as Footer
+from xpy.outils.ObjectListView.ObjectListView  import  ColumnDefn
+from xpy.outils.ObjectListView.ObjectListView import CTRL_Outils
 from xpy.outils.xconst import *
 
 OPTIONS_OLV = ('f.rowFormatter', 'rowFormatter','useAlternateBackColors', 'useAlternateBackColorsTrue',

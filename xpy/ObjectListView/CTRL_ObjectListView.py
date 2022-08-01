@@ -13,7 +13,7 @@ import datetime
 import copy
 import os
 import decimal
-import CTRL_Footer
+import Footer
 import ListCtrlPrinter as LCP
 import ObjectListView as OLV
 import Filter, OLVEvent, CellEditor
@@ -942,7 +942,7 @@ class PanelAvecFooter(wx.Panel):
         
         self.ctrl_listview = listview(**kwargs)
         self.ctrl_listview.SetMinSize((10, 10)) 
-        self.ctrl_footer = CTRL_Footer.Footer(self)
+        self.ctrl_footer = Footer.Footer(self)
         self.ctrl_listview.SetFooter(ctrl=self.ctrl_footer, dictColonnes=dictColonnes)
         
         # Layout
