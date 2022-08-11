@@ -195,8 +195,11 @@ def LargeursDefaut(lstNomsColonnes,lstTypes,IDcache=True):
             lstLargDef.append(-1)
     return lstLargDef
 
-def DefColonnes(lstNoms,lstCodes,lstValDef,lstLargeur):
-    from xpy.outils.ObjectListView import ColumnDefn
+def DefColonnes(lstNoms,lstCodes,lstValDef,lstLargeur,columnDefn=None):
+    if not columnDefn:
+        from xpy.outils.ObjectListView.ObjectListView import ColumnDefn
+    else:
+        ColumnDefn = columnDefn
     # Composition d'une liste de définition de colonnes d'un OLV; remarque faux ami: 'nom, code' == 'label, name'
     ix=0
     # normalise les len() des listes en ajoutant des items

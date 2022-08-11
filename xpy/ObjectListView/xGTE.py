@@ -11,9 +11,9 @@ import wx
 import os
 import datetime
 import xpy.xUTILS_SaisieParams as xusp
-from xpy.outils                 import xbandeau,xformat, xboutons
+from xpy.outils import xbandeau, xformat, xboutons
 
-import xpy.ObjectListView.ObjectListView as ObjectListView
+from xpy.ObjectListView.ObjectListView import ObjectListView
 from xpy.ObjectListView.ObjectListView  import  ColumnDefn
 import xpy.ObjectListView.Footer as Footer
 from xpy.ObjectListView.ObjectListView import CTRL_Outils

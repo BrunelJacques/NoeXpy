@@ -399,7 +399,17 @@ class Dialog(xusp.DLG_vide):
         # importation des donnéees du fichier entrée
         dic = self.pnlParams.GetValues()
         nomFichier = dic['fichiers']['path']
-        entrees = ximport.GetFichierCsv(nomFichier)
+        lstNom = nomFichier.split('.')
+        if lstNom[-1] == 'csv':
+            entrees = ximport.GetFichierCsv(nomFichier)
+        elif lstNom[-1] == 'xlsx':
+            entrees = ximport.GetFichierXlsx(nomFichier)
+        elif lstNom[-1] == 'xls':
+            entrees = ximport.GetFichierXls(nomFichier)
+        else:
+            mess = "Le fichier n'est pas csv, xls ou xlsx"
+            wx.MessageBox(mess,"IMPOSSIBLE")
+            entrees = None
         return entrees
 
     def GetCompta(self):
@@ -440,9 +450,11 @@ class Dialog(xusp.DLG_vide):
         dicParams = self.pnlParams.GetValues()
         formatIn = dicParams['fichiers']['formatin']
         self.table = FORMATS_IMPORT[formatIn]['table']
-        self.ctrlOlv.lstDonnees = FORMATS_IMPORT[formatIn]['fonction'](dicParams,
-                                                           self.GetDonneesIn(),
-                                                           self.ctrlOlv.lstCodesColonnes,self.compta,self.table)
+        entrees = self.GetDonneesIn()
+        if not entrees:
+            return
+        self.ctrlOlv.lstDonnees = FORMATS_IMPORT[formatIn]['fonction'](dicParams,entrees,
+                                self.ctrlOlv.lstCodesColonnes,self.compta,self.table)
         self.InitOlv()
 
     def OnExporter(self,event):

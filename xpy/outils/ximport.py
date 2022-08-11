@@ -72,7 +72,7 @@ def GetFichierXlsx(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):
 
     #loop through range values
     for values in ws.iter_rows(min_row=minrow,max_row=maxrow,min_col=mincol,max_col=maxcol,values_only=True,):
-        sansNull = [x for x in values if x]
+        sansNull = ["%s" % x for x in values if x]
         if len(sansNull)>0:
             lstDonnees.append(values)
     return lstDonnees
@@ -82,7 +82,7 @@ def GetFichierCsv(nomFichier,delimiter="\t",detect=True):
         nomFichier = nomFichier.replace("/", "\\")
     # ouverture du fichier en lecture seule
     try:
-        fichier = open(nomFichier, "rt")
+        fichier = open(nomFichier, "rt",encoding='utf8')
     except Exception as err :
         wx.MessageBox("Erreur d'accès au fichier\n\nAppel: %s\nErreur: %d, %s"%(nomFichier,err.args[0],err.args[1]))
         return []

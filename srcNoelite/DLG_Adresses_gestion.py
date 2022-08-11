@@ -18,7 +18,8 @@ LIMITSQL =100
 
 import wx
 import datetime
-import xpy.xGestion_TableauRecherche     as xgtr
+from xpy.ObjectListView.ObjectListView import ColumnDefn
+import xpy.ObjectListView.xGTR     as xgtr
 import xpy.xUTILS_DB           as xdb
 import srcNoelite.UTILS_Utilisateurs  as nuu
 import srcNoelite.DLG_Adresses_saisie   as nsa
@@ -65,7 +66,8 @@ def dicOlvFamilles():
     lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes)
 
     # matrice OLV
-    lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
+    lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes,
+                                      lstLargeurColonnes, ColumnDefn)
     dicOlv =    {
                 'lstColonnes': lstColonnes,
                 'lstChamps': lstChamps,

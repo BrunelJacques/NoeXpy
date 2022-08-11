@@ -102,12 +102,12 @@ import math
 
 import wx
 
-from WordWrapRenderer import WordWrapRenderer
+from . WordWrapRenderer import WordWrapRenderer
 
 #----------------------------------------------------------------------------
 
 
-class ListCtrlPrinter(object):
+class LCprinter(object):
 
     """
     An ListCtrlPrinter creates a pretty report from an ObjectListView/ListCtrl.
@@ -117,6 +117,7 @@ class ListCtrlPrinter(object):
     def __init__(self, listCtrl=None, title="ListCtrl Printing"):
         """
         """
+
         self.printout = ListCtrlPrintout(self)
         self.engine = ReportEngine()
         if listCtrl is not None:
@@ -710,11 +711,12 @@ class ReportFormat(object):
         self.ListFooter = BlockFormat()
         self.PageFooter = BlockFormat()
         self.Watermark = BlockFormat()
-
         self.IncludeImages = True
         self.IsColumnHeadingsOnEachPage = False
         self.IsShrinkToFit = False
         self.UseListCtrlTextFormat = True
+        self.ListIntro = BlockFormat()
+        self.ColumnFooter = BlockFormat()
 
         # Initialize the watermark format to default values
         self.WatermarkFormat()

@@ -10,12 +10,12 @@
 import wx
 import os
 import datetime
-import xpy.xGestion_TableauEditor       as xgte
+import xpy.ObjectListView.xGTE as xgte
 import xpy.xUTILS_DB                   as xdb
 import srcNoelite.UTILS_Utilisateurs    as nuu
 import srcNoelite.UTILS_Reglements      as nur
 import srcNoelite.DLG_Reglements_ventilation      as ndrv
-from xpy.outils.ObjectListView  import ColumnDefn, CellEditor
+from xpy.ObjectListView.ObjectListView  import ColumnDefn, CellEditor
 from xpy.outils                 import xformat,xbandeau
 
 #---------------------- Matrices de paramétres -------------------------------------
