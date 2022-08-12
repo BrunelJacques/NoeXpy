@@ -1,3 +1,6 @@
+Version 1.1.2.18 (12/08/2022 18:00)
+- gestion d'une coupure de réseau en cours de programme
+
 Version 1.1.2.17 (12/08/2022 16:30)
 - Réorganisation ObjectListView xGTE xGTR
 

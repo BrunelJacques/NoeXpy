@@ -377,9 +377,15 @@ class DB():
             self.erreur = err
 
     def ExecuterReq(self, req, mess=None, affichError=True):
-        # Pour parer le pb des () avec MySQL
-        #if self.typeDB == 'mysql' :
-        #    req = req.replace("()", "(10000000, 10000001)")
+        if not hasattr(self, 'cursor') or self.echec >= 1:
+            if not mess:
+                origine = "xUTILS_DB.ExecuterReq"
+            else: origine = mess
+            if self.erreur != "ErreurPubliee" and affichError:
+                mess = "Echec d'accès à la base de donnée\n\n%s"%origine
+                wx.MessageBox(mess,"Ouverture DB",style = wx.ICON_ERROR)
+            self.erreur = "ErreurPubliee"
+            return mess
         try:
             if self.typeDB == 'access':
                 self.recordset = []

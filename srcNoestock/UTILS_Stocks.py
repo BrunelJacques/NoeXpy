@@ -121,7 +121,7 @@ def GetLastInventaire(dteAnalyse=None,lstChamps=None,retourLignes=True,oneArticl
                 mouvement.append(record[ix])
             llInventaire.append(mouvement)
     db.Close()
-    if not retourLignes:
+    if not retourLignes and len(llInventaire) > 0:
         return llInventaire[0][0]
     return llInventaire
 
