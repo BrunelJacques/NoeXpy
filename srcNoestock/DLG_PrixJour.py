@@ -12,10 +12,10 @@ import os
 import datetime
 import srcNoestock.UTILS_Stocks        as nust
 import srcNoelite.UTILS_Noegest        as nung
-import xpy.xGestion_TableauRecherche   as xgtr
+import xpy.ObjectListView.xGTR as xGTR
 import xpy.xUTILS_DB                   as xdb
 from srcNoestock                import DLG_Effectifs, DLG_Mouvements, DLG_PrixJourDetail
-from xpy.outils.ObjectListView  import ColumnDefn
+from xpy.ObjectListView.ObjectListView import ColumnDefn
 from xpy.outils                 import xformat,xbandeau,xboutons,xdates
 
 #---------------------- Matrices de paramétres -------------------------------------
@@ -194,10 +194,10 @@ def GetDlgOptions(dlg):
 
 #----------------------- Parties de l'écran -----------------------------------------
 
-class PNL_corps(xgtr.PNL_corps):
+class PNL_corps(xGTR.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
     def __init__(self, parent, dicOlv,*args, **kwds):
-        xgtr.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
+        xGTR.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
 
     def OnDblClick(self,event):
         self.OnModifier(event)
@@ -226,7 +226,7 @@ class PNL_corps(xgtr.PNL_corps):
         dlg = DLG_PrixJourDetail.DLG(dteJour=ligne.IDdate)
         dlg.ShowModal()
 
-class DLG(xgtr.DLG_tableau):
+class DLG(xGTR.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self):
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche

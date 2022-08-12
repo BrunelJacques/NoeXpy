@@ -13,7 +13,7 @@ import xpy.xUTILS_DB                   as xdb
 import srcNoelite.UTILS_Adresses   as usa
 import srcNoelite.UTILS_Utilisateurs    as nuu
 import srcNoelite.DLG_Pays          as DLG_Pays
-from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn, Filter, CTRL_Outils
+from xpy.ObjectListView.ObjectListView import FastObjectListView, ColumnDefn, Filter, CTRL_Outils
 
 class CTRL_Bouton_image(wx.Button):
     def __init__(self, parent, id=wx.ID_APPLY, texte="", cheminImage=None):

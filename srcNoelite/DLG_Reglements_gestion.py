@@ -10,7 +10,7 @@
 import wx
 import os
 import datetime
-import xpy.ObjectListView.xGTE as xgte
+import xpy.ObjectListView.xGTE as xGTE
 import xpy.xUTILS_DB                   as xdb
 import srcNoelite.UTILS_Utilisateurs    as nuu
 import srcNoelite.UTILS_Reglements      as nur
@@ -209,10 +209,10 @@ class PNL_params(wx.Panel):
                     self.ctrlBanque.SetFocusFromKbd()
                 else: self.parent.OnClose(event)
 
-class PNL_corpsReglements(xgte.PNL_corps):
+class PNL_corpsReglements(xGTE.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
     def __init__(self, parent, dicOlv,*args, **kwds):
-        xgte.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
+        xGTE.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
         self.ctrlOlv.Choices={}
         self.lstNewReglements = []
         self.flagSkipEdit = False
@@ -380,10 +380,10 @@ class PNL_corpsReglements(xgte.PNL_corps):
                     self.parent.IDdepot = None
                     self.parent.pnlParams.ctrlRef.SetValue('')
 
-class PNL_pied(xgte.PNL_pied):
+class PNL_pied(xGTE.PNL_pied):
     #panel infos (gauche) et boutons sorties(droite)
     def __init__(self, parent, dicPied, **kwds):
-        xgte.PNL_pied.__init__(self,parent, dicPied, **kwds)
+        xGTE.PNL_pied.__init__(self,parent, dicPied, **kwds)
 
 class Dialog(wx.Dialog):
     # ------------------- Composition de l'écran de gestion----------

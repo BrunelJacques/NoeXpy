@@ -10,7 +10,7 @@
 import wx
 import datetime
 import srcNoelite.UTILS_Historique  as nuh
-import xpy.xGestion_TableauRecherche as xgtr
+import xpy.ObjectListView.xGTR as xGTR
 from xpy.outils import xformat
 
 SYMBOLE = "€"
@@ -111,7 +111,7 @@ def GetFamilles(**kwd):
 
 def GetFamille(db):
     dicOlv = GetMatriceFamilles()
-    dlg = xgtr.DLG_tableau(None,dicOlv=dicOlv,db=db)
+    dlg = xGTR.DLG_tableau(None,dicOlv=dicOlv,db=db)
     ret = dlg.ShowModal()
     if ret == wx.OK:
         IDfamille = dlg.GetSelection().donnees[1]
@@ -846,7 +846,7 @@ class Compte(object):
 
     def GetCompte(self,db=None):
         dicOlv = self.GetMatriceComptes()
-        dlg = xgtr.DLG_tableau(None,dicOlv=dicOlv,db=db)
+        dlg = xGTR.DLG_tableau(None,dicOlv=dicOlv,db=db)
         ret = dlg.ShowModal()
         if ret == wx.OK:
             retour = dlg.GetSelection().donnees
@@ -920,7 +920,7 @@ def GetDepot(db=None):
     # lancement de l'appel des dépots existants pour reprise
     dicDepot = {}
     dicOlv = GetMatriceDepots()
-    dlg = xgtr.DLG_tableau(None,dicOlv=dicOlv,db=db)
+    dlg = xGTR.DLG_tableau(None,dicOlv=dicOlv,db=db)
     ret = dlg.ShowModal()
     if ret in (wx.OK,wx.ID_OPEN):
         donnees = dlg.GetSelection().donnees

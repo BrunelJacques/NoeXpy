@@ -12,10 +12,10 @@ import os
 import datetime
 import srcNoestock.UTILS_Stocks        as nust
 import srcNoelite.UTILS_Noegest        as nung
-import xpy.xGestion_TableauRecherche   as xgtr
+import xpy.ObjectListView.xGTR as xGTR
 import xpy.xUTILS_Identification       as xuid
 import xpy.xUTILS_DB                   as xdb
-from xpy.outils.ObjectListView  import ColumnDefn
+from xpy.ObjectListView.ObjectListView import ColumnDefn
 from xpy.outils                 import xformat,xbandeau,xboutons,xdates
 
 #---------------------- Matrices de paramétres -------------------------------------
@@ -228,7 +228,7 @@ class EffectifUnJour(object):
 
         kw = xformat.CopyDic(self.dicOlv)
         # appeler un écran avec les champs en lignes
-        dlgSaisie = xgtr.DLG_saisie(self,kw)
+        dlgSaisie = xGTR.DLG_saisie(self,kw)
         dlgSaisie.pnl.SetValues(dDonnees)
         ret = dlgSaisie.ShowModal()
         if ret == wx.OK:
@@ -256,7 +256,7 @@ class EffectifUnJour(object):
         return ValideSaisie(dlgSaisie,**kwd)
 
 
-class DLG(xgtr.DLG_tableau):
+class DLG(xGTR.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self):
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche

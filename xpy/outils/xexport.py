@@ -18,7 +18,7 @@ import platform
 
 from xpy.outils import xchoixListe,xformat
 from xpy.outils.xconst import *
-from xpy.outils.ObjectListView import FastObjectListView, ColumnDefn
+from xpy.ObjectListView.ObjectListView import FastObjectListView, ColumnDefn
 
 
 class DataType(object):

@@ -19,7 +19,7 @@ LIMITSQL =100
 import wx
 import datetime
 from xpy.ObjectListView.ObjectListView import ColumnDefn
-import xpy.ObjectListView.xGTR     as xgtr
+import xpy.ObjectListView.xGTR     as xGTR
 import xpy.xUTILS_DB           as xdb
 import srcNoelite.UTILS_Utilisateurs  as nuu
 import srcNoelite.DLG_Adresses_saisie   as nsa
@@ -108,12 +108,12 @@ def GetLstBtns(pnl,olv):
     bouton_fermer.SetToolTip(u"Cliquez ici pour fermer")
     return [bouton_coords, bouton_ok, bouton_fermer]
 
-class Pnl_tableau(xgtr.PNL_corps):
+class Pnl_tableau(xGTR.PNL_corps):
     def __init__(self,parent,dicOlv):
 
         dicOlv['menuPersonnel'] = True
         dicOlv['autoSizer'] = False
-        xgtr.PNL_corps.__init__(self,parent,dicOlv)
+        xGTR.PNL_corps.__init__(self,parent,dicOlv)
 
         # Binds
         #self.ctrlOlv.Bind(wx.EVT_LIST_ITEM_ACTIVATED,self.OnDblClic)
@@ -221,7 +221,7 @@ class Dialog(wx.Dialog):
         pnlOlv = Pnl_tableau(self, dicOlv)
         self.ctrlOlv = pnlOlv.ctrlOlv
         self.olv = pnlOlv
-        self.pnlPied = xgtr.PNL_pied(self,{'autoSizer':False,'lstBtns':[]})
+        self.pnlPied = xGTR.PNL_pied(self,{'autoSizer':False,'lstBtns':[]})
         # Initialisations
         self.pnlPied.lstBtns = GetLstBtns(self.pnlPied,self.olv)
         btnFermer = self.pnlPied.lstBtns[1]

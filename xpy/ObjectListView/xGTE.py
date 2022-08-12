@@ -37,7 +37,7 @@ class TrackGeneral(object):
                                     len(nomsColonnes), len(setterValues),
                                     len(donnees),len(codesSup),(len(donnees)-len(codesSup)))
             mess += '\n\n'+'\n\n'.join(lst)
-            wx.MessageBox(mess,caption="xGestion_TableauEditor.TrackGeneral")
+            wx.MessageBox(mess,caption="xGTE.TrackGeneral")
             ok = False
             #raise(mess)
         if ok:

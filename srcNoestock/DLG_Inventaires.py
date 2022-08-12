@@ -18,14 +18,14 @@ import wx
 import os
 import datetime
 import srcNoestock.UTILS_Stocks        as nust
-import xpy.xGestion_TableauEditor      as xgte
-import xpy.xGestion_TableauRecherche   as xgtr
+import xpy.ObjectListView.xGTE as xGTE
+import xpy.ObjectListView.xGTR as xGTR
 import xpy.xUTILS_Identification       as xuid
 import xpy.xUTILS_DB                   as xdb
 from srcNoestock                import DLG_MvtOneArticle
 from srcNoestock                import DLG_Articles
 from srcNoelite                 import DB_schema
-from xpy.outils.ObjectListView  import ColumnDefn
+from xpy.ObjectListView.ObjectListView import ColumnDefn
 from xpy.outils                 import xformat,xboutons, xdates
 
 #---------------------- Matrices de paramétres -------------------------------------
@@ -248,7 +248,7 @@ def GetAnterieur(dlg,db=None):
     # retourne un dict de params après lancement d'un tableau de choix de l'existants pour reprise
     dParams = {}
     dicOlv = GetMatriceAnterieurs(dlg)
-    dlg = xgtr.DLG_tableau(dlg, dicOlv=dicOlv, db=db)
+    dlg = xGTR.DLG_tableau(dlg, dicOlv=dicOlv, db=db)
     ret = dlg.ShowModal()
     if ret == wx.OK and dlg.GetSelection():
         donnees = dlg.GetSelection().donnees
@@ -320,10 +320,10 @@ def RowFormatter(listItem, track):
         # stock à zero: fond vert
         listItem.SetBackgroundColour(wx.Colour(220, 237, 200))
 
-class PNL_corps(xgte.PNL_corps):
+class PNL_corps(xGTE.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
     def __init__(self, parent, dicOlv,*args, **kwds):
-        xgte.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
+        xGTE.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
         self.db = parent.db
 
     def ValideParams(self):
@@ -431,7 +431,7 @@ class PNL_corps(xgte.PNL_corps):
             if IDarticle:
                 ret = self.OnEditFinishing('IDarticle',IDarticle)
 
-class DLG(xgte.DLG_tableau):
+class DLG(xGTE.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,date=None,**kwd):
         kwds = GetDlgOptions(self)

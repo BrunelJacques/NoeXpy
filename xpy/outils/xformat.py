@@ -197,7 +197,7 @@ def LargeursDefaut(lstNomsColonnes,lstTypes,IDcache=True):
 
 def DefColonnes(lstNoms,lstCodes,lstValDef,lstLargeur,columnDefn=None):
     if not columnDefn:
-        from xpy.outils.ObjectListView.ObjectListView import ColumnDefn
+        from xpy.ObjectListView.ObjectListView import ColumnDefn
     else:
         ColumnDefn = columnDefn
     # Composition d'une liste de définition de colonnes d'un OLV; remarque faux ami: 'nom, code' == 'label, name'

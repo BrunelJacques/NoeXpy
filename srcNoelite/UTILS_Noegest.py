@@ -11,7 +11,7 @@
 import wx
 import datetime
 import srcNoelite.UTILS_Historique      as nuh
-import xpy.xGestion_TableauRecherche    as xgtr
+import xpy.ObjectListView.xGTR as xGTR
 import xpy.xUTILS_DB                    as xdb
 from xpy.outils             import xformat, xchoixListe
 from srcNoelite.DB_schema   import DB_TABLES
@@ -293,7 +293,7 @@ class Noegest(object):
         dicOlv['size'] = (500,600)
 
         # appel dee l'écran de saisie
-        dlg = xgtr.DLG_tableau(self,dicOlv=dicOlv)
+        dlg = xGTR.DLG_tableau(self,dicOlv=dicOlv)
 
         if dlg.ctrlOlv.Parent.ctrlOutils:
             barreRecherche = dlg.ctrlOlv.Parent.ctrlOutils.barreRecherche

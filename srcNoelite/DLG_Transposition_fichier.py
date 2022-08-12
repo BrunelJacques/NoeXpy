@@ -13,7 +13,7 @@ import xpy.xGestionConfig               as xgc
 import xpy.xUTILS_SaisieParams          as xusp
 from xpy.outils                 import xformat,xbandeau,ximport
 from srcNoelite                 import UTILS_Compta
-from xpy.ObjectListView         import xGTE
+from xpy.ObjectListView import xGTE
 from xpy.ObjectListView.ObjectListView  import ColumnDefn
 
 #---------------------- Paramètres du programme -------------------------------------

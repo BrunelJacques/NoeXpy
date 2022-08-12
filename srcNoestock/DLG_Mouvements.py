@@ -12,13 +12,13 @@ import os
 import datetime
 import srcNoestock.UTILS_Stocks        as nust
 import srcNoelite.UTILS_Noegest        as nung
-import xpy.xGestion_TableauEditor      as xgte
-import xpy.xGestion_TableauRecherche   as xgtr
+import xpy.ObjectListView.xGTE as xGTE
+import xpy.ObjectListView.xGTR as xGTR
 import xpy.xUTILS_Identification       as xuid
 import xpy.xUTILS_SaisieParams         as xusp
 import xpy.xUTILS_DB                   as xdb
 from srcNoestock                import DLG_Articles
-from xpy.outils.ObjectListView  import ColumnDefn, CellEditor
+from xpy.ObjectListView.ObjectListView  import ColumnDefn, CellEditor
 from xpy.outils                 import xformat,xbandeau,xboutons
 from xpy.outils.xformat         import Nz
 
@@ -284,7 +284,7 @@ def GetAnterieur(dlg,db=None):
     # retourne un dict de params après lancement d'un tableau de choix de l'existants pour reprise
     dParams = {}
     dicOlv = GetMatriceAnterieurs(dlg)
-    dlgAnte = xgtr.DLG_tableau(dlg, dicOlv=dicOlv, db=db)
+    dlgAnte = xGTR.DLG_tableau(dlg, dicOlv=dicOlv, db=db)
     ret = dlgAnte.ShowModal()
     if ret == wx.OK and dlgAnte.GetSelection():
         donnees = dlgAnte.GetSelection().donnees
@@ -490,7 +490,7 @@ def ValideLigne(dlg,track):
     else: track.messageRefus = ""
     return
 
-class PNL_params(xgte.PNL_params):
+class PNL_params(xGTE.PNL_params):
     #panel de paramètres de l'application
     def __init__(self, parent, **kwds):
         self.parent = parent
@@ -500,10 +500,10 @@ class PNL_params(xgte.PNL_params):
             self.lanceur = parent.lanceur
         else: self.lanceur = parent
 
-class PNL_corps(xgte.PNL_corps):
+class PNL_corps(xGTE.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
     def __init__(self, parent, dicOlv,*args, **kwds):
-        xgte.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
+        xGTE.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
         self.db = parent.db
         self.lstNewReglements = []
         self.flagSkipEdit = False
@@ -653,10 +653,10 @@ class PNL_corps(xgte.PNL_corps):
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK
         return id
 
-class PNL_pied(xgte.PNL_pied):
+class PNL_pied(xGTE.PNL_pied):
     #panel infos (gauche) et boutons sorties(droite)
     def __init__(self, parent, dicPied, **kwds):
-        xgte.PNL_pied.__init__(self,parent, dicPied, **kwds)
+        xGTE.PNL_pied.__init__(self,parent, dicPied, **kwds)
 
 class DLG(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------

@@ -8,7 +8,7 @@
 #------------------------------------------------------------------------
 
 import wx
-import xpy.xGestion_TableauEditor   as xgte
+import xpy.ObjectListView.xGTE as xGTE
 import xpy.xUTILS_SaisieParams      as xusp
 import xpy.xUTILS_DB                as xdb
 import srcNoelite.UTILS_Adresses as nua
@@ -103,10 +103,10 @@ def GetDicOlvFam():
     }
     return dicOlv
 
-class PNL_corps(xgte.PNL_corps):
+class PNL_corps(xGTE.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
     def __init__(self, parent, dicOlv,*args, **kwds):
-        xgte.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
+        xGTE.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
         self.flagSkipEdit = False
         self.oldRow = None
 

@@ -9,10 +9,10 @@
 
 import wx
 import datetime
-import xpy.xGestion_TableauRecherche       as xgtr
+import xpy.ObjectListView.xGTR as xGTR
 import srcNoelite.UTILS_Utilisateurs    as nuutil
 import srcNoelite.UTILS_Compta          as nucompta
-from xpy.outils.ObjectListView  import ColumnDefn
+from xpy.ObjectListView.ObjectListView import ColumnDefn
 from xpy.outils                 import xformat,xboutons,xdates
 
 #************************************** Paramètres PREMIER ECRAN ******************************************
@@ -144,7 +144,7 @@ def SqlBalance(dlg,dicParams):
 
 #*********************** Parties de l'écran d'affichage de la liste *******************
 
-class DLG_balance(xgtr.DLG_tableau):
+class DLG_balance(xGTR.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,parent):
         self.IDutilisateur = nuutil.GetIDutilisateur()

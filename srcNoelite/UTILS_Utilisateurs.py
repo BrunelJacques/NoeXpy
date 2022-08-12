@@ -127,7 +127,7 @@ def GetDictUtilisateur(afficheMessage=True):
     return None
 
 class CTRL_Bouton_image(wx.Button):
-    # La classe xGestion_TableauEditor.Button reprend le concept de manière plus large
+    # La classe xGTE.Button reprend le concept de manière plus large
     def __init__(self, parent, id=wx.ID_APPLY, texte="", cheminImage=None):
         wx.Button.__init__(self, parent, id=id, label=texte)
         if cheminImage:

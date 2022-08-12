@@ -11,7 +11,7 @@ import datetime
 import xpy.outils.xshelve    as xshelve
 import xpy.xGestionConfig   as xgc
 import xpy.xUTILS_DB       as xdb
-import xpy.xGestion_TableauRecherche    as xgtr
+import xpy.ObjectListView.xGTR as xGTR
 from xpy.outils             import xexport,xformat
 
 # Paramétrage des accès aux bases de données, les 'select' de _COMPTAS doivent respecter 'lstChamps' de  _COMPTES
@@ -464,7 +464,7 @@ class Compta(object):
     def ChoisirItem(self,table='generaux',filtre=''):
         self.table = table
         dicOlv = self.GetDicOlv(table)
-        dlg = xgtr.DLG_tableau(None, dicOlv=dicOlv)
+        dlg = xGTR.DLG_tableau(None, dicOlv=dicOlv)
         if len(filtre)>0:
             dlg.ctrlOlv.Parent.barreRecherche.SetValue(filtre)
             dlg.ctrlOlv.Filtrer(filtre)

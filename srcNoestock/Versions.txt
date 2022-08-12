@@ -1,3 +1,6 @@
+Version 1.1.2.17 (12/08/2022 16:30)
+- Réorganisation ObjectListView xGTE xGTR
+
 Version 1.1.2.16 (12/08/2022 11:45)
 - Modifs xpy pour noelite
 

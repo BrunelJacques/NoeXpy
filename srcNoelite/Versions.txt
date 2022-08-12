@@ -1,3 +1,6 @@
+Version 1.2.7.14 (12/08/2022 16:30)
+- Réorganisation ObjectListView xGTE xGTR
+
 Version 1.2.7.13 (12/08/2022)
 - Adaptations de différents formats d'entrée
 

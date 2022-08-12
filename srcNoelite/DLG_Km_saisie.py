@@ -9,13 +9,13 @@
 
 import wx
 import datetime
-import xpy.xGestion_TableauEditor       as xgte
+import xpy.ObjectListView.xGTE as xGTE
 import xpy.xGestionConfig               as xgc
 import xpy.xUTILS_SaisieParams          as xusp
 import srcNoelite.UTILS_Noegest         as nunoegest
 import srcNoelite.UTILS_Compta          as nucompta
 import srcNoelite.UTILS_Utilisateurs    as nuutil
-from xpy.outils.ObjectListView  import ColumnDefn, CellEditor
+from xpy.ObjectListView.ObjectListView import ColumnDefn, CellEditor
 from xpy.outils                 import xformat,xbandeau,ximport,xexport
 
 #---------------------- Paramètres du programme -------------------------------------
@@ -259,10 +259,10 @@ class PNL_params(xgc.PNL_paramsLocaux):
         super().__init__(parent, **kwds)
         self.Init()
 
-class PNL_corps(xgte.PNL_corps):
+class PNL_corps(xGTE.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
     def __init__(self, parent, dicOlv,*args, **kwds):
-        xgte.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
+        xGTE.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
         self.ctrlOlv.Choices={}
         self.flagSkipEdit = False
         self.oldRow = None
@@ -392,10 +392,10 @@ class PNL_corps(xgte.PNL_corps):
                 track.idactivite = dict['idanalytique']
                 track.nomtiers = dict['nom']
 
-class PNL_pied(xgte.PNL_pied):
+class PNL_pied(xGTE.PNL_pied):
     #panel infos (gauche) et boutons sorties(droite)
     def __init__(self, parent, dicPied, **kwds):
-        xgte.PNL_pied.__init__(self,parent, dicPied, **kwds)
+        xGTE.PNL_pied.__init__(self,parent, dicPied, **kwds)
 
 class Dialog(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------

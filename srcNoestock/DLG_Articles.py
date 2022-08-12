@@ -9,7 +9,7 @@
 
 import wx
 import datetime
-import xpy.xGestion_TableauRecherche as xgtr
+import xpy.ObjectListView.xGTR as xGTR
 import xpy.xUTILS_Identification        as xuid
 import srcNoestock.UTILS_Stocks         as nust
 from srcNoelite     import DB_schema
@@ -132,7 +132,7 @@ def GetOneIDarticle(db,value,**kwds):
     return IDarticle
 
 # gestion des articles via tableau de recherche ---------------------------------------------------------
-class DLG_articles(xgtr.DLG_tableau):
+class DLG_articles(xGTR.DLG_tableau):
     def __init__(self,**kwds):
         db = kwds.pop('db',None)
         if db == None:
@@ -182,7 +182,7 @@ class DLG_articles(xgtr.DLG_tableau):
         ixLigne = olv.modelObjects.index(ligne)
         dDonnees = xformat.TrackToDdonnees(ligne,olv)
         self.dicOlv['mode'] = 'modif'
-        dlgSaisie = xgtr.DLG_saisie(self.lanceur,self.dicOlv,kwValideSaisie=self.dicOlv)
+        dlgSaisie = xGTR.DLG_saisie(self.lanceur,self.dicOlv,kwValideSaisie=self.dicOlv)
         dlgSaisie.pnl.SetValues(dDonnees,)
         ret = dlgSaisie.ShowModal()
         if ret == wx.OK:

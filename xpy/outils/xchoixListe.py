@@ -9,8 +9,8 @@
 
 import wx, copy
 import decimal
-from xpy.outils.ObjectListView.ObjectListView import FastObjectListView, ColumnDefn, CTRL_Outils
-#import xpy.outils.ObjectListView.Filter as Filter
+from xpy.ObjectListView.ObjectListView import FastObjectListView, ColumnDefn, CTRL_Outils
+#import xpy.ObjectListView.Filter as Filter
 import xpy.outils.xbandeau      as xbd
 from xpy.outils import xformat
 

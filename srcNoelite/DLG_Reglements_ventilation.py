@@ -14,7 +14,7 @@ import datetime
 import decimal
 import sys
 import wx.grid                      as gridlib
-import xpy.xGestion_TableauEditor   as xgte
+import xpy.ObjectListView.xGTE as xGTE
 import xpy.xUTILS_DB                as xdb
 import wx.lib.agw.hyperlink         as Hyperlink
 from xpy.outils                     import xformat
@@ -865,10 +865,10 @@ class CTRL_Ventilation(gridlib.Grid):
         DB.Close()
         return
 
-class PNL_pied(xgte.PNL_pied):
+class PNL_pied(xGTE.PNL_pied):
     #panel infos (gauche) et boutons sorties(droite)
     def __init__(self, parent, dicPied, **kwds):
-        xgte.PNL_pied.__init__(self,parent, dicPied, **kwds)
+        xGTE.PNL_pied.__init__(self,parent, dicPied, **kwds)
 
 # ---------------------------------------------------------------------------------------------------------------------
 

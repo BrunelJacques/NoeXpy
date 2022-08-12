@@ -17,8 +17,8 @@ import xpy.xUTILS_DB                   as xdb
 import xpy.xUTILS_SaisieParams         as xusp
 from srcNoelite                                 import DB_schema
 from xpy.outils.xformat                         import Nz
-from xpy.outils.ObjectListView.ObjectListView   import ColumnDefn
-from xpy.outils.ObjectListView.CellEditor       import ChoiceEditor
+from xpy.ObjectListView.ObjectListView   import ColumnDefn
+from xpy.ObjectListView.CellEditor       import ChoiceEditor
 from xpy.outils                                 import xformat,xbandeau,xchoixListe
 
 class CTRL_calcul(xchoixListe.CTRL_Solde):

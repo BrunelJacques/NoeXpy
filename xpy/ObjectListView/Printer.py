@@ -12,8 +12,8 @@
 from builtins import object
 import datetime
 import wx
-from ListCtrlPrinter import ReportFormat, LCprinter
-import OptionsImpression
+from .ListCtrlPrinter import ReportFormat, LCprinter
+import xpy.ObjectListView.OptionsImpression as OptionsImpression
 from xpy.outils                import xformat
 
 
