@@ -8,12 +8,13 @@
 # -------------------------------------------------------------
 
 import wx
-import xpy.xGestion_TableauEditor       as xgte
+import datetime
 import xpy.xGestionConfig               as xgc
 import xpy.xUTILS_SaisieParams          as xusp
+from xpy.outils                 import xformat,xbandeau,ximport
 from srcNoelite                 import UTILS_Compta
-from xpy.outils.ObjectListView  import ColumnDefn
-from xpy.outils                 import xformat,xbandeau,ximport,xexport
+from xpy.ObjectListView         import xGTE
+from xpy.ObjectListView.ObjectListView  import ColumnDefn
 
 #---------------------- Paramètres du programme -------------------------------------
 
@@ -66,24 +67,40 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table):
             ligne[ixAppel] = compta.filtreTest
 
     # déroulé du fichier entrée
+    ko = None
     for ligne in donnees[nblent:]:
-        if len(champsIn) != len(ligne):
+        if ko: break
+        if len(champsIn) > len(ligne):
             # ligne batarde ignorée
             continue
-        #noPiece = xformat.IncrementeRef(noPiece)
         ligneOut = []
         for champ in champsOut:
             valeur = None
+            # traitements spécifiques selon destination
             if champ    == 'date':
                 if 'date' in champsIn:
                     valeur = xformat.FinDeMois(ligne[champsIn.index(champ)])
             elif champ == 'noPiece':
                     valeur = noPiece
+            elif champ == 'montant':
+                    valeur = xformat.NoLettre(ligne[champsIn.index(champ)])
             elif champ  == 'libelle':
                 # ajout du début de date dans le libellé
                 if 'date' in champsIn and 'libelle' in champsIn:
-                    prefixe = ligne[champsIn.index('date')].strip()[:lgPrefixe-1]+' '
-                    valeur = prefixe + ligne[champsIn.index('libelle')]
+                    dte = ligne[champsIn.index('date')]
+                    if isinstance(dte,(datetime.date,datetime.datetime)):
+                        prefixe = "%s-%02d"%(("%d"%dte.year)[-2:],dte.month)
+                    else:
+                        prefixe = dte.strip()[:lgPrefixe-1]+' '
+                    if ligne[champsIn.index('libelle')]:
+                        valeur = prefixe + ligne[champsIn.index('libelle')]
+                    else:
+                        mess = "Problème de format d'import\n\n"
+                        mess += "Pas de libellé en colonne '%d'" % champsIn.index('libelle')
+                        mess += "\nLigne: %s" % str(ligne)
+                        wx.MessageBox(mess,"Interruption")
+                        ko = True
+                        break
             # récupération des champs homonymes
             elif champ in champsIn:
                 valeur = ligne[champsIn.index(champ)]
@@ -94,10 +111,17 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table):
     return lstOut
 
 # formats possibles des fichiers en entrées, utiliser les mêmes codes des champs pour les 'UtilCompta.ComposeFuncExp'
-FORMATS_IMPORT = {"LCL carte":{ 'champs':['date','montant','mode',None,'libelle',None,None,'codenat','nature',],
+FORMATS_IMPORT = {"LCL carte":{ 'champs':['date','montant','mode',None,'libelle',None,None,
+                                          'codenat','nature',],
                                 'lignesentete':0,
                                 'fonction':ComposeFuncImp,
-                                'table':'fournisseurs'}}
+                                'table':'fournisseurs'},
+                  "Date,Lib,Montant": {
+                      'champs': ['date','libelle','montant'],
+                      'lignesentete': 0,
+                      'fonction': ComposeFuncImp,
+                      'table': 'fournisseurs'}
+                  }
 
 # Description des paramètres à choisir en haut d'écran
 MATRICE_PARAMS = {
@@ -203,10 +227,10 @@ class PNL_params(xgc.PNL_paramsLocaux):
         super().__init__(parent, **kwds)
         self.Init()
 
-class PNL_corps(xgte.PNL_corps):
+class PNL_corps(xGTE.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
     def __init__(self, parent, dicOlv,*args, **kwds):
-        xgte.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
+        xGTE.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
         self.ctrlOlv.Choices={}
         self.flagSkipEdit = False
         self.oldRow = None
@@ -299,10 +323,13 @@ class PNL_corps(xgte.PNL_corps):
                 object.appel  = track.appel
                 object.libcpt = track.libcpt
 
-class PNL_pied(xgte.PNL_pied):
+    def SauveLigne(self,*args,**kwds):
+        return True
+
+class PNL_pied(xGTE.PNL_pied):
     #panel infos (gauche) et boutons sorties(droite)
     def __init__(self, parent, dicPied, **kwds):
-        xgte.PNL_pied.__init__(self,parent, dicPied, **kwds)
+        xGTE.PNL_pied.__init__(self,parent, dicPied, **kwds)
 
 class Dialog(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
@@ -400,12 +427,18 @@ class Dialog(xusp.DLG_vide):
         dic = self.pnlParams.GetValues()
         nomFichier = dic['fichiers']['path']
         lstNom = nomFichier.split('.')
-        if lstNom[-1] == 'csv':
+        if lstNom[-1] in ('csv','txt'):
             entrees = ximport.GetFichierCsv(nomFichier)
         elif lstNom[-1] == 'xlsx':
             entrees = ximport.GetFichierXlsx(nomFichier)
         elif lstNom[-1] == 'xls':
-            entrees = ximport.GetFichierXls(nomFichier)
+            try:
+                entrees = ximport.GetFichierXls(nomFichier)
+            except Exception as err:
+                mess = "Echec ouverture\n\n%s" % err
+                mess += "\nTentative d'ouverture en csv"
+                wx.MessageBox(mess,"Anomalie")
+                entrees = ximport.GetFichierCsv(nomFichier)
         else:
             mess = "Le fichier n'est pas csv, xls ou xlsx"
             wx.MessageBox(mess,"IMPOSSIBLE")

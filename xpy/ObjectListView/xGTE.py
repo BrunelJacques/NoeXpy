@@ -26,6 +26,8 @@ from xpy.outils.xconst          import *
 class TrackGeneral(object):
     #    Cette classe va transformer une ligne en objet selon les listes de colonnes et valeurs par défaut(setter)
     def __init__(self, donnees,codesColonnes, nomsColonnes, setterValues,codesSup=[]):
+        ok = True
+        self.donnees = []
         # les données suplémentaires au nbre de colonnes, sont présentes dans les tracks et définies par codesSup
         if not (len(donnees)-len(codesSup) == len(codesColonnes) == len(nomsColonnes) == len(setterValues) ):
             lst = [str(codesColonnes),str(nomsColonnes),str(setterValues),str(donnees)]
@@ -36,31 +38,33 @@ class TrackGeneral(object):
                                     len(donnees),len(codesSup),(len(donnees)-len(codesSup)))
             mess += '\n\n'+'\n\n'.join(lst)
             wx.MessageBox(mess,caption="xGestion_TableauEditor.TrackGeneral")
-            raise(mess)
-        # pour chaque donnée affichée, attribut et ctrl setter value
-        for ix in range(len(codesColonnes)):
-            donnee = donnees[ix]
-            if setterValues[ix]:
-                # prise de la valeur par défaut si pas de donnée
-                if (donnee is None):
-                    donnee = setterValues[ix]
-                # le type de la donnée n'est pas celui attendu
-                else:
-                    if not isinstance(donnee,type(setterValues[ix])):
-                        try:
-                            if type(setterValues[ix]) in (int,float):
-                                donnee = float(donnee)
-                            elif type(setterValues[ix]) == str:
-                                donnee = str(donnee)
-                            elif isinstance(setterValues[ix],(wx.DateTime,datetime.date,datetime.datetime,datetime.time)):
-                                donnee = xformat.DateSqlToDatetime(donnee)
-                        except : pass
-            self.__setattr__((codesColonnes + codesSup)[ix], donnee)
-        # complément des autres données
-        for ixrel in range(len(codesSup)):
-            ixabs = len(codesColonnes) + ixrel
-            self.__setattr__((codesSup)[ixrel],donnees[ixabs])
-        self.donnees = donnees
+            ok = False
+            #raise(mess)
+        if ok:
+            # pour chaque donnée affichée, attribut et ctrl setter value
+            for ix in range(len(codesColonnes)):
+                donnee = donnees[ix]
+                if setterValues[ix]:
+                    # prise de la valeur par défaut si pas de donnée
+                    if (donnee is None):
+                        donnee = setterValues[ix]
+                    # le type de la donnée n'est pas celui attendu
+                    else:
+                        if not isinstance(donnee,type(setterValues[ix])):
+                            try:
+                                if type(setterValues[ix]) in (int,float):
+                                    donnee = float(donnee)
+                                elif type(setterValues[ix]) == str:
+                                    donnee = str(donnee)
+                                elif isinstance(setterValues[ix],(wx.DateTime,datetime.date,datetime.datetime,datetime.time)):
+                                    donnee = xformat.DateSqlToDatetime(donnee)
+                            except : pass
+                self.__setattr__((codesColonnes + codesSup)[ix], donnee)
+            # complément des autres données
+            for ixrel in range(len(codesSup)):
+                ixabs = len(codesColonnes) + ixrel
+                self.__setattr__((codesSup)[ixrel],donnees[ixabs])
+            self.donnees = donnees
 
 class ListView( ObjectListView):
     """

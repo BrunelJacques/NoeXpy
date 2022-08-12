@@ -90,8 +90,8 @@ class Footer(Control):
             converter = col.stringConverter
             nom = col.valueGetter
             if col.align == "left" : alignement = wx.ALIGN_LEFT
-            if col.align == "centre" : alignement = wx.ALIGN_CENTER
-            if col.align == "right" : alignement = wx.ALIGN_RIGHT
+            if col.align in ("centre","center") : alignement = wx.ALIGN_CENTER
+            else: alignement = wx.ALIGN_RIGHT
             
             # Recherche infos personnalisées à afficher dans la colonne
             mode = None
