@@ -1,3 +1,6 @@
+Version 1.1.2.16 (12/08/2022 11:45)
+- Modifs xpy pour noelite
+
 Version 1.1.2.15 (23/07/2022 9:33)
 - Ajout de compteurs dans le suivi mouvements
 - Recalcul des prix de stock
