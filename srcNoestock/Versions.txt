@@ -1,3 +1,6 @@
+Version 1.1.2.19 (14/08/2022)
+- Bug correction inventaire
+
 Version 1.1.2.18 (12/08/2022 18:00)
 - gestion d'une coupure de réseau en cours de programme
 

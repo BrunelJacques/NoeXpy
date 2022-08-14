@@ -414,10 +414,6 @@ class PNL_corps(xGTE.PNL_corps):
         lstDonnees = [('qteStock',track.qteMvts),
                       ('prixMoyen',track.pxUn),
                       ]
-        if track.qteAchats > 0:
-            lstDonnees += [('prixActuel',track.mttAchats / track.qteAchats),
-                              ('ordi',self.parent.ordi),
-                              ('dateSaisie',self.parent.today)]
         mess = "MAJ article '%s'"%track.IDarticle
         db.ReqMAJ('stArticles',lstDonnees,'IDarticle',track.IDarticle,mess=mess,IDestChaine=True)
 
