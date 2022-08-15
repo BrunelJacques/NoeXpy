@@ -772,7 +772,6 @@ class Dialog(wx.Dialog):
 
         self.__set_properties()
         self.__do_layout()
-
         self.bouton_ok.SetFocus()
 
     def __set_properties(self):
@@ -789,9 +788,9 @@ class Dialog(wx.Dialog):
         # Boutons
         grid_sizer_boutons = wx.FlexGridSizer(rows=1, cols=4, vgap=10, hgap=10)
         grid_sizer_boutons.Add((20, 20), 0, wx.EXPAND, 0)
-        grid_sizer_boutons.Add(self.bouton_ok, 0, wx.ALIGN_RIGHT, 0)
         grid_sizer_boutons.Add(self.bouton_annuler, 0, 0, 0)
-        grid_sizer_boutons.AddGrowableCol(1)
+        grid_sizer_boutons.Add(self.bouton_ok, 0, 0, 0)
+        grid_sizer_boutons.AddGrowableCol(0)
         grid_sizer_base.Add(grid_sizer_boutons, 1, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 10)
 
         self.SetSizer(grid_sizer_base)

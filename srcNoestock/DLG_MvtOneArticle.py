@@ -160,14 +160,18 @@ def GetOlvColonnes(dlg):
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Mtt TTC", 'right', 80, 'mttTTC', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("PrixStock", 'right', 80, 'pxMoyen', isSpaceFilling=False, valueSetter=0.0,
-                   stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Qté stock", 'right', 80, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal, isEditable=False),
+            ColumnDefn("Cumul Mtt", 'right', 80, 'cumMtt', isSpaceFilling=False, valueSetter=0.0,
+                       stringConverter=xformat.FmtDecimal, isEditable=False),
+            ColumnDefn("Cumul Qté", 'right', 80, 'cumQte', isSpaceFilling=False, valueSetter=0.0,
+                       stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Saisie", 'left', 80, 'dateSaisie', isSpaceFilling=False,
                        stringConverter=xformat.FmtDate, isEditable=False),
             ColumnDefn("Ordi", 'left', 100, 'ordi', valueSetter="",isSpaceFilling=False,
                        isEditable=False),
+            ColumnDefn("Prix Stock", 'right', 0, 'pxMoyen', isSpaceFilling=False, valueSetter=0.0,
+                                stringConverter=xformat.FmtDecimal, isEditable=False),
+            ColumnDefn("Qté Stock", 'right', 0, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
+                   stringConverter=xformat.FmtDecimal, isEditable=False),
             ]
     return lstCol
 
@@ -331,16 +335,24 @@ def ComposeDonnees(db,dlg,ldMouvements):
     lstCodesCol = ctrlOlv.GetLstCodesColonnes()
 
     # Enrichissement des lignes pour olv à partir des mouvements remontés
+    cumQte = 0.0
+    cumMtt = 0.0
     for dMvt in ldMouvements:
         donnees = []
         dArticle = ddArticles[dMvt['IDarticle']]
         # alimente les données des colonnes
         for code in lstCodesCol:
             # ajout de la donnée dans le mouvement
-            if code == 'pxUn' :
+            if code == 'pxUn':
                 donnees.append(dMvt['prixUnit'])
-            elif code == 'mttTTC' :
+            elif code == 'mttTTC':
                 donnees.append(round(dMvt['prixUnit'] * dMvt['qte'],2))
+            elif code == 'cumMtt':
+                cumMtt += dMvt['prixUnit'] * dMvt['qte']
+                donnees.append(cumMtt)
+            elif code == 'cumQte':
+                cumQte += dMvt['qte']
+                donnees.append(cumQte)
             elif code == 'pxMoyen':
                 donnees.append(dArticle['prixMoyen'])
             elif code in dMvt.keys():

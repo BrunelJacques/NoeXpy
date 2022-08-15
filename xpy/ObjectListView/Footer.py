@@ -1,17 +1,15 @@
 #!/usr/bin/env python
-# -*- coding: iso-8859-15 -*-
+# -*- coding: utf-8 -*-
 #------------------------------------------------------------------------
-# Application :    Noethys, gestion multi-activités
+# Application :    Noethys, gestion multi-activitÃ©s
 # Site internet :  www.noethys.com
-# Auteur:           Ivan LUCAS
+# Auteur:           Ivan LUCAS, Jacques Brunel
 # Copyright:       (c) 2010-14 Ivan LUCAS
 # Licence:         Licence GNU GPL
 #------------------------------------------------------------------------
 
 import wx
 import datetime
-import six
-from decimal import Decimal
 from wx import Control
 
 class Footer(Control):
@@ -27,7 +25,7 @@ class Footer(Control):
         self.afficherColonneDroite = True
         
         self.listview = None
-        self.dictColonnes = {}
+        self.dictColFooter = {}
         self.dictTotaux = {}
         self.listeImpression = []
         Control.__init__(self, parent, id=id, pos=pos, size=size, style=style, name=name)
@@ -41,26 +39,45 @@ class Footer(Control):
         self.Refresh() 
     
     def MAJ_totaux(self):
+        # Normalisation casse des noms de colonne
+        dictColFooter = {}
+        for nomColonne, dictColonne in self.dictColFooter.items():
+            dictColFooter[nomColonne]=dictColonne
+        self.dictColFooter = dictColFooter
+        objects = self.listview.GetCheckedObjects()
+        if len(objects) == 0:
+            objects = self.listview.innerList
         self.dictTotaux = {}
-        for track in self.listview.innerList :
-            for nomColonne, dictColonne in self.dictColonnes.items() :
-                if dictColonne["mode"] == "total" :
-                    if hasattr(track, nomColonne) :
+        for track in objects:
+            for nomColonne, dictColonne in self.dictColFooter.items() :
+                if dictColonne["mode"] == "maximum":
+                    if hasattr(track, nomColonne):
+                        maximum = getattr(track, nomColonne)
+                        if not nomColonne in self.dictTotaux:
+                            self.dictTotaux[nomColonne] = 0
+                        if maximum != None :
+                            if isinstance(maximum,str):
+                                maximum = float(maximum.replace(',','.'))
+                            self.dictTotaux[nomColonne] = max(maximum,self.dictTotaux[nomColonne])
+                if dictColonne["mode"] == "total":
+                    if hasattr(track, nomColonne):
                         total = getattr(track, nomColonne)
-                        if (nomColonne in self.dictTotaux) == False :
-                            # Format classique (numérique)
-                            self.dictTotaux[nomColonne] = Decimal('0')
-                            # Autre format
-                            if "format" in dictColonne :
-                                if dictColonne["format"] in ("temps", "duree") :
-                                    self.dictTotaux[nomColonne] = datetime.timedelta(0)
+                        if not nomColonne in self.dictTotaux:
+                            self.dictTotaux[nomColonne] = 0
                         if total != None :
-                            self.dictTotaux[nomColonne] += Decimal(total)
-    
-    def MAJ(self):
-        self.MAJ_totaux()
-        self.MAJ_affichage() 
-        
+                            if isinstance(total,str):
+                                try:
+                                    total = float(total.replace(',','.'))
+                                except: total = 0.0
+                            self.dictTotaux[nomColonne] += total
+                if dictColonne["mode"] == "nombre" :
+                    if hasattr(track, nomColonne):
+                        valeur = getattr(track, nomColonne)
+                        if not nomColonne in self.dictTotaux:
+                            self.dictTotaux[nomColonne] = 0
+                        if valeur != None and len(str(valeur)) > 0:
+                            self.dictTotaux[nomColonne] += 1
+
     def DrawColonne(self, dc, x, largeur, label="", alignement=None, couleur=None, font=None):
         """ Dessine une colonne """
         render = wx.RendererNative.Get()
@@ -81,30 +98,44 @@ class Footer(Control):
         x = 0 - self.listview.GetScrollPos(wx.HORIZONTAL) 
         self.listeImpression = []
         dernierTexte = ""
+        self.MAJ_totaux()
         for (indexColonne, col) in enumerate(self.listview.columns):
             texte = ""
-            font = wx.Font(8, wx.SWISS, wx.NORMAL, wx.NORMAL)
+            font = wx.Font(8, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
             couleur = wx.Colour(140, 140, 140)
             largeur = col.width
             #largeur = self.listview.GetColumnWidth(indexColonne)
             converter = col.stringConverter
             nom = col.valueGetter
+            alignement = wx.ALIGN_CENTER
             if col.align == "left" : alignement = wx.ALIGN_LEFT
-            if col.align in ("centre","center") : alignement = wx.ALIGN_CENTER
-            else: alignement = wx.ALIGN_RIGHT
-            
-            # Recherche infos personnalisées à afficher dans la colonne
+            if col.align == "centre" : alignement = wx.ALIGN_CENTER
+            if col.align == "right" : alignement = wx.ALIGN_RIGHT
+
+            # Recherche infos personnalisÃ©es Ã  afficher dans la colonne
             mode = None
-            if nom in self.dictColonnes :
-                infoColonne = self.dictColonnes[nom]
+            if nom in self.dictColFooter :
+                infoColonne = self.dictColFooter[nom]
+
                 mode = infoColonne["mode"]
-                
+
+                # Valeur : MAXIMUM
+                if mode == "maximum" :
+                    if nom in self.dictTotaux :
+                        texte = self.dictTotaux[nom]
+                    else :
+                        texte = 0
+                    if converter != None :
+                        texte = converter(texte)
+                    if type(texte) in (int, float) :
+                        texte = str(texte)
+
                 # Valeur : TOTAL
                 if mode == "total" :
                     if nom in self.dictTotaux :
                         texte = self.dictTotaux[nom]
                     else :
-                        # Total format classique (numérique)
+                        # Total format classique (numÃ©rique)
                         texte = 0
                         # Autres formats de total
                         if "format" in infoColonne :
@@ -112,31 +143,39 @@ class Footer(Control):
                                 texte = datetime.timedelta(0)
                     if converter != None :
                         texte = converter(texte)
-                    if six.PY2:
-                        liste_types = (int, float, long)
-                    else :
-                        liste_types = (int, float)
-                    if type(texte) in liste_types :
+                    if type(texte) in (int, float) :
                         texte = str(texte)
                 
                 # Valeur : NOMBRE
                 if mode == "nombre" :
-                    nombre = len(self.listview.innerList)
+                    singulier = u"ligne cochÃ©e"
+                    pluriel = u"lignes cochÃ©es"
+                    if "singulier" in infoColonne:  singulier = infoColonne["singulier"]
+                    if "pluriel" in infoColonne:    pluriel   = infoColonne["pluriel"]
+                    objects = self.listview.GetCheckedObjects()
+                    nombre = len(objects)
+                    if len(objects) == 0:
+                        if not "singulier" in infoColonne:  singulier = u"ligne non nulle"
+                        if not "pluriel" in infoColonne:    pluriel   = u"lignes non nulles"
+                        if nom in self.dictTotaux:
+                            nombre = self.dictTotaux[nom]
+                        else:
+                            nombre = 0
                     if nombre > 1 :
-                        texte = "%d %s" % (nombre, infoColonne["pluriel"])
+                        texte = "%d %s" % (nombre, pluriel)
                     else :
-                        texte = "%d %s" % (nombre, infoColonne["singulier"])
+                        texte = "%d %s" % (nombre, singulier)
                         
                 # Valeur : TEXTE
                 if mode == "texte" :
                     texte = infoColonne["texte"]
 
-                # Paramètres personnalisés
+                # ParamÃ¨tres personnalisÃ©s
                 if "alignement" in infoColonne : alignement = infoColonne["alignement"]
                 if "font" in infoColonne : font = infoColonne["font"]
                 if "couleur" in infoColonne : couleur = infoColonne["couleur"]
             
-            # Pour éviter les bords si les cases sont vides
+            # Pour Ã©viter les bords si les cases sont vides
             ajustement = 0
             if mode != "total" and dernierTexte == "" :
                 ajustement = 5
@@ -144,7 +183,7 @@ class Footer(Control):
             self.DrawColonne(dc, x-ajustement, largeur+ajustement, texte, alignement, couleur, font)
             x += largeur
             
-            # Mémorisation pour impression
+            # MÃ©morisation pour impression
             self.listeImpression.append({"texte" : texte, "alignement" : alignement})
             
             if mode == "total" :
@@ -152,17 +191,17 @@ class Footer(Control):
             else :
                 dernierTexte = ""
         
-        # Dernière colonne de remplissage
+        # DerniÃ¨re colonne de remplissage
         if self.afficherColonneDroite :
             self.DrawColonne(dc, x, self.GetSize()[0]-x)
 
     def GetDonneesImpression(self, typeInfo="texte"):
         """ Renvoie infos pour impression """
         """ typeInfo = "texte" ou "alignement" """
-        listeDonnees = []
+        lstDonnees = []
         for info in self.listeImpression :
-            listeDonnees.append(info[typeInfo])
-        return listeDonnees[1:]
+            lstDonnees.append(info[typeInfo])
+        return lstDonnees[1:]
     
     def OnPaint(self, evt):
         dc = wx.BufferedPaintDC(self)
@@ -186,7 +225,6 @@ class Footer(Control):
     def ShouldInheritColours(self): 
         """Don't get colours from our parent..."""
         return False
-        
 
 
 if __name__ == '__main__':

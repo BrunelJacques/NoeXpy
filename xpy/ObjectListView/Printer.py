@@ -12,8 +12,9 @@
 from builtins import object
 import datetime
 import wx
-from .ListCtrlPrinter import ReportFormat, LCprinter
-import xpy.ObjectListView.OptionsImpression as OptionsImpression
+from xpy.ObjectListView import ListCtrlPrinter
+from xpy.ObjectListView.ListCtrlPrinter import ReportFormat
+from xpy.ObjectListView import  OptionsImpression
 from xpy.outils                import xformat
 
 
@@ -232,15 +233,15 @@ class ObjectListViewPrinter(object):
                 dictOptions[key] = valeur
 
         # Préparation du printout
-        self.printer = LCprinter(self.listview, dictOptions["titre"])
+        self.printer = ListCtrlPrinter.LCprinter(self.listview, dictOptions["titre"])
         self.printer.printout.margins = (wx.Point(dictOptions["marge_gauche"], dictOptions["marge_haut"]),
                                          wx.Point(dictOptions["marge_droite"], dictOptions["marge_bas"]))
         self.printer.printout.printData.SetOrientation(dictOptions["orientation"])
         self.printer.printout.printData.SetQuality(dictOptions["qualite_impression"])
         self.printer.PageFooter = (dictOptions["pied_page_texte_gauche"], dictOptions["pied_page_texte_milieu"],
                                    dictOptions["pied_page_texte_droite"])
-        LCprinter.LISTINTRO = dictOptions["introduction"]
-        LCprinter.LISTFOOTER = dictOptions["conclusion"]
+        ListCtrlPrinter.LISTINTRO = dictOptions["introduction"]
+        ListCtrlPrinter.LISTFOOTER = dictOptions["conclusion"]
 
         # Préparation du format
         fmt = ReportFormat()
@@ -546,5 +547,5 @@ class FramePreview(wx.Frame):
 
 if __name__ == '__main__':
     app = wx.App(0)
-    print(LCprinter)
+    print(ListCtrlPrinter)
     app.MainLoop()
