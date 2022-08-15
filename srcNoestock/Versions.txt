@@ -1,3 +1,7 @@
+Version 1.1.2.20 (15/08/2022)
+- Reprise des totaux prix de journée
+- Cumul progressif dans le suivi des mouvements
+
 Version 1.1.2.19 (14/08/2022)
 - Bug correction inventaire
 
