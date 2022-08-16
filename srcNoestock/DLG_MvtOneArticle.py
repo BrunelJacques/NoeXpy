@@ -150,27 +150,27 @@ def GetOlvColonnes(dlg):
                                 cellEditorCreator=ChoiceEditor),
             ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",
                        isSpaceFilling=True, isEditable=False),
-            ColumnDefn("Quantité", 'right', 80, 'qte', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Quantité", 'right', 60, 'qte', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtQte),
-            ColumnDefn(titlePrix, 'right', 80, 'pxUn', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn(titlePrix, 'right', 60, 'pxUn', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal),
-            ColumnDefn("Coût Ration", 'right', 80, 'pxRation', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Coût Ration", 'right', 70, 'pxRation', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Nbre Rations", 'right', 80, 'nbRations', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Nbre Rations", 'right', 70, 'nbRations', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Mtt TTC", 'right', 80, 'mttTTC', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Mtt TTC", 'right', 70, 'mttTTC', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Cumul Mtt", 'right', 80, 'cumMtt', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Cumul Mtt", 'right', 70, 'cumMtt', isSpaceFilling=False, valueSetter=0.0,
                        stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Cumul Qté", 'right', 80, 'cumQte', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Cumul Qté", 'right', 70, 'cumQte', isSpaceFilling=False, valueSetter=0.0,
                        stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Saisie", 'left', 80, 'dateSaisie', isSpaceFilling=False,
                        stringConverter=xformat.FmtDate, isEditable=False),
             ColumnDefn("Ordi", 'left', 100, 'ordi', valueSetter="",isSpaceFilling=False,
                        isEditable=False),
-            ColumnDefn("Prix Stock", 'right', 0, 'pxMoyen', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Prix Stock", 'right', 50, 'pxMoyen', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Qté Stock", 'right', 0, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Qté Stock", 'right', 50, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
                    stringConverter=xformat.FmtDecimal, isEditable=False),
             ]
     return lstCol
@@ -228,16 +228,23 @@ def ValideLigne(dlg, track):
         track.messageRefus = ""
 
 def MAJ_calculs(dlg):
+    # calcul des zones totaux en bas d'écran, cumuls progressifs rafraîchis
     ctrlOlv = dlg.ctrlOlv
     lstChecked = ctrlOlv.GetCheckedObjects()
     if len(lstChecked) == 0:
         lstChecked = ctrlOlv.innerList
 
-    # lecture des lignes checkées
+    # lecture des lignes
     mttAchats, qteAchats = 0.0, 0.0
     mttMvts, qteMvts = 0.0, 0.0
     mttStock = 0.0
+    cumQte = 0.0
+    cumMtt = 0.0
     for track in lstChecked:
+        cumQte += track.qte
+        cumMtt += track.qte * track.pxUn
+        track.cumQte = cumQte
+        track.cumMtt = cumMtt
         qteMvts += track.qte
         mttMvts += track.qte * track.pxUn
         mttStock += track.qte * track.pxMoyen
@@ -434,6 +441,7 @@ class DLG(dlgMvts.DLG):
         self.ctrlOlv.MAJ_calculs = MAJ_calculs
 
     def Sizer(self):
+        self.SetSize(1230,750)
         sizer_base = wx.FlexGridSizer(rows=5, cols=1, vgap=0, hgap=0)
         sizer_base.Add(self.pnlBandeau, 0, wx.TOP | wx.EXPAND, 3)
         sizer_base.Add(self.pnlParams, 0, wx.TOP | wx.EXPAND, 3)
@@ -460,10 +468,12 @@ class DLG(dlgMvts.DLG):
     def ValideLigne(self,code,track):
         # Relais de l'appel par cellEditor à chaque colonne
         ValideLigne(self,track)
+        self.CalculeLigne(None,track)
 
     def CalculeLigne(self,code,track):
         # Relais de l'appel par par GetDonnnees
         CalculeLigne(self,track)
+
 
     def GetParams(self):
         dParams = {'article':self.article,
