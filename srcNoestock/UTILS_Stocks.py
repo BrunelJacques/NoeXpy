@@ -910,13 +910,14 @@ def SauveMouvement(db,dlg,track):
 def DelMouvement(db,olv,track):
     # --- Supprime les différents éléments associés à la ligne --
     if not track.IDmouvement in (None,0, ''):
-        if not hasattr(track, 'dicMvt'):
+        if track.valide and  not hasattr(track, 'dicMvt'):
             dicMvt = {'qte': track.qte, 'prixUnit': track.prixTTC}
         track.qte = 0
         MAJarticle(db, olv.lanceur, track)
-        ret = db.ReqDEL("stMouvements", "IDmouvement", track.IDmouvement,affichError=True)
-        if ret == 'ok':
-            del track.dicMvt
+        if track.valide:
+            ret = db.ReqDEL("stMouvements", "IDmouvement", track.IDmouvement,affichError=True)
+            if ret == 'ok':
+                del track.dicMvt
     return
 
 def MAJarticle(db,dlg,track):

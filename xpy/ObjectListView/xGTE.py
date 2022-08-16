@@ -13,7 +13,7 @@ import datetime
 import xpy.xUTILS_SaisieParams as xusp
 from xpy.outils import xbandeau, xformat, xboutons
 
-from xpy.ObjectListView.ObjectListView import ObjectListView
+from xpy.ObjectListView.ObjectListView import FastObjectListView
 from xpy.ObjectListView.ObjectListView  import  ColumnDefn
 import xpy.ObjectListView.Footer as Footer
 from xpy.ObjectListView.ObjectListView import CTRL_Outils
@@ -66,7 +66,7 @@ class TrackGeneral(object):
                 self.__setattr__((codesSup)[ixrel],donnees[ixabs])
             self.donnees = donnees
 
-class ListView( ObjectListView):
+class ListView( FastObjectListView):
     """
     Lors de l'instanciation de cette classe vous pouvez y passer plusieurs parametres :
 
@@ -139,7 +139,7 @@ class ListView( ObjectListView):
         # Initialisation du listCtrl
         if not 'autoAddRow' in kwds: kwds['autoAddRow']=True
         if not 'sortable' in kwds: kwds['sortable']=True
-        ObjectListView.__init__(self, *args,**kwds)
+        FastObjectListView.__init__(self, *args,**kwds)
         self.InitObjectListView()
         self.Proprietes()
 
@@ -148,7 +148,7 @@ class ListView( ObjectListView):
         self.Bind(OLVEvent.EVT_ITEM_CHECKED, self.MAJ_footer)
         self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
         if self.editMode:
-            self.cellEditMode =  ObjectListView.CELLEDIT_SINGLECLICK
+            self.cellEditMode =  FastObjectListView.CELLEDIT_SINGLECLICK
         self.Bind(wx.EVT_SET_FOCUS,self.OnSetFocus)
         self.flagSkipEdit = False
 

@@ -146,8 +146,8 @@ def GetOlvColonnes(dlg):
                        stringConverter=xformat.FmtDate),
             ColumnDefn("Mouvement", 'left', 80, 'origine',
                                 cellEditorCreator=ChoiceEditor,isEditable=False),
-            ColumnDefn("Repas", 'left', 60, 'repas',
-                                cellEditorCreator=ChoiceEditor),
+            ColumnDefn("Repas", 'left', 60, 'repas', valueSetter="",
+                                cellEditorCreator=ChoiceEditor,isEditable=False),
             ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",
                        isSpaceFilling=True, isEditable=False),
             ColumnDefn("Quantité", 'right', 60, 'qte', isSpaceFilling=False, valueSetter=0.0,
@@ -439,6 +439,7 @@ class DLG(dlgMvts.DLG):
 
         # le bind check item met à jour les soustotaux puis cherche MAJ_calculs
         self.ctrlOlv.MAJ_calculs = MAJ_calculs
+        self.ctrlOlv.Bind(wx.EVT_LIST_COL_CLICK,self.OnSort)
 
     def Sizer(self):
         self.SetSize(1230,750)
@@ -471,9 +472,8 @@ class DLG(dlgMvts.DLG):
         self.CalculeLigne(None,track)
 
     def CalculeLigne(self,code,track):
-        # Relais de l'appel par par GetDonnnees
+        # Relais de l'appel par GetDonnnees
         CalculeLigne(self,track)
-
 
     def GetParams(self):
         dParams = {'article':self.article,
@@ -580,6 +580,14 @@ class DLG(dlgMvts.DLG):
         if event: event.Skip()
         if self.article:
             self.GetDonnees(self.GetParams())
+
+    def OnSort(self,event):
+        self.ctrlOlv.CocheListeTout()
+        self.ctrlOlv._HandleColumnClick(event)
+        MAJ_calculs(self)
+        self.ctrlOlv.CocheListeRien()
+        #event.Skip()
+
 
 #------------------------ Lanceur de test  -------------------------------------------
 
