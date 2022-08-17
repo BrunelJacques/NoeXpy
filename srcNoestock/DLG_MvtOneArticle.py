@@ -582,11 +582,9 @@ class DLG(dlgMvts.DLG):
             self.GetDonnees(self.GetParams())
 
     def OnSort(self,event):
-        self.ctrlOlv.CocheListeTout()
-        self.ctrlOlv._HandleColumnClick(event)
-        MAJ_calculs(self)
+        event.Skip()
         self.ctrlOlv.CocheListeRien()
-        #event.Skip()
+        MAJ_calculs(self)
 
 
 #------------------------ Lanceur de test  -------------------------------------------

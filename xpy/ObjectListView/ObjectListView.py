@@ -1232,16 +1232,30 @@ class ObjectListView(wx.ListCtrl):
     def GetSelectedObjects(self):
         # Vérifie la présence de case cochées qui ont priorité
         if self.checkStateColumn:
+            # présence d'une colonne check
             choixChecked = self.GetCheckedObjects()
             choixSelected = list(self.YieldSelectedObjects())
             # Test la présence d'une sélection et de lignes cochées
             if len(choixChecked) > 0:
+                selectNotCheck = [x for x in choixSelected if not x in choixChecked]
+                nb = len(selectNotCheck)
+                if nb == 1:
+                    pluriel = "s"
+                else:
+                    pluriel = ""
+                if nb > 0:
+                    mess = "Présence de ligne%s sélectionnée%s non cochée%s!\n\n" % ((pluriel,) * 3)
+                    mess += "Faut-il cocher aussi la sélection?"
+                    dlg = wx.MessageDialog(self,mess,"Choix par cases cochées...",
+                                     style=wx.YES_NO|wx.ICON_WARNING)
+                    ret = dlg.ShowModal()
+                    dlg.Destroy()
+                    if ret == wx.ID_YES:
+                         [self.Check(x) for x in selectNotCheck]
+                         choixChecked = self.GetCheckedObjects()
                 return choixChecked
             else:
-                # pas de ligne checkée, priorité à la sélection, on coche
-                for item in choixSelected:
-                    self.Check(item)
-                self.RefreshObjects(choixSelected)
+                # pas de ligne checkée, priorité à la sélection
                 return choixSelected
         else:
             # pas de colonne check priorité à la sélection
@@ -1519,12 +1533,14 @@ class ObjectListView(wx.ListCtrl):
                 return False
             self.searchPrefix = ""
             nb = len(self.GetSelectedObjects())
-            if nb == 0: mess = "Pour supprimer des lignes il faut les sélectionner"
-            elif nb == 1 : mess = "Confirmez-vous la suppression de la ligne sélectionnée!"
-            else:  mess = "Confirmez-vous la suppression des %d lignes sélectionnées!"%nb
-            mess += "\n\n<Entrée> ou <esc>"
-            dlg = wx.MessageDialog(self,mess,
-                                   "Touche Supprime",style=wx.YES_NO,)
+            if self.checkStateColumn and len(self.GetCheckedObjects()) > 0:
+                mot = "coch"
+            else: mot = "sélectionn"
+            if nb == 0: mess = "Suppression impossible sans lignes %sées" % mot
+            elif nb == 1 : mess = "Suppression de la ligne %sée!" % mot
+            else:  mess = "Suppression des %d lignes %sées!" % (nb,mot)
+            mess += "\n\n "
+            dlg = wx.MessageDialog(self,mess,'Confirmez',style=wx.YES_NO|wx.ICON_INFORMATION)
             ret = dlg.ShowModal()
             dlg.Destroy()
             if ret  == wx.ID_YES:
@@ -1537,7 +1553,7 @@ class ObjectListView(wx.ListCtrl):
                 return False
             self.searchPrefix = ""
             dlg = wx.MessageDialog(self,"Confirmez-vous l'insertion d'une ligne!\n\n<Entrée> ou <esc>",
-                                   "Touche Insertion",style=wx.YES_NO,)
+                                   "Touche Insertion",style=wx.YES_NO|wx.ICON_INFORMATION,)
             ret = dlg.ShowModal()
             dlg.Destroy()
             if ret  == wx.ID_YES:
@@ -1818,12 +1834,8 @@ class ObjectListView(wx.ListCtrl):
         #    we should edit on double click and this is a single click, OR
         #    we should edit on single click and this is a double click,
         # THEN we don't try to start a cell edit operation
-        if wx.VERSION > (2, 9, 1, 0):
-            if evt.altDown or evt.controlDown or evt.shiftDown:
-                return
-        else:
-            if evt.m_altDown or evt.m_controlDown or evt.m_shiftDown:
-                return
+        if evt.altDown or evt.controlDown or evt.shiftDown:
+            return
         if self.cellEditMode == self.CELLEDIT_NONE:
             return
         if evt.LeftUp() and self.cellEditMode == self.CELLEDIT_DOUBLECLICK:
@@ -2034,7 +2046,9 @@ class ObjectListView(wx.ListCtrl):
         def _getSortValue(x):
             primary = sortColumn.GetValue(x)
             try:
-                primary = primary.lower()
+                if primary:
+                    primary = primary.lower()
+                else: primary = ""
             except AttributeError:
                 pass
             if secondarySortColumn:
@@ -2049,7 +2063,9 @@ class ObjectListView(wx.ListCtrl):
 
         try:
             modelObjects.sort(key=_getSortValue, reverse=(not self.sortAscending))
-        except: pass
+        except Exception as err:
+            print(err)
+            pass
 
         # Sorting invalidates our object map
         self.objectToIndexMap = None
