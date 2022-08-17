@@ -2045,12 +2045,16 @@ class ObjectListView(wx.ListCtrl):
         # exception than it is to test for the class
         def _getSortValue(x):
             primary = sortColumn.GetValue(x)
+            if not primary:
+                if sortColumn.valueSetter:
+                    primary = sortColumn.valueSetter
+                else:
+                    primary = ""
             try:
-                if primary:
+                if isinstance(primary,str):
                     primary = primary.lower()
-                else: primary = ""
-            except AttributeError:
-                pass
+            except Exception as err:
+                print("OLV._SortObjects:",err)
             if secondarySortColumn:
                 secondary = secondarySortColumn.GetValue(x)
                 try:
@@ -2064,9 +2068,7 @@ class ObjectListView(wx.ListCtrl):
         try:
             modelObjects.sort(key=_getSortValue, reverse=(not self.sortAscending))
         except Exception as err:
-            print(err)
-            pass
-
+            print("OLV._SortObjects:",err)
         # Sorting invalidates our object map
         self.objectToIndexMap = None
 

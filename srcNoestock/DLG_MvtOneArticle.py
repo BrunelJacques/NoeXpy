@@ -141,7 +141,7 @@ def GetOlvColonnes(dlg):
     lstCol = [
             ColumnDefn("ID", 'centre', 0, 'IDmouvement',
                        isEditable=False),
-            ColumnDefn("Date Mvt", 'left', 80, 'date',
+            ColumnDefn("Date Mvt", 'left', 80, 'date',valueSetter=datetime.date(1900,1,1),
                        isEditable=False, isSpaceFilling=False,
                        stringConverter=xformat.FmtDate),
             ColumnDefn("Mouvement", 'left', 80, 'origine',
@@ -486,6 +486,7 @@ class DLG(dlgMvts.DLG):
         # forme la grille, puis création d'un premier modelObjects par init
         if not dParams:
             return
+        attente = wx.BusyInfo("Recherche des données de l'article", None)
         self.InitOlv()
         # appel des données de l'Olv principal à éditer
         dParams['lstChamps'] = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
@@ -497,8 +498,9 @@ class DLG(dlgMvts.DLG):
         self.ctrlOlv.MAJ()
         if self.article:
             MAJ_calculs(self)
+        del attente
 
-    # gestion des actions évènements sur les ctrl
+    # -------- gestion des actions évènements sur les ctrl -------------------------------
 
     def GetOneArticle(self,saisie):
         # recherche d'un article, Désactive cellEdit pour éviter l'écho des double clics
@@ -583,7 +585,6 @@ class DLG(dlgMvts.DLG):
 
     def OnSort(self,event):
         event.Skip()
-        self.ctrlOlv.CocheListeRien()
         MAJ_calculs(self)
 
 

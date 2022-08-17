@@ -544,6 +544,7 @@ class DLG(xGTE.DLG_tableau):
                 elif self.oldParams[key] != dParams[key]: idem = False
         if idem : return
 
+        attente = wx.BusyInfo("Recherche des données...", None)
         # appel des données de l'Olv principal à éditer
         ixQte = self.dicOlv['lstCodes'].index('qteStock')
         ixMini = self.dicOlv['lstCodes'].index('qteMini')
@@ -569,6 +570,7 @@ class DLG(xGTE.DLG_tableau):
         for track in self.ctrlOlv.modelObjects[:-1]:
             track.IDmouvement = None
         self.oldParams = None
+        del attente
 
     def GetTitreImpression(self):
         date = xformat.DateSqlToFr(self.date)
@@ -586,7 +588,8 @@ class DLG(xGTE.DLG_tableau):
             return
         dlg = DLG_MvtOneArticle.DLG(article=selection.IDarticle)
         dlg.ShowModal()
-        #self.GetDonnees()
+        self.oldParams = None
+        self.GetDonnees()
 
     def OnImprimer(self,event):
         self.ctrlOlv.Apercu(None)
