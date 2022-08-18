@@ -1,3 +1,6 @@
+Version 1.2.7.15 (18/08/2022)
+- Date jj/mm au lieu de aa-mm sur import banque
+
 Version 1.2.7.14 (12/08/2022 16:30)
 - Réorganisation ObjectListView xGTE xGTR
 

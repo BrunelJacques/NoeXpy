@@ -4,6 +4,7 @@ Version 1.1.2.23 (18/08/2022)
 - Integration od d'inventaires au prix jour si elles sont une sortie
 - Ajout d'une colonne dont 'OD' pour surveiller l'incidence dans le coût
 - Amélioration de la saisie de la période
+- Si repas non renseigné ou tous, le montant est proratisé selon l'effectif matin et soir et réparti sur les deux
 
 Version 1.1.2.22 (17/08/2022)
 - Amélioration des tris possibles sur Mouvements un article

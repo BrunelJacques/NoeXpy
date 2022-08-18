@@ -89,7 +89,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table):
                 if 'date' in champsIn and 'libelle' in champsIn:
                     dte = ligne[champsIn.index('date')]
                     if isinstance(dte,(datetime.date,datetime.datetime)):
-                        prefixe = "%s-%02d"%(("%d"%dte.year)[-2:],dte.month)
+                        prefixe = "%02d/%02d"%(dte.day,dte.month)
                     else:
                         prefixe = dte.strip()[:lgPrefixe-1]+' '
                     if ligne[champsIn.index('libelle')]:
