@@ -1091,7 +1091,7 @@ class CTRL_SaisieDate(wx.Panel):
         self.labelDate = wx.StaticText(self, -1, label)
         self.ctrlDate = wx.TextCtrl(self, -1, "", style=wx.TE_PROCESS_ENTER|wx.TE_CENTRE)
         self.ctrlDate.Bind(wx.EVT_KILL_FOCUS, self.OnChoixDate)
-        self.ctrlDate.Bind(wx.EVT_TEXT_ENTER, self.OnChoixDate)
+        #self.ctrlDate.Bind(wx.EVT_TEXT_ENTER, self.OnChoixDate)
 
         self.btnDate = wx.BitmapButton(self, -1, wx.Bitmap("xpy/Images/16x16/Calendrier.png", wx.BITMAP_TYPE_ANY))
 
@@ -1191,19 +1191,23 @@ class CTRL_Periode(wx.Panel):
 
     def OnDate(self,event):
         origine = event.EventObject.Parent.Name
-        if  origine == 'date_du' and event.EventType == wx.EVT_TEXT_ENTER.evtType[0]:
-            self.ctrlSaisieAu.SetFocus()
-        else:
-            debut,fin = self.GetValue()
+        debut, fin = self.GetValue()
+        if not debut and fin:
+            return
+        if  origine == 'date_au' :
             if fin < debut:
-                wx.MessageBox("La date fin est antérieure au début!!")
+                wx.MessageBox("La date début était postérieure à celle de fin!!")
+                self.ctrlSaisieDu.SetValue(fin)
             else:
-                if event.EventType == wx.EVT_KILL_FOCUS.typeId:
-                    if hasattr(self,'actionCtrl'):
-                        event.EventObject = self
-                        self.Parent.OnCtrlAction(event)
-                        return
-                event.Skip()
+                self.ctrlSaisieAu.SetFocus()
+        elif origine == 'date_du' and fin < debut:
+            wx.MessageBox("La date fin était antérieure à celle de début!!")
+            self.ctrlSaisieAu.SetValue(debut)
+        event.Skip()
+        if event.EventType == wx.EVT_KILL_FOCUS.typeId:
+            if hasattr(self,'actionCtrl'):
+                event.EventObject = self
+                self.Parent.OnCtrlAction(event)
 
     def SetValue(self,tplDates):
         # le tuple correspond aux deux dates

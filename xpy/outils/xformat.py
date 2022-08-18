@@ -395,7 +395,7 @@ def DateFrToSql(datefr):
     # normalisation des formats divers
     datefr = FmtDate(datefr)
     if len(datefr)!= 10:
-        raise Exception("Date non gérable par DateFrToSql: '%s'"%str(datefr))
+        return None
     datesql = datefr[6:10]+'-'+datefr[3:5]+'-'+datefr[:2]
     # transposition
     return datesql
@@ -471,6 +471,7 @@ def DecaleDateSql(dateIso,nbj=-1, iso=True):
     return DatetimeToStr(dt,iso)
 
 def DecaleDateTime(date,nbj=-1):
+    if not DateToDatetime(date): return
     return DateToDatetime(date) + datetime.timedelta(days=nbj)
 
 # Formatages pour OLV -------------------------------------------------------------------------------------

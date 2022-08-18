@@ -74,13 +74,12 @@ MATRICE_PARAMS = {
                     'ctrlMaxSize':(210,90)},
     ],
 ("param2", "Comptes"): [
-    {'name': 'cuisine', 'genre': 'Check', 'label': 'Repas préparés en cuisine',
+    {'name': 'cuisine', 'genre': 'Check', 'label': 'Repas préparés en cuisine     ',
                     'help': "Les repas préparés en cuisine ne sont pas différenciés par camp servi, seules les sorties identifiés sont affectées aux camps",
                     'value':True,
                     'ctrlAction':'OnCuisine',
                     'txtSize': 150,
-                    'ctrlMaxSize': (210, 40)},
-
+                    'ctrlMaxSize': (220, 25)},
     {'name': 'analytique', 'genre': 'Choice', 'label': 'Activité',
                     'ctrlAction':'OnAnalytique',
                     'help': "Il s'agit de l'activité qui a endossé la charge de la sortie",
@@ -89,7 +88,13 @@ MATRICE_PARAMS = {
                     'btnAction': 'OnBtnAnalytique',
                     'txtSize': 50,
                     'ctrlMaxSize': (220,30),
-                    }
+                    },
+    {'name': 'matinj1', 'genre': 'Check', 'label': "PtDèj avec effectif soir J-1  ",
+     'help': "Les effectifs du soir sont en général présents le matin, sinon on prendra l'effectif midi du jour",
+     'value': False,
+     'ctrlAction': 'OnMatinJ1',
+     'txtSize': 157,
+     'ctrlMaxSize': (220, 25)},
 ],
 ("param3", "Circadien"): [
     {'name': 'midi', 'genre': 'Check', 'label': 'Midi',
@@ -154,7 +159,7 @@ def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
     return [
             ColumnDefn("pbImpress", 'right', 0,'pbImp', valueSetter=''),
-            ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="", isSpaceFilling=True),
+            ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="", isSpaceFilling=False),
             ColumnDefn("Rayon", 'left', 80, 'rayon', valueSetter="", isSpaceFilling=False),
             ColumnDefn("Qté", 'right', 80, 'qte', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=False),
             ColumnDefn("PrixUn", 'right', 80, 'prixUn', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=False),
@@ -163,6 +168,7 @@ def GetOlvColonnes(dlg):
             ColumnDefn("PrixParRepas", 'right', 80,'prixRepas', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=False),
             ColumnDefn("NbClients", 'right', 80, 'nbClients', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=False),
             ColumnDefn("PrixJourClient", 'right', 80, 'prixClient', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=False),
+            ColumnDefn("Dont OD sorties", 'right', 60, 'od', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=False),
             ]
 
 def GetOlvCodesSup():
@@ -238,10 +244,12 @@ class DLG(xGTR.DLG_tableau):
         else: dteJour = xformat.DateSqlToDatetime(dteJour)
         self.periode = (dteJour,dteJour)
         self.cuisine = True
-        self.analytique = '00'
+        self.analytique = ''
         self.midi = True
         self.soir = True
         self.matin = True
+        self.matinj1 = False
+        self.paramsOld = None
 
         # Propriétés de l'écran global type Dialog
         kwds = GetDlgOptions(self)
@@ -272,6 +280,7 @@ class DLG(xGTR.DLG_tableau):
         self.pnlParams.SetOneValue('periode',self.periode,'param1')
         self.pnlParams.SetOneValue('cuisine',self.cuisine,'param2')
         self.pnlParams.SetOneValue('midi',self.midi,'param3')
+        self.pnlParams.SetOneValue('matinj1',self.matinj1,'param2')
         self.pnlParams.SetOneValue('soir',self.soir,'param3')
         self.pnlParams.SetOneValue('matin',self.matin,'param3')
         self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
@@ -318,7 +327,7 @@ class DLG(xGTR.DLG_tableau):
         self.btnAnalytique.Enable(not self.cuisine)
         self.pnlParams.GetPnlCtrl('analytique','param2').txt.Enable(not self.cuisine)
         self.pnlParams.GetPnlCtrl('analytique','param2').ctrl.Enable(not self.cuisine)
-        self.analytique = '00'
+        self.analytique = ''
         self.ctrlOlv.MAJ()
 
     def OnAnalytique(self,event):
@@ -326,7 +335,7 @@ class DLG(xGTR.DLG_tableau):
         if len(choixAnalytique) > 0:
             ix = self.valuesAnalytique.index(choixAnalytique)-1
             self.analytique = self.lstAnalytiques[ix][0]
-        else: self.analytique = '00'
+        else: self.analytique = ''
         self.ctrlOlv.MAJ()
         if event: event.Skip()
 
@@ -357,6 +366,11 @@ class DLG(xGTR.DLG_tableau):
         self.ctrlOlv.MAJ()
         if event: event.Skip()
 
+    def OnMatinJ1(self,event):
+        self.matinj1 =  self.pnlParams.GetOneValue('matinj1','param2')
+        self.ctrlOlv.MAJ()
+        if event: event.Skip()
+
     def OnBtnEffectifs(self,event):
         # lancement de l'écran des effectifs
         dlg = DLG_Effectifs.DLG()
@@ -379,7 +393,12 @@ class DLG(xGTR.DLG_tableau):
         if hasattr(self,'periode'):
             self.params = self.pnlParams.GetValues()
             kwd['db'] = self.db
-            lstDonnees = nust.GetPrixJourArticle(self, **kwd)
+            if str(self.params) == self.paramsOld:
+                lstDonnees = self.donneesOld
+            else:
+                lstDonnees = nust.GetPrixJourArticle(self, **kwd)
+            self.donneesOld = [x for x in lstDonnees]
+            self.paramsOld = str(self.params)
         return lstDonnees
 
     def GetTitreImpression(self):
@@ -394,7 +413,7 @@ class DLG(xGTR.DLG_tableau):
 
     def GetIntroImpression(self):
         tiers = "En Cuisine"
-        if self.analytique != "00" : tiers = "Camp: %s"%self.analytique.capitalize()
+        if self.analytique != "" : tiers = "Camp: %s"%self.analytique.capitalize()
 
         repas = ""
         if self.params['param3']['midi']: repas += "Midi, "
@@ -468,6 +487,6 @@ class DLG(xGTR.DLG_tableau):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(dteJour="2021-07-04")
+    dlg = DLG()
     dlg.ShowModal()
     app.MainLoop()
