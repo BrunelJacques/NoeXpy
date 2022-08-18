@@ -1,3 +1,10 @@
+Version 1.1.2.23 (18/08/2022)
+- Amélioration des prix de journée
+- Nouvelle Case prédécochée pour ramener les pt dèj avec le midi
+- Integration od d'inventaires au prix jour si elles sont une sortie
+- Ajout d'une colonne dont 'OD' pour surveiller l'incidence dans le coût
+- Amélioration de la saisie de la période
+
 Version 1.1.2.22 (17/08/2022)
 - Amélioration des tris possibles sur Mouvements un article
 - Rafraîchissement de l'inventaire en retour de modif des mouvements d'un article
