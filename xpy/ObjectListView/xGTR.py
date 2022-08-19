@@ -12,7 +12,7 @@ import os
 import xpy.xUTILS_SaisieParams  as xusp
 from xpy.outils import xbandeau,xformat,xboutons,xshelve
 import xpy.ObjectListView.Footer as Footer
-from xpy.ObjectListView.ObjectListView import ObjectListView
+from xpy.ObjectListView.ObjectListView import FastObjectListView
 from xpy.ObjectListView.ObjectListView  import  ColumnDefn
 from xpy.ObjectListView.ObjectListView import CTRL_Outils
 from xpy.outils.xconst import *
@@ -88,7 +88,7 @@ class TrackGeneral(object):
                             except : pass
             self.__setattr__((codesColonnes + codesSup)[ix], donnee)
 
-class ListView(ObjectListView):
+class ListView(FastObjectListView):
     """
     Lors de l'instanciation de cette classe vous pouvez y passer plusieurs parametres :
 
@@ -170,7 +170,7 @@ class ListView(ObjectListView):
         self.popupIndex = -1
 
         # Initialisation du listCtrl
-        ObjectListView.__init__(self, *args,**kwdsOLV)
+        FastObjectListView.__init__(self, *args,**kwdsOLV)
         self.InitObjectListView()
         self.Proprietes()
 

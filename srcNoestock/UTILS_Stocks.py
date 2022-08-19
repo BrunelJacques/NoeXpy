@@ -24,7 +24,7 @@ class TrackInvent:
             self.__setattr__(codesTrack[ix],dicDon[codesDic[ix]])
 
 # Nouvelle Gestion des inventaires --------------------------------------------
-def PostMouvements(champs=[],mouvements=[[],]):
+def PostMouvements(champs=(),mouvements=([],)):
     # uddate des champs d'un mouvement, l'ID en dernière position
     db = xdb.DB()
 
@@ -40,7 +40,7 @@ def PostMouvements(champs=[],mouvements=[[],]):
     db.Close()
     return retour
 
-def PostInventaire(cloture=datetime.date.today(),inventaire=[[],]):
+def PostInventaire(cloture=datetime.date.today(),inventaire=([],)):
     # delete puis recrée l'inventaire à la date de cloture
     if cloture == None:
         cloture = datetime.date.today()
@@ -671,10 +671,9 @@ def SqlDicArticles(db, olv, lstArticles):
                     dicArticle[key] = valeur
                 IDarticle = dicArticle['IDarticle']
                 olv.buffArticles[IDarticle] = dicArticle
-
-        # vérif taux TVA
-        if not dicArticle['txTva']:
-            dicArticle['txTva'] = 5.5
+                # vérif taux TVA
+                if not dicArticle['txTva']:
+                    dicArticle['txTva'] = 5.5
 
     # composition du retour à partir du buffer
     ddArticles = {}
@@ -820,41 +819,8 @@ def SqlMvtsAnte(**kwd):
 
 # Appel des inventaires antérieurs
 def SqlInvAnte(**kwd):
+    #à faire selon rappel de l'antérieur des mouvements en modifiant les champs
     return []
-    # ajoute les données à la matrice pour la recherche d'un anterieur
-    dicOlv = kwd.get('dicOlv',None)
-    db = kwd.get('db',None)
-    filtre = kwd.pop('filtreTxt', '')
-    nbreFiltres = kwd.pop('nbreFiltres', 0)
-
-    # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
-    limit = ''
-    if nbreFiltres == 0:
-        limit = """
-                LIMIT %d""" % LIMITSQL
-    origines = dicOlv['codesOrigines']
-    where = """                    WHERE origine in ( %s ) """ % str(origines)[1:-1]
-    if filtre:
-        where += """
-                AND (date LIKE '%%%s%%'
-                        OR fournisseur LIKE '%%%s%%'
-                        OR IDanalytique LIKE '%%%s%% )'""" % (filtre, filtre, filtre,)
-
-    lstChamps = dicOlv['lstChamps']
-
-    req = """   SELECT %s
-                FROM stMouvements
-                %s 
-                GROUP BY origine, date, fournisseur, IDanalytique
-                ORDER BY date DESC
-                %s ;""" % (",".join(lstChamps), where, limit)
-    retour = db.ExecuterReq(req, mess='SqlMvtsAnte')
-    lstDonnees = []
-    if retour == 'ok':
-        recordset = db.ResultatReq()
-        for record in recordset:
-            lstDonnees.append([x for x in record])
-    return lstDonnees
 
 def MakeChoiceActivite(analytique):
     if not analytique:
@@ -1129,49 +1095,91 @@ def SauveArticle(dlg,**kwd):
             donneesOlv[ixLigne] = donnees
 
 def GetEffectifs(dlg,**kwd):
-    # retourne les effectifs de la table stEffectifs
+    # retourne une liste valeurs de la table stEffectifs selon lstChamps et période
+    lstChampsDef = ['IDdate', 'midiRepas', 'soirRepas', 'midiClients', 'soirClients',
+                    'prevuRepas', 'prevuClients', 'IDanalytique']
     db = kwd.get('db',dlg.db)
-    nbreFiltres = kwd.get('nbreFiltres', 0)
     periode = kwd.get('periode',dlg.periode)
+    limit = kwd.get('limit','')
+    nbreFiltres = kwd.get('nbreFiltres', 0)
+    lstChamps = kwd.get('lstChamps',lstChampsDef)
+
     # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
-    limit = ''
-    if nbreFiltres == 0:
+    if nbreFiltres == 0 and limit == '':
         limit = "LIMIT %d" % LIMITSQL
+    dtFin = xformat.DateSqlToDatetime(periode[1])
+    dtDeb = xformat.DateSqlToDatetime(periode[0])
 
-    where = """
-                WHERE (IDdate >= '%s' AND IDdate <= '%s')"""%(periode[0],periode[1])
+    # compose le where sur date et analytique
+    def getWhere(deb,fin):
+        wh = """
+                WHERE (IDdate >= '%s' AND IDdate <= '%s')
+                    """%(deb,fin)
 
-    if not dlg.analytique: dlg.IDanalytique = '00'
-    where += """
+        # filtrage sur le code analytique
+        if dlg.cuisine == 1: wh += """
+                        AND ( IDanalytique = '00' OR IDanalytique IS NULL )"""
+        else: wh += """
                         AND ( IDanalytique = '%s')"""%dlg.analytique
+        return wh
 
+    # Recherche des effectifs:'date', 'nbMidiCli', 'nbMidiRep', 'nbSoirCli', 'nbSoirRep'
+    where = getWhere(dtDeb,dtFin)
     table = DB_schema.DB_TABLES['stEffectifs']
-    lstChamps = xformat.GetLstChamps(table)
+    champsReq = xformat.GetLstChamps(table)
     req = """   SELECT %s
                 FROM stEffectifs
                 %s 
                 ORDER BY IDdate DESC
-                %s ;""" % (",".join(lstChamps), where, limit)
+                %s ;""" % (",".join(champsReq), where, limit)
+
     retour = db.ExecuterReq(req, mess='GetEffectifs')
     recordset = ()
     if retour == "ok":
         recordset = db.ResultatReq()
 
-    # composition des données du tableau à partir du recordset
+    # composition des données à partir du recordset
     lstDonnees = []
     for record in recordset:
-        dic = xformat.ListToDict(lstChamps,record)
-        ligne = [
-            dic['IDdate'],
-            dic['midiRepas'],
-            dic['soirRepas'],
-            dic['midiClients'],
-            dic['soirClients'],
-            dic['prevuRepas'],
-            dic['prevuClients'],
-            dic['IDanalytique'],]
+        dic = xformat.ListToDict(champsReq,record)
+        ligne = []
+        for ix in range(len(lstChamps)):
+            ligne.append(dic[lstChamps[ix]])
         lstDonnees.append(ligne)
     return lstDonnees
+
+def QuelsEffectifs(dlg,decalJ1=False):
+    # retourne la prise en compte des effectifs quotidiens
+    if dlg.midi: effMidi = True
+    if dlg.soir: effSoir = True
+    if dlg.matin and not (dlg.midi or dlg.soir):
+        if decalJ1:
+            effSoir = True # le cout matin seul sera divisé par l'effectif du soir seul
+        else:
+            effMidi = True # le cout matin seul sera divisé par l'effectif du midi seul
+    return effMidi,effSoir
+
+def GetEffectifPeriode(dlg):
+    # retourne nb repas et clients sur la période
+    effMidi, effSoir = QuelsEffectifs(dlg)
+    lstChamps = ['IDdate', 'midiRepas', 'soirRepas', 'midiClients', 'soirClients']
+    lstEffectifs = GetEffectifs(dlg,lstChamps=lstChamps)
+    Nz = xformat.Nz
+    nbRepas, nbClients = 0, 0
+    for IDdate, midiRepas, soirRepas, midiClients, soirClients in lstEffectifs:
+        # calcul repas et cients
+        nbcl = 0
+        if effMidi:
+            nbRepas += Nz(midiRepas)
+            nbcl += Nz(midiClients)
+        if effSoir:
+            nbRepas += Nz(soirRepas)
+            nbcl += Nz(soirClients)
+        if effMidi and effSoir:
+            # les clients ne comptent qu'une fois, moyenne midi-soir
+            nbcl = nbcl / 2
+        nbClients += nbcl
+    return nbRepas, nbClients
 
 def GetPrixJourLignes(dlg, grouper='date', **kwd):
     # renvoie une liste de données pour les lignes de l'olv, champ1 = key
@@ -1205,11 +1213,25 @@ def GetPrixJourLignes(dlg, grouper='date', **kwd):
         lstRepasRetenus += [1,4]
     if lstRepasRetenus == []: return []
 
+    lstChamps = ['IDdate', 'midiRepas', 'soirRepas', 'midiClients', 'soirClients']
+    lstEffectifs = GetEffectifs(dlg,lstChamps=lstChamps,periode = (dtDeb, dtFinJ1))
+
+    # composition du dic des effectifs
+    dicEffectifs = {}
+    for effectif in lstEffectifs:
+        dicEff = xformat.ListToDict(lstChamps,effectif)
+        dicEffectifs[dicEff['IDdate']] = dicEff
+    initDicEff = xformat.ListToDict( lstChamps,(0,) * len(lstChamps) )
+
+    # quels effectifs selon les repas retenus?
+    nbRepasPeriode, nbClientsPeriode = GetEffectifPeriode(dlg)
+
+    # Recherche des mouvements -----------------------------------------------------------
     # compose le where sur date et analytique
-    def getWhere(nomDate, deb,fin):
+    def getWhere(deb,fin):
         wh = """
-                WHERE (%s >= '%s' AND %s <= '%s')
-                    """%(nomDate,deb,nomDate,fin)
+                WHERE (date >= '%s' AND date <= '%s')
+                    """%(deb,fin)
 
         # filtrage sur le code analytique
         if dlg.cuisine == 1: wh += """
@@ -1218,39 +1240,8 @@ def GetPrixJourLignes(dlg, grouper='date', **kwd):
                         AND ( IDanalytique = '%s')"""%dlg.analytique
         return wh
 
-    # Recherche des effectifs:'date', 'nbMidiCli', 'nbMidiRep', 'nbSoirCli', 'nbSoirRep'
-    where = getWhere('IDdate', dtDeb,dtFin)
-    lstChamps = ['IDdate', 'midiRepas', 'soirRepas', 'midiClients', 'soirClients']
-    req = """
-            SELECT  %s 
-            FROM stEffectifs 
-            %s
-            ORDER BY IDdate DESC
-            ; """%(",".join(lstChamps),where)
-    retour = db.ExecuterReq(req, mess='GetPrixJours2')
-    recordset = ()
-    if retour == "ok":
-        recordset = db.ResultatReq()
+    where = getWhere(dtDeb, dtFinJ1)
 
-    # composition du dic des effectifs
-    dicEffectifs = {}
-    for record in recordset:
-        dicEff = xformat.ListToDict(lstChamps,record)
-        dicEffectifs[dicEff['IDdate']] = dicEff
-    initDicEff = xformat.ListToDict( lstChamps,(0,) * len(lstChamps) )
-
-    # quels effectifs selon les repas retenus?
-    effMidi, effSoir = False, False
-    if dlg.midi: effMidi = True
-    if dlg.soir: effSoir = True
-    if dlg.matin and not (dlg.midi or dlg.soir):
-        if decalJ1:
-            effSoir = True # le cout matin seul sera divisé par l'effectif du soir seul
-        else:
-            effMidi = True # le cout matin seul sera divisé par l'effectif du midi seul
-
-    # Recherche des mouvements -----------------------------------------------------------
-    where = getWhere('date', dtDeb, dtFinJ1)
     # condition sur l'origine
     if dlg.cuisine == 1:
         origine = " AND origine in ('repas','od_in','od_out')"
@@ -1333,6 +1324,7 @@ def GetPrixJourLignes(dlg, grouper='date', **kwd):
 
     # Deuxième passage: Calcul des composants de la ligne regroupée ---------------------
     lstDonnees = []
+
     for keyLigne,dic in dicLignes.items():
         # calcul du coût
         cout = 0.0
@@ -1342,29 +1334,30 @@ def GetPrixJourLignes(dlg, grouper='date', **kwd):
         for codeRepas, value in dic['dontOD'].items():
             dontOD += value
 
-        nbClientsLigne = 0
-        diviseurCli = 0
-        nbRepasLigne = 0
-        for key, dicEff in dicEffectifs.items():
-            # calcul du nombre de client à retenir pour la journée
-            if grouper == 'date':
-                if key != str(keyLigne):
-                    continue
-            nbRepasLigne = xformat.Nz(dicEff['midiRepas']) + xformat.Nz(dicEff['soirRepas'])
+        # lignes par article
+        nbRepasLigne = nbRepasPeriode
+        nbClientsLigne = nbClientsPeriode
+
+        if grouper == 'date':
+            # calcul du nombre de clients repas à retenir pour la journée
+            effMidi, effSoir = QuelsEffectifs(dlg)
+            key = str(keyLigne)
+            dicEff = dicEffectifs[key]
+            nbRepasLigne = xformat.Nz(dicEff['midiRepas']) + xformat.Nz(
+                dicEff['soirRepas'])
             # nombre de clients
+            nbcl = 0
             if effMidi:
                 # service du midi
-                nbClientsLigne += xformat.Nz(dicEff['midiClients'])
-                if nbClientsLigne > 0: diviseurCli +=1
+                nbcl += xformat.Nz(dicEff['midiClients'])
             if effSoir:
                 #  ajout du service du soir
-                nbClientsLigne += xformat.Nz(dicEff['soirClients'])
-                if nbClientsLigne > 0: diviseurCli +=1
+                nbcl += xformat.Nz(dicEff['soirClients'])
+            if effMidi and effSoir:
+                # les clients ne comptent qu'une fois, moyenne midi-soir
+                nbcl = nbcl / 2
+            nbClientsLigne = nbcl
 
-        # le client compte toujours un si présent seulement le midi ou le soir ou toute la journée
-        if diviseurCli == 0: diviseurCli = 1
-        nbClientsLigne = nbClientsLigne / diviseurCli
-        
         prixRepas = cout
         prixClient = cout
         if nbRepasLigne > 0:
@@ -1376,6 +1369,7 @@ def GetPrixJourLignes(dlg, grouper='date', **kwd):
         else:
             prixUn = cout
 
+        ligne = []
         if grouper == 'article':
             ligne = [   None,
                     dic['IDarticle'],
@@ -1388,7 +1382,6 @@ def GetPrixJourLignes(dlg, grouper='date', **kwd):
                     nbClientsLigne,
                     prixClient,
                     dontOD]
-
         elif grouper == 'date':
             ligne = [  None,
                     dic['date'],
@@ -1399,6 +1392,7 @@ def GetPrixJourLignes(dlg, grouper='date', **kwd):
                     cout,
                     dontOD]
         lstDonnees.append(ligne)
+
     if len(lstManqueEffectifs) > 0:
         mess = "%d jours sans effectifs renseignés\n\n"%len(lstManqueEffectifs)
         mess += "Jours: %s"%str(lstManqueEffectifs[:5])

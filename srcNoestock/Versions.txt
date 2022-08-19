@@ -1,3 +1,7 @@
+Version 1.1.2.24 (19/08/2022)
+- Correction de l'impression du total prix journée
+- Modification sur le calcul des diviseurs pour prix de journée
+
 Version 1.1.2.23 (18/08/2022)
 - Amélioration des prix de journée
 - Nouvelle Case prédécochée pour ramener les pt dèj avec le midi

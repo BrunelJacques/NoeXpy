@@ -1170,6 +1170,7 @@ class CTRL_Periode(wx.Panel):
         name = kwds.pop("name","CTRL_Periode")
         orientation = kwds.pop("orientation",wx.VERTICAL)
         self.OnPeriode = kwds.pop("OnPeriode",None)
+        self.works = False
 
         wx.Panel.__init__(self, parent, id=-1, name=name, style=wx.TAB_TRAVERSAL)
         self.parent = parent
@@ -1190,16 +1191,16 @@ class CTRL_Periode(wx.Panel):
         self.SetSizer(static_sizer_periode)
 
     def OnDate(self,event):
+        if self.works: return
+        self.works = True
         origine = event.EventObject.Parent.Name
         debut, fin = self.GetValue()
-        if not debut and fin:
+        if not debut and not fin:
             return
         if  origine == 'date_au' :
             if fin < debut:
                 wx.MessageBox("La date début était postérieure à celle de fin!!")
                 self.ctrlSaisieDu.SetValue(fin)
-            else:
-                self.ctrlSaisieAu.SetFocus()
         elif origine == 'date_du' and fin < debut:
             wx.MessageBox("La date fin était antérieure à celle de début!!")
             self.ctrlSaisieAu.SetValue(debut)
@@ -1208,6 +1209,7 @@ class CTRL_Periode(wx.Panel):
             if hasattr(self,'actionCtrl'):
                 event.EventObject = self
                 self.Parent.OnCtrlAction(event)
+        self.works = False
 
     def SetValue(self,tplDates):
         # le tuple correspond aux deux dates

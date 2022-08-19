@@ -12,7 +12,7 @@ import os
 import datetime
 import srcNoestock.UTILS_Stocks        as nust
 import srcNoelite.UTILS_Noegest        as nung
-import xpy.ObjectListView.xGTR as xGTR
+import xpy.ObjectListView.xGTR         as xGTR
 import xpy.xUTILS_DB                   as xdb
 from srcNoestock                import DLG_Effectifs, DLG_Mouvements
 from xpy.ObjectListView.ObjectListView import ColumnDefn
@@ -168,7 +168,7 @@ def GetOlvColonnes(dlg):
             ColumnDefn("PrixParRepas", 'right', 80,'prixRepas', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=False),
             ColumnDefn("NbClients", 'right', 80, 'nbClients', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=False),
             ColumnDefn("PrixJourClient", 'right', 80, 'prixClient', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=False),
-            ColumnDefn("Dont OD sorties", 'right', 60, 'od', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=False),
+            ColumnDefn("Dont OD sorties", 'right', 100, 'od', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=False),
             ]
 
 def GetOlvCodesSup():
@@ -195,7 +195,7 @@ def GetDlgOptions(dlg):
     return {
         'style': wx.DEFAULT_FRAME_STYLE,
         'minSize': (700, 550),
-        'size': (850, 800),
+        'size': (1050, 800),
         }
 
 #----------------------- Parties de l'écran -----------------------------------------
@@ -253,6 +253,8 @@ class DLG(xGTR.DLG_tableau):
 
         # Propriétés de l'écran global type Dialog
         kwds = GetDlgOptions(self)
+        listArbo=os.path.abspath(__file__).split("\\")
+        kwds['title'] = listArbo[-1] + "/" + self.__class__.__name__
         kwds['autoSizer'] = False
         kwds['dicParams'] = GetDicParams()
         #kwds['dicOlv'] = self.dicOlv
@@ -423,6 +425,26 @@ class DLG(xGTR.DLG_tableau):
         return "%s, Repas: %s"%(tiers, repas[:-2])
 
     def GetTotalImpression(self):
+        # génération d'une ligne de synthèse avec éventuellement présence de filtre
+        nbrepas, nbclients = nust.GetEffectifPeriode(self,)
+        if nbrepas + nbclients == 0:
+            wx.MessageBox("Pas d'effectifs complets renseignés sur la période")
+            return
+        couts = 0
+        for track in self.ctrlOlv.innerList:
+            couts += xformat.Nz(track.cout)
+        modPxRep, modPxCli = 0, 0
+        if nbrepas > 0: modPxRep = round(couts / nbrepas,2)
+        if nbclients > 0: modPxCli = round(couts / nbclients,2)
+        modTot = round(couts)
+
+        # pas de filtre
+        txt = "Coûts :  %d repas à %.2f€ = %.2f€ ,  %d clients à %.2f€ = %.2f€" % (
+                                        nbrepas, modPxRep, modTot,
+                                        nbclients, modPxCli, modTot)
+        return txt
+
+    def zzGetTotalImpression(self):
         # génération d'une ligne de synthèse avec éventuellement présence de filtre
         effectifs = nust.GetEffectifs(self,)
         if len(effectifs) == 0:

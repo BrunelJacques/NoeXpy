@@ -413,5 +413,5 @@ if __name__ == '__main__':
     dlg = DLG()
     dlg.ShowModal()
     # lancement pour un jour
-    EffectifUnJour(date=datetime.date.today())
+    #EffectifUnJour(date=datetime.date.today())
     app.MainLoop()

@@ -160,7 +160,7 @@ def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
     return [
             ColumnDefn("pbImpress", 'right', 0,'pbImp', valueSetter=''),
-            ColumnDefn("Date", 'right', 90, 'IDdate', valueSetter=datetime.date.today(),stringConverter=xformat.FmtDate),
+            ColumnDefn("Date", 'right', 150, 'IDdate', valueSetter=datetime.date.today(),stringConverter=xformat.FmtDate),
             ColumnDefn("NbRepas", 'right', 80, 'nbRepas', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=False),
             ColumnDefn("NbClients", 'right', 80, 'nbClients', valueSetter=0, stringConverter=xformat.FmtInt,isSpaceFilling=False),
             ColumnDefn("PrixParRepas", 'right', 100,'prixRepas', valueSetter=0, stringConverter=xformat.FmtDecimal,isSpaceFilling=False),
@@ -258,6 +258,8 @@ class DLG(xGTR.DLG_tableau):
 
         # Propriétés de l'écran global type Dialog
         kwds = GetDlgOptions(self)
+        listArbo=os.path.abspath(__file__).split("\\")
+        kwds['title'] = listArbo[-1] + "/" + self.__class__.__name__
         kwds['autoSizer'] = False
         kwds['dicParams'] = GetDicParams()
         #kwds['dicOlv'] = self.dicOlv
