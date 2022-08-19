@@ -444,57 +444,6 @@ class DLG(xGTR.DLG_tableau):
                                         nbclients, modPxCli, modTot)
         return txt
 
-    def zzGetTotalImpression(self):
-        # génération d'une ligne de synthèse avec éventuellement présence de filtre
-        effectifs = nust.GetEffectifs(self,)
-        if len(effectifs) == 0:
-            wx.MessageBox("Pas d'effectif renseignés pour ce jour")
-            return
-        nbRepas = effectifs[0][1] + effectifs[0][2]
-        nbClients = (effectifs[0][3] + effectifs[0][4])/2
-        # recherche filtres
-        yaFiltre = False
-        filtres = self.ctrlOlv.ctrlOutils.barreRecherche.GetValue()
-        if len(filtres) > 0: filtres += ", "
-
-        for filtre in  self.ctrlOlv.listeFiltresColonnes:
-            filtres += "%s %s %s, "%(filtre['titre'] , filtre['choix'], filtre['critere'])
-
-        if len(filtres) > 0 :
-            yaFiltre = True
-            filtres = filtres[:-2] # enlève dernière virgule
-
-        # calcul synthèse
-        modTot = 0.0
-        for track in self.ctrlOlv.modelObjects:
-            modTot += track.cout
-        modPxRep = modTot
-        modPxCli = modTot
-        if nbRepas > 0: modPxRep = round(modTot / nbRepas,2)
-        if nbClients > 0: modPxCli = round(modTot / nbClients,2)
-        modTot = round(modTot)
-
-        # pas de filtre
-        txt = "Coût global: %d€,  par repas servi : %.2f€ , par client : %.2f€"%(modTot,modPxRep, modPxCli)
-
-        if yaFiltre:
-            innerTot, innerNbCli, innerNbRep = 0.0, 0.0, 0.0
-            for track in self.ctrlOlv.innerList:
-                innerTot += track.cout
-                innerNbCli = max(innerNbCli, track.nbClients)
-                innerNbRep = max(innerNbRep, track.nbRepas)
-            innerPxRep = innerTot
-            innerPxCli = innerTot
-            if innerNbRep > 0: innerPxRep = round(innerTot / innerNbRep,2)
-            if innerNbCli > 0: innerPxCli = round(innerTot / innerNbCli,2)
-            innerTot = round(innerTot)
-            # présence de filtre on affiche le filtré / non filtré
-            txt = "Filtré par : %s\n"%filtres
-            txt += "Coût global - filtré: %d€ - %d€,  "%(modTot,innerTot,)
-            txt += "par repas servi : %.2f€ - %.2f€, par client : %.2f€ - %.2f€"%(modPxRep,innerPxRep,
-                                                                                modPxCli,innerPxCli)
-        return txt
-
     def ValideSaisie(self,dlgSaisie,*args,**kwd):
         #Relais de l'appel de l'écran de saisie en sortie
         kwd['periode'] = self.periode
