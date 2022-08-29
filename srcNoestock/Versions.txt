@@ -1,3 +1,6 @@
+Version 1.1.2.25 (29/08/2022)
+- Correction mineure, mise en forme source
+
 Version 1.1.2.24 (19/08/2022)
 - Correction de l'impression du total prix journée
 - Modification sur le calcul des diviseurs pour prix de journée

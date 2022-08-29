@@ -517,7 +517,9 @@ class Dialog(xusp.DLG_vide):
             if not track.compte or len(track.compte)==0:
                 nonValides +=1
                 continue
-            montant = float(track.montant.replace(',','.'))
+            if isinstance(track.montant,str):
+                track.montant = track.montant.replace(',', '.')
+            montant = float(track.montant)
             if round(montant,2) == 0.0:
                 continue
             elif montant > 0.0:

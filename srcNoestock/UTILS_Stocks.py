@@ -385,6 +385,8 @@ def CalculeInventaire(dlg, dParams):
             mttMvts += (track.qte * track.pxUn)
         deltaValoAchats= abs(mttMvts - (pxUn * qteMvts))
 
+        #if key.startswith("JAMBON BL"):
+        #    print(track)
         # controle article
         if majArticles:
             pbQteArt = True
@@ -432,7 +434,6 @@ def CalculeInventaire(dlg, dParams):
         return donnees
     # fin de ComposeLigne --------------------------------------------------------------
 
-    # composition des lignes
     for key, donnees in ddArticles.items():
         lstDonnees.append(ComposeLigne(donnees, dldArtMouvements[key]))
 
