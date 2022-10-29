@@ -200,7 +200,6 @@ def GetDateLastMvt(db):
     recordset = db.ResultatReq()
     return recordset[0][0]
 
-
 def GetDateLastInv(db):
     # retourne la date du dernier inventaire stocké
     req = """    
@@ -210,7 +209,7 @@ def GetDateLastInv(db):
     mess = "Echec UTILS_Stocks.GetLastInv"
     ret = db.ExecuterReq(req, mess=mess, affichError=True)
     if ret != 'ok':
-        return datetime.date.today()
+        return datetime.date.today() - datetime.timedelta(366)
     recordset = db.ResultatReq()
     return recordset[0][0]
 

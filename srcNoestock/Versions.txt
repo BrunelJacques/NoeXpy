@@ -1,3 +1,6 @@
+Version 1.1.2.26 (29/10/2022)
+- Elargissement de la recherche de mouvements antérieurs depuis dernier inventaire
+
 Version 1.1.2.25 (29/08/2022)
 - Correction mineure, mise en forme source
 
