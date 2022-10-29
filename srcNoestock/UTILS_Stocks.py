@@ -196,7 +196,21 @@ def GetDateLastMvt(db):
         ;"""
     mess = "Echec UTILS_Stocks.GetLastMouvement"
     ret = db.ExecuterReq(req, mess=mess, affichError=True)
-    if ret != 'ok': return datetime.date.today()
+    if ret != 'ok': return str(datetime.date.today())
+    recordset = db.ResultatReq()
+    return recordset[0][0]
+
+
+def GetDateLastInv(db):
+    # retourne la date du dernier inventaire stocké
+    req = """    
+        SELECT MAX(IDdate)
+        FROM stInventaires
+        ;"""
+    mess = "Echec UTILS_Stocks.GetLastInv"
+    ret = db.ExecuterReq(req, mess=mess, affichError=True)
+    if ret != 'ok':
+        return datetime.date.today()
     recordset = db.ResultatReq()
     return recordset[0][0]
 
@@ -774,20 +788,22 @@ def SqlMagasins(db):
 
 # Appel des mouvements antérieurs
 def SqlMvtsAnte(**kwd):
-    # ajoute les données à la matrice pour la recherche d'un anterieur
+    # retourne les données pour recherche de mouvements anterieurs since last inventaire
     dicOlv = kwd.get('dicOlv',None)
     db = kwd.get('db',None)
     filtre = kwd.pop('filtreTxt', '')
     nbreFiltres = kwd.pop('nbreFiltres', 0)
     encours = kwd.pop('encours',None)
     # en présence d'autres filtres: tout charger pour filtrer en mémoire par predicate.
-    limit = ''
     if nbreFiltres == 0:
         limit = """
                 LIMIT %d""" % LIMITSQL
     origines = dicOlv['codesOrigines']
+
+    lastInvent = GetDateLastInv(db)
     where = """
-                WHERE origine in ( %s ) """ % str(origines)[1:-1]
+                WHERE ( date >= '%s' )
+                        AND (origine in ( %s ) )""" % (lastInvent, str(origines)[1:-1])
 
     order = "ORDER BY date DESC"
     if encours:
@@ -808,8 +824,7 @@ def SqlMvtsAnte(**kwd):
                 FROM stMouvements
                 %s 
                 GROUP BY origine, date, fournisseur, IDanalytique
-                %s
-                %s ;""" % (",".join(lstChamps), where,order,limit)
+                %s;""" % (",".join(lstChamps), where,order)
     retour = db.ExecuterReq(req, mess='SqlMvtsAnte')
     lstDonnees = []
     if retour == 'ok':

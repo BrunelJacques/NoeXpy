@@ -95,14 +95,15 @@ def GetMatriceAnterieurs(dlg):
 
     # Composition de la matrice de l'OLV anterieurs, retourne un dictionnaire
 
-    lstChamps = ['origine', 'date', 'fournisseur', 'IDanalytique', 'COUNT(IDmouvement)']
+    lstChamps = ['origine', 'date', 'fournisseur', 'IDanalytique',
+                 'COUNT(IDmouvement)','SUM(qte * prixUnit)']
 
-    lstNomsColonnes = ['origine', 'date', 'fournisseur', 'analytique', 'nbLignes']
+    lstNomsColonnes = ['origine', 'date', 'fournisseur', 'analytique', 'nbLignes','montant']
 
-    lstTypes = ['VARCHAR(8)', 'DATE', 'VARCHAR(32)', 'VARCHAR(32)', 'INT']
+    lstTypes = ['varchar(8)', 'date', 'varchar(32)', 'varchar(32)', 'int', 'float']
     lstCodesColonnes = [xformat.NoAccents(x).lower() for x in lstNomsColonnes]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
-    lstLargeurColonnes = [100,100,180,180,200]
+    lstLargeurColonnes = [70,90,120,80,60,100]
     lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
     return {
         'codesOrigines': dlg.origines,
@@ -112,7 +113,7 @@ def GetMatriceAnterieurs(dlg):
         'listeCodesColonnes': lstCodesColonnes,
         'getDonnees': nust.SqlMvtsAnte,
         'dicBandeau': dicBandeau,
-        'sortColumnIndex': 2,
+        'sortColumnIndex': 1,
         'sensTri': False,
         'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
         'size': (650, 400)}
