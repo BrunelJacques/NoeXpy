@@ -428,8 +428,7 @@ class DLG(dlgMvts.DLG):
         # charger les valeurs de pnl_params
 
         self.Bind(wx.EVT_CLOSE,self.OnClose)
-        self.laterDate = nust.GetLastInventaire(today, lstChamps=['IDdate',],
-                                             retourLignes=False)
+        self.laterDate = nust.GetDateLastInventaire(self.db,today)
         self.withInvent = True
         self.pnlParams.SetOneValue('laterDate',valeur=xformat.FmtDate(self.laterDate),
                                    codeBox='param2')
@@ -555,8 +554,7 @@ class DLG(dlgMvts.DLG):
         saisie = self.pnlParams.GetOneValue('laterDate',codeBox='param2')
         saisie = xformat.FmtDate(saisie)
         self.laterDate = xformat.DateFrToDatetime(saisie)
-        lastInvent = xformat.DateSqlToDatetime(nust.GetLastInventaire(None, lstChamps=['IDdate',],
-                                             retourLignes=False))
+        lastInvent = xformat.DateSqlToDatetime(nust.GetDateLastInventaire(self.db))
         self.pnlParams.SetOneValue('laterDate',valeur=xformat.FmtDate(saisie),codeBox='param2')
         self.withInvent = False
         if self.laterDate < lastInvent:

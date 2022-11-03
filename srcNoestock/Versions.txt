@@ -1,3 +1,7 @@
+Version 1.1.2.27 (03/11/2022)
+- Limite d'affichage portée à 1000 au lieu de 100
+- Reprise de tous les articles dans l'inventaire, même ceux sans mouvement ds l'exercice
+
 Version 1.1.2.26 (29/10/2022)
 - Elargissement de la recherche de mouvements antérieurs depuis dernier inventaire
 

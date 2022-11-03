@@ -13,7 +13,7 @@ from xpy.outils     import xformat
 from xpy.outils.xformat import Nz
 from xpy  import xUTILS_DB as xdb
 
-LIMITSQL = 100
+LIMITSQL = 1000
 # codes repas [ 1,      2,     3,     4       5]
 CHOIX_REPAS = ['PtDej','Midi','Soir','5eme','Tous']
 
@@ -84,32 +84,63 @@ def PostInventaire(cloture=datetime.date.today(),inventaire=([],)):
         return True
     return ret
 
-def GetLastInventaire(dteAnalyse=None,lstChamps=None,retourLignes=True,oneArticle=None):
-    # return: lignes de l'inventaire précédant dteAnalyse ou seulement sa date
+def GetDateLastInventaire(db,dteAnalyse=None):
+    # return: date du dernier inventaire précédant la date d'analyse
+    whereDate = ""
+    if dteAnalyse:
+        dteIso = xformat.DatetimeToStr(dteAnalyse, iso=True)
+        whereDate = "WHERE stInventaires.IDdate <= '%s' " % dteIso
+    req = """   
+            SELECT MAX(IDdate)
+            FROM stInventaires
+            %s
+            GROUP BY IDdate    
+            ;""" % (whereDate)
+
+    retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetDateLastInventaire')
+    llInventaire = [[None,],]
+    if retour == "ok":
+        llInventaire = db.ResultatReq()
+    return llInventaire[0][0]
+
+def GetLastInventaire(dteAnalyse=None,lstChamps=None,oneArticle=None):
+    # return: lignes de l'inventaire précédant dteAnalyse ou seulement une ligne article
     db = xdb.DB()
-    limit = ""
-    if not retourLignes:
-        # pour trouver seulement la date une ligne suffira
-        limit = "LIMIT 1"
-    # Appelle l'inventaire précédent en une seule requête polyvalente
     if not lstChamps:
         lstChamps = ['IDdate','IDarticle','qteStock','prixMoyen']
+    lstChampsSql = []
+    for ix in range(len(lstChamps)):
+        lchampSplit = lstChamps[ix].split('.')
+        if len(lchampSplit) == 1:
+            if lstChamps[ix].lower() == 'idarticle':
+                lstChampsSql.append('stArticles.IDarticle')
+            else:
+                lstChampsSql.append('stInventaires.%s'%lchampSplit[-1])
+                lstChamps[ix] = lchampSplit[-1]
+        else:
+            lstChampsSql.append(lstChamps[ix])
+            lstChamps[ix] = lchampSplit[-1]
     condArticle = ""
     if oneArticle:
         condArticle = "AND (IDarticle = '%s')" % oneArticle
-    whereDate = ""
+    whereDate = "1"
     dteIso = xformat.DatetimeToStr(dteAnalyse, iso=True)
     if dteIso and len(dteIso)>0:
-        whereDate = "WHERE stInv.IDdate <= '%s' " % dteIso
-    req = """   SELECT %s
-                FROM stInventaires
-                WHERE   (stInventaires.IDdate = 
-                            (SELECT MAX(stInv.IDdate) 
+        whereDate = "stInv.IDdate <= '%s' " % dteIso
+
+    req = """   
+        SELECT %s
+        FROM stArticles 
+        LEFT JOIN stInventaires ON stArticles.IDarticle = stInventaires.IDarticle
+        WHERE   (   (stInventaires.IDdate = 
+                        (   SELECT MAX(stInv.IDdate) 
                             FROM stInventaires as stInv
-                            %s)
+                            WHERE (%s)
                         )
-                %s
-                %s;""" % (",".join(lstChamps),whereDate,condArticle,limit)
+                    )
+                    OR (stInventaires.IDdate IS NULL)
+                )
+                %s;""" % (",".join(lstChampsSql),whereDate,condArticle)
 
     retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetLastInventaire')
     llInventaire = []
@@ -118,11 +149,15 @@ def GetLastInventaire(dteAnalyse=None,lstChamps=None,retourLignes=True,oneArticl
         for record in recordset:
             mouvement = []
             for ix  in range(len(lstChamps)):
-                mouvement.append(record[ix])
+                value = record[ix]
+                if value == None:
+                    if lstChamps[ix][:3] in ('qte', 'pxU', 'pri'):
+                        value = 0.0
+                    else:
+                        value = ''
+                mouvement.append(value)
             llInventaire.append(mouvement)
     db.Close()
-    if not retourLignes and len(llInventaire) > 0:
-        return llInventaire[0][0]
     return llInventaire
 
 def GetLastInventForMvts(dlg, dParams):
@@ -222,7 +257,7 @@ def PxAchatsStock(modelObjects):
         if track.IDarticle not in lstArticles:
             lstArticles.append(track.IDarticle)
             dQtesFin[track.IDarticle] = 0
-        dQtesFin[track.IDarticle] += track.qte
+        dQtesFin[track.IDarticle] += Nz(track.qte)
 
     lastArticle = None
     qteAchatsTous = 0.0
@@ -258,7 +293,7 @@ def PxAchatsStock(modelObjects):
             #provoque la rupture en sautant la suite de l'article
             finArticle = True
 
-    if qteAchatsTous != 0:
+    if Nz(qteAchatsTous) != 0:
         prixMoyen =  mttAchatsTous / qteAchatsTous
     else: prixMoyen = None
     return prixMoyen
@@ -314,12 +349,10 @@ def CalculeInventaire(dlg, dParams):
     db = dlg.db
 
     untilDate = dParams['date']
-    laterDate = GetLastInventaire(untilDate, lstChamps=['IDdate', ],
-                                            retourLignes=False)
+    laterDate = GetDateLastInventaire(db,untilDate)
 
     # écritures postérieures à la date d'analyse, pas de maj PU et qte de l'article
     majArticles = True
-    lastMvt = GetDateLastMvt(db)
     if untilDate > GetDateLastMvt(db):
         majArticles = False
 
@@ -359,7 +392,6 @@ def CalculeInventaire(dlg, dParams):
         WHERE %s
         ;""" % (','.join(lstChampsArt), where)
     retour = db.ExecuterReq(req, mess="UTILS_Stocks.CalculeInventaire articles")
-    recordset = ()
     ddArticles = {}
     if retour == "ok":
         recordset = db.ResultatReq()
@@ -405,13 +437,13 @@ def CalculeInventaire(dlg, dParams):
             pbQteArt = True
             if dArt['qteStock'] == qteMvts:
                 pbQteArt = False
-            elif dArt['qteStock'] != 0:
+            elif Nz(dArt['qteStock']) != 0:
                 if abs(1 - (qteMvts / dArt['qteStock'])) <= 0.02:
                     pbQteArt = False
             pbPxArt = True
             if dArt['prixMoyen'] == pxUn:
                 pbPxArt = False
-            elif dArt['prixMoyen'] != 0:
+            elif Nz(dArt['prixMoyen']) != 0:
                 if abs(1 - (pxUn / dArt['prixMoyen'])) <= 0.02:
                     pbPxArt = False
             if pbQteArt or pbPxArt:
@@ -466,7 +498,6 @@ def CalculeInventaire(dlg, dParams):
         ret = db.ExecuterReq(req, mess='SqlInventaires flush')
         if ret != 'ok': return []
 
-    print(datetime.datetime.now()-timedeb)
     return lstDonnees
 
 # Select de données  ----------------------------------------------------------
@@ -946,7 +977,7 @@ def MAJarticle(db,dlg,track):
                       ('dateSaisie', dlg.today), ]
 
         # prix actuel changé uniquement sur nouvelles entrées
-        if 'achat' in dlg.origine and track.qte != 0:
+        if 'achat' in dlg.origine and Nz(track.qte) != 0:
             dicArt['prixActuel'] = track.prixTTC
             lstDonnees += [
                 ('dernierAchat', xformat.DateFrToSql(dlg.date)),

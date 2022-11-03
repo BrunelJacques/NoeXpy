@@ -2045,7 +2045,7 @@ class ObjectListView(wx.ListCtrl):
         # exception than it is to test for the class
         def _getSortValue(x):
             primary = sortColumn.GetValue(x)
-            if not primary:
+            if primary == None:
                 if sortColumn.valueSetter:
                     primary = sortColumn.valueSetter
                 else:
