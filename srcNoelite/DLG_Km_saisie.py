@@ -73,6 +73,10 @@ def ComposeFuncImp(dlg,entete,donnees):
             ligneOut[champsOut.index('idvehicule')] = dicVehicule['idanalytique']
             ligneOut[champsOut.index('vehicule')] =  dicVehicule['abrege']
             #ligneOut[champsOut.index('nomvehicule')] = dicVehicule['nom']
+        else:
+            mess = "params véhicule non trouvé pour ligne:\n\n"
+            mess += str(ligneIn)
+            wx.MessageBox(mess,"Erreur bloquante")
         # appel des éléments détaillés de l'activité saisie
         dicActivite = None
         if ligneIn[champsIn.index('activite')]:

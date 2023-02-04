@@ -661,7 +661,7 @@ class PNL_pied(xGTE.PNL_pied):
 
 class DLG(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,sens='entrees',date=None,**kwd):
+    def __init__(self,sens='sorties',date=None,**kwd):
         # gestion des deux sens possibles 'entrees' et 'sorties'
         if not sens: sens = 'article'
         self.sens = sens
