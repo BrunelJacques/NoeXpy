@@ -122,7 +122,7 @@ def GetLastInventaire(dteAnalyse=None,lstChamps=None,oneArticle=None):
             lstChamps[ix] = lchampSplit[-1]
     condArticle = ""
     if oneArticle:
-        condArticle = "AND (IDarticle = '%s')" % oneArticle
+        condArticle = "AND (stArticles.IDarticle = '%s')" % oneArticle
     whereDate = "1"
     dteIso = xformat.DatetimeToStr(dteAnalyse, iso=True)
     if dteIso and len(dteIso)>0:
@@ -249,7 +249,64 @@ def GetDateLastInv(db):
     return recordset[0][0]
 
 def PxAchatsStock(modelObjects):
-    # retourne px moyen et dic par article, prix FIFO du stock restant dans modelObjects
+    # retourne px moyens achetés pour sorties et stock FIFO dans modelObjects
+    lstArticles = []
+    dQtesFin = {}
+    
+    dQtesConso = {}
+    # calcul des quantités en stock et articles présents
+    for track in modelObjects:
+        if track.IDarticle not in lstArticles:
+            lstArticles.append(track.IDarticle)
+            dQtesFin[track.IDarticle] = 0
+        dQtesFin[track.IDarticle] += Nz(track.qte)
+        if isinstance(track.date,str):
+                track.date = xformat.DateSqlToDatetime(track.date)
+        if not track.date:
+                track.date = datetime.date(2000,1,1)
+        if not isinstance(track.date,datetime.date):
+            print(track.date,type(track.date))
+    lastArticle = None
+    qteAchatsTous = 0.0
+    mttAchatsTous = 0.0
+    finArticle = False
+    qteAchatsArt = 0.0
+    mttAchatsArt = 0.0
+
+    # recherche des prix d'achat sur liste triée dates décroissantes après articles
+    for track in sorted(modelObjects, key=lambda trk: (trk.IDarticle,trk.date),reverse=True):
+        article = track.IDarticle
+        if not lastArticle:
+            # skip premier item
+            lastArticle = article
+        if track.origine not in ('achat','inventaire'):
+            continue
+        # rupture article,
+        if lastArticle != article:
+            finArticle = False
+            qteAchatsArt = 0.0
+            mttAchatsArt = 0.0
+        if finArticle:
+            continue # jusqu'à rupture
+        qteAchat = Nz(track.qte)
+        prixUnit = Nz(track.pxUn)
+        qteAchat = min(dQtesFin[article],qteAchat)
+        qteAchatsTous += qteAchat
+        mttAchatsTous += qteAchat * prixUnit
+        qteAchatsArt += qteAchat
+        mttAchatsArt += qteAchat * prixUnit
+        dQtesFin[article] -= qteAchat
+        if dQtesFin[article] < 0.0001:
+            #provoque la rupture en sautant la suite de l'article
+            finArticle = True
+
+    if Nz(qteAchatsTous) != 0:
+        prixMoyen =  mttAchatsTous / qteAchatsTous
+    else: prixMoyen = None
+    return prixMoyen
+
+def PxAchatsConso(modelObjects):
+    # retourne px moyen des consommations dans modelObjects
     lstArticles = []
     dQtesFin = {}
     # calcul des quantités en stock et articles présents
@@ -258,7 +315,12 @@ def PxAchatsStock(modelObjects):
             lstArticles.append(track.IDarticle)
             dQtesFin[track.IDarticle] = 0
         dQtesFin[track.IDarticle] += Nz(track.qte)
-
+        if isinstance(track.date,str):
+                track.date = xformat.DateSqlToDatetime(track.date)
+        if not track.date:
+                track.date = datetime.date(2000,1,1)
+        if not isinstance(track.date,datetime.date):
+            print(track.date,type(track.date))
     lastArticle = None
     qteAchatsTous = 0.0
     mttAchatsTous = 0.0

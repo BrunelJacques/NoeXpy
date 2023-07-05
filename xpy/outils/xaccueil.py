@@ -170,31 +170,31 @@ class Panel_Titre(wx.Panel):
         self.image_titre = wx.StaticBitmap(self, -1, wx.Bitmap(image, wx.BITMAP_TYPE_ANY), pos=posImage)
         if not couleurFond: couleurFond = COULEUR_FOND
         self.SetForegroundColour(couleurFond)
-        self.label = wx.StaticText(self, -1, texte, pos=posLabel)
+        self.label = wx.StaticText(self, -1, texte, pos=posLabel,style=wx.ST_ELLIPSIZE_END)
         self.label.SetFont(wx.Font(tailleFont, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, ""))
         self.version = GetVersion(self.parent)
         if self.version:
             self.ctrlVersion = wx.StaticText(self, -1, self.version)
-            self.ctrlVersion.SetFont(wx.Font(tailleFont/2, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, ""))
+            self.ctrlVersion.SetFont(wx.Font(int(tailleFont/2), wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, ""))
         self.__do_layout()
 
     def __do_layout(self):
-        grid_sizer = wx.FlexGridSizer(rows=5, cols=2, vgap=10, hgap=20)
+        grid_sizer = wx.FlexGridSizer(rows=1, cols=2, vgap=10, hgap=20)
         grid_sizer.Add(self.image_titre, 0, wx.ALL, 20)
         sizer_right = wx.FlexGridSizer(rows=5, cols=1, vgap=0, hgap=20)
         sizer_right.Add(self.label, 0, wx.TOP, 20)
         if self.version:
-            sizer_right.Add(self.ctrlVersion, 0, wx.TOP, 10)
+            sizer_right.Add(self.ctrlVersion, 1, wx.TOP|wx.EXPAND, 10)
         grid_sizer.Add(sizer_right)
-        self.SetSizer(grid_sizer)
-
+        grid_sizer.AddGrowableCol(1)
+        self.SetSizerAndFit(grid_sizer)
 
 class Panel_Buttons(wx.Panel):
     def __init__(self, parent,lstButtons=[],sizeFont=12,sizeBmp=80,couleurFond=None,
                  sizeBtn=(140,140)):
         size = parent.GetSize()
         size[1] -= 145
-        wx.Panel.__init__(self, parent, name="panel_accueil", id=-1, size=size, style=wx.TAB_TRAVERSAL)
+        wx.Panel.__init__(self, parent, name="panel_boutons", id=-1, size=size, style=wx.TAB_TRAVERSAL)
 
         self.parent = parent
         self.lstCtrlBtns = []
@@ -223,40 +223,36 @@ class Panel_Buttons(wx.Panel):
             grid_sizer.Add(ctrlBtn, 1, wx.ALL, 10)
         self.SetSizer(grid_sizer)
 
+
 class Panel_Accueil(wx.Panel):
     def __init__(self, parent,pnlTitre=None,pnlBtnActions=None):
-        wx.Panel.__init__(self, parent, name="panel_general", id=-1, style=wx.TAB_TRAVERSAL)
+        wx.Panel.__init__(self, parent, name="panel_accueil", id=-1, style=wx.TAB_TRAVERSAL)
+        self.parent = parent
         self.pnlBtnActions = None
-        if pnlTitre:
-            self.pnlTitre = pnlTitre
-        if pnlBtnActions:
-            self.pnlBtnActions = pnlBtnActions
+        self.pnlTitre = pnlTitre
+        self.pnlBtnActions = pnlBtnActions
         self.Sizer()
         self.EnableBoutons(False)
 
     def Sizer(self):
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        if hasattr(self,'pnlTitre'):
-            sizer.Add(self.pnlTitre, 0, wx.EXPAND, 0)
+        box_sizer = wx.BoxSizer(wx.VERTICAL)
+        if self.pnlTitre:
+            box_sizer.Add(self.pnlTitre, 0, wx.EXPAND, 0)
         if self.pnlBtnActions:
-            sizer.Add(self.pnlBtnActions, 1, wx.ALL|wx.EXPAND, 20)
-        self.SetSizerAndFit(sizer)
-        self.Layout()
+            box_sizer.Add(self.pnlBtnActions, 1, wx.ALL|wx.EXPAND, 20)
+        self.parent.SetSizerAndFit(box_sizer)
 
     def EnableBoutons(self,etat=False):
         if self.pnlBtnActions:
             for button in self.pnlBtnActions.lstCtrlBtns:
                 button.Enable(etat)
 
-    def OnResize(self,evt):
-        wx.MessageBox("coucou")
-
 # -------------------------- pour tests -------------------------------------------------------------------------------
 class MyFrame(wx.Frame):
     def __init__(self, *args, **kwds):
-        wx.Frame.__init__(self, *args, )
+        wx.Frame.__init__(self, *args,name="frame_top" )
         self.dictAppli = kwds.pop('dictAppli',{})
-        self.SetSize((500, 700))
+        self.SetSize((300, 500))
         lstButtons = [
             {"code": "modifAdresses", "label": ("&Modification d'adresses Individus"),
              "infobulle": (u"Gestion de l'adresses de rattachement des personnes (soit la leur soit celle de leur hébergeur"),
@@ -275,9 +271,9 @@ class MyFrame(wx.Frame):
         pnlTitre= Panel_Titre(self, texte="Mon appli ...\n\n%s"%("mais encore! "*5,), pos=(20, 30))
         pnlBtnActions = Panel_Buttons(self, lstButtons)
         self.panel = Panel_Accueil(self,pnlTitre=pnlTitre,pnlBtnActions=pnlBtnActions)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.panel, 0, wx.EXPAND, 0)
-        self.SetSizerAndFit(sizer)
+        """sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.panel, 1, wx.EXPAND, 0)
+        self.SetSizer(sizer)"""
 
     def OnAction(self,event):
         wx.MessageBox("Voici mon action !!")

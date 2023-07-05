@@ -13,7 +13,6 @@ import wx
 import sys
 import subprocess
 import mysql.connector
-import win32com.client
 import sqlite3
 import copy
 import datetime
@@ -289,9 +288,7 @@ class DB():
         self.nomBase = config['serveur'] + config['nameDB']
         try:
             etape = 'Création du connecteur'
-            if self.typeDB == 'access':
-                self.ConnectAcessADO()
-            elif self.typeDB == 'sqlite':
+            if self.typeDB == 'sqlite':
                 self.ConnectSQLite()
             elif self.typeDB == 'mySqlLocal':
                 self.ConnectMySqlLocal()
@@ -329,34 +326,6 @@ class DB():
             self.echec = 0
         except Exception as err:
             wx.MessageBox("xDB.ConnectAcessOdbc:La connexion à la base access %s a echoué : \nErreur détectée :%s" %(self.nomBase,err),
-                          style=wx.ICON_WARNING)
-            self.erreur = err
-
-    def ConnectAcessADO(self):
-        """Important ne tourne qu'avec: 32bit MS driver - 32bit python!
-           N'est pas compatible access 95, mais lit comme access 2002"""
-        # Vérifie que le fichier existe bien
-        if os.path.isfile(self.nomBase) == False:
-            wx.MessageBox("xDB:Le fichier %s demandé n'est pas present sur le disque dur."% self.nomBase, style = wx.ICON_WARNING)
-            return
-        # Initialisation de la connexion
-        try:
-            self.connexion = win32com.client.Dispatch(r'ADODB.Connection')
-            #DSN = ('PROVIDER = Microsoft.Jet.OLEDB.4.0;DATA SOURCE = ' + self.nomBase + ';')
-            DSN = ('PROVIDER = Microsoft.ACE.OLEDB.12.0;DATA SOURCE = ' + self.nomBase + ';')
-            self.connexion.Open(DSN)
-            #lecture des tables de la base de données
-            cat = win32com.client.Dispatch(r'ADOX.Catalog')
-            cat.ActiveConnection = self.connexion
-            allTables = cat.Tables
-            if len(allTables) == 0:
-                wx.MessageBox("xDB:La base de donnees %s est présente mais vide " % self.nomBase)
-                return
-            del cat
-            self.cursor = win32com.client.Dispatch(r'ADODB.Recordset')
-            self.echec = 0
-        except Exception as err:
-            wx.MessageBox("xDB:La connexion avec la base access %s a echoué : \nErreur détectée :%s" %(self.nomBase,err),
                           style=wx.ICON_WARNING)
             self.erreur = err
 

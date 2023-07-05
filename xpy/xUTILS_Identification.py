@@ -94,9 +94,11 @@ def SaisieMotPasse(parent):
     if dictUser:
         parent.dictUser = dictUser
         etat = True
-    parent.GestMenu(etat)
-    parent.infoStatus = "!"
-    parent.MakeStatusText()
+    try:
+        parent.GestMenu(etat)
+        parent.infoStatus = "!"
+        parent.MakeStatusText()
+    except: pass
     dlgMp.Destroy()
 
 class CTRL_Bouton_image(wx.Button):

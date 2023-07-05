@@ -18,6 +18,7 @@ dictAPPLI = {
 
 class MyFrame(xAppli.MainFrame):
     def __init__(self, *args, **kw):
+        kw['size'] = (750, 520)
         super().__init__( *args, **kw)
 
         #dictionnaire propre à l'appli
@@ -31,9 +32,24 @@ class MyFrame(xAppli.MainFrame):
         self.MakeMenuBar()
         self.Show()
         ret = self.SaisieConfig()
-        #self.ConnexionReseau()
-        #self.ConnexionLocal()
-        #self.SuiviActivite()
+        self.GestMenu(True)
+
+    def GestMenu(self, etat):
+        # grise les boutons si pas d'accès à la base
+        if hasattr(self,"panelAccueil"):
+            self.panelAccueil.EnableBoutons(etat)
+        try:
+            for numMenu in range(1,4):
+                self.menu.EnableTop(numMenu, etat)
+
+            # grise ou dégrise les options du menu selon l'identification
+            if self.dictUser :
+                etat = True
+            else: etat = False
+            for numMenu in range(2,4):
+                self.menu.EnableTop(numMenu, etat)
+        except: pass
+
 
 class MyApp(wx.App):
     def OnInit(self):

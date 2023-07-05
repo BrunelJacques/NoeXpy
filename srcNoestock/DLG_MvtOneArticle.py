@@ -78,10 +78,10 @@ MATRICE_CALCULS = {
                      'help': "Prix moyen des achats, %s" % HELP_CALCULS,
                      'ctrl': CTRL_calcul,
      },
-    {'name': 'pxMvts', 'genre': 'anyctrl','label': 'PxUnit théorique Stock',
+    {'name': 'pxAchatsConso', 'genre': 'anyctrl','label': 'PxUnit achats consommés',
                     'txtSize': 140,
                     'ctrlMaxSize':(250,35),
-                    'help': "Prix Théorique FIFO du stock restant, selon les derniers achats" ,
+                    'help': "Prix moyen des achats qui ont été consommés" ,
                     'ctrl': CTRL_calcul,},
     ],
 ("param_calc1", "Mouvements"): [
@@ -255,14 +255,15 @@ def MAJ_calculs(dlg):
     # calcul prix d'achat moyen pour stock
     pxAchatsStock = nust.PxAchatsStock(lstChecked)
     dlg.pnlCalculs.GetPnlCtrl('pxAchatsStock').SetValue(pxAchatsStock)
-    
+    pxAchatsConso = nust.PxAchatsConso(lstChecked)
+    dlg.pnlCalculs.GetPnlCtrl('pxAchatsConso').SetValue(pxAchatsConso)
+
     # calcul prix du stock
     if qteMvts != 0:
         pxMvts = mttMvts / qteMvts
     else:
         pxMvts = 0.0
     erreur = mttStock - mttMvts
-    dlg.pnlCalculs.GetPnlCtrl('pxMvts').SetValue(pxMvts)
     dlg.pnlCalculs.GetPnlCtrl('mttStock').SetValue(mttStock)
 
     # gestion de la couleur de l'erreur

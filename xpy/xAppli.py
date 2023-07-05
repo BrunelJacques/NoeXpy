@@ -128,7 +128,7 @@ class MainFrame(wx.Frame):
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.panelAccueil = xaccueil.Panel_Accueil(self,pnlTitre=pnlTitre,pnlBtnActions=pnlBtnActions)
         sizer.Add(self.panelAccueil, 0, wx.EXPAND, 0)
-        self.SetSizerAndFit(sizer)
+        self.SetSizer(sizer)
 
     def MakeMenuBar(self):
         # Construction de la barre de menu à partir du fichier menu.py présent dans les sources de l'appli
