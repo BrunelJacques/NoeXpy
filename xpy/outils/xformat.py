@@ -804,7 +804,7 @@ def BorneMois(dte,fin=True, typeOut=datetime.date):
     if not typeOut in (datetime.date,datetime.time,wx.DateTime,str):
         typeOut = None
 
-    # traitement de sortien si typeOut a été précisé
+    # traitement de sortie si typeOut a été précisé
     def formatOut(wxdte):
         if typeOut == datetime.date:
             return WxdateToDatetime(wxdte)
@@ -839,6 +839,8 @@ def BorneMois(dte,fin=True, typeOut=datetime.date):
     elif isinstance(dte,str):
         dte = dte.strip()
         wxdte = DateSqlToWxdate(FmtDate(dte))
+        if not wxdte:
+            return None
         if typeOut != str:
             return formatOut(action(wxdte))
         #  sans précision sur le retour : fait dans le format str initial
@@ -861,7 +863,6 @@ def BorneMois(dte,fin=True, typeOut=datetime.date):
                 raise Exception(msg)
 
     # transformation en sortie
-
     return dte
 
 def FinDeMois(date,typeOut=datetime.date):

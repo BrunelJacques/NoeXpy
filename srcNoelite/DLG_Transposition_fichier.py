@@ -77,37 +77,41 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table):
         for champ in champsOut:
             valeur = None
             # traitements spécifiques selon destination
-            if champ    == 'date':
+            if champ == 'date':
                 if 'date' in champsIn:
-                    valeur = xformat.FinDeMois(ligne[champsIn.index(champ)])
+                    if dicParams['typeCB']:
+                        valeur = xformat.FinDeMois(ligne[champsIn.index(champ)])
+                    else:
+                        valeur = ligne[champsIn.index(champ)]
             elif champ == 'noPiece':
                     valeur = noPiece
             elif champ == 'montant':
                     valeur = xformat.NoLettre(ligne[champsIn.index(champ)])
             elif champ  == 'libelle':
-                # ajout du début de date dans le libellé
                 if 'date' in champsIn and 'libelle' in champsIn:
-                    dte = ligne[champsIn.index('date')]
-                    if isinstance(dte,(datetime.date,datetime.datetime)):
-                        prefixe = "%02d/%02d"%(dte.day,dte.month)
+                    if dicParams['typeCB']:
+                        # ajout du début de date dans le libellé
+                        dte = ligne[champsIn.index('date')]
+                        if dte:
+                            if isinstance(dte,(datetime.date,datetime.datetime)):
+                                prefixe = "%02d/%02d"%(dte.day,dte.month)
+                            else:
+                                prefixe = dte.strip()[:lgPrefixe-1]+' '
+                            if ligne[champsIn.index('libelle')]:
+                                valeur = prefixe + ligne[champsIn.index('libelle')]
+                            else:
+                                ko = True
+                                break
                     else:
-                        prefixe = dte.strip()[:lgPrefixe-1]+' '
-                    if ligne[champsIn.index('libelle')]:
-                        valeur = prefixe + ligne[champsIn.index('libelle')]
-                    else:
-                        mess = "Problème de format d'import\n\n"
-                        mess += "Pas de libellé en colonne '%d'" % champsIn.index('libelle')
-                        mess += "\nLigne: %s" % str(ligne)
-                        wx.MessageBox(mess,"Interruption")
-                        ko = True
-                        break
+                        valeur = ligne[champsIn.index('libelle')]
             # récupération des champs homonymes
             elif champ in champsIn:
                 valeur = ligne[champsIn.index(champ)]
             ligneOut.append(valeur)
-        if compta:
-            enrichiLigne(ligneOut)
-        lstOut.append(ligneOut)
+        if not ko:
+            if compta:
+                enrichiLigne(ligneOut)
+            lstOut.append(ligneOut)
     return lstOut
 
 # formats possibles des fichiers en entrées, utiliser les mêmes codes des champs pour les 'UtilCompta.ComposeFuncExp'
@@ -165,9 +169,12 @@ MATRICE_PARAMS = {
 # description des boutons en pied d'écran et de leurs actions
 def GetBoutons(dlg):
     return  [
-                {'name': 'btnImp', 'label': "Importer\nfichier",
-                    'help': "Cliquez ici pour lancer l'importation du fichier selon les paramètres que vous avez défini",
-                    'size': (120, 35), 'image': wx.ART_UNDO,'onBtn':dlg.OnImporter},
+        {'name': 'btnImp', 'label': "Importer\nRelevé",
+         'help': "Cliquez ici pour lancer l'importation du fichier date = date comptable",
+         'size': (120, 35), 'image': wx.ART_UNDO, 'onBtn': dlg.OnImporterNoCB},
+        {'name': 'btnImp', 'label': "Importer\nCB fin mois",
+                    'help': "Cliquez ici pour lancer l'importation du fichier date = fin de mois",
+                    'size': (120, 35), 'image': wx.ART_UNDO,'onBtn':dlg.OnImporterCB},
                 {'name': 'btnExp', 'label': "Exporter\nfichier",
                     'help': "Cliquez ici pour lancer l'exportation du fichier selon les paramètres que vous avez défini",
                     'size': (120, 35), 'image': wx.ART_REDO,'onBtn':dlg.OnExporter},
@@ -333,8 +340,9 @@ class PNL_pied(xGTE.PNL_pied):
 
 class Dialog(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self):
-        super().__init__(None,name='DLG_Transposition_fichier',size=(1200,700))
+    def __init__(self,parent):
+        super().__init__(parent,name='DLG_Transposition_fichier',size=(1200,700))
+        self.typeCB = False
         self.ctrlOlv = None
         self.txtInfo =  "Non connecté à une compta"
         self.dicOlv = self.GetParamsOlv()
@@ -448,8 +456,10 @@ class Dialog(xusp.DLG_vide):
     def GetCompta(self):
         dic = self.pnlParams.GetValues()
         nomCompta = dic['p_compta']['compta'].lower()
-        compta = UTILS_Compta.Compta(self, nomCompta=nomCompta)
-        if not compta.db or compta.db.erreur: compta = None
+        compta = None
+        if self.parent and self.parent.dictUser:
+            compta = UTILS_Compta.Compta(self, nomCompta=nomCompta)
+            if not compta.db or compta.db.erreur: compta = None
         if not compta:
             txtInfo = "Echec d'accès à la compta associée à %s!!!"%nomCompta
             image = wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16))
@@ -481,6 +491,7 @@ class Dialog(xusp.DLG_vide):
 
     def OnImporter(self,event):
         dicParams = self.pnlParams.GetValues()
+        dicParams['typeCB'] = self.typeCB
         formatIn = dicParams['fichiers']['formatin']
         self.table = FORMATS_IMPORT[formatIn]['table']
         entrees = self.GetDonneesIn()
@@ -489,6 +500,14 @@ class Dialog(xusp.DLG_vide):
         self.ctrlOlv.lstDonnees = FORMATS_IMPORT[formatIn]['fonction'](dicParams,entrees,
                                 self.ctrlOlv.lstCodesColonnes,self.compta,self.table)
         self.InitOlv()
+
+    def OnImporterCB(self, event):
+        self.typeCB = True
+        self.OnImporter(event)
+
+    def OnImporterNoCB(self, event):
+        self.typeCB = False
+        self.OnImporter(event)
 
     def OnExporter(self,event):
         nbl = len(self.ctrlOlv.innerList)
@@ -557,6 +576,6 @@ if __name__ == '__main__':
     import os
     app = wx.App(0)
     os.chdir("..")
-    dlg = Dialog()
+    dlg = Dialog(parent=None)
     dlg.ShowModal()
     app.MainLoop()

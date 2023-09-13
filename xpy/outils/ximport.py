@@ -5,7 +5,16 @@ import xlrd
 import datetime
 from openpyxl import load_workbook
 
+def IsFile(nomFichier):
+    if os.path.isfile(nomFichier):
+        return True
+    else:
+        wx.MessageBox("Fichier%s : non présent!"%(nomFichier))
+        return False
+
 def GetFichierXls(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):
+    if not IsFile(nomFichier):
+        return []
     # pour anciennes versions de fichiers excel jusqu'à 2003
     """
     Si on veut accéder aux informations de formattage des cellules, il faut faire :
@@ -47,6 +56,8 @@ def GetFichierXls(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):
     return lstDonnees
 
 def GetFichierXlsx(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):
+    if not IsFile(nomFichier):
+        return []
     #get handle on existing file
     wk = load_workbook(filename=nomFichier)
     #get active worksheet or wk['some_worksheet']
@@ -78,6 +89,8 @@ def GetFichierXlsx(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):
     return lstDonnees
 
 def GetFichierCsv(nomFichier,delimiter="\t",detect=True):
+    if not IsFile(nomFichier):
+        return []
     if platform.system() == "Windows":
         nomFichier = nomFichier.replace("/", "\\")
     # ouverture du fichier en lecture seule

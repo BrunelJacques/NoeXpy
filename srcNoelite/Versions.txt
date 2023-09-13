@@ -1,3 +1,8 @@
+version 1.2.7.18 (13/09/2023)
+    - transposition fichier: import sans date fin de mois
+    - adaptations pour absence de connection compta
+    - test de présence du fichier en import
+
 version 1.2.7.17 (05/07/2023)
 - adaptations pour wxPython 4.2
 

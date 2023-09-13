@@ -119,7 +119,7 @@ class MENU():
         ret = xUTILS_Identification.AfficheUsers(self.parent)
 
     def On_transpose(self,event):
-        dlg = DLG_Transposition_fichier.Dialog()
+        dlg = DLG_Transposition_fichier.Dialog(parent=self.parent)
         dlg.ShowModal()
 
     def On_kmSaisie(self,event):
