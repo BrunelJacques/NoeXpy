@@ -1,4 +1,5 @@
 # Recueil de fonctions diverses pour OLV ou autres
+import decimal
 
 import wx
 import datetime
@@ -656,6 +657,16 @@ def TextToDict(txt):
     return dic
 
 # Diverses fonctions-------------------------------------------------------------------------------------------
+def ToFloat(valeur):
+    # transorme n'importe quelle entrée en float
+    nbre = 0.0
+    if isinstance(valeur,str):
+        val = NoLettre(valeur).strip()
+        if len(val)>0:
+            nbre = float(val)
+    elif isinstance(valeur,(float,int,bool,decimal.Decimal)):
+        nbre = float(valeur)
+    return nbre
 
 def Nz(param):
     # fonction Null devient zero, et extrait les chiffres d'une chaîne pour faire un nombre

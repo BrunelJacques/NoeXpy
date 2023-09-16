@@ -66,9 +66,30 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table):
         else:
             ligne[ixAppel] = compta.filtreTest
 
+    def hasMontant(ligne):
+        # vérifie la présence d'un montant dans au moins un champ attendu en numérique
+        lstIxChamps = []
+        for champ in champsIn:
+            if champ in ('montant','debit','-debit','credit'):
+                lstIxChamps.append(champsIn.index(champ))
+        ok = False
+        for ix in lstIxChamps:
+            try:
+                float(ligne[ix])
+                ok = True
+            except:
+                pass
+        return ok
+
+    def addMontant(old,ajout,sens=+1,typeRetour=float):
+        new = xformat.ToFloat(old) + (xformat.ToFloat(ajout) * sens)
+        return typeRetour(new)
+
     # déroulé du fichier entrée
     ko = None
     for ligne in donnees[nblent:]:
+        if not hasMontant(ligne):
+            continue
         if ko: break
         if len(champsIn) > len(ligne):
             # ligne batarde ignorée
@@ -86,7 +107,14 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table):
             elif champ == 'noPiece':
                     valeur = noPiece
             elif champ == 'montant':
+                if 'montant' in champsIn:
                     valeur = xformat.NoLettre(ligne[champsIn.index(champ)])
+                if '-debit' in champsIn:
+                    valeur = addMontant(valeur,ligne[champsIn.index('-debit')],+1)
+                if 'debit' in champsIn:
+                    valeur = addMontant(valeur,ligne[champsIn.index('debit')],-1)
+                if 'credit' in champsIn:
+                    valeur = addMontant(valeur,ligne[champsIn.index('credit')],+1)
             elif champ  == 'libelle':
                 if 'date' in champsIn and 'libelle' in champsIn:
                     if dicParams['typeCB']:
@@ -124,6 +152,11 @@ FORMATS_IMPORT = {"LCL carte":{ 'champs':['date','montant','mode',None,'libelle'
                       'champs': ['date','libelle','montant'],
                       'lignesentete': 0,
                       'fonction': ComposeFuncImp,
+                      'table': 'fournisseurs'},
+                  "Date,Lib,-Débit,Crédit": {
+                      'champs': ['date', 'libelle', '-debit','credit'],
+                      'lignesentete': 0,
+                      'fonction': ComposeFuncImp,
                       'table': 'fournisseurs'}
                   }
 
@@ -135,7 +168,7 @@ MATRICE_PARAMS = {
     {'name': 'formatin', 'genre': 'Enum', 'label': 'Format import',
                     'help': "Le choix est limité par la programmation", 'value':0,
                     'values':[x for x in FORMATS_IMPORT.keys()],
-                    'size':(250,30)},
+                    'size':(350,30)},
     ],
 ("p_compta", "Compta en ligne"): [
     {'name': 'compta', 'genre': 'Combo', 'label': 'Compta','ctrlAction':'OnCtrlCompta',
