@@ -1,4 +1,7 @@
-version 1.2.7.18 (13/09/2023)
+version 1.2.7.19 (16/09/2023)
+    - transposition fichier: Nouveau format import débit/crédit
+
+ version 1.2.7.18 (13/09/2023)
     - transposition fichier: import sans date fin de mois
     - adaptations pour absence de connection compta
     - test de présence du fichier en import
