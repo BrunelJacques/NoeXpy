@@ -1,3 +1,6 @@
+version 1.2.7.20 (18/09/2023)
+    - transposition fichier: Meilleur filtrage de l'import
+
 version 1.2.7.19 (16/09/2023)
     - transposition fichier: Nouveau format import débit/crédit
 

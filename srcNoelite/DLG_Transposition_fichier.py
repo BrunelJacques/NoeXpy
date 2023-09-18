@@ -75,7 +75,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table):
         ok = False
         for ix in lstIxChamps:
             try:
-                float(ligne[ix])
+                xformat.ToFloat(ligne[ix])
                 ok = True
             except:
                 pass
