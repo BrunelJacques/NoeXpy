@@ -586,10 +586,12 @@ class DLG(xGTE.DLG_tableau):
             wx.MessageBox("Veuillez sélectionner un article...","pas de sélection",
                           style= wx.ICON_INFORMATION)
             return
+        id = self.ctrlOlv.innerList.index(selection)
         dlg = DLG_MvtOneArticle.DLG(article=selection.IDarticle)
         dlg.ShowModal()
         self.oldParams = None
         self.GetDonnees()
+        self.ctrlOlv.MAJ(id)
 
     def OnImprimer(self,event):
         self.ctrlOlv.Apercu(None)

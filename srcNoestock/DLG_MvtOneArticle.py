@@ -144,17 +144,17 @@ def GetOlvColonnes(dlg):
             ColumnDefn("Date Mvt", 'left', 80, 'date',valueSetter=datetime.date(1900,1,1),
                        isEditable=False, isSpaceFilling=False,
                        stringConverter=xformat.FmtDate),
-            ColumnDefn("Mouvement", 'left', 80, 'origine',
+            ColumnDefn("Origine", 'left', 50, 'origine',
                                 cellEditorCreator=ChoiceEditor,isEditable=False),
-            ColumnDefn("Repas", 'left', 60, 'repas', valueSetter="",
+            ColumnDefn("Repas", 'left', 40, 'repas', valueSetter="",
                                 cellEditorCreator=ChoiceEditor,isEditable=False),
             ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",
                        isSpaceFilling=True, isEditable=False),
-            ColumnDefn("Quantité", 'right', 60, 'qte', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Qté", 'right', 50, 'qte', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtQte),
             ColumnDefn(titlePrix, 'right', 60, 'pxUn', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal),
-            ColumnDefn("Coût Ration", 'right', 70, 'pxRation', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("P.ration", 'right', 50, 'pxRation', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Nbre Rations", 'right', 70, 'nbRations', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
@@ -164,13 +164,15 @@ def GetOlvColonnes(dlg):
                        stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Cumul Qté", 'right', 70, 'cumQte', isSpaceFilling=False, valueSetter=0.0,
                        stringConverter=xformat.FmtDecimal, isEditable=False),
+            ColumnDefn("Cumul PU", 'right', 40, 'cumPu', isSpaceFilling=False, valueSetter=0.0,
+                       stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Saisie", 'left', 80, 'dateSaisie', isSpaceFilling=False,
                        stringConverter=xformat.FmtDate, isEditable=False),
-            ColumnDefn("Ordi", 'left', 100, 'ordi', valueSetter="",isSpaceFilling=False,
+            ColumnDefn("Ordi", 'left', 120, 'ordi', valueSetter="",isSpaceFilling=False,
                        isEditable=False),
-            ColumnDefn("Prix Stock", 'right', 50, 'pxMoyen', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Prix Stock", 'right', 40, 'pxMoyen', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Qté Stock", 'right', 50, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Qté Stock", 'right', 60, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
                    stringConverter=xformat.FmtDecimal, isEditable=False),
             ]
     return lstCol
@@ -245,6 +247,9 @@ def MAJ_calculs(dlg):
         cumMtt += track.qte * track.pxUn
         track.cumQte = cumQte
         track.cumMtt = cumMtt
+        if cumQte != 0:
+            track.cumPu = cumMtt / cumQte
+        else: track.cumPu = 0.0
         qteMvts += track.qte
         mttMvts += track.qte * track.pxUn
         mttStock += track.qte * track.pxMoyen
@@ -592,6 +597,6 @@ class DLG(dlgMvts.DLG):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(zzarticle="BANANES KG")
+    dlg = DLG(article="CHOC TABL DIVERS")
     dlg.ShowModal()
     app.MainLoop()

@@ -101,7 +101,7 @@ def GetDateLastInventaire(db,dteAnalyse=None):
     llInventaire = [[None,],]
     if retour == "ok":
         llInventaire = db.ResultatReq()
-    return llInventaire[0][0]
+    return llInventaire[-1][0]
 
 def GetLastInventaire(dteAnalyse=None,lstChamps=None,oneArticle=None):
     # return: lignes de l'inventaire précédant dteAnalyse ou seulement une ligne article
@@ -578,8 +578,8 @@ def MouvementsPosterieurs(dlg):
     recordset = ()
     if retour == "ok":
         recordset = db.ResultatReq()
-    if recordset[0][0] > 0:
-        return True
+        if recordset[0][0] > 0:
+            return True
     return False
 
 def GetMvtsByDate(db, dParams=None):
