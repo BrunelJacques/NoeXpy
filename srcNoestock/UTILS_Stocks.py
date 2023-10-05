@@ -252,18 +252,21 @@ def PxAchatsStock(modelObjects):
     # retourne px moyens achetés pour sorties et stock FIFO dans modelObjects
     lstArticles = []
     dQtesFin = {}
-    
-    dQtesConso = {}
     # calcul des quantités en stock et articles présents
+    ix = 0
     for track in modelObjects:
         if track.IDarticle not in lstArticles:
             lstArticles.append(track.IDarticle)
             dQtesFin[track.IDarticle] = 0
         dQtesFin[track.IDarticle] += Nz(track.qte)
+
         if isinstance(track.date,str):
                 track.date = xformat.DateSqlToDatetime(track.date)
         if not track.date:
                 track.date = datetime.date(2000,1,1)
+        if not hasattr(track,'IDmouvement'):
+                ix += 1
+                track.IDmouvement = ix
         if not isinstance(track.date,datetime.date):
             print(track.date,type(track.date))
     lastArticle = None
@@ -274,7 +277,8 @@ def PxAchatsStock(modelObjects):
     mttAchatsArt = 0.0
 
     # recherche des prix d'achat sur liste triée dates décroissantes après articles
-    for track in sorted(modelObjects, key=lambda trk: (trk.IDarticle,trk.date),reverse=True):
+    fnSort = lambda trk: (trk.IDarticle,trk.date,trk.IDmouvement)
+    for track in sorted(modelObjects, key=fnSort,reverse=True):
         article = track.IDarticle
         if not lastArticle:
             # skip premier item
@@ -304,110 +308,9 @@ def PxAchatsStock(modelObjects):
         prixMoyen =  mttAchatsTous / qteAchatsTous
     else: prixMoyen = None
     return prixMoyen
-
-def PxAchatsConso(modelObjects):
-    # retourne px moyen des consommations dans modelObjects
-    lstArticles = []
-    dQtesFin = {}
-    # calcul des quantités en stock et articles présents
-    for track in modelObjects:
-        if track.IDarticle not in lstArticles:
-            lstArticles.append(track.IDarticle)
-            dQtesFin[track.IDarticle] = 0
-        dQtesFin[track.IDarticle] += Nz(track.qte)
-        if isinstance(track.date,str):
-                track.date = xformat.DateSqlToDatetime(track.date)
-        if not track.date:
-                track.date = datetime.date(2000,1,1)
-        if not isinstance(track.date,datetime.date):
-            print(track.date,type(track.date))
-    lastArticle = None
-    qteAchatsTous = 0.0
-    mttAchatsTous = 0.0
-    finArticle = False
-    qteAchatsArt = 0.0
-    mttAchatsArt = 0.0
-
-    # recherche des prix d'achat sur liste triée dates décroissantes après articles
-    for track in sorted(modelObjects, key=lambda trk: (trk.IDarticle,trk.date),reverse=True):
-        article = track.IDarticle
-        if not lastArticle:
-            # skip premier item
-            lastArticle = article
-        if track.origine not in ('achat','inventaire'):
-            continue
-        # rupture article,
-        if lastArticle != article:
-            finArticle = False
-            qteAchatsArt = 0.0
-            mttAchatsArt = 0.0
-        if finArticle:
-            continue # jusqu'à rupture
-        qteAchat = Nz(track.qte)
-        prixUnit = Nz(track.pxUn)
-        qteAchat = min(dQtesFin[article],qteAchat)
-        qteAchatsTous += qteAchat
-        mttAchatsTous += qteAchat * prixUnit
-        qteAchatsArt += qteAchat
-        mttAchatsArt += qteAchat * prixUnit
-        dQtesFin[article] -= qteAchat
-        if dQtesFin[article] < 0.0001:
-            #provoque la rupture en sautant la suite de l'article
-            finArticle = True
-
-    if Nz(qteAchatsTous) != 0:
-        prixMoyen =  mttAchatsTous / qteAchatsTous
-    else: prixMoyen = None
-    return prixMoyen
-
-def PxUnitInventaire(db, IDarticle, qteStock, dteAnalyse):
-    # Appelle les mouvements retourne le prix FIFO du stock restant
-    if Nz(qteStock) == 0:
-        return None
-    req = """    
-        SELECT date, qte, prixUnit
-        FROM stMouvements
-        WHERE (IDarticle = '%s') AND (origine = 'achat')
-        ORDER BY date DESC
-        ;""" % IDarticle
-
-    mess = "Echec UTILS_Stocks.PxUnitInventaire"
-    ret = db.ExecuterReq(req, mess=mess, affichError=True)
-    if ret != 'ok': return None
-    recordset = db.ResultatReq()
-    pxUn = None
-    cumQteAch = 0.0
-    cumMttAch = 0.0
-    achatsLater = False
-    qteStockW = qteStock
-    for dte, qteAchat, prixUnit in recordset:
-        if dte > dteAnalyse:
-            achatsLater = True
-            continue
-        qteAchat = Nz(qteAchat)
-        prixUnit = Nz(prixUnit)
-        qteAchat = min(qteStockW,qteAchat)
-        cumQteAch += qteAchat
-        cumMttAch += qteAchat * prixUnit
-        qteStockW -= qteAchat
-        if qteStockW < 0.0001:
-            break
-    if cumQteAch > 0.0:
-        pxUn = round(cumMttAch / cumQteAch,6)
-        if not achatsLater:
-            # enregistrement du calcul dans le prix de l'article
-            ltModifs = [('prixMoyen', pxUn),
-                        ('ordi', 'Calc_inventaire'),
-                        ('dateSaisie', xformat.DatetimeToStr(datetime.date.today())) ]
-            db.ReqMAJ('stArticles',ltModifs,'IDarticle',IDarticle,
-                      mess = "UTILS_Stocks.PxUnitInventaire",
-                      IDestChaine = True)
-    # stock fin supérieurs aux achat: c'est que des achats abtérieurs ont été supprimés ou odIn superflus
-    return pxUn
 
 def CalculeInventaire(dlg, dParams):
     # nouveau calcul
-    timedeb = datetime.datetime.now()
     db = dlg.db
 
     untilDate = dParams['date']
@@ -491,9 +394,9 @@ def CalculeInventaire(dlg, dParams):
             qteMvts += track.qte
             mttMvts += (track.qte * track.pxUn)
         deltaValoAchats= abs(mttMvts - (pxUn * qteMvts))
+        #if key.startswith("GLACES BACS 2"):
+        #    print('compose ligne deltavalo ',deltaValoAchats)
 
-        #if key.startswith("JAMBON BL"):
-        #    print(track)
         # controle article
         if majArticles:
             pbQteArt = True
@@ -1008,7 +911,10 @@ def MAJarticle(db,dlg,track):
         oldQteStock = dicArt['qteStock']
         dicArt['qteStock'] += deltaQte
         # calcul du nouveau prix moyen
-        if not dicArt or Nz(dicArt['prixMoyen']) <= 0:
+        if dicArt and dlg.sens == 'article':
+            # cas des corrections oMvtOneArticle, on recalcule
+            prixMoyen = PxAchatsStock(dlg.ctrlOlv.modelObjects)
+        elif not dicArt or Nz(dicArt['prixMoyen']) <= 0:
             # non renseigné en double, pas de moyenne nécessaire
             prixMoyen = abs(track.prixTTC)
         elif dlg.sens == 'sorties' or track.qte < 0:
@@ -1089,6 +995,8 @@ def MAJarticle(db,dlg,track):
         else: track.dicMvt = newDicMvt
         track.dicArticle.update(dicArticle)
         track.nbRations = track.qte * dicArticle['rations']
+    if 'DLG_MvtOneArticle' in dlg.Name:
+        dlg.ctrlOlv.MAJ_calculs(dlg)
 
 def RenameArticle(db,dlg,oldID,newID):
     lstDonnees = [('IDarticle',newID)]

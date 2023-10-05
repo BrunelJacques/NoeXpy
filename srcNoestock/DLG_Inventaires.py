@@ -302,6 +302,8 @@ def RowFormatter(listItem, track):
     #if track.IDarticle == "AROME MAGGI BT":
     #    test
     anomalie = None
+    if track.IDarticle.startswith("GLACES BACS 2"):
+        print('rowformateur', track.deltaValo)
     if track.deltaQte > 0:
         anomalie = True
     if track.deltaValo and track.deltaValo > 5:

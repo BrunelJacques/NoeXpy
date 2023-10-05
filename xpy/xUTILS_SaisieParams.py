@@ -1348,6 +1348,7 @@ class DLG_vide(wx.Dialog):
         self.kwValideSaisie = kwds.pop('kwValideSaisie',None)
 
         super().__init__(None, wx.ID_ANY, *args, title=title, style=style, pos=pos, **kwds)
+        self.Name = title
         self.marge = marge
         self.parent = parent
         if parent:

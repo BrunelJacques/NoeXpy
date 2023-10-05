@@ -78,7 +78,7 @@ MATRICE_CALCULS = {
                      'help': "Prix moyen des achats, %s" % HELP_CALCULS,
                      'ctrl': CTRL_calcul,
      },
-    {'name': 'pxAchatsConso', 'genre': 'anyctrl','label': 'PxUnit achats consommés',
+    {'name': 'pxMoyenStock', 'genre': 'anyctrl','label': 'PxMoyen calculé',
                     'txtSize': 140,
                     'ctrlMaxSize':(250,35),
                     'help': "Prix moyen des achats qui ont été consommés" ,
@@ -164,7 +164,7 @@ def GetOlvColonnes(dlg):
                        stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Cumul Qté", 'right', 70, 'cumQte', isSpaceFilling=False, valueSetter=0.0,
                        stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Cumul PU", 'right', 40, 'cumPu', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Cumul PU", 'right', 50, 'cumPu', isSpaceFilling=False, valueSetter=0.0,
                        stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Saisie", 'left', 80, 'dateSaisie', isSpaceFilling=False,
                        stringConverter=xformat.FmtDate, isEditable=False),
@@ -253,22 +253,16 @@ def MAJ_calculs(dlg):
         qteMvts += track.qte
         mttMvts += track.qte * track.pxUn
         mttStock += track.qte * track.pxMoyen
-        if track.origine == 'achat':
-            qteAchats += track.qte
-            mttAchats += track.qte * track.pxUn
 
     # calcul prix d'achat moyen pour stock
     pxAchatsStock = nust.PxAchatsStock(lstChecked)
     dlg.pnlCalculs.GetPnlCtrl('pxAchatsStock').SetValue(pxAchatsStock)
-    pxAchatsConso = nust.PxAchatsConso(lstChecked)
-    dlg.pnlCalculs.GetPnlCtrl('pxAchatsConso').SetValue(pxAchatsConso)
-
-    # calcul prix du stock
+    pxMoyenStock = 0.0
     if qteMvts != 0:
-        pxMvts = mttMvts / qteMvts
-    else:
-        pxMvts = 0.0
-    erreur = mttStock - mttMvts
+        pxMoyenStock = mttMvts / qteMvts
+    dlg.pnlCalculs.GetPnlCtrl('pxMoyenStock').SetValue(pxMoyenStock)
+
+    erreur = (Nz(pxAchatsStock) * Nz(qteMvts)) - Nz(mttMvts)
     dlg.pnlCalculs.GetPnlCtrl('mttStock').SetValue(mttStock)
 
     # gestion de la couleur de l'erreur
@@ -397,6 +391,8 @@ class DLG(dlgMvts.DLG):
         listArbo=os.path.abspath(__file__).split("\\")
         kwds['title'] = listArbo[-1] + "/" + self.__class__.__name__
         super().__init__(**kwds)
+        self.Name = 'DLG_MvtOneArticle.DLG'
+
 
     def Init(self):
         self.lanceur = self
@@ -597,6 +593,6 @@ class DLG(dlgMvts.DLG):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(article="CHOC TABL DIVERS")
+    dlg = DLG(article="GLACES BACS 2L5")
     dlg.ShowModal()
     app.MainLoop()
