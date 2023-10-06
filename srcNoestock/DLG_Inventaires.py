@@ -299,11 +299,7 @@ def ValideLigne(dlg,track):
     return
 
 def RowFormatter(listItem, track):
-    #if track.IDarticle == "AROME MAGGI BT":
-    #    test
     anomalie = None
-    if track.IDarticle.startswith("GLACES BACS 2"):
-        print('rowformateur', track.deltaValo)
     if track.deltaQte > 0:
         anomalie = True
     if track.deltaValo and track.deltaValo > 5:
@@ -591,7 +587,13 @@ class DLG(xGTE.DLG_tableau):
         id = self.ctrlOlv.innerList.index(selection)
         dlg = DLG_MvtOneArticle.DLG(article=selection.IDarticle)
         dlg.ShowModal()
+        dlg.Destroy()
         self.oldParams = None
+        del self.db.cursor
+        self.db.cursor = self.db.connexion.cursor(buffered=False)
+        req = """FLUSH  TABLES stMouvements, stArticles;"""
+        ret = self.db.ExecuterReq(req, mess='OnOneArticle flush')
+        if ret != 'ok': return []
         self.GetDonnees()
         self.ctrlOlv.MAJ(id)
 

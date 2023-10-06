@@ -394,8 +394,6 @@ def CalculeInventaire(dlg, dParams):
             qteMvts += track.qte
             mttMvts += (track.qte * track.pxUn)
         deltaValoAchats= abs(mttMvts - (pxUn * qteMvts))
-        #if key.startswith("GLACES BACS 2"):
-        #    print('compose ligne deltavalo ',deltaValoAchats)
 
         # controle article
         if majArticles:

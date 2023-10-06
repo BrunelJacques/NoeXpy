@@ -229,6 +229,11 @@ def ValideLigne(dlg, track):
     else:
         track.messageRefus = ""
 
+def RowFormatter(listItem, track):
+    if track.origine in ('inventaire', 'achat'):
+        # achats en fond jaune
+        listItem.SetBackgroundColour(wx.Colour(255, 245, 160))
+
 def MAJ_calculs(dlg):
     # calcul des zones totaux en bas d'écran, cumuls progressifs rafraîchis
     ctrlOlv = dlg.ctrlOlv
@@ -462,6 +467,7 @@ class DLG(dlgMvts.DLG):
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
         self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
         self.ctrlOlv.InitObjectListView()
+        self.ctrlOlv.rowFormatter = RowFormatter
         self.Refresh()
 
     def ValideParams(self):
@@ -593,6 +599,6 @@ class DLG(dlgMvts.DLG):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(article="GLACES BACS 2L5")
+    dlg = DLG(article="HUILE TOURNESOL")
     dlg.ShowModal()
     app.MainLoop()
