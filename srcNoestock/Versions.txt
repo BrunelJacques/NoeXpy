@@ -1,3 +1,6 @@
+Version 1.1.2.30 (20/10/2023)
+- Saisie des mouvements, plus de date par défaut un message rappelle la nécessité de saisir
+
 Version 1.1.2.29 (06/10/2023)
 - Inventaires et mouvements un article calculs revus
 

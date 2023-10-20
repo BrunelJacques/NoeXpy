@@ -417,10 +417,15 @@ def DateFrToDatetime(datefr):
     # Conversion de date française jj/mm/aaaa (ou déjà en datetime) en datetime
     if datefr == None or datefr == '':
         return None
-    elif isinstance(datefr, str) and len(datefr) >= 10:
-        return datetime.date(int(datefr[6:10]), int(datefr[3:5]), int(datefr[:2]))
     elif isinstance(datefr,datetime.date):
         return datefr
+    elif isinstance(datefr, str) and len(datefr) >= 10:
+        try:
+            return datetime.date(int(datefr[6:10]), int(datefr[3:5]), int(datefr[:2]))
+        except:
+            wx.MessageBox("La date saisie est incorrecte")
+            return None
+
 
 def WxDateToStr(dte,iso=False):
     # Conversion wx.datetime en chaîne

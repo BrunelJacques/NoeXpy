@@ -1253,7 +1253,7 @@ if __name__ == '__main__':
     frame_3.Show()"""
 
     frame_1 = TestFrame(title='CTRL_SaisieDate', pos=(400,300),size=(230,120))
-    frame_1.ctrl = CTRL_SaisieDateAnnuel(frame_1,label="Du:")
+    frame_1.ctrl = CTRL_SaisieDateAnnuel(frame_1,label="Ma date:")
     frame_1.Show()
 
 

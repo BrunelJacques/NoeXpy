@@ -132,7 +132,7 @@ MATRICE_PARAMS = {
                     'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
                                           "Les séparateurs ne sont pas obligatoires en saisie.",
                                           "Saisissez la date de l'entrée en stock sans séparateurs, "),
-                    'value':xformat.DatetimeToStr(datetime.date.today()),
+                    'value':"",
                     'ctrlAction': 'OnDate',
                     'ctrlMaxSize':(220,35),
                     'txtSize': 90},
@@ -177,7 +177,7 @@ MATRICE_PARAMS = {
     ],
 }
 
-def GetDicParams(dlg):
+def GetDicPnlParams(dlg):
     matrice = xformat.CopyDic(MATRICE_PARAMS)
     if dlg.sens == 'sorties':
         # force la saisie en TTC par défaut
@@ -194,6 +194,15 @@ def GetDicParams(dlg):
                 'nomfichier':"stparams",
                 'nomgroupe':"entrees",
             }
+
+def GetParams(pnl):
+    return {
+        'origine': pnl.parent.origine,
+        'date': pnl.parent.date,
+        'fournisseur': pnl.GetOneValue('fournisseur', codeBox='param2'),
+        'analytique': pnl.parent.analytique,
+        'ht_ttc': pnl.GetOneValue('ht_ttc', codeBox='param3'),
+        'sensNum': pnl.sensNum}
 
 def GetBoutons(dlg):
     return  [
@@ -316,6 +325,7 @@ def ValideParams(pnl,dParams,mute=False):
     # vérifie la saisie des paramètres
     pnlFournisseur = pnl.GetPnlCtrl('fournisseur', codebox='param2')
     pnlAnalytique = pnl.GetPnlCtrl('analytique', codebox='param2')
+    pnlDate = pnl.GetPnlCtrl('date', codebox='param1')
     valide = True
 
     # normalisation none ''
@@ -323,6 +333,18 @@ def ValideParams(pnl,dParams,mute=False):
         dParams['fournisseur'] = ''
     if dParams['analytique'] == None:
         dParams['analytique'] = ''
+
+    ddt = xformat.DateFrToDatetime(dParams['date'])
+    mess = None
+    if not dParams['date']  or dParams['date'] == "":
+        mess = "Veuillez saisir une date"
+    elif ddt == None:
+        mess = "La date saisie est incorrecte"
+    if mess:
+        if not mute:
+            wx.MessageBox(mess)
+        valide = False
+        pnlDate.SetFocus()
 
     if dParams['origine'] in ('retour','camp'):
         if (dParams['analytique'] == '00') and len(pnl.lanceur.codesAnalytiques)>1:
@@ -454,6 +476,10 @@ def CalculeLigne(dlg,track):
 def ValideLigne(dlg,track):
     # validation de la ligne de mouvement
     track.valide = True
+    track.valide = ValideParams(dlg.pnlParams,GetParams(dlg.pnlParams),True)
+    if not track.valide:
+        wx.MessageBox = "les paramètres du haut d'écran ne sont pas valides"
+        return
     track.messageRefus = "Saisie incomplète\n\n"
     CalculeLigne(dlg,track)
 
@@ -495,7 +521,7 @@ class PNL_params(xGTE.PNL_params):
     #panel de paramètres de l'application
     def __init__(self, parent, **kwds):
         self.parent = parent
-        kwds = parent.GetDicParams(parent)
+        kwds = parent.GetDicPnlParams(parent)
         super().__init__(parent, **kwds)
         if hasattr(parent,'lanceur'):
             self.lanceur = parent.lanceur
@@ -517,11 +543,7 @@ class PNL_corps(xGTE.PNL_corps):
 
     def ValideParams(self):
         pnl = self.parent.pnlParams
-        dParams = {'origine': self.parent.GetOrigine(),
-                     'date': self.parent.GetDate(),
-                     'fournisseur': pnl.GetOneValue('fournisseur',codeBox='param2'),
-                     'analytique': pnl.GetOneValue('analytique',codeBox='param2'),
-                     'ht_ttc': pnl.GetOneValue('ht_ttc',codeBox='param3')}
+        dParams = GetParams(pnl)
         ret = ValideParams(pnl,dParams)
 
     def OnCtrlV(self,track):
@@ -668,7 +690,7 @@ class DLG(xusp.DLG_vide):
         self.sensNum = 1
         if self.sens == "sorties":
             self.sensNum = -1
-        self.GetDicParams = GetDicParams
+        self.GetDicPnlParams = GetDicPnlParams
         kwds = GetDlgOptions(self)
         listArbo=os.path.abspath(__file__).split("\\")
         kwds['title'] = kwd.pop('title',listArbo[-1] + "/" + self.__class__.__name__)
@@ -680,8 +702,6 @@ class DLG(xusp.DLG_vide):
         self.origines = self.dicOlv.pop("codesOrigines",[])
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
-        if not date:
-            date = self.today
         self.date = date
         self.analytique = '00'
         self.fournisseur = ''
@@ -698,8 +718,12 @@ class DLG(xusp.DLG_vide):
             self.OnBtnAnterieur(None) # appel de la saisie du jour encours
         except:
             pass
+        self.pnlParams.sensNum = self.sensNum
         self.GetDonnees()
+        self.pnlParams.SetOneValue('date',"-")
         self.Sizer()
+        self.pnlParams.SetOneValue('date',"",'param1')
+
 
     def Init(self):
         self.db = xdb.DB()
@@ -788,6 +812,8 @@ class DLG(xusp.DLG_vide):
         return code
 
     def SetAnalytique(self,code):
+        if not code or code == '':
+            code = "00"
         value = self.valuesAnalytiques[self.codesAnalytiques.index(code)]
         self.pnlParams.SetOneValue('analytique',valeur=value,codeBox='param2')
         self.analytique = code
@@ -796,7 +822,7 @@ class DLG(xusp.DLG_vide):
         saisie = self.pnlParams.GetOneValue('date',codeBox='param1')
         saisie = xformat.FmtDate(saisie)
         self.date = xformat.DateFrToDatetime(saisie)
-        if fr: return saisie
+        if fr or not saisie: return saisie
         else: return self.date
 
     # gestion des actions ctrl
@@ -841,8 +867,9 @@ class DLG(xusp.DLG_vide):
 
     def OnDate(self,event):
         saisie = self.GetDate()
-        self.pnlParams.SetOneValue('date',valeur=xformat.FmtDate(saisie),codeBox='param1')
-        self.GetDonnees()
+        if saisie:
+            self.pnlParams.SetOneValue('date',valeur=xformat.FmtDate(saisie),codeBox='param1')
+            self.GetDonnees()
         if event: event.Skip()
 
     def OnHt_ttc(self,event):
@@ -900,14 +927,10 @@ class DLG(xusp.DLG_vide):
 
     def GetDonnees(self,dParams=None):
         if not dParams:
-            dParams = {'origine':self.origine,
-                         'date':self.date,
-                         'fournisseur':self.fournisseur,
-                         'analytique':self.analytique,
-                         'ht_ttx':self.ht_ttc,
-                         'sensNum': self.sensNum,}
-        valide = ValideParams(self.pnlParams,dParams, mute=False)
-        if not valide: return
+            dParams = GetParams(self.pnlParams)
+
+        valide = ValideParams(self.pnlParams,dParams, mute=True)
+
         idem = True
         if self.oldParams == None :
             idem = False
@@ -922,7 +945,11 @@ class DLG(xusp.DLG_vide):
 
         # appel des données de l'Olv principal à éditer
         self.oldParams = xformat.CopyDic(dParams)
-        self.ctrlOlv.lstDonnees = [x for x in GetMouvements(self,dParams)]
+
+        if valide:
+            self.ctrlOlv.lstDonnees = [x for x in GetMouvements(self,dParams)]
+        else:
+            self.ctrlOlv.lstDonnees = []
         lstNoModif = [1 for rec in  self.ctrlOlv.lstDonnees if not (rec[-1])]
 
         # présence de lignes déjà transférées compta
