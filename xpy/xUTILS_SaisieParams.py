@@ -1113,7 +1113,8 @@ class TopBoxPanel(wx.Panel):
         ok = False
         if codeBox :
             box = self.GetBox(codeBox)
-            box.SetOneValue(name,valeur)
+            if box:
+                box.SetOneValue(name,valeur)
         else:
             for box in self.lstBoxes:
                 ret = box.GetOneValue(name)

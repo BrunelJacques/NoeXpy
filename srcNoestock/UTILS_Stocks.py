@@ -98,10 +98,12 @@ def GetDateLastInventaire(db,dteAnalyse=None):
             ;""" % (whereDate)
 
     retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetDateLastInventaire')
-    llInventaire = [[None,],]
-    if retour == "ok":
-        llInventaire = db.ResultatReq()
-    return llInventaire[-1][0]
+    dteLast = '2000-01-01'
+    if retour == 'ok':
+        recordset = db.ResultatReq()
+        if len(recordset) > 0:
+            dteLast = recordset[-1][0]
+    return dteLast
 
 def GetLastInventaire(dteAnalyse=None,lstChamps=None,oneArticle=None):
     # return: lignes de l'inventaire précédant dteAnalyse ou seulement une ligne article
@@ -232,19 +234,6 @@ def GetDateLastMvt(db):
     mess = "Echec UTILS_Stocks.GetLastMouvement"
     ret = db.ExecuterReq(req, mess=mess, affichError=True)
     if ret != 'ok': return str(datetime.date.today())
-    recordset = db.ResultatReq()
-    return recordset[0][0]
-
-def GetDateLastInv(db):
-    # retourne la date du dernier inventaire stocké
-    req = """    
-        SELECT MAX(IDdate)
-        FROM stInventaires
-        ;"""
-    mess = "Echec UTILS_Stocks.GetLastInv"
-    ret = db.ExecuterReq(req, mess=mess, affichError=True)
-    if ret != 'ok':
-        return datetime.date.today() - datetime.timedelta(366)
     recordset = db.ResultatReq()
     return recordset[0][0]
 
@@ -793,7 +782,7 @@ def SqlMvtsAnte(**kwd):
                 LIMIT %d""" % LIMITSQL
     origines = dicOlv['codesOrigines']
 
-    lastInvent = GetDateLastInv(db)
+    lastInvent = GetDateLastInventaire(db)
     where = """
                 WHERE ( date >= '%s' )
                         AND (origine in ( %s ) )""" % (lastInvent, str(origines)[1:-1])

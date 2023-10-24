@@ -135,7 +135,7 @@ MATRICE_PARAMS = {
 
 INFOS = ["Double clic sur une ligne pour accéder aux effectifs du jour.\nSeul les jours ayant des sorties de stock sont affichés",]
 
-def GetDicParams():
+def GetDicPnlParams():
     return {
                 'name':"PNL_params",
                 'matrice':MATRICE_PARAMS,
@@ -256,7 +256,7 @@ class DLG(xGTR.DLG_tableau):
         listArbo=os.path.abspath(__file__).split("\\")
         kwds['title'] = listArbo[-1] + "/" + self.__class__.__name__
         kwds['autoSizer'] = False
-        kwds['dicParams'] = GetDicParams()
+        kwds['dicParams'] = GetDicPnlParams()
         #kwds['dicOlv'] = self.dicOlv
         kwds['dicPied'] = dicPied
         kwds['db'] = xdb.DB()

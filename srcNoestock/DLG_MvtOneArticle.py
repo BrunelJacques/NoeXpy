@@ -100,7 +100,7 @@ MATRICE_CALCULS = {
     ],
 }
 
-def GetDicParams(*args):
+def GetDicPnlParams(*args):
     matrice = xformat.CopyDic(MATRICE_PARAMS)
     xformat.SetItemInMatrice(matrice,'origine','values', dlgMvts.DICORIGINES['article']['values'])
     xformat.SetItemInMatrice(matrice,'origine','label', dlgMvts.DICORIGINES['article']['label'])
@@ -402,7 +402,7 @@ class DLG(dlgMvts.DLG):
     def Init(self):
         self.lanceur = self
         self.db = xdb.DB()
-        self.GetDicParams = GetDicParams
+        self.GetDicPnlParams = GetDicPnlParams
         self.pnlCalculs = PNL_calculs(self)
         # définition de l'OLV
         self.ctrlOlv = None

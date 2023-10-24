@@ -114,7 +114,7 @@ def GetDicOlv(dlg):
     'msgIfEmpty':"Aucune écriture trouvée !",
     }
 
-def GetDicParams():
+def GetDicPnlParams():
     dicBandeau = {'titre': TITRE, 'texte': INTRO, 'hauteur': 20,
                   'nomImage': "xpy/Images/48x48/Matth.png",
                   'sizeImage': (40, 40)}
@@ -150,7 +150,7 @@ class DLG_balance(xGTR.DLG_tableau):
         self.IDutilisateur = nuutil.GetIDutilisateur()
         if (not self.IDutilisateur) or not nuutil.VerificationDroitsUtilisateurActuel('facturation_factures','creer'):
             self.Destroy()
-        self.dicParams = GetDicParams()
+        self.dicParams = GetDicPnlParams()
         super().__init__(self,dicParams=self.dicParams,dicOlv=GetDicOlv(self))
 
     def OnBtnSynchro(self,event):

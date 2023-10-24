@@ -1,3 +1,6 @@
+Version 1.1.2.31 (24/10/2023)
+- Suivi des mouvements, intégration de l'évolution version 30
+
 Version 1.1.2.30 (20/10/2023)
 - Saisie des mouvements, plus de date par défaut un message rappelle la nécessité de saisir
 

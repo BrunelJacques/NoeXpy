@@ -159,7 +159,7 @@ MATRICE_PARAMS = {
     ],
 }
 
-def GetDicParams(dlg):
+def GetDicPnlParams(dlg):
     return {
                 'name':"PNL_params",
                 'matrice':MATRICE_PARAMS,
@@ -429,7 +429,7 @@ class DLG(xGTE.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,date=None,**kwd):
         kwds = GetDlgOptions(self)
-        self.dicParams = GetDicParams(self)
+        self.dicParams = GetDicPnlParams(self)
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
         self.dicOlv.update(GetOlvOptions(self))
@@ -445,7 +445,7 @@ class DLG(xGTE.DLG_tableau):
         # Propriétés de l'écran global type Dialog
         kwds = GetDlgOptions(self)
         kwds['autoSizer'] = False
-        kwds['dicParams'] = GetDicParams(self)
+        kwds['dicParams'] = GetDicPnlParams(self)
         kwds['dicOlv'] = {}
         kwds['dicPied'] = dicPied
         kwds['db'] = xdb.DB()

@@ -92,7 +92,7 @@ MATRICE_PARAMS = {
     ],
 }
 
-def GetDicParams():
+def GetDicPnlParams():
     return {
                 'name':"PNL_params",
                 'matrice':MATRICE_PARAMS,
@@ -279,7 +279,7 @@ class DLG(xGTR.DLG_tableau):
         # Propriétés de l'écran global type Dialog
         kwds = GetDlgOptions(self)
         kwds['autoSizer'] = False
-        kwds['dicParams'] = GetDicParams()
+        kwds['dicParams'] = GetDicPnlParams()
         kwds['dicOlv'] = self.dicOlv
         kwds['dicPied'] = dicPied
         kwds['db'] = xdb.DB()

@@ -20,7 +20,7 @@ import xpy.xUTILS_DB                   as xdb
 from srcNoestock                import DLG_Articles
 from xpy.ObjectListView.ObjectListView  import ColumnDefn, CellEditor
 from xpy.outils                 import xformat,xbandeau,xboutons
-from xpy.outils.xformat         import Nz
+from xpy.outils.xformat         import Nz,DateSqlToDatetime
 
 #---------------------- Matrices de paramétres -------------------------------------
 
@@ -131,7 +131,7 @@ MATRICE_PARAMS = {
     {'name': 'date', 'genre': 'Texte', 'label': "",
                     'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
                                           "Les séparateurs ne sont pas obligatoires en saisie.",
-                                          "Saisissez la date de l'entrée en stock sans séparateurs, "),
+                                          "Saisissez la date du mouvement de stock sans séparateurs, "),
                     'value':"",
                     'ctrlAction': 'OnDate',
                     'ctrlMaxSize':(220,35),
@@ -334,12 +334,13 @@ def ValideParams(pnl,dParams,mute=False):
     if dParams['analytique'] == None:
         dParams['analytique'] = ''
 
-    ddt = xformat.DateFrToDatetime(dParams['date'])
     mess = None
     if not dParams['date']  or dParams['date'] == "":
         mess = "Veuillez saisir une date"
-    elif ddt == None:
-        mess = "La date saisie est incorrecte"
+    if not mess:
+        ddt = xformat.DateFrToDatetime(dParams['date'],mute=True)
+        if ddt == None:
+            mess = "La date saisie est incorrecte"
     if mess:
         if not mute:
             wx.MessageBox(mess)
@@ -699,6 +700,7 @@ class DLG(xusp.DLG_vide):
         self.dicOlv = {'lstCodesSup': GetOlvCodesSup()}
         self.dicOlv.update(GetOlvOptions(self))
         self.dicOlv['db'] = xdb.DB()
+        self.lastInventaire = DateSqlToDatetime(nust.GetDateLastInventaire(self.dicOlv['db']))
         self.origines = self.dicOlv.pop("codesOrigines",[])
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
@@ -720,10 +722,12 @@ class DLG(xusp.DLG_vide):
             pass
         self.pnlParams.sensNum = self.sensNum
         self.GetDonnees()
-        self.pnlParams.SetOneValue('date',"-")
+        pnlDate = self.pnlParams.GetPnlCtrl('date')
+        if pnlDate:
+            pnlDate.SetValue("-")
         self.Sizer()
-        self.pnlParams.SetOneValue('date',"",'param1')
-
+        if pnlDate:
+            pnlDate.SetValue("")
 
     def Init(self):
         self.db = xdb.DB()
@@ -818,11 +822,12 @@ class DLG(xusp.DLG_vide):
         self.pnlParams.SetOneValue('analytique',valeur=value,codeBox='param2')
         self.analytique = code
 
-    def GetDate(self,fr=False):
+    def GetDate(self):
         saisie = self.pnlParams.GetOneValue('date',codeBox='param1')
         saisie = xformat.FmtDate(saisie)
         self.date = xformat.DateFrToDatetime(saisie)
-        if fr or not saisie: return saisie
+        if not saisie:
+            return None
         else: return self.date
 
     # gestion des actions ctrl
@@ -868,6 +873,12 @@ class DLG(xusp.DLG_vide):
     def OnDate(self,event):
         saisie = self.GetDate()
         if saisie:
+            if saisie <= self.lastInventaire:
+                wx.MessageBox("La date saisie est dans un exercice antérieur",
+                              "NON bloquant",wx.ICON_WARNING)
+            if saisie - self.lastInventaire > datetime.timedelta(days=366):
+                wx.MessageBox("Le dernier inventaire date de '%s'"%self.lastInventaire,
+                              "VERIFICATION",wx.ICON_INFORMATION)
             self.pnlParams.SetOneValue('date',valeur=xformat.FmtDate(saisie),codeBox='param1')
             self.GetDonnees()
         if event: event.Skip()

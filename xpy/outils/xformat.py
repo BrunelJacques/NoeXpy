@@ -413,7 +413,7 @@ def DateFrToWxdate(datefr):
     except: dateout = None
     return dateout
 
-def DateFrToDatetime(datefr):
+def DateFrToDatetime(datefr, mute=False):
     # Conversion de date française jj/mm/aaaa (ou déjà en datetime) en datetime
     if datefr == None or datefr == '':
         return None
@@ -423,7 +423,8 @@ def DateFrToDatetime(datefr):
         try:
             return datetime.date(int(datefr[6:10]), int(datefr[3:5]), int(datefr[:2]))
         except:
-            wx.MessageBox("La date saisie est incorrecte")
+            if not mute:
+                wx.MessageBox("La date saisie n'existe pas")
             return None
 
 
