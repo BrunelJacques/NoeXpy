@@ -772,6 +772,8 @@ def SqlMagasins(db):
 def SqlMvtsAnte(**kwd):
     # retourne les données pour recherche de mouvements anterieurs since last inventaire
     dicOlv = kwd.get('dicOlv',None)
+    dateEnCours = dicOlv.get('dateEnCours',None)
+
     db = kwd.get('db',None)
     filtre = kwd.pop('filtreTxt', '')
     nbreFiltres = kwd.pop('nbreFiltres', 0)
@@ -782,10 +784,11 @@ def SqlMvtsAnte(**kwd):
                 LIMIT %d""" % LIMITSQL
     origines = dicOlv['codesOrigines']
 
-    lastInvent = GetDateLastInventaire(db)
+    if not dateEnCours:
+        dateEnCours = GetDateLastInventaire(db,dteAnalyse=dateEnCours)
     where = """
                 WHERE ( date >= '%s' )
-                        AND (origine in ( %s ) )""" % (lastInvent, str(origines)[1:-1])
+                        AND (origine in ( %s ) )""" % (dateEnCours, str(origines)[1:-1])
 
     order = "ORDER BY date DESC"
     if encours:

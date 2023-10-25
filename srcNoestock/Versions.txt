@@ -1,3 +1,6 @@
+Version 1.1.2.32 (25/10/2023)
+- Recherche antérieurs tient compte de la date encours
+
 Version 1.1.2.31 (24/10/2023)
 - Suivi des mouvements, intégration de l'évolution version 30
 

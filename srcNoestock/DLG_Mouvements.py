@@ -116,7 +116,8 @@ def GetMatriceAnterieurs(dlg):
         'sortColumnIndex': 1,
         'sensTri': False,
         'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
-        'size': (650, 400)}
+        'size': (650, 400),
+        'dateEnCours':dlg.date}
 
 # Description des paramètres de la gestion des mouvements
 
@@ -294,7 +295,8 @@ def GetAnterieur(dlg,db=None):
     # retourne un dict de params après lancement d'un tableau de choix de l'existants pour reprise
     dParams = {}
     dicOlv = GetMatriceAnterieurs(dlg)
-    dlgAnte = xGTR.DLG_tableau(dlg, dicOlv=dicOlv, db=db)
+    dlgAnte = xGTR.DLG_tableau(dlg, dicOlv=dicOlv, db=db,
+                               title='xGTR par DLG_Mouvements.GetAnterieur')
     ret = dlgAnte.ShowModal()
     if ret == wx.OK and dlgAnte.GetSelection():
         donnees = dlgAnte.GetSelection().donnees
