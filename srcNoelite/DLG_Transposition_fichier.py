@@ -373,8 +373,8 @@ class PNL_pied(xGTE.PNL_pied):
 
 class Dialog(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,parent):
-        super().__init__(parent,name='DLG_Transposition_fichier',size=(1200,700))
+    def __init__(self,*args):
+        super().__init__(self,name='DLG_Transposition_fichier',size=(1200,700))
         self.typeCB = False
         self.ctrlOlv = None
         self.txtInfo =  "Non connecté à une compta"
@@ -490,7 +490,7 @@ class Dialog(xusp.DLG_vide):
         dic = self.pnlParams.GetValues()
         nomCompta = dic['p_compta']['compta'].lower()
         compta = None
-        if self.parent and self.parent.dictUser:
+        if hasattr(self,'parentdictUser'):
             compta = UTILS_Compta.Compta(self, nomCompta=nomCompta)
             if not compta.db or compta.db.erreur: compta = None
         if not compta:
@@ -609,6 +609,6 @@ if __name__ == '__main__':
     import os
     app = wx.App(0)
     os.chdir("..")
-    dlg = Dialog(parent=None)
+    dlg = Dialog()
     dlg.ShowModal()
     app.MainLoop()

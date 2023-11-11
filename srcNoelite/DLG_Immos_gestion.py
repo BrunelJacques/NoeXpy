@@ -460,8 +460,8 @@ class PNL_pied(xGTE.PNL_pied):
 
 class DLG_immos(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,parent):
-        super().__init__(parent,name = MODULE)
+    def __init__(self,*args):
+        super().__init__(self,name = MODULE)
         self.ctrlOlv = None
         self.dicOlv = DICOLV
         self.noegest = nunoegest.Noegest(self)
@@ -616,7 +616,7 @@ if __name__ == '__main__':
     app.SetTopWindow(frame_1)
 
     #frame_1.dlg = DLG_implantation(frame_1)
-    frame_1.dlg = DLG_immos(frame_1)
+    frame_1.dlg = DLG_immos()
     frame_1.dlg.ShowModal()
     app.MainLoop()
 

@@ -570,6 +570,7 @@ class PNL_ctrl(wx.Panel):
             # selon la nature texte ou pas
             if isinstance(actionCtrl,str):
                 action = "self.lanceur."+actionCtrl+"(event)"
+                #print("lance: %s lanceur: %s"%(action, self.lanceur.Name))
                 eval(action)
             else:
                 # actionCtrl est un pointeur de Fonction
