@@ -176,7 +176,7 @@ MATRICE_PARAMS = {
                     'values':UTILS_Compta.GetLstComptas(), 'txtSize': 50,},
     {'name': 'journal', 'genre': 'Combo', 'label': 'Journal','ctrlAction':'OnCtrlJournal',
      'help': "Code journal utilisé dans la compta",'size':(250,30),'value':'BQ',
-     'values':['BQ','LCL','LBP','CCP'], 'txtSize': 50,
+     'values':['BQ','CM','LCL','LBP','CCP'], 'txtSize': 50,
      'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un journal",
      'btnAction': 'OnBtnJournal'},
     ],
