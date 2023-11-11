@@ -16,6 +16,8 @@ from xpy.outils             import xexport,xformat
 
 # Paramétrage des accès aux bases de données, les 'select' de _COMPTAS doivent respecter 'lstChamps' de  _COMPTES
 MATRICE_COMPTAS = {
+    # noegest pointe une table 'cptComptes' directement importée de quadra compta dans la base noethys,
+    # en attendant de se greffer sur une autre 'compta_comptes_comptables' est l'officiel noethys pour les seuls comptes généraux
     'noegest': {
         'fournisseurs': {'select': 'IDcompte,cle,libelle',
                          'from': 'cptaComptes',
@@ -70,7 +72,6 @@ MATRICE_COMPTAS = {
                              'where': "TypeJournal = 'O'",
                              'filtre': "AND (Code like \"%xxx%\" OR Libelle like \"%xxx%\")"},
                 },
-
         }
 
 MATRICE_COMPTES = {

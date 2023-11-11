@@ -32,7 +32,7 @@ DIC_INFOS = {'date':"Flèche droite pour le mois et l'année, Entrée pour valid
 INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
 
 # Fonctions de transposition entrée à gérer pour chaque item FORMAT_xxxx pour les spécificités
-def ComposeFuncImp(dicParams,donnees,champsOut,compta,table):
+def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     # accès aux comptes
     # 'in' est le fichier entrée, 'out' est l'OLV
     lstOut = []
@@ -87,6 +87,9 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table):
 
     # déroulé du fichier entrée
     ko = None
+    txtInfo = "Traitement %d lignes..."%len(donnees[nblent:])
+    image = wx.ArtProvider.GetBitmap(wx.ART_TIP, wx.ART_OTHER, (16, 16))
+    parent.pnlPied.SetItemsInfos(txtInfo, image)
     for ligne in donnees[nblent:]:
         if not hasMontant(ligne):
             continue
@@ -140,6 +143,9 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table):
             if compta:
                 enrichiLigne(ligneOut)
             lstOut.append(ligneOut)
+            txtInfo = " %d lignes traitées sur %d" %( len(lstOut),len(donnees[nblent:]))
+            parent.pnlPied.SetItemsInfos(txtInfo, image)
+
     return lstOut
 
 # formats possibles des fichiers en entrées, utiliser les mêmes codes des champs pour les 'UtilCompta.ComposeFuncExp'
@@ -489,10 +495,8 @@ class Dialog(xusp.DLG_vide):
     def GetCompta(self):
         dic = self.pnlParams.GetValues()
         nomCompta = dic['p_compta']['compta'].lower()
-        compta = None
-        if hasattr(self,'parentdictUser'):
-            compta = UTILS_Compta.Compta(self, nomCompta=nomCompta)
-            if not compta.db or compta.db.erreur: compta = None
+        compta = UTILS_Compta.Compta(self, nomCompta=nomCompta)
+        if not compta.db or compta.db.erreur: compta = None
         if not compta:
             txtInfo = "Echec d'accès à la compta associée à %s!!!"%nomCompta
             image = wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16))
@@ -531,7 +535,7 @@ class Dialog(xusp.DLG_vide):
         if not entrees:
             return
         self.ctrlOlv.lstDonnees = FORMATS_IMPORT[formatIn]['fonction'](dicParams,entrees,
-                                self.ctrlOlv.lstCodesColonnes,self.compta,self.table)
+                                self.ctrlOlv.lstCodesColonnes,self.compta,self.table,parent=self)
         self.InitOlv()
 
     def OnImporterCB(self, event):
@@ -565,10 +569,11 @@ class Dialog(xusp.DLG_vide):
         totDebits, totCredits = 0.0, 0.0
         nonValides = 0
         # constitution de la liste des données à exporter
-        for track in self.ctrlOlv.innerList:
+        lstTracks = [x for x in self.ctrlOlv.innerList]
+        for track in lstTracks:
             if not track.compte or len(track.compte)==0:
+                track.comte = '471'
                 nonValides +=1
-                continue
             if isinstance(track.montant,str):
                 track.montant = track.montant.replace(',', '.')
             montant = float(track.montant)
