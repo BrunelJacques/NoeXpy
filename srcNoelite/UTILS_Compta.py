@@ -131,7 +131,8 @@ def ComposeFuncExp(dicParams,donnees,champsIn,champsOut):
             elif champ  == 'compte':
                 if not valeur or valeur == '' : valeur = '471'
             elif champ  == 'date':
-                valeur = xformat.DateSqlToDatetime(valeur)
+                if isinstance(valeur,str):
+                    valeur = xformat.DateToDatetime(valeur)
             elif champ  == 'typepiece':
                 valeur = typepiece
             elif champ  == 'contrepartie':

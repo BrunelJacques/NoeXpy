@@ -1,3 +1,6 @@
+version 1.2.7.23 (15/11/2023)
+    - transposition fichier: Export gère différents formats de date
+
 version 1.2.7.22 (12/11/2023)
     - transposition fichier: Ajout de commentaires et 471 par défaut
 
