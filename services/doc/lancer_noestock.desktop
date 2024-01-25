@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Noestock
+Exec=/home/noegest/Noexpy/lancer_stock.sh
+Icon=/home/noegest/Noexpy/xpy/Images/Noestock.png

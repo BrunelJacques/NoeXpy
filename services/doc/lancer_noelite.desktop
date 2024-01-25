@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Noelite
+Exec=/home/noegest/Noexpy/lancer_noelite.sh
+Icon=/home/noegest/Noexpy/xpy/Images/globe.png
