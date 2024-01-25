@@ -8,7 +8,7 @@
 #----------------------------------------------------------------------------
 
 import wx
-import os
+import os,sys
 import shelve
 
 def DumpFile(dic):
@@ -233,7 +233,11 @@ class ParamFile():
 class ParamUser(ParamFile):
     # Gestion des paramètres dans un fichier créé dans USERPROFILE
     def __init__(self, nomFichier='UserConfig', **kwds):
-        pathUser = os.environ['USERPROFILE']
+        if "linux" in sys.platform:
+            pathUser = os.environ['HOME'] + '/.local'
+        else:
+            pathUser = os.environ['USERPROFILE']
+
         if (not pathUser ) or (len(pathUser)<2): pathUser = '/'
         pathUser = pathUser.replace('\\','/')+'/'
         ParamFile.__init__(self,nomFichier,pathUser,'user',**kwds)
