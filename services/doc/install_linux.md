@@ -14,8 +14,6 @@ ici il serait distinct
 sudo groupadd noegest
 sudo usermod -aG noegest <myname>
 sudo mkdir /home/noegest
-sudo chgrp -R noegest /home/noegest
-sudo 775 -R /home/noegest
 # creation d'un environnement de travail selon ma version de python
 sudo apt install python3.10-venv
 python3 -m venv envnoexpy
@@ -27,6 +25,9 @@ sudo apt-get install git curl libsdl2-mixer-2.0-0 libsdl2-image-2.0-0 libsdl2-2.
 sudo apt install pkg-config
 pip3 install --upgrade pip
 pip3 install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04 wxPython
+sudo chgrp -R noegest /home/noegest
+sudo chmod 775 -R /home/noegest
+
 ```
 Spécifique Noexpy
 ```
@@ -34,9 +35,11 @@ cd /home/noegest
 git clone https://github.com/BrunelJacques/Noexpy
 cd Noexpy
 pip3 install -r requirements.txt
-cp noethys/Doc/lancer_noestock.sh ./
-cp noethys/Doc/lancer_noelite.sh ./
+cp services/Doc/lancer_noestock.sh ./
+cp services/Doc/lancer_noelite.sh ./
 chmod +x ./lancer_noe*.sh
+sudo chgrp -R noegest /home/noegest
+sudo chmod 775 -R /home/noegest
 deactivate
 # lancement de noestock ou noelite
 source ../envnoexpy/bin/activate
