@@ -85,7 +85,8 @@ class ParamFile():
                 path = config['pathData']
                 del cfg
         if path == '':
-            path = '../xpy/Data/'
+            import xpy.outils.xchemins as xchemins
+            path = xchemins.GetRepData()
         self.closed = True
         self.dictFic = {}
         if not path: path = '/'

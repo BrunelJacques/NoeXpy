@@ -9,14 +9,15 @@ import xpy.xAppli as xAppli
 import xpy.xUTILS_Identification as ncident
 import xpy.outils.xaccueil as xaccueil
 import srcNoelite.menu as menu
+import xpy.outils.xchemins as xchemins
 
 # Variables incontournables pour xpy
 dictAPPLI = {
             'NOM_APPLICATION'       : "Noelite",
             'REP_SOURCES'           : "srcNoelite",
-            'REP_DATA'              : "C:/ProgramData/Noelite",
-            'REP_TEMP'              : "C:/Temp",
-            'NOM_FICHIER_LOG'       : "logsNoelite.log",
+            'REP_DATA'              : xchemins.GetRepData("Noelite"),
+            'REP_TEMP'              : xchemins.GetRepTemp(),
+            'NOM_FICHIER_LOG'       : xchemins.GetRepData("Noelite/logsNoelite"),
             'TYPE_CONFIG'           : 'db_reseau',
             'CHOIX_CONFIGS': [('Compta',"Proto compta, servant de relais avec le logiciel comptable"),
                               ('Noethys', "Base Noethys, peut être locale, réseauLAN ou distanteWAN")],

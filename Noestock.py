@@ -7,15 +7,17 @@ import wx
 import xpy.xAppli as xAppli
 import xpy.xUTILS_DB as xdb
 import srcNoestock.menu as menu
-from xpy.outils import xaccueil,xformat
+from xpy.outils import xaccueil
+from xpy.outils import xchemins
+
 
 # Variables incontournables pour xpy
 dictAPPLI = {
             'NOM_APPLICATION'       : "Noestock",
             'REP_SOURCES'           : "srcNoestock",
-            'REP_DATA'              : "C:/ProgramData/Noelite",
-            'REP_TEMP'              : "C:/Temp",
-            'NOM_FICHIER_LOG'       : "logsNoestock.log",
+            'REP_DATA'              : xchemins.GetRepData("Noestock"),
+            'REP_TEMP'              : xchemins.GetRepTemp(),
+            'NOM_FICHIER_LOG'       : xchemins.GetRepData("Noestock/logsNoeStock"),
             'TYPE_CONFIG'           : 'db_reseau',
             'CHOIX_CONFIGS': [('Centralisation',"Base au siège, cible pour les synchro et sauvegarde"),
                              ('Donnees', "Base de travail, peut être la centrale  en mode connecté")],

@@ -35,8 +35,8 @@ cd /home/noegest
 git clone https://github.com/BrunelJacques/Noexpy
 cd Noexpy
 pip3 install -r requirements.txt
-cp services/Doc/lancer_noestock.sh ./
-cp services/Doc/lancer_noelite.sh ./
+cp services/doc/lancer_noestock.sh ./
+cp services/doc/lancer_noelite.sh ./
 chmod +x ./lancer_noe*.sh
 sudo chgrp -R noegest /home/noegest
 sudo chmod 775 -R /home/noegest

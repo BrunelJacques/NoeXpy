@@ -5,14 +5,15 @@
 
 import wx
 import xpy.xAppli as xAppli
+import xpy.outils.xchemins as xchemins
 
 # Variables incontournables pour xpy
 dictAPPLI = {
             'NOM_APPLICATION'       : "myAppli",
             'REP_SOURCES'           : "srcMyAppli",
-            'REP_DATA'              : "srcMyAppli/Data",
-            'REP_TEMP'              : "srcMyAppli/Temp",
-            'NOM_FICHIER_LOG'       : "logsMyAppli.log",
+            'REP_DATA': xchemins.GetRepData("MyAppli"),
+            'REP_TEMP': xchemins.GetRepTemp(),
+            'NOM_FICHIER_LOG': xchemins.GetRepData("MyAppli/logs"),
             'TYPE_CONFIG'         : 'db_reseau',
 }
 

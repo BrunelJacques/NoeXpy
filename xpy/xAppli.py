@@ -11,7 +11,7 @@
 import wx
 import os
 import sys
-import xpy.outils.xUTILS_RapportBugs
+import xpy.outils.xrapportBugs
 import xpy.outils.xshelve    as xucfg
 from  xpy.outils import xaccueil
 
@@ -23,7 +23,7 @@ def CrashReport(dictAppli):
     if 'VERSION_APPLICATION' in dictAppli.keys():
         version = dictAppli['VERSION_APPLICATION']
     else: version = appli
-    xpy.outils.xUTILS_RapportBugs.Activer_rapport_erreurs(version=version, appli = appli)
+    xpy.outils.xrapportBugs.Activer_rapport_erreurs(version=version, appli = appli)
     print('CrashReport ok')
 
     # Supprime le journal.log si supérieur à 10 Mo
