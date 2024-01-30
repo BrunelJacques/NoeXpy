@@ -158,7 +158,7 @@ class CTRL_html(html.HtmlWindow):
             pass
 
 class Panel_Titre(wx.Panel):
-    def __init__(self, parent, pos=(0,0),image="xpy/Images/Globe.ico",posImage=(20, 10),
+    def __init__(self, parent, pos=(0,0),image="xpy/Images/globe.ico",posImage=(20, 10),
                  texte="monAppli..."*5,posLabel=(160, 40),tailleFont=16,couleurFond=None):
         self.parent = parent
         size = parent.GetSize()

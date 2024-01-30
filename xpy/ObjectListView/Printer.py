@@ -60,10 +60,10 @@ class PreviewControlBar(wx.PyPreviewControlBar):
                                                      "Zoom")
         self.bouton_zoom_moins = wx.BitmapButton(self,
                                                  -1,
-                                                 wx.Bitmap("Images/32x32/zoom_moins.png", wx.BITMAP_TYPE_ANY))
+                                                 wx.Bitmap("Images/32x32/Zoom_moins.png", wx.BITMAP_TYPE_ANY))
         self.ctrl_zoom = wx.Slider(self, -1, zoomDefaut, 1, 200, style=wx.SL_HORIZONTAL)
         self.ctrl_zoom.SetTickFreq(5, 1)
-        self.bouton_zoom_plus = wx.BitmapButton(self, -1, wx.Bitmap("Images/32x32/zoom_plus.png", wx.BITMAP_TYPE_ANY))
+        self.bouton_zoom_plus = wx.BitmapButton(self, -1, wx.Bitmap("Images/32x32/Zoom_plus.png", wx.BITMAP_TYPE_ANY))
 
         # Fermer
         self.staticbox_fermer_staticbox = wx.StaticBox(self, -1, "Fermer")
