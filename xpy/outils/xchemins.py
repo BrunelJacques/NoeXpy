@@ -13,39 +13,45 @@ import sys
 import appdirs
 import tempfile
 
+if sys.platform == 'win32':
+    SEP = "\\"
+else:
+    SEP = "/"
+
 frozen = getattr(sys, 'frozen', '')
 if not frozen:
     rep = os.path.abspath(__file__)
-    REP_RACINE = rep.split('xpy')[0]
+    # la racine va s'arrête au niveau 'xpy'
+    REP_RACINE = rep.split('%sxpy%s'%(SEP,SEP))[0]
 else :
     REP_RACINE = os.path.dirname(sys.executable)
 
 if REP_RACINE not in sys.path :
     sys.path.insert(1, REP_RACINE)
 
-def GetRepRacine(fichier=""):
+def GetRepRacine(ajout=""):
     """ Retourne le chemin du répertoire principal """
-    return os.path.join(REP_RACINE, fichier)
+    return os.path.join(REP_RACINE, ajout)
 
-def GetRepData(fichier=""):
+def GetRepData(ajout="NoeXpy"):
     chemin = appdirs.user_data_dir()
-    return os.path.join(chemin, fichier)
+    os.makedirs(chemin, exist_ok=True)
+    return  os.path.join(chemin, ajout)
 
-def GetRepTemp(fichier=""):
+def GetRepTemp(ajout=""):
     chemin = tempfile.gettempdir()
-    return os.path.join(chemin, fichier)
+    os.makedirs(chemin, exist_ok=True)
+    return os.path.join(chemin, ajout)
 
-def GetRepUser(fichier=""):
-    chemin = appdirs.user_config_dir(appname=None, appauthor=None, roaming=False)
-    return os.path.join(chemin, fichier)
-
-    # Recherche le chemin du répertoire de l'utilisateur
-    #chemin = chemin.decode("iso-8859-15")
+def GetRepUser(ajout="",appname=None, roaming=False):
+    chemin = appdirs.user_config_dir(appname=appname, roaming=roaming)
+    os.makedirs(chemin, exist_ok=True)
+    return os.path.join(chemin, ajout)
 
 if __name__ == "__main__":
     # Répertoires
-    print(GetRepRacine('racine'))
-    print(GetRepUser('user'))
-    print(GetRepData('datas'))
-    print(GetRepTemp('temp'))
+    print(GetRepRacine(),': GetRepRacine')
+    print(GetRepUser(),': GetRepUser')
+    print(GetRepData(),': GetRepData')
+    print(GetRepTemp(),': GetRepTemp')
 

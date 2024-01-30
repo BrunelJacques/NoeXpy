@@ -8,12 +8,11 @@
 #----------------------------------------------------------------------------
 
 import wx
-import os,sys
+import os
 import shelve
+import xpy.outils.xchemins as xchemins
 
 def DumpFile(dic):
-        print(len(dic)," groupes")
-        print()
         def DumpDic(dic,nbtab):
             nbtab+=2
             for cle, valeur in dic.items():
@@ -31,28 +30,6 @@ def DumpFile(dic):
                 if isinstance(valeur,dict): DumpDic(valeur,nbtab)
                 if isinstance(valeur, list): DumpList(valeur, nbtab)
         DumpDic(dic,-1)
-
-def CreePath(path):
-    cree = False
-    # normalise la chaîne puis crée les répertoires nécessaires pour le chemin
-    if not (path[-1:] in ['/', '\\']): path += '/'
-    path = path.replace('\\', '/')
-    path = path[0:2] + path[2:].replace('//', '/')
-    arboresc = path.split('/')
-    rep = ''
-    premier = True
-    for mot in arboresc:
-        rep += mot + '/'
-        if mot != '':
-            # le premier mot de l'arborescence est sensé exister
-            if not premier:
-                if not os.path.exists(rep):
-                    os.makedirs(rep)
-                    cree = True
-            premier = False
-    if cree:
-        print("Creation du repertoire : ", path)
-    return path
 
 class ParamFile():
     # Gestion des paramètres dans un fichier via Shelve
@@ -76,26 +53,15 @@ class ParamFile():
         except : pass
 
         if path == '':
-            if self.topWin and 'pathData' in topWindow.__dir__():
+            import xpy.outils.xchemins as xchemins
+            if self.topWin and hasattr(topWindow,'pathData'):
                 path = topWindow.pathData
             else :
-                # on va chercher dans userConfig
-                cfg = ParamUser()
-                config = cfg.GetDict(dictDemande={'pathData':''}, groupe='APPLI')
-                path = config['pathData']
-                del cfg
-        if path == '':
-            import xpy.outils.xchemins as xchemins
-            path = xchemins.GetRepData()
+                path = xchemins.GetRepData()
         self.closed = True
         self.dictFic = {}
-        if not path: path = '/'
-        if self.flag in ('c','n'):
-            path = CreePath(path)
-        if not (path[-1:] in ['/','\\'] ): path +='/'
-        path = path.replace('\\','/')
-        path = path[0:2]+path[2:].replace('//','/')
-        self.chemin = path+nomFichier
+        os.makedirs(path, exist_ok=True)
+        self.chemin = os.path.join(path,nomFichier)
         self.openFile()
 
     def openFile(self):
@@ -233,32 +199,25 @@ class ParamFile():
 
 class ParamUser(ParamFile):
     # Gestion des paramètres dans un fichier créé dans USERPROFILE
-    def __init__(self, nomFichier='UserConfig', **kwds):
-        if "linux" in sys.platform:
-            pathUser = os.environ['HOME'] + '/.local'
-        else:
-            pathUser = os.environ['USERPROFILE']
-
-        if (not pathUser ) or (len(pathUser)<2): pathUser = '/'
-        pathUser = pathUser.replace('\\','/')+'/'
-        ParamFile.__init__(self,nomFichier,pathUser,'user',**kwds)
+    def __init__(self, nomFichier='UserConfig', pathUser='', flag='c', close=True):
+        if pathUser == '':
+            pathUser = xchemins.GetRepUser()
+        ParamFile.__init__(self,nomFichier,pathUser,'user',flag,close)
 
 # --------------- TESTS ----------------------------------------------------------
 if __name__ == u"__main__":
     app = wx.App(0)
-
+    repuser = xchemins.GetRepUser()
+    repdata = xchemins.GetRepData()
     cfgUser = ParamUser()
-    cfgNoelite  = ParamFile('Config',path='C:\\ProgramData\\Noelite',flag='r')
-    paramsNoelite  = ParamFile('params.dat',path='..\\..\\srcNoelite\\Data',flag='r')
+    cfgNoelite  = ParamFile(path=repdata,flag='r')
 
     # del de clés
     #cfgUser.DelDictConfig(cle=None,groupe='APPLI')
     #cfgUser.DelDictConfig(cle=None,groupe='IDENT')
-
+    print(len(cfgUser.dictFic), " groupes")
+    print()
     DumpFile(cfgUser.dictFic)
     print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Fichiers Noelite Data.params')
     DumpFile(cfgNoelite.dictFic)
-    #print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Fichiers Openref Data.Config')
-    #DumpFile(cfgOpen.dictFic)
-    #cfg = ParamUser('UserConfig', flag='c')
     app.MainLoop()

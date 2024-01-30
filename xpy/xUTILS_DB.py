@@ -168,7 +168,11 @@ class DB():
                 if self.connexion: self.echec = 0
 
     def Ping(self,serveur):
-        option = '-n' if sys.platform == 'win32' else ''
+        if sys.platform == 'win32':
+            option = '-n'
+        else:
+            option = '-c'
+
         if not serveur or len(serveur) < 3 :
             raise NameError('Pas de nom de serveur fourni dans la commande PING')
         t1 = datetime.datetime.now()
@@ -177,7 +181,7 @@ class DB():
         ret = 1
         while deltasec < 3 and ret != 0 and nbre < 5:
             nbre +=1
-            ret = subprocess.run(['ping', option, '1', '-w', '500', serveur,],
+            ret = subprocess.run(['ping',option, '1', '-w', '500', serveur,],
                                  capture_output=True).returncode
             t2 = datetime.datetime.now()
             delta = (t2 - t1)

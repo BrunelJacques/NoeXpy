@@ -4,7 +4,7 @@
 #------------------------------------------------------------------------
 # Application :    Projet XPY, atelier de développement
 # Auteurs:          Jacques BRUNEL,
-# Copyright:       (c) 2019-04     Cerfrance Provence, Matthania
+# Copyright:       (c) 2019-04 Matthania
 # Licence:         Licence GNU GPL
 #------------------------------------------------------------------------
 
@@ -12,7 +12,7 @@ import wx
 import os
 import sys
 import xpy.outils.xrapportBugs
-import xpy.outils.xshelve    as xucfg
+import xpy.outils.xshelve    as xshelve
 from  xpy.outils import xaccueil
 
 
@@ -80,7 +80,7 @@ class MainFrame(wx.Frame):
                 sys.path = [self.pathSrcAppli] + sys.path
             # Vérifie l'existence des répertoires Data et Temp et les crées
             for rep in (self.pathData, self.pathTemp):
-                xucfg.CreePath(rep)
+                os.makedirs(rep,exist_ok=True)
             for rep in ('pathData', 'pathTemp','pathSrcAppli','pathXpy'):
                 self.dictAppli[rep] = eval('self.'+rep)
 
@@ -90,11 +90,11 @@ class MainFrame(wx.Frame):
             return wx.OK
 
     def MakeStatusText(self):
-        cfgU = xucfg.ParamUser()
+        cfgU = xshelve.ParamUser()
         self.config = cfgU.SetDict(self.dictAppli, groupe='APPLI')
 
         # appel de la configuration base de données dans paramFile
-        cfgF = xucfg.ParamFile()
+        cfgF = xshelve.ParamFile()
         grpCONFIGS = cfgF.GetDict(dictDemande=None, groupe='CONFIGS')
         nomAppli = self.dictAppli['NOM_APPLICATION']
         nomConfig = ''
