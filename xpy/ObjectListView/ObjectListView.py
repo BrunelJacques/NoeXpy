@@ -974,7 +974,7 @@ class ObjectListView(wx.ListCtrl):
         # Finally, give each remaining space filling column a proportion of the
         # free space
         for (i, col) in columnsToResize:
-            newWidth = freeSpace * col.freeSpaceProportion / totalProportion
+            newWidth = int(freeSpace * col.freeSpaceProportion / totalProportion)
             boundedWidth = col.CalcBoundedWidth(newWidth)
             if self.GetColumnWidth(i) != boundedWidth:
                 self.SetColumnWidth(i, boundedWidth)
