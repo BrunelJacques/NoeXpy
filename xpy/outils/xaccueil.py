@@ -239,7 +239,7 @@ class Panel_Accueil(wx.Panel):
         if self.pnlTitre:
             box_sizer.Add(self.pnlTitre, 0, wx.EXPAND, 0)
         if self.pnlBtnActions:
-            box_sizer.Add(self.pnlBtnActions, 1, wx.ALL|wx.EXPAND, 20)
+            box_sizer.Add(self.pnlBtnActions, 1, wx.EXPAND, 0)
         self.parent.SetSizerAndFit(box_sizer)
 
     def EnableBoutons(self,etat=False):
@@ -250,9 +250,9 @@ class Panel_Accueil(wx.Panel):
 # -------------------------- pour tests -------------------------------------------------------------------------------
 class MyFrame(wx.Frame):
     def __init__(self, *args, **kwds):
-        wx.Frame.__init__(self, *args,name="frame_top" )
+        wx.Frame.__init__(self, *args,name="frame_top",size=(800,400) )
         self.dictAppli = kwds.pop('dictAppli',{})
-        self.SetSize((300, 500))
+        self.size = (800,400)
         lstButtons = [
             {"code": "modifAdresses", "label": ("&Modification d'adresses Individus"),
              "infobulle": (u"Gestion de l'adresses de rattachement des personnes (soit la leur soit celle de leur hébergeur"),
@@ -265,15 +265,16 @@ class MyFrame(wx.Frame):
             "-",
             {"code": "gestionReglements", "label": ("&Gestion des règlements"),
              "infobulle": (u"Gestion de bordereau de règlements : remise de chèques, arrivée de virements, de dons..."),
-             "image": "xpy/Images/16x16/Impayes.png",
+             "image": "xpy/Images/80x80/Euro.png",
              "action": self.OnAction, "genre": wx.ITEM_NORMAL},
         ]
-        pnlTitre= Panel_Titre(self, texte="Mon appli ...\n\n%s"%("mais encore! "*5,), pos=(20, 30))
+        pnlTitre= Panel_Titre(self, texte="Mon appli ...\n\n%s"%("mais encore! "*3,), pos=(20, 30))
         pnlBtnActions = Panel_Buttons(self, lstButtons)
+        sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel = Panel_Accueil(self,pnlTitre=pnlTitre,pnlBtnActions=pnlBtnActions)
-        """sizer = wx.BoxSizer(wx.VERTICAL)
+        self.panel.SetMinSize(self.size)
         sizer.Add(self.panel, 1, wx.EXPAND, 0)
-        self.SetSizer(sizer)"""
+        #self.SetSizer(sizer)
 
     def OnAction(self,event):
         wx.MessageBox("Voici mon action !!")

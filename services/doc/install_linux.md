@@ -57,6 +57,14 @@ sudo chgrp noegest /usr/local/share/applications/lancer_noe*.desktop
 Chaque user pourra ainsi 'voir' Noestock ou Noelite et le mettre dans les favoris
 ou lancer comme un programme '/home/noegest/Noexpy/lancer_noestock.sh'
 
+pour un update des appplis Noexpy
+```
+cp /home/noegest/Noexpy
+source ../envnoexpy/bin/activate
+git pull
+chgrp -R noegest *.*
+```
+
 Installation manuelle sur Linux
 -------------------------------
 si échec du 'git clone' télécharger les sources et extraire les fichiers

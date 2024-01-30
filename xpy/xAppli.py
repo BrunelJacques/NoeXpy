@@ -34,6 +34,7 @@ def CrashReport(dictAppli):
 
 class MainFrame(wx.Frame):
     def __init__(self, *args, **kw):
+        self.size = kw.get('size',(800,400))
         super().__init__(*args, name='general', style=wx.DEFAULT_FRAME_STYLE, **kw)
         # Vérifie le path xpy
         self.pathXpy = os.path.dirname(os.path.abspath(__file__))
@@ -127,8 +128,9 @@ class MainFrame(wx.Frame):
         # Construction du bureau composé d'un titre et d'un aligment de boutons d'actions du menu choisies
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.panelAccueil = xaccueil.Panel_Accueil(self,pnlTitre=pnlTitre,pnlBtnActions=pnlBtnActions)
-        sizer.Add(self.panelAccueil, 0, wx.EXPAND, 0)
-        self.SetSizer(sizer)
+        self.panelAccueil.SetMinSize(self.size)
+        sizer.Add(self.panelAccueil, 1, wx.EXPAND,0 )
+        #self.SetSizer(sizer)
 
     def MakeMenuBar(self):
         # Construction de la barre de menu à partir du fichier menu.py présent dans les sources de l'appli
@@ -293,7 +295,7 @@ if __name__ == "__main__":
     frm.xInit()
 
     frm.Show()
-    #frm.MakeHello("OK test")
+    frm.MakeHello("OK test")
     frm.SaisieConfig()
     app.MainLoop()
 

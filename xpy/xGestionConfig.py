@@ -9,7 +9,7 @@
 #----------------------------------------------------------------------------
 
 import wx
-import os
+import os, socket
 import xpy.xUTILS_SaisieParams as xusp
 import xpy.xUTILS_DB as xdb
 from  xpy.outils import xformat,xboutons,xbandeau,xshelve
@@ -205,7 +205,7 @@ class DLG_choixConfig(wx.Dialog):
                     ident = code
                 if ligne['name'].lower() in ('userdomain','domaine', 'workgroup'):
                     try:
-                        valeurs[ligne['name']] = os.environ['USERDOMAIN']
+                        valeurs[ligne['name']] = socket.gethostname()
                     except:
                         import platform
                         valeurs[ligne['name']] = platform.node()

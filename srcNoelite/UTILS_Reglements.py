@@ -895,7 +895,8 @@ def SetDepot(dlg,db):
     IDdepot = None
     today = xformat.DatetimeToStr(datetime.date.today(),iso=False)
     if not 'userdomain' in dlg.dictUtilisateur.keys():
-        dlg.dictUtilisateur['userdomain'] = '_'
+        import socket
+        dlg.dictUtilisateur['userdomain'] = socket.gethostname()
         dlg.dictUtilisateur['config'] = '_'
 
     label = "saisie '%s' sur '%s' via '%s' le %s"%(dlg.dictUtilisateur['utilisateur'],dlg.dictUtilisateur['userdomain'],

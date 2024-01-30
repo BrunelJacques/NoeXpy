@@ -7,7 +7,6 @@
 #--------------------------------------------------------------------------
 
 import wx
-import os
 import xpy.xUTILS_DB as xdb
 import xpy.outils.xchoixListe as xchoixliste
 import xpy.outils.xshelve as xu_shelve
@@ -68,7 +67,8 @@ def SqlLstUsers(db=None):
     return listeUtilisateurs
 
 def GetNomOrdi():
-    return os.environ['USERDOMAIN']
+    import socket
+    return socket.gethostname()
 
 def AfficheUsers(parent):
     # affiche les utilisateur puis sollicite le mot de passe pour le valider
@@ -145,6 +145,7 @@ class CTRL_mdp(wx.SearchCtrl):
         for dictUtilisateur in self.listeUtilisateurs :
             if txtSearch == dictUtilisateur["mdp"] :
                 # Enregistrement de l'utilisateur et de ses propriétés
+                import os
                 cfg = xu_shelve.ParamUser()
                 self.choix = cfg.GetDict(groupe='USER',close = False)
                 dictUtilisateur['utilisateur'] =  dictUtilisateur['prenom'] + " " + dictUtilisateur['nom']
@@ -155,7 +156,7 @@ class CTRL_mdp(wx.SearchCtrl):
                 self.choix['droits'] = dictUtilisateur['droits']
                 self.choix['profil'] = dictUtilisateur['profil']
                 self.choix['username'] = os.environ['USERNAME']
-                self.choix['userdomain'] = os.environ['USERDOMAIN']
+                self.choix['userdomain'] = GetNomOrdi()
                 cfg.SetDict(self.choix, groupe='USER')
 
                 if hasattr(self.parent,'On_trouve'):

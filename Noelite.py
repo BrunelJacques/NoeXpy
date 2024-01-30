@@ -25,7 +25,7 @@ dictAPPLI = {
 
 class NoeliteFrame(xAppli.MainFrame):
     def __init__(self, *args, **kw):
-        kw['size'] = (800,600)
+        kw['size'] = (700,500)
         super().__init__( *args, **kw)
 
         #dictionnaire propre à l'appli
