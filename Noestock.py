@@ -15,7 +15,7 @@ from xpy.outils import xchemins
 dictAPPLI = {
             'NOM_APPLICATION'       : "Noestock",
             'REP_SOURCES'           : "srcNoestock",
-            'REP_DATA'              : xchemins.GetRepData("NoeXpy"),
+            'REP_DATA'              : xchemins.GetRepData("Noexpy"),
             'REP_TEMP'              : xchemins.GetRepTemp(),
             'NOM_FICHIER_LOG'       : xchemins.GetRepData("Noestock/logsNoeStock"),
             'TYPE_CONFIG'           : 'db_reseau',

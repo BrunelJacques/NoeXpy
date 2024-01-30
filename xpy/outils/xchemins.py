@@ -33,7 +33,7 @@ def GetRepRacine(ajout=""):
     """ Retourne le chemin du répertoire principal """
     return os.path.join(REP_RACINE, ajout)
 
-def GetRepData(ajout="NoeXpy"):
+def GetRepData(ajout="Noexpy"):
     chemin = appdirs.user_data_dir()
     os.makedirs(chemin, exist_ok=True)
     return  os.path.join(chemin, ajout)
