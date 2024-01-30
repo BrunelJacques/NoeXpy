@@ -40,8 +40,8 @@ class Bandeau(wx.Panel):
 
     def __set_properties(self):
         self.SetBackgroundColour(wx.Colour(220, 230, 240))
-        self.ctrlTitre.SetFont(wx.Font(self.hauteur*0.6, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
-        self.ctrlIntro.SetFont(wx.Font(self.hauteur*0.5, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, ""))
+        self.ctrlTitre.SetFont(wx.Font(int(self.hauteur*0.6), wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
+        self.ctrlIntro.SetFont(wx.Font(int(self.hauteur*0.5), wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, ""))
         #Font(pixelSize, family, style, weight, underline=False, faceName="", encoding=FONTENCODING_DEFAULT)
 
     def __do_layout(self):
