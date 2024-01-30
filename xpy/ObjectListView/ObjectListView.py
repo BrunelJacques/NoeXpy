@@ -1878,14 +1878,9 @@ class ObjectListView(wx.ListCtrl):
         self._ResizeSpaceFillingColumns()
         # Make sure our empty msg is reasonably positioned
         sz = self.GetClientSize()
-        if 'phoenix' in wx.PlatformInfo:
-            self.stEmptyListMsg.SetSize(0, sz.GetHeight() / 3,
-                                        sz.GetWidth(),
-                                        sz.GetHeight())
-        else:
-            self.stEmptyListMsg.SetDimensions(0, sz.GetHeight() / 3,
-                                              sz.GetWidth(),
-                                              sz.GetHeight())
+        self.stEmptyListMsg.SetSize(0, int(sz.GetHeight() / 3),
+                                    sz.GetWidth(),
+                                    sz.GetHeight())
         # self.stEmptyListMsg.Wrap(sz.GetWidth())
 
     def _HandleTabKey(self, isShiftDown):

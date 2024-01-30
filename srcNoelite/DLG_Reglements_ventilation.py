@@ -434,7 +434,7 @@ class RendererCaseMontant(gridlib.GridCellRenderer):
         # Alignement à droite
         largeur, hauteur = dc.GetTextExtent(texte)
         x = rect[0] + rect[2] - largeur - 2
-        y = rect[1] + ((rect[3] - hauteur) / 2.0)
+        y = int(rect[1] + ((rect[3] - hauteur) / 2.0))
         dc.DrawText(texte, x, y)
         
     def GetBestSize(self, grid, attr, dc, row, col):
