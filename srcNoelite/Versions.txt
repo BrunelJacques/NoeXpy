@@ -1,3 +1,6 @@
+version 1.2.7.24 (31/01/2024)
+    - adaptations pour Linux Ubuntu
+
 version 1.2.7.23 (15/11/2023)
     - transposition fichier: Export gère différents formats de date
 

@@ -109,20 +109,20 @@ class CTRL_Bouton_image(wx.Button):
         self.SetFont(wx.Font(9, wx.SWISS, wx.NORMAL, wx.BOLD))
         self.SetInitialSize()
 
-class CTRL_mdp(wx.SearchCtrl):
+class CTRL_mdp(wx.TextCtrl):
     def __init__(self, parent, listeUtilisateurs=[], size=(-1, -1)):
-        wx.SearchCtrl.__init__(self, parent, size=size, style=wx.TE_PROCESS_ENTER | wx.TE_PASSWORD)
+        wx.TextCtrl.__init__(self, parent, size=size, style=wx.TE_PROCESS_ENTER | wx.TE_PASSWORD)
         self.parent = parent
         self.listeUtilisateurs = listeUtilisateurs
-        self.SetDescriptiveText("Votre mot de passe")
+        #self.SetDescriptiveText("Votre mot de passe")
 
         # Options
-        self.SetCancelBitmap(wx.Bitmap("xpy/Images/16x16/Interdit.png", wx.BITMAP_TYPE_PNG))
-        self.SetSearchBitmap(wx.Bitmap("xpy/Images/16x16/Cadenas.png", wx.BITMAP_TYPE_PNG))
+        #self.SetCancelBitmap(wx.Bitmap("xpy/Images/16x16/Interdit.png", wx.BITMAP_TYPE_PNG))
+        #self.SetSearchBitmap(wx.Bitmap("xpy/Images/16x16/Cadenas.png", wx.BITMAP_TYPE_PNG))
 
         # Binds
-        self.Bind(wx.EVT_SEARCHCTRL_SEARCH_BTN, self.OnSearch)
-        self.Bind(wx.EVT_SEARCHCTRL_CANCEL_BTN, self.OnCancel)
+        #self.Bind(wx.EVT_SEARCHCTRL_SEARCH_BTN, self.OnSearch)
+        #self.Bind(wx.EVT_SEARCHCTRL_CANCEL_BTN, self.OnCancel)
         self.Bind(wx.EVT_TEXT_ENTER, self.OnDoSearch)
         self.Bind(wx.EVT_TEXT, self.OnDoSearch)
 
@@ -219,7 +219,7 @@ class Dialog(wx.Dialog):
                                                     }
                                           )
         self.comboConfigs.SetValue(lastConfig)
-        self.txtMdp = wx.StaticText(self, -1, "Utilisateur:")
+        self.txtMdp = wx.StaticText(self, -1, "Votre mot de passe:")
         self.ctrlMdp = CTRL_mdp(self, listeUtilisateurs=self.listeUtilisateurs)
 
         self.bouton_annuler = CTRL_Bouton_image(self, id=wx.ID_CANCEL, texte="Annuler",

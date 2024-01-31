@@ -1,3 +1,6 @@
+version 1.1.2.33 (31/01/2024)
+    - adaptations pour Linux Ubuntu
+
 Version 1.1.2.32 (25/10/2023)
 - Recherche antérieurs tient compte de la date encours
 

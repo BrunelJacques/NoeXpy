@@ -196,7 +196,7 @@ class DLG_choixConfig(wx.Dialog):
         #  IDENT :  appel de l'identification IDENT partie grisée -----------------------------------------------------
         try:
             utilisateur = self.parent.dictUser['utilisateur']
-        except : utilisateur = None
+        except : utilisateur = 'Inconnu'
 
         for (code,label), lignes in MATRICE_IDENT.items():
             for ligne in  lignes:
