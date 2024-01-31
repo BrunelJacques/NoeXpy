@@ -49,8 +49,8 @@ python3 Noelite.py
 pour une recherche par la barre 'activités'
 ```
 sudo mkdir /usr/local/share/applications
-sudo cp /home/noestion/Noexpy/noethys/Doc/lancer_noestock.desktop  /usr/local/share/applications/
-sudo cp /home/noestion/Noexpy/noethys/Doc/lancer_noelite.desktop  /usr/local/share/applications/
+sudo cp /home/noegest/Noexpy/services/Doc/lancer_noestock.desktop  /usr/local/share/applications/
+sudo cp /home/noegest/Noexpy/services/Doc/lancer_noelite.desktop  /usr/local/share/applications/
 sudo chmod +x /usr/local/share/applications/lancer_noe*.desktop
 sudo chgrp noegest /usr/local/share/applications/lancer_noe*.desktop
 ```
