@@ -188,7 +188,6 @@ class Pnl_tableau(xGTR.PNL_corps):
                 self.choix.ville = ville
                 self.choix.cp = cp
                 self.ctrlOlv.SelectObject(self.choix)
-            dlg2.Destroy()
 
     def OnDblClicFermer(self, event):
         self.parent.EndModal(wx.ID_CANCEL)

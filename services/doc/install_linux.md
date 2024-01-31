@@ -46,11 +46,11 @@ source ../envnoexpy/bin/activate
 python3 Noestock.py
 python3 Noelite.py
 ```
-pour une recherche par la barre 'activités'
+pour un lien dans la barre 'activités'
 ```
 sudo mkdir /usr/local/share/applications
-sudo cp /home/noegest/Noexpy/services/Doc/lancer_noestock.desktop  /usr/local/share/applications/
-sudo cp /home/noegest/Noexpy/services/Doc/lancer_noelite.desktop  /usr/local/share/applications/
+sudo cp /home/noegest/Noexpy/services/doc/lancer_noestock.desktop  /usr/local/share/applications/
+sudo cp /home/noegest/Noexpy/services/doc/lancer_noelite.desktop  /usr/local/share/applications/
 sudo chmod +x /usr/local/share/applications/lancer_noe*.desktop
 sudo chgrp noegest /usr/local/share/applications/lancer_noe*.desktop
 ```
