@@ -187,13 +187,12 @@ class DB():
             delta = (t2 - t1)
             deltasec = delta.seconds + delta.microseconds / 10 ** 6
         mess = "%d pings en  %.3f secondes" % (nbre,deltasec)
-        print(mess)
         if ret != 0:
-            mess = "Time Out %d pings en %.3f secondes "%(nbre,deltasec)
-            print(mess)
-            print("Pas de réponse du serveur %s à la commande PING\n\n%s"%(serveur,mess))
+            mess = "\nTime Out %d pings en %.3f secondes "%(nbre,deltasec)
+            mess += "\nPas de réponse du serveur %s à la commande PING"%(serveur)
             ret = 'ko'
         else: ret = 'ok'
+        print(mess,ret)
         return ret
 
     def AfficheTestOuverture(self,info=""):
@@ -253,7 +252,7 @@ class DB():
             if not ret == 'ok':
                 self.echec = 1
                 self.connexion = None
-                return
+                #return
             etape = 'Création du connecteur %s:%s user: %s - %s'%(host, port,userdb,passwd)
             if self.typeDB == 'mysql':
                 connexion = mysql.connector.connect(host=host, user=userdb, passwd=passwd, port=int(port))
