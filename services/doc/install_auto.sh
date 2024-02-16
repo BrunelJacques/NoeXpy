@@ -29,8 +29,8 @@ sudo chgrp -R noegest /home/noegest
 sudo chmod 775 -R /home/noegest
 if [ ! -d Noexpy ]; then
 	sudo mkdir /usr/local/share/applications; fi
-sudo cp /home/noegest/Noexpy/services/Doc/lancer_noestock.desktop  /usr/local/share/applications/
-sudo cp /home/noegest/Noexpy/services/Doc/lancer_noelite.desktop  /usr/local/share/applications/
+sudo cp /home/noegest/Noexpy/services/doc/lancer_noestock.desktop  /usr/local/share/applications/
+sudo cp /home/noegest/Noexpy/services/doc/lancer_noelite.desktop  /usr/local/share/applications/
 sudo chmod +x /usr/local/share/applications/lancer_noe*.desktop
 sudo chgrp noegest /usr/local/share/applications/lancer_noe*.desktop
 
