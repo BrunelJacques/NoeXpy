@@ -168,30 +168,34 @@ class DB():
                 if self.connexion: self.echec = 0
 
     def Ping(self,serveur):
+        ret = 'ko valeur init'
         if sys.platform == 'win32':
             option = '-n'
         else:
             option = '-c'
-
         if not serveur or len(serveur) < 3 :
             raise NameError('Pas de nom de serveur fourni dans la commande PING')
         t1 = datetime.datetime.now()
-        deltasec = 0
-        nbre = 0
-        ret = 1
-        while deltasec < 3 and ret != 0 and nbre < 5:
-            nbre +=1
-            ret = subprocess.run(['ping',option, '1', '-w', '500', serveur,],
-                                 capture_output=True).returncode
-            t2 = datetime.datetime.now()
-            delta = (t2 - t1)
-            deltasec = delta.seconds + delta.microseconds / 10 ** 6
-        mess = "%d pings en  %.3f secondes" % (nbre,deltasec)
-        if ret != 0:
-            ret = 'ko'
-        else:
-            ret = 'ok'
-            print(mess,ret)
+        # envoi du ping
+        try:
+            ret = subprocess.run(['ping',option, '2', serveur,],
+                             capture_output=True, timeout=3).returncode
+            if ret == 0:
+                self.echec = 0
+                ret = 'ok'
+                self.erreur = "None"
+                t2 = datetime.datetime.now()
+                delta = (t2 - t1)
+                deltasec = delta.seconds + delta.microseconds / 10 ** 6
+                mess = "ping en %.3f secondes" % (deltasec)
+                print(mess, ret)
+            else:
+                self.echec = 1
+                self.erreur = "Erreur: %s"% str(ret)
+        except  Exception as err:
+            ret = err
+            self.echec = 1
+            self.erreur = "Erreur: %s" %err
         return ret
 
     def AfficheTestOuverture(self,info=""):
@@ -207,7 +211,6 @@ class DB():
 
     def CreateBaseMySql(self,ifExist=True):
         """ Version RESEAU avec MYSQL """
-
         try:
             # usage de  "mysql.connector":
             self.cursor = self.connexion.cursor()
@@ -232,37 +235,38 @@ class DB():
     def ConnexionFichierReseau(self,config,mute=False):
         self.connexion = None
         self.echec = 1
+        etape = 'Décompactage de la config'
+        host = config['serveur']
+        port = config['port']
+        userdb = config['userDB']
+        passwd = config['mpUserDB']
+        if len(userdb)>0 and len(config['mpUserDB'])==0:
+            mess = "Pas de mot de passe saisi, veuillez configurer les accès réseau"
+            if not mute:
+                wx.MessageBox(mess, caption="xUTILS_DB.ConnexionFichierReseau ")
+            self.erreur = "%s\n\nEtape: %s"%(mess,etape)
+            return
+        nomFichier = config['nameDB']
+        etape = 'Ping serveur'
+        ret = self.Ping(host)
+        if not ret == 'ok':
+            print("%s\n%s"%(etape, str(ret)))
+        etape = 'Création du connecteur %s:%s user: %s - %s'%(host, port,userdb,passwd)
+        if self.typeDB != 'mysql':
+            self.echec = 1
+            self.erreur = 'xDB: Accès BD non développé pour %s'%self.typeDB
+            wx.MessageBox("%s\n\nEtape: %s"%(self.erreur,etape))
+            return
+        connexion = mysql.connector.connect(host=host, user=userdb, passwd=passwd, port=int(port))
+        etape = 'Création du curseur, après connexion'
         try:
-            etape = 'Décompactage de la config'
-            host = config['serveur']
-            port = config['port']
-            userdb = config['userDB']
-            passwd = config['mpUserDB']
-            if len(userdb)>0 and len(config['mpUserDB'])==0:
-                if not mute:
-                    mess = "Pas de mot de passe saisi, veuillez configurer les accès résea"
-                    wx.MessageBox(mess, caption="xUTILS_DB.ConnexionFichierReseau ")
-                self.erreur = "%s\n\nEtape: %s"%("Config incompète",mess)
-                self.echec = 1
-                return
-            nomFichier = config['nameDB']
-            etape = 'Ping %s'%(host)
-            ret = self.Ping(host)
-            if not ret == 'ok':
-                self.echec = 1
-                self.connexion = None
-            etape = 'Création du connecteur %s:%s user: %s - %s'%(host, port,userdb,passwd)
-            if self.typeDB == 'mysql':
-                connexion = mysql.connector.connect(host=host, user=userdb, passwd=passwd, port=int(port))
-                etape = 'Création du curseur, après connexion'
-                self.cursor = connexion.cursor(buffered=True)
-                self.connexion = connexion
-                # Tentative d'Utilisation de la base
-                etape = " Tentative d'accès à '%s'" %nomFichier
-                self.cursor.execute("USE %s;" % nomFichier)
-                self.echec = 0
-            else:
-                wx.MessageBox('xDB: Accès BD non développé pour %s' %self.typeDB)
+            self.cursor = connexion.cursor(buffered=True)
+            self.connexion = connexion
+            # Tentative d'Utilisation de la base
+            etape = " Tentative d'accès à '%s'" %nomFichier
+            ret = self.cursor.execute("USE %s;" % nomFichier)
+            self.echec = 0
+            self.erreur = str(ret)
         except Exception as err:
             mess = "La connexion MYSQL a echoué.\n\nEtape: %s,\nErreur: '%s'" %(etape,err)
             if not mute:
