@@ -13,6 +13,7 @@ import wx
 import sys
 import subprocess
 import mysql.connector
+from mysql.connector import errorcode
 import sqlite3
 import copy
 import datetime
@@ -251,13 +252,35 @@ class DB():
         ret = self.Ping(host)
         if not ret == 'ok':
             print("%s\n%s"%(etape, str(ret)))
+
         etape = 'Création du connecteur %s:%s user: %s - %s'%(host, port,userdb,passwd)
         if self.typeDB != 'mysql':
             self.echec = 1
             self.erreur = 'xDB: Accès BD non développé pour %s'%self.typeDB
             wx.MessageBox("%s\n\nEtape: %s"%(self.erreur,etape))
             return
-        connexion = mysql.connector.connect(host=host, user=userdb, passwd=passwd, port=int(port))
+        try:
+            connexion = mysql.connector.connect(host=host, user=userdb,
+                                                passwd=passwd, port=int(port),
+                                                connect_timeout=5)
+            connexion.close()
+            connexion = mysql.connector.connect(host=host, user=userdb, passwd=passwd, port=int(port))
+        except mysql.connector.Error as err:
+            mess = "Echec connexion MYSQL\nEtape: %s\n" %(etape)
+            if err.errno == errorcode.CR_CONN_HOST_ERROR:
+                mess += "Connection error: {}".format(err)
+            elif err.errno == errorcode.CR_CONNECTION_TIMEOUT:
+                mess += "Connection timeout: {}".format(err)
+            else:
+                mess += "Error: {}".format(err)
+
+            if not mute:
+                wx.MessageBox(mess,caption="xUTILS_DB.ConnexionFichierReseau ")
+            print(mess)
+            self.erreur = mess
+            self.echec = 1
+            return
+
         etape = 'Création du curseur, après connexion'
         try:
             self.cursor = connexion.cursor(buffered=True)
