@@ -26,6 +26,9 @@ OPTIONS_PANEL = ('pos','style','name', 'size')
 
 # pour une longeur de texte attribuée selon le len d'un label
 PT_CARACTERE = 6.3
+if 'gtk3' in wx.PlatformInfo:
+    PT_CARACTERE = PT_CARACTERE * 1.33  # pour linux qui a une taille police pardéfaut plus grande
+
 
 def DDstrdate2wxdate(date,iso=True):
     if not isinstance(date, str) : date = str(date)
@@ -400,6 +403,7 @@ class PNL_ctrl(wx.Panel):
 
         # gestion des size
         self.txtSize =       kwds.pop('txtSize',0)
+
         if not label: label = ''
         lgTxtCtrl =     max(self.txtSize,int(len(label)* PT_CARACTERE))
         minSize =       kwds.pop('ctrlMinSize',(int(lgTxtCtrl * 1.5),30))
