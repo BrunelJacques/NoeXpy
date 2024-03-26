@@ -26,7 +26,7 @@ OPTIONS_PANEL = ('pos','style','name', 'size')
 
 # pour une longeur de texte attribuée selon le len d'un label
 PT_CARACTERE = 6.3
-PT_AJUSTE = 1
+PT_AJUSTE = 1.0
 if 'gtk3' in wx.PlatformInfo:
     PT_AJUSTE = 1.33  # pour linux qui a une taille police pardéfaut plus grande
 
@@ -406,15 +406,17 @@ class PNL_ctrl(wx.Panel):
 
         if not label: label = ''
         lgTxtCtrl = max(self.txtSize,int(len(label)* PT_CARACTERE)) * PT_AJUSTE
-        minSize =   kwds.pop('ctrlMinSize',(int(lgTxtCtrl * 1.5),30))* PT_AJUSTE
-        maxSize =   kwds.pop('ctrlMaxSize',(lgTxtCtrl * 3,minSize[1] * 2)) * PT_AJUSTE
+        minSize =   kwds.pop('ctrlMinSize',(int(lgTxtCtrl * 1.5),30))
+        maxSize =   kwds.pop('ctrlMaxSize',(lgTxtCtrl * 3, minSize[1] * 2))
+        minSize = tuple(i * PT_AJUSTE for i in minSize)
+        maxSize = tuple(i * PT_AJUSTE for i in maxSize)
 
         # size renseignée est prioritaire
         size = kwds.pop('size',None)
         if not size:
             size = kwds.pop('ctrlSize',None)
         if size:
-            size *= PT_AJUSTE
+            size = tuple(i * PT_AJUSTE for i in size)
         else:
             size =  maxSize
         lg, ht = size
@@ -745,7 +747,7 @@ class PNL_listCtrl(wx.Panel):
         for btn in self.lstBtnAction:
             droite_flex.Add(btn, 0, wx.ALL|wx.TOP, 4)
         topbox.Add(droite_flex,0,wx.ALL|wx.TOP,1)
-        topbox.MinSize = (300,400) * PT_AJUSTE
+        topbox.MinSize = tuple(i * PT_AJUSTE for i in (300,400))
         self.SetSizer(topbox)
 
     def InitMatrice(self, ltColonnes=[]):
