@@ -26,8 +26,9 @@ OPTIONS_PANEL = ('pos','style','name', 'size')
 
 # pour une longeur de texte attribuée selon le len d'un label
 PT_CARACTERE = 6.3
+PT_AJUSTE = 1
 if 'gtk3' in wx.PlatformInfo:
-    PT_CARACTERE = PT_CARACTERE * 1.33  # pour linux qui a une taille police pardéfaut plus grande
+    PT_AJUSTE = 1.33  # pour linux qui a une taille police pardéfaut plus grande
 
 
 def DDstrdate2wxdate(date,iso=True):
@@ -382,7 +383,6 @@ class PNL_property(wx.Panel):
         cadre_staticbox = wx.StaticBox(self,wx.ID_ANY,label=lblBox)
         topbox = wx.StaticBoxSizer(cadre_staticbox)
         topbox.Add(self.ctrl,1,wx.ALL|wx.EXPAND,4)
-        #topbox.MinSize = (300,400)
         self.SetSizer(topbox)
 
     def GetValues(self):
@@ -402,17 +402,21 @@ class PNL_ctrl(wx.Panel):
         self.flagSkipEdit = False
 
         # gestion des size
-        self.txtSize =       kwds.pop('txtSize',0)
+        self.txtSize = kwds.pop('txtSize',0) * PT_AJUSTE
 
         if not label: label = ''
-        lgTxtCtrl =     max(self.txtSize,int(len(label)* PT_CARACTERE))
-        minSize =       kwds.pop('ctrlMinSize',(int(lgTxtCtrl * 1.5),30))
-        maxSize =       kwds.pop('ctrlMaxSize',(lgTxtCtrl * 3,minSize[1] * 2))
+        lgTxtCtrl = max(self.txtSize,int(len(label)* PT_CARACTERE)) * PT_AJUSTE
+        minSize =   kwds.pop('ctrlMinSize',(int(lgTxtCtrl * 1.5),30))* PT_AJUSTE
+        maxSize =   kwds.pop('ctrlMaxSize',(lgTxtCtrl * 3,minSize[1] * 2)) * PT_AJUSTE
 
         # size renseignée est prioritaire
-        size =          kwds.pop('size',None)
+        size = kwds.pop('size',None)
         if not size:
-            size =  kwds.pop('ctrlSize',maxSize)
+            size = kwds.pop('ctrlSize',None)
+        if size:
+            size *= PT_AJUSTE
+        else:
+            size =  maxSize
         lg, ht = size
         if lg < minSize[0]: minSize = (lg,size[1])
         if lg > maxSize[0]: maxSize = (lg,size[1])
@@ -741,7 +745,7 @@ class PNL_listCtrl(wx.Panel):
         for btn in self.lstBtnAction:
             droite_flex.Add(btn, 0, wx.ALL|wx.TOP, 4)
         topbox.Add(droite_flex,0,wx.ALL|wx.TOP,1)
-        topbox.MinSize = (300,400)
+        topbox.MinSize = (300,400) * PT_AJUSTE
         self.SetSizer(topbox)
 
     def InitMatrice(self, ltColonnes=[]):
@@ -1541,11 +1545,12 @@ if __name__ == '__main__':
         ("ident", "Votre session"):
             [   #ctrlSize c'est la taille fixe du contrôle complet au départ, inclu txtSize taille du libellé
                 # max et minSize atteints feront porter le changement sur les autres colonnes
-                #
-                #
-                {'genre': 'String', 'name': 'test', 'label': 'Mon ctrl test', 'value': "valeur initiale",
-                     'ctrlSize':(400,40),'ctrlMinSize':(380,25),'ctrlMaxSize':(450,60),'txtSize':80},
-                {'genre': 'String', 'name': 'domaine', 'label': 'Votre organisation', 'value': "NomDuPC",
+                # le minZize pris en compte est le plus grand de toutes les lignes
+
+                {'genre': 'String', 'name': 'test', 'label':    'Mon ctrl test', 'value': "valeur initiale",
+                     'ctrlSize':(420,40),'ctrlMinSize':(290,25),'ctrlMaxSize':(450,60),'txtSize':90},
+                {'genre': 'String', 'name': 'domaine', 'label': 'noM ctrl tset', 'value': "valeur Nom DuPC",
+                    'ctrlSize':(560,40),'ctrlMinSize':(290,25),'ctrlMaxSize':(600,60), 'txtSize': 120,
                                  'help': 'Ce préfixe à votre nom permet de vous identifier','enable':False},
                 {'genre': 'String', 'name': 'usateur', 'label': 'Utilisateur', 'value': "moi",
                                  'help': 'Confirmez le nom de sesssion de l\'utilisateur'},
