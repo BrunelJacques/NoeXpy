@@ -1,3 +1,6 @@
+version 1.2.7.26 (26/03/2024)
+    - adaptations tailles de police linux
+
 version 1.2.7.25 (14/02/2024)
     - adaptations connexions nouvelle box
 
