@@ -59,7 +59,7 @@ ou lancer comme un programme '/home/noegest/Noexpy/lancer_noestock.sh'
 
 pour un update des appplis Noexpy
 ```
-cp /home/noegest/Noexpy
+cd /home/noegest/Noexpy
 source ../envnoexpy/bin/activate
 # supprime d'éventuelles modifs locales
 git stash
@@ -67,6 +67,7 @@ git reset --hard
 # update proprement dit
 git pull
 chgrp -R noegest *.*
+#sudo chmod -R 775 noegest *
 ```
 
 Installation manuelle sur Linux
