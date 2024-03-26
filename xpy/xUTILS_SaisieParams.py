@@ -1622,6 +1622,8 @@ if __name__ == '__main__':
     app.SetTopWindow(frame_1)
     frame_1.Position = (50,50)
     frame_1.Show()
+    font = wx.SystemSettings.GetFont(wx.SYS_SYSTEM_FONT)
+    print("taille de la police systeme: ",font.GetPointSize())
 
     """
     """
