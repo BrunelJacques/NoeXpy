@@ -871,7 +871,8 @@ class BoxPanel(wx.Panel):
         for ligne in lignes:
             kwdLigne= xformat.CopyDic(self.kwds)
             for nom,valeur in ligne.items():
-                if nom in OPTIONS_CTRL + OPTIONS_PANEL:
+                lstAttribs = OPTIONS_CTRL + OPTIONS_PANEL
+                if nom in lstAttribs:
                     kwdLigne[nom] = valeur
                 else:
                     possibles = "Liste des possibles: %s"%str(OPTIONS_CTRL)
@@ -1534,7 +1535,12 @@ if __name__ == '__main__':
                   }
     dictMatrice = {
         ("ident", "Votre session"):
-            [
+            [   #ctrlSize c'est la taille fixe du contrôle complet au départ, inclu txtSize taille du libellé
+                # max et minSize atteints feront porter le changement sur les autres colonnes
+                #
+                #
+                {'genre': 'String', 'name': 'test', 'label': 'Mon ctrl test', 'value': "valeur initiale",
+                     'ctrlSize':(400,40),'ctrlMinSize':(380,25),'ctrlMaxSize':(450,60),'txtSize':80},
                 {'genre': 'String', 'name': 'domaine', 'label': 'Votre organisation', 'value': "NomDuPC",
                                  'help': 'Ce préfixe à votre nom permet de vous identifier','enable':False},
                 {'genre': 'String', 'name': 'usateur', 'label': 'Utilisateur', 'value': "moi",
@@ -1590,14 +1596,14 @@ if __name__ == '__main__':
     dictColonnesSimple = {}
 
     # Lancement des tests
-
+    """
     dlg_4 = DLG_listCtrl(None,dldMatrice=dictMatrice,
                                 dlColonnes=dictColonnes,
                                 lddDonnees=[dictDonnees])
     dlg_4.Init()
     app.SetTopWindow(dlg_4)
     dlg_4.Show()
-    """
+ 
     """
     """
     dlg_3 = DLG_vide(None)
@@ -1610,11 +1616,13 @@ if __name__ == '__main__':
     frame_2 = FramePanels(None, )
     frame_2.Position = (500,300)
     frame_2.Show()
+    """
 
     frame_1 = xFrame(None, matrice=dictMatrice, donnees=dictDonnees)
     app.SetTopWindow(frame_1)
     frame_1.Position = (50,50)
     frame_1.Show()
-    """
 
+    """
+    """
     app.MainLoop()
