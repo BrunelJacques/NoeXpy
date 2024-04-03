@@ -261,7 +261,6 @@ class DLG_choixConfig(wx.Dialog):
 
         # SEPARATEUR : simple texte
         self.titre =wx.StaticText(self, -1, "Eléments de connexion")
-
         self.Sizer()
 
     def Sizer(self):

@@ -11,7 +11,7 @@ import wx
 import os
 import datetime
 import srcNoestock.UTILS_Stocks        as nust
-import srcNoelite.UTILS_Noegest        as nung
+import srcNoelite.UTILS_Noelite        as nung
 import xpy.ObjectListView.xGTR as xGTR
 import xpy.xUTILS_DB                   as xdb
 from srcNoestock                import DLG_Effectifs, DLG_Mouvements, DLG_PrixJourDetail
@@ -352,7 +352,7 @@ class DLG(xGTR.DLG_tableau):
 
     def OnBtnAnalytique(self,event):
         # Appel du choix d'un camp via un écran complet
-        noegest = nung.Noegest(self)
+        noegest = nung.Noelite(self)
         dicAnalytique = noegest.GetActivite(mode='dlg')
         codeAct = nust.MakeChoiceActivite(dicAnalytique)
         self.pnlParams.SetOneValue('analytique',codeAct,codeBox='param2')

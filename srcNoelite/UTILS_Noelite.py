@@ -16,19 +16,6 @@ import xpy.xUTILS_DB                    as xdb
 from xpy.outils             import xformat, xchoixListe
 from srcNoelite.DB_schema   import DB_TABLES
 
-def GetClotures(tip='date'):
-    noegest = Noegest()
-    lClotures = [x for y,x in noegest.GetExercices(tip=tip)]
-    del noegest
-    return lClotures
-
-def GetDatesFactKm():
-    # se lance à l'initialisation des params mais après l'accès à noegest
-    noegest = Noegest()
-    ldates = noegest.GetDatesFactKm()
-    del noegest
-    return ldates
-
 class ToComptaKm(object):
     def __init__(self,dicParams,champsIn,noegest):
         addChamps = ['date','compte','noPiece','libelle','montant','contrepartie','qte']
@@ -38,12 +25,8 @@ class ToComptaKm(object):
         self.cptTiers = dicParams['comptes']['tiers'].strip()
         self.forcer = dicParams['compta']['forcer']
         self.dicPrixVte = noegest.GetdicPrixVteKm()
-        if dicParams['filtres']['datefact'] > dicParams['filtres']['cloture']:
-            self.dateFact = dicParams['filtres']['cloture']
-        else:
-            self.dateFact = dicParams['filtres']['datefact']
-        annee = dicParams['filtres']['cloture'][:4]
-        self.piece = 'km' + dicParams['filtres']['cloture'][:4]
+        self.dateOD = dicParams['filtres']['dateOD']
+        self.piece = 'km' + self.dateOD[:4]
 
     def AddDonnees(self,donnees=[]):
         #add ['date', 'compte', 'noPiece', 'libelle', 'montant', contrepartie,qte]
@@ -73,20 +56,20 @@ class ToComptaKm(object):
         # supporté par la structure
         else:
             contrepartie = self.cptAch + "00"
-
-        donnees.append(self.dateFact)
+        cout = self.dicPrixVte[donnees[self.champsIn.index('idvehicule')]]
+        donnees.append(self.dateOD)
         donnees.append(self.cptVte + donnees[self.champsIn.index('idvehicule')])
         donnees.append(self.piece)
         donnees.append(libelle)
-        donnees.append(donnees[self.champsIn.index('conso')] * self.dicPrixVte[donnees[self.champsIn.index('idvehicule')]])
+        donnees.append(donnees[self.champsIn.index('conso')] * cout)
         donnees.append(contrepartie),
         donnees.append(donnees[self.champsIn.index('conso')])
 
-class Noegest(object):
+class Noelite(object):
     def __init__(self,parent=None):
         self.parent = parent
         self.db = xdb.DB()
-        self.cloture = None
+        self.dateCout = None
         self.ltExercices = None
 
     # ---------------- gestion des immos
@@ -121,10 +104,10 @@ class Noegest(object):
         lstChampsP, lstDonneesP = pnlParams.GetLstValues()
         lstDonnees = [(lstChampsP[x],lstDonneesP[x]) for x in range(len(lstChampsP))]
         if IDimmo:
-            ret = self.db.ReqMAJ('immobilisations',lstDonnees[:-1],'IDimmo',IDimmo,mess='UTILS_Noegest.SetEnsemble_maj')
+            ret = self.db.ReqMAJ('immobilisations',lstDonnees[:-1],'IDimmo',IDimmo,mess='UTILS_Noelite.SetEnsemble_maj')
         else:
             ret = self.db.ReqInsert('immobilisations', lstChampsP[:-1], [lstDonneesP[:-1],],
-                                    mess='UTILS_Noegest.SetEnsemble_ins')
+                                    mess='UTILS_Noelite.SetEnsemble_ins')
             if ret == 'ok':
                 IDimmo = self.db.newID
         return IDimmo
@@ -160,7 +143,7 @@ class Noegest(object):
                 FROM immobilisations
                 WHERE IDimmo = %s;
                 """ % (",".join(lstChamps),IDimmo)
-        retour = self.db.ExecuterReq(req, mess='UTILS_Noegest.GetEnsemble')
+        retour = self.db.ExecuterReq(req, mess='UTILS_Noelite.GetEnsemble')
         if retour == "ok":
             recordset = self.db.ResultatReq()
             if len(recordset) > 0:
@@ -178,7 +161,7 @@ class Noegest(object):
                 ORDER BY dteAcquisition;
                 """ % (",".join(lstChamps),IDimmo)
         lstDonnees = []
-        retour = self.db.ExecuterReq(req, mess='UTILS_Noegest.GetComposants')
+        retour = self.db.ExecuterReq(req, mess='UTILS_Noelite.GetComposants')
         if retour == "ok":
             recordset = self.db.ResultatReq()
             lstDonnees = [list(x) for x in recordset]
@@ -198,7 +181,7 @@ class Noegest(object):
                 INNER JOIN immosComposants ON immobilisations.IDimmo = immosComposants.IDimmo;
                 """ % (",".join(lstChamps))
         lstDonnees = []
-        retour = self.db.ExecuterReq(req, mess='UTILS_Noegest.GetImmosComposants')
+        retour = self.db.ExecuterReq(req, mess='UTILS_Noelite.GetImmosComposants')
         if retour == "ok":
             recordset = self.db.ResultatReq()
             lstDonnees = [list(x) for x in recordset]
@@ -232,6 +215,30 @@ class Noegest(object):
             'sensTri': False,
             'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
         }
+
+    def GetActivites(self,**kwd):
+        lstChamps = kwd.pop('lstChamps',None)
+        # matriceOlv et filtre résultent d'une saisie en barre de recherche
+        matriceOlv = kwd.pop('dicOlv',{})
+        if (not lstChamps) and 'lstChamps' in matriceOlv:
+            lstChamps = matriceOlv['lstChamps']
+        kwd['lstChamps'] = lstChamps
+        axe = kwd.pop('axe','ACTIVITES')
+        if (not axe) or len(axe) == 0:
+            whereAxe = 'TRUE'
+        else:
+            whereAxe = "axe = '%s' "%axe
+        filtre = kwd.pop('filtre','')
+        kwd['filtre'] = filtre
+        whereFiltre = kwd.pop('whereFiltre','')
+        if len(whereFiltre) == 0 and len(filtre)>0:
+            whereFiltre = self.ComposeWhereFiltre(filtre,lstChamps)
+        kwd['reqWhere'] = """
+            WHERE %s %s
+            """%(whereAxe,whereFiltre)
+        kwd['reqFrom'] = """
+            FROM cpta_analytiques"""
+        return self.SqlAnalytiques(**kwd)
 
     def GetAnalytique(self,**kwd):
         # choix d'un code analytique, retourne un dict,
@@ -318,36 +325,39 @@ class Noegest(object):
 
     def SqlAnalytiques(self,**kwd):
         lstChamps = kwd.pop('lstChamps',['*',])
+        lstGroupBy = [x for x in lstChamps if not '*' in x]
         reqFrom = kwd.pop('reqFrom','')
         reqWhere = kwd.pop('reqWhere','')
         # retourne un recordset de requête (liste de tuples)
         ltAnalytiques = []
         champs = ",".join(lstChamps)
+        groupBy = ""
+        if len(lstGroupBy) > 0 :
+            groupBy = "GROUP BY "+",".join(lstGroupBy)
         req = """SELECT %s
                 %s
                 %s
-                """%(champs,reqFrom,reqWhere)
-        retour = self.db.ExecuterReq(req, mess='UTILS_Noegest.SqlAnalytiques')
+                %s;"""%(champs,reqFrom,reqWhere,groupBy)
+        retour = self.db.ExecuterReq(req, mess='UTILS_Noelite.SqlAnalytiques')
         if retour == "ok":
             ltAnalytiques = self.db.ResultatReq()
         return ltAnalytiques
 
     # ---------------- gestion des km à refacturer
 
-    def GetDatesFactKm(self):
-        ldates = ['{:%Y-%m-%d}'.format(datetime.date.today()),]
-        datesNoe = []
+    def GetDatesCoutsKm(self):
+        lDates = []
         req =   """   
-                SELECT vehiculesConsos.dtFact
-                FROM vehiculesConsos 
-                INNER JOIN cptaExercices ON vehiculesConsos.cloture = cptaExercices.date_fin
-                GROUP BY vehiculesConsos.dtFact;
+                SELECT cloture
+                FROM vehiculesCouts 
+                GROUP BY cloture;
                 """
-        retour = self.db.ExecuterReq(req, mess='UTILS_Noegest.GetDatesFactKm')
+        retour = self.db.ExecuterReq(req, mess='UTILS_Noelite.GetDatesCoutsKm')
         if retour == "ok":
             recordset = self.db.ResultatReq()
-            datesNoe = [x[0] for x in recordset]
-        return ldates + datesNoe
+            lDates = [x[0] for x in recordset]
+
+        return lDates
 
     def GetdicPrixVteKm(self):
         dicPrix = {}
@@ -356,8 +366,8 @@ class Noegest(object):
                 FROM vehiculesCouts 
                 INNER JOIN cpta_analytiques ON vehiculesCouts.IDanalytique = cpta_analytiques.IDanalytique
                 WHERE (((vehiculesCouts.cloture) = '%s') AND ((cpta_analytiques.axe)="VEHICULES"))
-                ;"""%xformat.DateFrToSql(self.cloture)
-        retour = self.db.ExecuterReq(req, mess='UTILS_Noegest.GetPrixVteKm')
+                ;"""%xformat.DateFrToSql(self.dateCout)
+        retour = self.db.ExecuterReq(req, mess='UTILS_Noelite.GetPrixVteKm')
         if retour == "ok":
             recordset = self.db.ResultatReq()
             for ID, cout in recordset:
@@ -368,11 +378,11 @@ class Noegest(object):
         # appel des consommations de km sur écran Km_saisie
         dlg = self.parent
         box = dlg.pnlParams.GetBox('filtres')
-        dateFact = xformat.DateFrToSql(box.GetOneValue('datefact'))
+        dateOD = xformat.DateFrToSql(box.GetOneValue('dateOD'))
         vehicule = box.GetOneValue('vehicule')
         where =''
-        if dateFact and len(dateFact) > 0:
-            where += "\n            AND (consos.dtFact = '%s')"%dateFact
+        if dateOD and len(dateOD) > 0:
+            where += "\n            AND (consos.dtFact = '%s')"%dateOD
         if vehicule and len(vehicule) > 0 and not 'Tous' in vehicule:
             where += "\n            AND ( vehic.abrege = '%s')"%vehicule
 
@@ -388,7 +398,7 @@ class Noegest(object):
             ORDER BY consos.IDconso;
             """ % (",".join(lstChamps),where)
         lstDonnees = []
-        retour = self.db.ExecuterReq(req, mess='UTILS_Noegest.GetConsosKm')
+        retour = self.db.ExecuterReq(req, mess='UTILS_Noelite.GetConsosKm')
         if retour == "ok":
             recordset = self.db.ResultatReq()
             for record in recordset:
@@ -467,33 +477,9 @@ class Noegest(object):
         dicActivite = self.GetAnalytique(**kwd)
         return dicActivite
 
-    def GetActivites(self,**kwd):
-        lstChamps = kwd.pop('lstChamps',None)
-        # matriceOlv et filtre résultent d'une saisie en barre de recherche
-        matriceOlv = kwd.pop('dicOlv',{})
-        if (not lstChamps) and 'lstChamps' in matriceOlv:
-            lstChamps = matriceOlv['lstChamps']
-        kwd['lstChamps'] = lstChamps
-        axe = kwd.pop('axe','ACTIVITES')
-        if (not axe) or len(axe) == 0:
-            whereAxe = 'TRUE'
-        else:
-            whereAxe = "axe = '%s' "%axe
-        filtre = kwd.pop('filtre','')
-        kwd['filtre'] = filtre
-        whereFiltre = kwd.pop('whereFiltre','')
-        if len(whereFiltre) == 0 and len(filtre)>0:
-            whereFiltre = self.ComposeWhereFiltre(filtre,lstChamps)
-        kwd['reqWhere'] = """
-            WHERE %s %s
-            """%(whereAxe,whereFiltre)
-        kwd['reqFrom'] = """
-            FROM cpta_analytiques"""
-        return self.SqlAnalytiques(**kwd)
-
     def SetConsoKm(self,track):
         # --- Sauvegarde de la ligne consommation ---
-        dteFacturation = self.GetParam('filtres','datefact')
+        dteFacturation = self.GetParam('filtres','dateOD')
         if track.observation == None: track.observation = ""
         if track.typetiers != 'A' and track.nomtiers and len(track.nomtiers.strip())>0:
             if not (track.nomtiers.strip() in track.observation):
@@ -504,7 +490,7 @@ class Noegest(object):
         lstDonnees = [
             ("IDconso", track.IDconso),
             ("IDanalytique", track.idvehicule),
-            ("cloture", xformat.DateFrToSql(self.cloture)),
+            ("cloture", xformat.DateFrToSql(self.dateCout)),
             ("typeTiers", track.typetiers[:1]),
             ("IDtiers", track.idactivite),
             ("dteKmDeb", xformat.DateFrToSql(track.datekmdeb)),
@@ -518,7 +504,7 @@ class Noegest(object):
             ]
 
         if not track.IDconso or track.IDconso == 0:
-            ret = self.db.ReqInsert("vehiculesConsos",lstDonnees= lstDonnees[1:], mess="UTILS_Noegest.SetConsoKm")
+            ret = self.db.ReqInsert("vehiculesConsos",lstDonnees= lstDonnees[1:], mess="UTILS_Noelite.SetConsoKm")
             track.IDconso = self.db.newID
             IDcategorie = 6
             categorie = ("Saisie")
@@ -601,17 +587,45 @@ class Noegest(object):
                         },],db=db)
         return
 
-    # ------------------ fonctions diverses
+    # ------------------ fonctions compta
 
-    def GetExercices(self, where='WHERE  actif = 1',tip='date'):
+    def GetDatesOD(self):
+        dtExercices = [y for x, y in self.GetExercices(tip='ansi')]
+        return dtExercices
+
+    def UpdateExercices(self):
+        # alimente les exercices Noegestion à partir des exercices Noethys
+        req = """
+            SELECT compta_exercices.nom, compta_exercices.date_debut, compta_exercices.date_fin
+            FROM compta_exercices 
+            LEFT JOIN cptaExercices ON compta_exercices.date_fin = cptaExercices.date_fin
+            WHERE (((cptaExercices.IDexercice) Is Null));"""
+        try:
+            ret = self.db.ExecuterReq(req, mess='UTILS_Noelite.UpdateExercices')
+            if ret == "ok":
+                recordset = self.db.ResultatReq()
+                for nom, deb, fin in recordset:
+                    if not fin or len(fin)<8: continue
+                    lstDon = [("nom",nom),
+                              ("date_debut",deb),
+                              ("date_fin",fin),
+                              ("defaut",0),
+                              ("actif",1),
+                              ("cloture", fin[:4])]
+                    self.db.ReqInsert('cptaExercices',lstDonnees=lstDon,affichError=False)
+        except:
+            pass
+
+    def GetExercices(self, where='WHERE  true',tip='date'):
         if self.ltExercices: return self.ltExercices
+        self.UpdateExercices()
         self.ltExercices = []
         lstChamps = ['date_debut', 'date_fin']
         req = """   SELECT %s
                     FROM cptaExercices
                     %s                   
                     """ % (",".join(lstChamps), where)
-        retour = self.db.ExecuterReq(req, mess='UTILS_Noegest.GetExercices')
+        retour = self.db.ExecuterReq(req, mess='UTILS_Noelite.GetExercices')
         if retour == "ok":
             recordset = self.db.ResultatReq()
             if len(recordset) == 0:
@@ -640,6 +654,8 @@ class Noegest(object):
                 return dlg.choix
         return None
 
+    # ------------------ fonctions diverses
+
     def GetParam(self,cat,name):
         # récup des paramètres stockés sur le disque
         valeur = None
@@ -653,14 +669,13 @@ class Noegest(object):
         dlg = self.parent
         return dlg.IDutilisateur
 
-
 #------------------------ Lanceur de test  -------------------------------------------
 
 if __name__ == '__main__':
     app = wx.App(0)
     import os
     os.chdir("..")
-    ngest = Noegest()
-    ngest.cloture = '2020-09-30'
+    ngest = Noelite()
+    ngest.dateCout = '2020-09-30'
     print(ngest.GetVehicules(lstChamps=['abrege']))
     app.MainLoop()

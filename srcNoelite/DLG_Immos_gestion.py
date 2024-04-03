@@ -11,7 +11,7 @@ import wx
 import xpy.ObjectListView.xGTE as xGTE
 import xpy.xGestionConfig               as xgc
 import xpy.xUTILS_SaisieParams          as xusp
-import srcNoelite.UTILS_Noegest         as nunoegest
+import srcNoelite.UTILS_Noelite         as nunoegest
 import srcNoelite.UTILS_Utilisateurs    as nuutil
 from copy                       import deepcopy
 from srcNoelite                 import DB_schema
@@ -326,7 +326,7 @@ class Dlg_immo(xusp.DLG_vide):
         self.IDimmo = IDimmo
         self.ctrlOlv = None
         self.dicOlv = AdaptDicOlv(lDICOLV)
-        self.noegest = nunoegest.Noegest(self)
+        self.noegest = nunoegest.Noelite(self)
         self.IDutilisateur = nuutil.GetIDutilisateur()
         if (not self.IDutilisateur) or not nuutil.VerificationDroitsUtilisateurActuel('facturation_factures','creer'):
             self.Destroy()
@@ -464,7 +464,7 @@ class DLG_immos(xusp.DLG_vide):
         super().__init__(self,name = MODULE)
         self.ctrlOlv = None
         self.dicOlv = DICOLV
-        self.noegest = nunoegest.Noegest(self)
+        self.noegest = nunoegest.Noelite(self)
         self.IDutilisateur = nuutil.GetIDutilisateur()
         if (not self.IDutilisateur) or not nuutil.VerificationDroitsUtilisateurActuel('facturation_factures','creer'):
             self.Destroy()

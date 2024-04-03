@@ -12,8 +12,8 @@ import datetime
 import xpy.ObjectListView.xGTE as xGTE
 import xpy.xGestionConfig               as xgc
 import xpy.xUTILS_SaisieParams          as xusp
-import srcNoelite.UTILS_Noegest         as nunoegest
-import srcNoelite.UTILS_Compta          as nucompta
+from srcNoelite import UTILS_Noelite
+from srcNoelite import UTILS_Compta
 import srcNoelite.UTILS_Utilisateurs    as nuutil
 from xpy.ObjectListView.ObjectListView import ColumnDefn, CellEditor
 from xpy.outils                 import xformat,xbandeau,ximport,xexport
@@ -68,7 +68,7 @@ def ComposeFuncImp(dlg,entete,donnees):
         findemois = xformat.FinDeMois(ligneIn[champsIn.index('datekmfin')])
         ligneOut[champsOut.index('datekmfin')] = findemois
         # recherche champ libellé véhicule
-        dicVehicule = dlg.noegest.GetVehicule(mode='auto',filtre=ligneIn[champsIn.index('idvehicule')])
+        dicVehicule = dlg.uNoelite.GetVehicule(mode='auto',filtre=ligneIn[champsIn.index('idvehicule')])
         if dicVehicule:
             ligneOut[champsOut.index('idvehicule')] = dicVehicule['idanalytique']
             ligneOut[champsOut.index('vehicule')] =  dicVehicule['abrege']
@@ -81,7 +81,7 @@ def ComposeFuncImp(dlg,entete,donnees):
         dicActivite = None
         if ligneIn[champsIn.index('activite')]:
             idactivite = ("00" + str(ligneIn[champsIn.index('activite')]))[-2:]
-            dicActivite = dlg.noegest.GetActivite(mode='auto', filtre=idactivite, axe=None)
+            dicActivite = dlg.uNoelite.GetActivite(mode='auto', filtre=idactivite, axe=None)
         # préparation de variables utiles
         nomTiers = str(ligneIn[champsIn.index('membre')])
         if 'None' in nomTiers or '???' in nomTiers or len(nomTiers.strip()) == 0:
@@ -129,20 +129,20 @@ def ComposeFuncImp(dlg,entete,donnees):
 # Description des paramètres à choisir en haut d'écran
 MATRICE_PARAMS = {
 ("filtres","Filtre des données"): [
-    {'name': 'cloture', 'genre': 'Enum', 'label': 'Exercice',
+    {'name': 'dateCout', 'genre': 'Choice', 'label': 'Appliquer les coûts véhicules au',
                     'help': "Choisir un exercice ouvert pour pouvoir saisir, sinon il sera en consultation", 'value':0,
-                    'values': [],
-                    'ctrlAction':'OnCloture',
+                    'values': [],# cf PNL_params.__init__
+                    'ctrlAction':'OnDateCout',
                     'txtSize': 100,
                     'size':(210,30)},
-    {'name': 'datefact', 'genre': 'Enum', 'label': 'Date facturation',
+    {'name': 'dateOD', 'genre': 'Enum', 'label': 'Date des écritures générées',
                     'help': "Date de facturation pour l'export ou pour consulter l'antérieur",
                     'value':0,
-                    'values':[],
-                    'ctrlAction': 'OnDateFact',
+                    'values':[],# cf PNL_params.__init__
+                    'ctrlAction': 'OnDateOD',
                     'txtSize': 100,
                     'size':(210,30)},
-    {'name': 'vehicule', 'genre': 'Enum', 'label': "Véhicule",
+    {'name': 'vehicule', 'genre': 'Choice', 'label': "Véhicule",
                     'help': "Pour filtrer les écritures d'un seul véhicule, saisir sa clé d'appel",
                     'value':0, 'values':['',],
                     'ctrlAction': 'OnVehicule',
@@ -150,9 +150,9 @@ MATRICE_PARAMS = {
                     'size':(300,30)},
     ],
 ("compta", "Paramètres export"): [
-    {'name': 'formatexp', 'genre': 'Enum', 'label': 'Format export',
+    {'name': 'formatexp', 'genre': 'Choice', 'label': 'Format export',
                     'help': "Le choix est limité par la programmation", 'value':0,
-                    'values':[x for x in nucompta.FORMATS_EXPORT.keys()],
+                    'values':[x for x in UTILS_Compta.FORMATS_EXPORT.keys()],
                     'ctrlAction':'OnChoixExport',
                     'txtSize': 80,
                     'size':(240,30)},
@@ -248,6 +248,17 @@ class PNL_params(xgc.PNL_paramsLocaux):
     #panel de paramètres de l'application
     def __init__(self, parent, **kwds):
         self.parent = parent
+
+        # remplissages des values[]
+        uNoelite = UTILS_Noelite.Noelite()
+        lDatesOD = uNoelite.GetDatesOD()
+        lDatesCouts = uNoelite.GetDatesCoutsKm()
+        for dte in lDatesOD:
+            if not dte in lDatesCouts:
+                lDatesCouts.append(dte)
+        uNoelite.db.Close()
+        del uNoelite
+
         #('pos','size','style','name','matrice','donnees','lblBox')
         kwds = {
                 'name':"PNL_params",
@@ -258,8 +269,12 @@ class PNL_params(xgc.PNL_paramsLocaux):
                 'nomfichier':"params",
                 'nomgroupe':"saisieKM"
                 }
-        kwds['matrice'][("filtres","Filtre des données")][0]['values'] = nunoegest.GetClotures(tip="ansi")
-        kwds['matrice'][("filtres","Filtre des données")][1]['values'] = nunoegest.GetDatesFactKm()
+        kwds['matrice'][("filtres",
+                         "Filtre des données",
+                         )][0]['values'] = sorted(lDatesCouts,reverse=True)
+        kwds['matrice'][("filtres",
+                         "Filtre des données",
+                         )][1]['values'] = sorted(lDatesOD,reverse=True)
         super().__init__(parent, **kwds)
         self.Init()
 
@@ -283,7 +298,7 @@ class PNL_corps(xGTE.PNL_corps):
         if not self.oldRow: self.oldRow = row
         if row != self.oldRow:
             track = self.ctrlOlv.GetObjectAt(self.oldRow)
-            test = self.parent.noegest.ValideLigne(track)
+            test = self.parent.uNoelite.ValideLigne(track)
             if test:
                 track.valide = True
                 self.oldRow = row
@@ -319,7 +334,7 @@ class PNL_corps(xGTE.PNL_corps):
         # Traitement des spécificités selon les zones
         if code == 'vehicule':
             # vérification de l'unicité du code saisi
-            dicVehicule = self.parent.noegest.GetVehicule(filtre=value)
+            dicVehicule = self.parent.uNoelite.GetVehicule(filtre=value)
             if dicVehicule:
                 track.idvehicule = dicVehicule['idanalytique']
                 track.vehicule = dicVehicule['abrege']
@@ -333,7 +348,7 @@ class PNL_corps(xGTE.PNL_corps):
 
         if code == 'idactivite':
             # vérification de l'unicité du code saisi
-            dicActivite = self.parent.noegest.GetActivite(filtre=value, axe=None)
+            dicActivite = self.parent.uNoelite.GetActivite(filtre=value, axe=None)
             if dicActivite:
                 track.idactivite = dicActivite['idanalytique']
                 track.nomtiers = dicActivite['nom']
@@ -364,8 +379,8 @@ class PNL_corps(xGTE.PNL_corps):
                     self.ctrlOlv.Refresh()
 
         # l'enregistrement de la ligne se fait à chaque saisie pour gérer les montées et descentes
-        self.parent.noegest.ValideLigne(track)
-        self.parent.noegest.SauveLigne(track)
+        self.parent.uNoelite.ValideLigne(track)
+        self.parent.uNoelite.SauveLigne(track)
 
 
         # enlève l'info de bas d'écran
@@ -374,7 +389,7 @@ class PNL_corps(xGTE.PNL_corps):
         return value
 
     def OnDelete(self,track):
-        self.parent.noegest.DeleteLigne(track)
+        self.parent.uNoelite.DeleteLigne(track)
 
     def OnEditFunctionKeys(self,event):
         row, col = self.ctrlOlv.cellBeingEdited
@@ -382,7 +397,7 @@ class PNL_corps(xGTE.PNL_corps):
         code = self.ctrlOlv.lstCodesColonnes[col]
         if event.GetKeyCode() == wx.WXK_F4 and code == 'vehicule':
             # F4 Choix
-            dict = self.parent.noegest.GetVehicule(filtre=track.vehicule,mode='F4')
+            dict = self.parent.uNoelite.GetVehicule(filtre=track.vehicule,mode='F4')
             if dict:
                 self.OnEditFinishing('vehicule',dict['abrege'])
                 track.vehicule = dict['abrege']
@@ -390,7 +405,7 @@ class PNL_corps(xGTE.PNL_corps):
                 track.idvehicule = dict['idanalytique']
         elif event.GetKeyCode() == wx.WXK_F4 and code == 'idactivite':
             # F4 Choix
-            dict = self.parent.noegest.GetActivite(filtre=track.idactivite,mode='f4')
+            dict = self.parent.uNoelite.GetActivite(filtre=track.idactivite,mode='f4')
             if dict:
                 self.OnEditFinishing('idactivite',dict['idanalytique'])
                 track.idactivite = dict['idanalytique']
@@ -408,7 +423,8 @@ class Dialog(xusp.DLG_vide):
         self.ctrlOlv = None
         self.txtInfo =  "Non connecté à une compta"
         self.dicOlv = self.GetParamsOlv()
-        self.noegest = nunoegest.Noegest(self)
+        self.uNoelite = UTILS_Noelite.Noelite(self)
+        self.uNoelite = UTILS_Noelite.Noelite(self)
         self.IDutilisateur = nuutil.GetIDutilisateur()
         if (not self.IDutilisateur) or not nuutil.VerificationDroitsUtilisateurActuel('facturation_factures','creer'):
             self.Destroy()
@@ -440,7 +456,7 @@ class Dialog(xusp.DLG_vide):
         self.table = self.GetTable()
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
         self.pnlParams.SetOneValue('forcer',False)
-        self.OnCloture(None)
+        self.OnDateOD(None)
 
     def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
@@ -456,32 +472,34 @@ class Dialog(xusp.DLG_vide):
 
     # ------------------- Gestion des actions -----------------------
 
-    def OnCloture(self,evt):
-        # Met à jour self.cloture
+    def OnDateCout(self, evt):
+        # Met à jour self.dateCout
         box = self.pnlParams.GetBox('filtres')
-        self.noegest.cloture = box.GetOneValue('cloture')
-        lClotures = [x for y, x in self.noegest.GetExercices()]
+        self.uNoelite.dateCout = box.GetOneValue('dateCout')
+        ldateCouts = [x for y, x in self.uNoelite.GetExercices()]
         self.exercice = ''
         try:
-            self.exercice = self.noegest.ltExercices[0]
-            self.exercice = self.noegest.ltExercices[lClotures.index(self.noegest.cloture)]
+            self.exercice = self.uNoelite.ltExercices[0]
+            self.exercice = self.uNoelite.ltExercices[ldateCouts.index(self.uNoelite.dateCout)]
         except: pass
-        self.lstVehicules = [x[0] for x in self.noegest.GetVehicules(lstChamps=['abrege'])]
+        self.lstVehicules = [x[0] for x in self.uNoelite.GetVehicules(lstChamps=['nom'])]
         self.lstVehicules.append('--Tous--')
         self.lstVehicules.sort()
         box.SetOneSet('vehicule',self.lstVehicules)
         box.SetOneValue('vehicule',self.lstVehicules[0])
         self.ctrlOlv.dicChoices[self.ctrlOlv.lstCodesColonnes.index('vehicule')]= self.lstVehicules
-        self.lstActivites = [x[0]+" "+x[1] for x in self.noegest.GetActivites(lstChamps=['IDanalytique','nom'])]
-        self.noegest.GetConsosKm()
+        self.lstActivites = [x[0]+" "+x[1] for x in self.uNoelite.GetActivites(lstChamps=['IDanalytique','nom'])]
+        self.uNoelite.GetConsosKm()
 
-    def OnDateFact(self,evt):
+    def OnDateOD(self, evt):
         # Charge l'éventuelle saisie antérieure sur cette date
-        self.noegest.GetConsosKm()
+        self.uNoelite.GetConsosKm()
+        dte = self.pnlParams.GetOneValue('dateOD')
+        self.pnlParams.SetOneValue('dateCout',dte)
 
     def OnVehicule(self,evt):
         # Charge l'éventuelle saisie antérieure sur cette date
-        self.noegest.GetConsosKm()
+        self.uNoelite.GetConsosKm()
 
     def OnCtrlJournal(self,evt):
         # tronque pour ne garder que le code journal sur trois caractères maxi
@@ -546,11 +564,11 @@ class Dialog(xusp.DLG_vide):
         dic = self.pnlParams.GetValues()
         formatExp = dic['compta']['formatexp']
         compta = None
-        if formatExp in nucompta.FORMATS_EXPORT.keys() :
+        if formatExp in UTILS_Compta.FORMATS_EXPORT.keys() :
             nomCompta = None
-            if 'compta' in nucompta.FORMATS_EXPORT[formatExp].keys():
-                nomCompta = nucompta.FORMATS_EXPORT[formatExp]['compta']
-            compta = nucompta.Compta(self, nomCompta=nomCompta)
+            if 'compta' in UTILS_Compta.FORMATS_EXPORT[formatExp].keys():
+                nomCompta = UTILS_Compta.FORMATS_EXPORT[formatExp]['compta']
+            compta = UTILS_Compta.Compta(self, nomCompta=nomCompta)
             if not compta.db: compta = None
         if not compta:
             txtInfo = "Pas d'accès à la compta!!!"
@@ -600,8 +618,8 @@ class Dialog(xusp.DLG_vide):
             self.ctrlOlv.AddTracks(donNew)
             # test de validité pour changer la couleur de la ligne
             for object in self.ctrlOlv.modelObjects:
-                self.noegest.ValideLigne(object)
-                self.noegest.SauveLigne(object)
+                self.uNoelite.ValideLigne(object)
+                self.uNoelite.SauveLigne(object)
             self.ctrlOlv._FormatAllRows()
             self.ctrlOlv.Refresh()
 
@@ -611,19 +629,32 @@ class Dialog(xusp.DLG_vide):
         dicParams['fichiers']={}
         dicParams['fichiers']['formatexp']= dicParams['compta']['formatexp']
         champsIn = self.ctrlOlv.lstCodesColonnes
-        toc = nunoegest.ToComptaKm(dicParams,champsIn,self.noegest)
+        toc = UTILS_Noelite.ToComptaKm(dicParams,champsIn,self.uNoelite)
         champsInExp = toc.champsIn
         lstDonnees = []
         # calcul des débit et crédit des pièces
         totDebits, totCredits = 0.0, 0.0
         nonValides = 0
+        lstVehicules = []
         # constitution de la liste des données à exporter
         for track in self.ctrlOlv.innerList:
-            if not track.valide:
+            if not track.valide and not track.vierge:
                 nonValides +=1
                 continue
             if track.conso == 0: continue
             lstDonnees.append(track.donnees)
+            lstVehicules.append(track.idvehicule)
+        lstPrixManquants = []
+        dicPrix = self.uNoelite.GetdicPrixVteKm()
+        for ID in lstVehicules:
+            if ID in dicPrix:
+                continue
+            lstPrixManquants.append(ID)
+        if len(lstPrixManquants) > 0:
+            mess = "%d véhicules n'ont pas de prix KM renseigné\n\n"%len(lstPrixManquants)
+            mess += "La date choisie était %s"
+            ret = wx.MessageBox(mess,style= wx.ID_CANCEL)
+            return wx.CANCEL
 
         ixmtt = champsInExp.index('montant')
         for donnees in lstDonnees:
@@ -640,7 +671,7 @@ class Dialog(xusp.DLG_vide):
             if not ret == wx.YES:
                 return wx.CANCEL
 
-        exp = nucompta.Export(self,self.compta)
+        exp = UTILS_Compta.Export(self,self.compta)
         ret = exp.Exporte(dicParams,
                           lstDonnees,
                           champsInExp)
