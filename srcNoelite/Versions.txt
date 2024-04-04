@@ -1,3 +1,7 @@
+version 1.2.7.27 (04/04/2024)
+    - Km Véhicules: évolution
+    - gestion de tables communes (analytique, coûts)
+
 version 1.2.7.26 (26/03/2024)
     - adaptations tailles de police linux
 

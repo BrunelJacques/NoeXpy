@@ -430,7 +430,8 @@ class Dialog(xusp.DLG_vide):
             self.Destroy()
         self.Init()
         self.Sizer()
-        self.exercice = None
+        self.dateCout = None
+        self.OnDateCout(None)
 
     # Récup des paramètrages pour composer l'écran
     def GetParamsOlv(self):
@@ -453,7 +454,6 @@ class Dialog(xusp.DLG_vide):
         self.ctrlOlv = self.pnlOlv.ctrlOlv
         # connexion compta et affichage bas d'écran
         self.compta = self.GetCompta()
-        self.table = self.GetTable()
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
         self.pnlParams.SetOneValue('forcer',False)
         self.OnDateOD(None)
@@ -475,13 +475,8 @@ class Dialog(xusp.DLG_vide):
     def OnDateCout(self, evt):
         # Met à jour self.dateCout
         box = self.pnlParams.GetBox('filtres')
-        self.uNoelite.dateCout = box.GetOneValue('dateCout')
-        ldateCouts = [x for y, x in self.uNoelite.GetExercices()]
-        self.exercice = ''
-        try:
-            self.exercice = self.uNoelite.ltExercices[0]
-            self.exercice = self.uNoelite.ltExercices[ldateCouts.index(self.uNoelite.dateCout)]
-        except: pass
+        self.dateCout = box.GetOneValue('dateCout')
+        self.uNoelite.dateCout = self.dateCout
         self.lstVehicules = [x[0] for x in self.uNoelite.GetVehicules(lstChamps=['nom'])]
         self.lstVehicules.append('--Tous--')
         self.lstVehicules.sort()
@@ -496,6 +491,7 @@ class Dialog(xusp.DLG_vide):
         self.uNoelite.GetConsosKm()
         dte = self.pnlParams.GetOneValue('dateOD')
         self.pnlParams.SetOneValue('dateCout',dte)
+        self.OnDateCout(None)
 
     def OnVehicule(self,evt):
         # Charge l'éventuelle saisie antérieure sur cette date
@@ -528,7 +524,6 @@ class Dialog(xusp.DLG_vide):
 
     def OnChoixExport(self,evt):
         self.compta = self.GetCompta()
-        self.table = self.GetTable()
 
     def InitOlv(self):
         self.pnlParams.GetValues()
@@ -591,10 +586,6 @@ class Dialog(xusp.DLG_vide):
         pnlJournal.btn.Enable(x)
         return compta
 
-    def GetTable(self):
-        # accès à la compta abandonné car impossible avec Quadra en Windows 10
-        return None
-
     def OnImporter(self,event):
         """ Open a file"""
         self.dirname = ''
@@ -643,17 +634,28 @@ class Dialog(xusp.DLG_vide):
                 continue
             if track.conso == 0: continue
             lstDonnees.append(track.donnees)
-            lstVehicules.append(track.idvehicule)
+            lstVehicules.append((track.idvehicule,track.vehicule))
+        if len(lstDonnees) == 0:
+            mess = "Aucune ligne valide\n\n"
+            mess += "Importez un fichier, ou saisissez des valeurs"
+            wx.MessageBox(mess,"Export impossible",style= wx.ICON_STOP)
+            return wx.CANCEL
         lstPrixManquants = []
         dicPrix = self.uNoelite.GetdicPrixVteKm()
-        for ID in lstVehicules:
+        for ID, nomVehicule in lstVehicules:
             if ID in dicPrix:
                 continue
-            lstPrixManquants.append(ID)
+            if not nomVehicule in lstPrixManquants:
+                lstPrixManquants.append(nomVehicule)
+
+        # Des coûts véhicules ne sont pas fournis
         if len(lstPrixManquants) > 0:
-            mess = "%d véhicules n'ont pas de prix KM renseigné\n\n"%len(lstPrixManquants)
-            mess += "La date choisie était %s"
-            ret = wx.MessageBox(mess,style= wx.ID_CANCEL)
+            mess = "'%d' véhicule(s) sans prix au KM renseigné\n\n"%len(lstPrixManquants)
+            mess += "La date choisie était %s\n"%self.dateCout
+            mess +=  "Renseigner: %s"%str(lstPrixManquants[:5])
+            if len(lstPrixManquants)>5:
+                mess += "..."
+            wx.MessageBox(mess,"Impossible sans coûts",style= wx.ICON_STOP)
             return wx.CANCEL
 
         ixmtt = champsInExp.index('montant')
@@ -685,7 +687,6 @@ class Dialog(xusp.DLG_vide):
     def Final(self):
         # sauvegarde des params
         self.pnlParams.SauveParams(close=True)
-
 
 #------------------------ Lanceur de test  -------------------------------------------
 
