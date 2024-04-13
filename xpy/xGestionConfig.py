@@ -399,7 +399,7 @@ class DLG_listeConfigs(xusp.DLG_listCtrl):
         self.DB=None
         cle = GetCleMatrice(typeConfig,MATRICE_CONFIGS)
         self.dldMatrice[cle] = MATRICE_CONFIGS[cle]
-        self.dlColonnes[typeConfig] = [x ['name'] for x in MATRICE_CONFIGS[cle]]
+        self.dlColonnes[typeConfig] = [x['name'] for x in MATRICE_CONFIGS[cle]]
         cfgF = xshelve.ParamFile()
         grpConfigs= cfgF.GetDict(None,'CONFIGS')
         if 'lstConfigs' in grpConfigs:

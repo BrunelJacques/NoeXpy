@@ -68,7 +68,7 @@ def SqlLstUsers(db=None):
 
 def GetNomOrdi():
     import socket
-    return socket.gethostname()
+    return socket.gethostname()[:16]
 
 def AfficheUsers(parent):
     # affiche les utilisateur puis sollicite le mot de passe pour le valider

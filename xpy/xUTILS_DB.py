@@ -76,6 +76,7 @@ def GetOneConfig(self, nomConfig='lastConfig', mute=False):
 
 class DB():
     # accès à la base de donnees principale
+
     def __init__(self, IDconnexion = None, config=None, nomFichier=None, mute=False):
         # config peut être soit un nom de config soit un dictionaire
         #print(config,nomFichier,IDconnexion)

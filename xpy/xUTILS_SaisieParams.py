@@ -765,7 +765,7 @@ class PNL_listCtrl(wx.Panel):
                            onBtn=self.OnAjouter ),
                 xboutons.BTN_action(self,name='modifier',
                            image=wx.Bitmap("xpy/Images/16x16/Modifier.png"),
-                           help="Modifier la ligne selectionnée",
+                           help="Modifier une ligne selectionnée",
                            onBtn=self.OnModifier ),
                 xboutons.BTN_action(self,name='dupliquer',
                            image=wx.Bitmap("xpy/Images/16x16/Copier.png"),
@@ -1249,6 +1249,12 @@ class DLG_listCtrl(wx.Dialog):
             kwdList = {'lblList': self.lblList}
             kwdList['ltColonnes'] = self.ltColonnes
             kwdList['llItems'] = self.llItems
+            for colonne in self.ltColonnes:
+                if 'de passe' in colonne[1].lower():
+                    i=self.ltColonnes.index(colonne)
+                    del kwdList['ltColonnes'][i]
+                    for lItem in kwdList['llItems']:
+                        del lItem[i]
             self.pnl = self.GetPnl_listCtrl(kwdList)
             #***************************************************************
         self.Sizer()
