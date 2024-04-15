@@ -154,14 +154,14 @@ class Calendrier(wx.ScrolledWindow):
             self.DrawMonth(dc, mois, annee, 0, 0, largeur, hauteur)
         else:
             # Création d'un calendrier annuel
-            largeurMois = largeur / 4.0
-            hauteurMois = hauteur / 3.0
+            largeurMois = int(largeur / 4.0)
+            hauteurMois = int(hauteur / 3.0)
             numMois = 1
             self.listeJoursAvecPresents = []
             for colonne in range(3):
-                y = colonne * (hauteurMois + (self.ecartMois / 2.0))
+                y = int(colonne * (hauteurMois + (self.ecartMois / 2.0)))
                 for ligne in range(4):
-                    x = ligne * (largeurMois + (self.ecartMois / 3.0))
+                    x = int(ligne * (largeurMois + (self.ecartMois / 3.0)))
                     self.DrawMonth(dc, numMois, annee, x, y, largeurMois - self.ecartMois, hauteurMois - self.ecartMois)
                     numMois += 1
 
@@ -470,10 +470,10 @@ class Calendrier(wx.ScrolledWindow):
 
                 if jour != 0:
                     # Crée les données de la case
-                    x = xMois + (largCase * numJour)
-                    y = yMois + (hautCase * numSemaine)
-                    l = largCase - self.ecartCases
-                    h = hautCase - self.ecartCases
+                    x = int(xMois + (largCase * numJour))
+                    y = int(yMois + (hautCase * numSemaine))
+                    l = int(largCase - self.ecartCases)
+                    h = int(hautCase - self.ecartCases)
                     texteDate = datetime.date(annee, mois, jour)
 
                     # Enregistrement des données dans une liste
@@ -523,8 +523,8 @@ class Calendrier(wx.ScrolledWindow):
             if largCase < 25:
                 texte = texte[0]
             largTexte, hautTexte = self.GetTextExtent(texte)
-            coordX = xMois + x + (largCase / 2) - (largTexte / 2)
-            coordY = yMois + (hautHeader / 2) - (hautTexte / 2)
+            coordX = int(xMois + x + (largCase / 2) - (largTexte / 2))
+            coordY = int(yMois + (hautHeader / 2) - (hautTexte / 2))
             dc.DrawText(texte, coordX, coordY)
             # Mémorisation des jours et de leurs coordonnées
             self.listeCasesJours.append((coordX, coordY, largTexte, hautTexte, texteComplet))
@@ -546,10 +546,10 @@ class Calendrier(wx.ScrolledWindow):
         # Dessin du texte
         texte = listeMois[mois - 1] + " " + str(annee)
         largTexte, hautTexte = self.GetTextExtent(texte)
-        dc.DrawText(texte, xMois + (largMois / 2) - (largTexte / 2), yMois + (hautHeader / 2) - (hautTexte / 2))
+        dc.DrawText(texte, int(xMois + (largMois / 2) - (largTexte / 2)), int(yMois + (hautHeader / 2) - (hautTexte / 2)))
         # Dessin de la ligne
         dc.SetPen(wx.Pen((210, 210, 210), 1))
-        dc.DrawLine(xMois + 2, yMois + hautHeader - 2, xMois + largMois - 2, yMois + hautHeader - 2)
+        dc.DrawLine(xMois + 2, int(yMois + hautHeader - 2), int(xMois + largMois - 2), int(yMois + hautHeader - 2))
 
         return hautMois - hautHeader, yMois + hautHeader
 

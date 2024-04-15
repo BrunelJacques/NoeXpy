@@ -18,7 +18,7 @@ from xpy.outils                 import xformat
 
 #---------------------- Matrices de paramétres -------------------------------------
 
-DIC_BANDEAU = {'titre': "Gestion des codes analytiques communs à Noethys",
+DIC_BANDEAU = {'titre': "Gestion des codes analytiques NoeGest",
         'texte': "La saisie dans le tableau modifie la table cpta_analytiques\n"+
                  "Choisissez l'axe que vous souhaitez gérer",
         'hauteur': 20,
@@ -44,10 +44,55 @@ MATRICE_PARAMS = {
     {'name': 'axe', 'genre': 'Choice', 'label': "Axe analytique",
                     'help': "Le choix de cet axe appelle l'ensemble des lignes concernées",
                     'value':0, 'values': AXES,
+                    'ctrlAction': 'OnAxe',
                     'size':(260,15),
                     'ctrlMaxSize': (200, 20),
                     'txtSize': 130},
 ]}
+
+def GetBoutons(dlg):
+    return  [
+        {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour sortir",
+            'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnClose}
+    ]
+
+def GetAnalytiques(db, axe="%%",**kwd):
+    # appel des items Analytiques de l'axe précisé
+    filtreTxt = kwd.pop('filtreTxt','')
+    if filtreTxt and len(filtreTxt)>0:
+        filtreTxt = """
+            AND (IDanalytique LIKE %%%s%%)
+            AND (abrege LIKE %%%s%%)
+            AND (nom LIKE %%%s%%)
+            AND (params LIKE %%%s%%)"""
+    req = """   
+            SELECT "0",IDanalytique, abrege, nom, params, axe
+            FROM cpta_analytiques
+            WHERE (( axe Like '%s') %s)
+            GROUP BY "0",IDanalytique, abrege, nom, params, axe
+            ORDER BY IDanalytique;
+            """ %(axe,filtreTxt)
+    lstDonnees = []
+    retour = db.ExecuterReq(req, mess='DLG_Analytique.GetAnalytiques')
+    if retour == "ok":
+        recordset = db.ResultatReq()
+        lstDonnees = [list(x) for x in recordset]
+    return lstDonnees
+
+def GetOne(db,IDanalytique):
+    # appel un item Analytique
+    req = """   
+            SELECT "0",IDanalytique, abrege, nom, params, axe
+            FROM cpta_analytiques
+            WHERE ( IDanalytique = '%s');
+            """ %(IDanalytique)
+    lstDonnees = None
+    retour = db.ExecuterReq(req, mess='DLG_Analytique.GetAnalytiques')
+    if retour == "ok":
+        recordset = db.ResultatReq()
+        for record in recordset:
+            lstDonnees = record
+    return lstDonnees
 
 def GetDicPnlParams(dlg):
     return {
@@ -61,13 +106,15 @@ def GetDicPnlParams(dlg):
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
     lstCol = [
-            ColumnDefn("Code", 'left', 50, 'IDanalytique', valueSetter=" ",isSpaceFilling=False,
+            ColumnDefn("pseudoID", 'centre', 0, 'IDpseudo',
+                   isEditable=False),
+            ColumnDefn("Code", 'left', 50, 'IDanalytique', valueSetter="",isSpaceFilling=False,
                        isEditable=True),
-            ColumnDefn("Nom Court", 'left', 140, 'abrege', valueSetter=" ",isSpaceFilling=False,
+            ColumnDefn("Nom Court", 'left', 140, 'abrege', valueSetter="",isSpaceFilling=False,
                        isEditable=True),
-            ColumnDefn("Nom Long", 'left', 300, 'nom', valueSetter=" ",isSpaceFilling=False,
+            ColumnDefn("Nom Long", 'left', 300, 'nom', valueSetter="",isSpaceFilling=False,
                        isEditable=True),
-            ColumnDefn("Params divers", 'left', 200, 'params', valueSetter=" ",isSpaceFilling=True,
+            ColumnDefn("Params divers", 'left', 200, 'params', valueSetter="",isSpaceFilling=True,
                        isEditable=True)
             ]
     return lstCol
@@ -80,9 +127,10 @@ def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
     return {
         'recherche': True,
-        'autoAddRow': False,
-        'toutCocher':True,
-        'toutDecocher':True,
+        'autoAddRow': True,
+        'checkColonne': False,
+        'toutCocher':False,
+        'toutDecocher':False,
         'msgIfEmpty': "Aucune ligne présente pour cet axe",
         'dictColFooter': {"nom": {"mode": "nombre", "alignement": wx.ALIGN_CENTER}},
     }
@@ -98,10 +146,17 @@ def GetDlgOptions(dlg):
     #----------------------- Parties de l'écrans -----------------------------------------
 
 def ValideLigne(dlg,track):
-
-    # validation de la ligne de inventaire
+    # validation de la ligne
     track.valide = True
     track.messageRefus = "Saisie incorrecte\n\n"
+
+    # IDmanquant manquant
+    valNulles =  (None,0," ","")
+    if track.IDanalytique in valNulles :
+        track.messageRefus += "L'IDanalytique n'est pas été déterminé\n"
+    # IDnom ou abrégé absent
+    if track.nom in valNulles or track.abrege in valNulles:
+        track.messageRefus += "Le nom et l'abrégé sont obligatoires\n"
 
     # envoi de l'erreur
     if track.messageRefus != "Saisie incorrecte\n\n":
@@ -135,7 +190,7 @@ class PNL_corps(xGTE.PNL_corps):
         else:
             self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
 
-    def OnEditFinishing(self,code=None,value=None,editor=None):
+    def OnEditFinishing(self,code=None,value=None,event=None):
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
         # flagSkipEdit permet d'occulter les évènements redondants. True durant la durée du traitement
         if self.flagSkipEdit : return
@@ -145,9 +200,16 @@ class PNL_corps(xGTE.PNL_corps):
         track = self.ctrlOlv.GetObjectAt(row)
 
         # Traitement des spécificités selon les zones
-        if code == 'qteStock' or code == 'pxUn':
-            # force la tentative d'enregistrement même en l'absece de saisie
-            track.noSaisie = False
+        if code == 'IDanalytique':
+            if track.vierge or value != track.oldDonnees[1]:
+                oldRecord = GetOne(self.db,value)
+                if oldRecord:
+                    mess = "Code déjà présent\n\n"
+                    mess += "pour l'axe '%s'\n"%oldRecord[-1]
+                    mess += "%s"%str(oldRecord)
+                    wx.MessageBox(mess,"Saisie Invalide")
+                    value = track.oldValue
+                    if event: event.Veto(True)
 
         # enlève l'info de bas d'écran
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
@@ -160,44 +222,23 @@ class PNL_corps(xGTE.PNL_corps):
 
     def SauveLigne(self,track):
         db = self.db
-        track.qteMvts += track.deltaQte
-
         # génération de l'od corrective dans un mouvement
-        if not hasattr(track,'IDmouvement'):
-            track.IDmouvement = None
-            track.qteMvtsOld = 0.0
+        if not hasattr(track,'IDanalytique') or len(track.IDanalytique) == 0:
+            mess = "Un code analytique est obligatoire"
+            wx.MessageBox(mess,"Saisie incomplète")
+            return
         lstDonnees = [
-            ('IDarticle', track.IDarticle),
-            ('prixUnit', track.pxUn),
-            ('ordi', self.parent.ordi),
-            ('dateSaisie', self.parent.today),
-            ('modifiable', 1),]
-        if track.IDmouvement :
-            qteMvts = track.deltaQte + track.qteMvtsOld
-            lstDonnees += [('qte', qteMvts),]
-            ret = db.ReqMAJ("stMouvements", lstDonnees,
-                            "IDmouvement", track.IDmouvement,
-                            mess="DLG_Inventaires.SauveLigne Modif: %d"%track.IDmouvement)
-        else:
-            qteMvts = track.deltaQte
-            ret = 'abort'
-            if qteMvts != 0.0:
-                lstDonnees += [('origine', 'od_in'),
-                               ('qte', qteMvts),
-                               ('date', self.parent.date),
-                               ('IDanalytique', '00'),
-                               ]
-                ret = db.ReqInsert("stMouvements",lstDonnees= lstDonnees, mess="DLG_Inventaires.SauveLigne Insert")
-        if ret == 'ok':
-            track.IDmouvement = db.newID
-            track.qteMvtsOld = qteMvts
+            ('IDanalytique', track.IDanalytique[:8]),
+            ('abrege', track.abrege[:16]),
+            ('nom', track.nom[:200]),
+            ('params', track.params[:400]),
+            ('axe', self.parent.axe[:24])]
+        ret = db.ReqMAJ("cpta_analytiques", lstDonnees,
+                        "IDanalytique", track.IDanalytique)
+        if ret != 'ok':
+            messModif = ret
+            ret = db.ReqInsert("cpta_analytiques",lstDonnees= lstDonnees, mess="DLG_Analytique.SauveLigne Insert")
 
-        # MAJ de l'article
-        lstDonnees = [('qteStock',track.qteMvts),
-                      ('prixMoyen',track.pxUn),
-                      ]
-        mess = "MAJ article '%s'"%track.IDarticle
-        db.ReqMAJ('stArticles',lstDonnees,'IDarticle',track.IDarticle,mess=mess,IDestChaine=True)
 
 class DLG(xGTE.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
@@ -211,12 +252,15 @@ class DLG(xGTE.DLG_tableau):
         self.dicOlv['lstCodes'] = xformat.GetCodesColonnes(GetOlvColonnes(self))
         self.dicOlv['db'] = xdb.DB()
 
+        # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
+        txtInfo =  "Info à suivre, aide à la saisie"
+        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),txtInfo]
+        dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
         # Propriétés de l'écran global type Dialog
-        kwds = GetDlgOptions(self)
         kwds['autoSizer'] = False
         kwds['dicParams'] = GetDicPnlParams(self)
         kwds['dicOlv'] = {}
-        kwds['dicPied'] = {}
+        kwds['dicPied'] = dicPied
         kwds['db'] = xdb.DB()
 
         super().__init__(None, **kwds)
@@ -224,11 +268,13 @@ class DLG(xGTE.DLG_tableau):
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
         self.date = date
+
         ret = self.Init()
         if ret == wx.ID_ABORT: self.Destroy()
         self.Sizer()
         # appel des données
         self.oldParams = None
+        self.OnAxe(None)
         self.GetDonnees()
 
     def Init(self):
@@ -257,6 +303,11 @@ class DLG(xGTE.DLG_tableau):
         self.ctrlOlv.rowFormatter = RowFormatter
         self.ctrlOlv.InitObjectListView()
 
+    def OnAxe(self,event):
+        self.axe= self.pnlParams.GetOneValue('axe', codeBox='filtres')
+        self.GetDonnees()
+        if event: event.Skip()
+
     def GetDonnees(self,dParams=None):
         # test si les paramètres ont changé
         if not dParams:
@@ -274,14 +325,11 @@ class DLG(xGTE.DLG_tableau):
         attente = wx.BusyInfo("Recherche des données...", None)
         # appel des données de l'Olv principal à éditer
 
-        lstDonnees = []
+        lstDonnees = GetAnalytiques(self.db,dParams['axe'])
 
         # alimente la grille, puis création de modelObejects pr init
         self.ctrlOlv.lstDonnees = lstDonnees
         self.ctrlOlv.MAJ()
-        # les écritures reprises sont censées être valides
-        for track in self.ctrlOlv.modelObjects[:-1]:
-            track.IDmouvement = None
         self.oldParams = None
         del attente
 
