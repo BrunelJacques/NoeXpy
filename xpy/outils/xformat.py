@@ -108,11 +108,19 @@ def ComposeWhereFiltre(filtre,lstChamps,lstColonnes=None, lien='WHERE'):
             lstChamps = [lstChamps[x] for x in range(len(lstChamps)) if lstNames[x] in lstChamps[x]]
         whereFiltre = ''
         if filtre and len(filtre) > 0 and len(lstChamps)>0:
+            try:
+                filtreNum = int(filtre)
+            except:
+                filtreNum = None
             texte = ''
             ordeb = """
                     ("""
             for ix in range(len(lstChamps)):
-                texte += "%s %s LIKE '%%%s%%' )"%(ordeb,lstChamps[ix],filtre)
+                if  lstChamps[ix] == '0': continue
+                if filtreNum != None and 'ID' in lstChamps[ix] :
+                    texte += "%s %s = %d )"%(ordeb,lstChamps[ix],filtreNum)
+                else:
+                    texte += "%s %s LIKE '%%%s%%' )"%(ordeb,lstChamps[ix],filtre)
                 ordeb = """
                     OR ("""
             whereFiltre = """

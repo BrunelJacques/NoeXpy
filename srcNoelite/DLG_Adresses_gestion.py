@@ -57,11 +57,12 @@ def dicOlvFamilles():
                  "individus.prenom","individus.adresse_auto","individus.rue_resid","individus.cp_resid","individus.ville_resid"]
 
     lstNomsColonnes = ["0","famille","individu","intitule famille","nom corresp.",
-                        "prenomcorresp.","chez","rue","cp","ville"]
+                        "prenom corresp.","chez","rue","cp","ville"]
 
     lstTypes = ["INTEGER","INTEGER","INTEGER","VARCHAR(100)","VARCHAR(100)",
                 "VARCHAR(100)","INTEGER","VARCHAR(100)","VARCHAR(11)","VARCHAR(80)"]
-    lstCodesColonnes = [xformat.NoAccents(x) for x in lstNomsColonnes]
+    lstCodesColonnes = ["0","IDfamille","IDindividu","adresse_intitule","nom",
+                        "prenom","adresse_auto","rue","cp","ville"]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
     lstLargeurColonnes = xformat.LargeursDefaut(lstNomsColonnes, lstTypes)
 
@@ -359,6 +360,6 @@ if __name__ == '__main__':
     app = wx.App(0)
     import os
     os.chdir("..")
-    dlg = Dialog(mode='familles')
+    dlg = Dialog(mode='individus')
     dlg.ShowModal()
     app.MainLoop()
