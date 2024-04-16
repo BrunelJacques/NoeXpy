@@ -1026,7 +1026,6 @@ class ObjectListView(wx.ListCtrl):
             self.modelObjects = list()
         else:
             self.modelObjects = modelObjects[:]
-
         if self.autoAddRow:
             self.AutoAddRow()
         self.RepopulateList()
@@ -4451,6 +4450,7 @@ class TrackVierge(object):
             if isinstance(value,(wx.DateTime,datetime.date,datetime.datetime)):
                 value = str(value)[:10]
             self.donnees.append(value)
+        self.oldDonnees = [x for x in self.donnees]
         return
 
 class NamedImageList(object):

@@ -591,7 +591,10 @@ class DB():
         try:
             self.cursor.execute(req,)
             self.Commit()
-            self.retourReq = "ok"
+            if self.cursor.rowcount > 0:
+                self.retourReq = "ok"
+            else:
+                self.retourReq = "Aucun record modifié! %s"%req
         except Exception as err:
             self.echec = 1
             if mess:
@@ -606,7 +609,10 @@ class DB():
     def ReqDEL(self, nomTable,champID="",ID=None, condition="", commit=True, mess=None, affichError=True):
         """ Suppression d'un enregistrement ou d'un ensemble avec condition de type where"""
         if len(condition)==0:
-            condition = champID+" = %d"%ID
+            if isinstance(ID,str):
+               condition = champID+" = %s"%ID
+            elif isinstance(ID,(int,float)):
+               condition = champID+" = %d"%int(ID)
         self.retourReq = "ok"
         req = "DELETE FROM %s WHERE %s ;" % (nomTable, condition)
         try:

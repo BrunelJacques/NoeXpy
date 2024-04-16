@@ -25,46 +25,74 @@ from xpy.outils.xconst          import *
 
 class TrackGeneral(object):
     #    Cette classe va transformer une ligne en objet selon les listes de colonnes et valeurs par défaut(setter)
-    def __init__(self, donnees,codesColonnes, nomsColonnes, setterValues,codesSup=[]):
+    def __init__(self, olv, donnees=None):
+        codesColonnes = olv.lstCodesColonnes
+        nomsColonnes = olv.lstNomsColonnes
+        setterValues = olv.lstSetterValues
         ok = True
         self.donnees = []
+        if not hasattr(olv,'lstCodesSup'):
+            codesSup = []
+        else: codesSup = olv.lstCodesSup
+        if donnees == None:
+            donnees = [None,] * (len(codesColonnes)+ len(codesSup))
+        self.vierge = None
+        self.valide = None
         # les données suplémentaires au nbre de colonnes, sont présentes dans les tracks et définies par codesSup
-        if not (len(donnees)-len(codesSup) == len(codesColonnes) == len(nomsColonnes) == len(setterValues) ):
+        if not (len(donnees)-len(codesSup) == len(codesColonnes) == len(nomsColonnes) == len(setterValues)):
             lst = [str(codesColonnes),str(nomsColonnes),str(setterValues),str(donnees)]
             mess = "Problème de nombre d'occurences!\n\n"
             mess += "%d codesCol, %d nomsCol, %d valDéfaut, (%d donnees - %d codes_sup) = %d"%(
                                     len(codesColonnes),
                                     len(nomsColonnes), len(setterValues),
-                                    len(donnees),len(codesSup),(len(donnees)-len(codesSup)))
+                                    len(donnees),len(codesSup),
+                                    (len(donnees)-len(codesSup)))
             mess += '\n\n'+'\n\n'.join(lst)
             wx.MessageBox(mess,caption="xGTE.TrackGeneral")
             ok = False
-            #raise(mess)
+        # instaciation proprement dite
         if ok:
             # pour chaque donnée affichée, attribut et ctrl setter value
             for ix in range(len(codesColonnes)):
                 donnee = donnees[ix]
-                if setterValues[ix]:
+                if setterValues[ix] != None:
                     # prise de la valeur par défaut si pas de donnée
-                    if (donnee is None):
+                    if donnee in (None,""):
                         donnee = setterValues[ix]
                     # le type de la donnée n'est pas celui attendu
                     else:
+                        self.vierge = False
                         if not isinstance(donnee,type(setterValues[ix])):
                             try:
-                                if type(setterValues[ix]) in (int,float):
+                                if type(setterValues[ix]) == int:
+                                    donnee = int(donnee)
+                                elif type(setterValues[ix]) == float:
                                     donnee = float(donnee)
                                 elif type(setterValues[ix]) == str:
                                     donnee = str(donnee)
-                                elif isinstance(setterValues[ix],(wx.DateTime,datetime.date,datetime.datetime,datetime.time)):
+                                elif isinstance(setterValues[ix],(wx.DateTime,
+                                                                      datetime.date,
+                                                                      datetime.datetime,
+                                                                      datetime.time)):
                                     donnee = xformat.DateSqlToDatetime(donnee)
                             except : pass
                 self.__setattr__((codesColonnes + codesSup)[ix], donnee)
-            # complément des autres données
+            # complément des autres données hors colonnes affichées
             for ixrel in range(len(codesSup)):
                 ixabs = len(codesColonnes) + ixrel
                 self.__setattr__((codesSup)[ixrel],donnees[ixabs])
             self.donnees = donnees
+            # ce stockage des oldDonnees de l'existant permet de gérer la saisies invalides
+            self.oldDonnees = [x for x in self.donnees]
+
+class TrackVierge(TrackGeneral):
+    #    Cette classe initialise une ligne avec les valeurs par défaut définies dans les colonnes
+    def __init__(self,olv):
+        TrackGeneral.__init__(self, olv)
+        self.vierge = True
+        self.valide = False
+        return
+
 
 class ListView( FastObjectListView):
     """
@@ -150,6 +178,7 @@ class ListView( FastObjectListView):
         if self.editMode:
             self.cellEditMode =  FastObjectListView.CELLEDIT_SINGLECLICK
         self.Bind(wx.EVT_SET_FOCUS,self.OnSetFocus)
+        self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnItemDeselected)
         self.flagSkipEdit = False
 
     def InitObjectListView(self):
@@ -183,8 +212,7 @@ class ListView( FastObjectListView):
             return []
 
         for ligneDonnees in self.lstDonnees:
-            tracks.append(TrackGeneral(ligneDonnees,self.lstCodesColonnes,self.lstNomsColonnes,self.lstSetterValues,
-                                        codesSup=self.lstCodesSup))
+            tracks.append(TrackGeneral(self,ligneDonnees))
         if hasattr(self.parent,"CalculeLigne"):
             for track in tracks:
                 self.parent.CalculeLigne(self,track)
@@ -193,6 +221,16 @@ class ListView( FastObjectListView):
             track.valide = True
         self._FormatAllRows()
         return tracks
+
+    def OnItemDeselected(self,event):
+        if not event.EventObject.cellBeingEdited:
+            return
+        (ixLig, ixCol) = event.EventObject.cellBeingEdited
+        track = self.innerList[ixLig]
+        if track.valide == False:
+            track = TrackGeneral(self,track.oldDonnees)
+            track.valide = True
+            self.innerList[ixLig] = track
 
     def OnSetFocus(self,evt):
         if self.flagSkipEdit : return
@@ -219,11 +257,16 @@ class ListView( FastObjectListView):
         if hasattr(self,'MAJ_calculs'):
             self.MAJ_calculs(self.lanceur)
 
+    def GetTrackVierge(self,row = None):
+        track = TrackVierge(self)
+        if hasattr(self.Parent,'InitTrackVierge'):
+            self.Parent.InitTrackVierge(track,self.modelObjects)
+        return track
+
     def AddTracks(self,lstDonnees):
         tracks = []
         for ligneDonnees in lstDonnees:
-            tracks.append(TrackGeneral( ligneDonnees,self.lstCodesColonnes,self.lstNomsColonnes,self.lstSetterValues,
-                                        codesSup=self.lstCodesSup))
+            tracks.append(TrackGeneral( self,ligneDonnees))
         self.AddObjects(tracks)
 
     def GetLstCodesColonnes(self):
@@ -535,8 +578,16 @@ class PanelListView(wx.Panel):
                 ix = olv.modelObjects.index(olv.GetSelectedObjects()[0])
             for track in self.buffertracks:
                 track.valide = False
+                track.vierge = True
                 if hasattr(self.parent,'OnCtrlV'):
                     self.parent.OnCtrlV(track)
+                else:
+                    # avant de coller une track, raz du champs ID
+                    track.donnees[0] = None
+                    track.vierge = True
+                    track.oldDonnees = [None,] * len(track.donnees)
+                    self.parent.ValideLigne(None, track)
+                    self.parent.SauveLigne(track)
                 olv.modelObjects.insert(ix,track)
                 ix += 1
             olv.RepopulateList()
@@ -553,7 +604,9 @@ class PanelListView(wx.Panel):
         if self.ctrlOlv.checkColonne:
             code = self.ctrlOlv.lstCodesColonnes[col-1]
         track = self.ctrlOlv.GetObjectAt(row)
-
+        # conservation des données de la ligne en cours
+        if track.valide:
+            track.oldDonnees = [x for x in track.donnees]
         # cas d'une nouvelle ligne appel des éventuels traitements
         if self.oldRow != row and hasattr(self.parent, 'OnNewRow'):
             self.parent.OnNewRow(row,track)
@@ -570,10 +623,6 @@ class PanelListView(wx.Panel):
         # appel des éventuels spécifiques
         if hasattr(self.parent, 'OnEditStarted'):
             self.parent.OnEditStarted(code,track,editor=event.editor)
-
-        # conservation des données de la ligne en cours
-        track.oldDonnees = [x for x in track.donnees]
-
         event.Skip()
 
     def OnEditFinishing(self, event):
@@ -610,7 +659,6 @@ class PanelListView(wx.Panel):
             row, col = self.ctrlOlv.cellBeingEdited
             track = self.ctrlOlv.GetObjectAt(row)
             self.oldRow = row
-
             # si pas de saisie on passe
             if track.noSaisie:
                 event.Skip()
@@ -657,9 +705,12 @@ class PanelListView(wx.Panel):
 
     # Initialisation d'une nouvelle track
     def InitTrackVierge(self,track,modelObject):
+
         # appel des éventuels spécifiques
         if hasattr(self.parent, 'InitTrackVierge'):
             self.parent.InitTrackVierge(track,modelObject)
+        track.oldDonnees = [x for x in track.donnees]
+
 
 # ----------- Composition de l'écran -------------------------------------------------------
 class PNL_params(xusp.TopBoxPanel):

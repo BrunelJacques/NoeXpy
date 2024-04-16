@@ -107,7 +107,7 @@ def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
     lstCol = [
             ColumnDefn("pseudoID", 'centre', 0, 'IDpseudo',
-                   isEditable=False),
+                   isEditable=False), # La première colonne n'est jamais éditable, le code doit être éditable
             ColumnDefn("Code", 'left', 50, 'IDanalytique', valueSetter="",isSpaceFilling=False,
                        isEditable=True),
             ColumnDefn("Nom Court", 'left', 140, 'abrege', valueSetter="",isSpaceFilling=False,
@@ -146,7 +146,7 @@ def GetDlgOptions(dlg):
     #----------------------- Parties de l'écrans -----------------------------------------
 
 def ValideLigne(dlg,track):
-    # validation de la ligne
+    # validation de la ligne, messageRefus sera affiché par CellEditor.GetValideLigne
     track.valide = True
     track.messageRefus = "Saisie incorrecte\n\n"
 
@@ -155,12 +155,17 @@ def ValideLigne(dlg,track):
     if track.IDanalytique in valNulles :
         track.messageRefus += "L'IDanalytique n'est pas été déterminé\n"
     # IDnom ou abrégé absent
-    if track.nom in valNulles or track.abrege in valNulles:
-        track.messageRefus += "Le nom et l'abrégé sont obligatoires\n"
-
+    if track.nom in valNulles:
+        track.messageRefus += "Un nom est obligatoires\n"
+    if track.abrege in valNulles:
+        track.messageRefus += "Un abrégé est obligatoires\n"
     # envoi de l'erreur
     if track.messageRefus != "Saisie incorrecte\n\n":
         track.valide = False
+        dlg.pnlPied.SetItemsInfos("Ligne non valide, non enregistrée",
+                                          wx.ArtProvider.GetBitmap(wx.ART_ERROR,
+                                                                   wx.ART_OTHER,
+                                                                   (16, 16)))
     else: track.messageRefus = ""
     return
 
@@ -208,7 +213,7 @@ class PNL_corps(xGTE.PNL_corps):
                     mess += "pour l'axe '%s'\n"%oldRecord[-1]
                     mess += "%s"%str(oldRecord)
                     wx.MessageBox(mess,"Saisie Invalide")
-                    value = track.oldValue
+                    value = track.oldDonnees[1]
                     if event: event.Veto(True)
 
         # enlève l'info de bas d'écran
@@ -221,6 +226,9 @@ class PNL_corps(xGTE.PNL_corps):
         ValideLigne(self.parent,track)
 
     def SauveLigne(self,track):
+        if not track.valide or len(track.IDanalytique) < 2:
+            wx.MessageBox("Track non valide, pas enregistrée")
+            return
         db = self.db
         # génération de l'od corrective dans un mouvement
         if not hasattr(track,'IDanalytique') or len(track.IDanalytique) == 0:
@@ -233,11 +241,32 @@ class PNL_corps(xGTE.PNL_corps):
             ('nom', track.nom[:200]),
             ('params', track.params[:400]),
             ('axe', self.parent.axe[:24])]
-        ret = db.ReqMAJ("cpta_analytiques", lstDonnees,
-                        "IDanalytique", track.IDanalytique)
-        if ret != 'ok':
-            messModif = ret
-            ret = db.ReqInsert("cpta_analytiques",lstDonnees= lstDonnees, mess="DLG_Analytique.SauveLigne Insert")
+
+        mess = "DLG_Analytique.SauveLigne"
+        IDold = track.oldDonnees[1]
+        IDanalytique = track.IDanalytique[:8]
+        if IDold != IDanalytique:
+            ret = 'ok'
+            if not IDold in (None, ''):
+                # supprime l'antérieur
+                ret = db.ReqDEL('cpta_analytiques','IDanalytique',IDold,mess=mess)
+            # Ajout de l'enregistrement
+            if ret == 'ok':
+                ret = db.ReqInsert("cpta_analytiques", lstDonnees=lstDonnees, mess=mess)
+        else:
+            # update du record
+            ret = db.ReqMAJ("cpta_analytiques",lstDonnees,"IDanalytique",track.IDanalytique,
+                      affichError=False)
+            if ret != 'ok':
+                print(ret, track.IDanalytique)
+
+    def OnDelete(self,track):
+        mess = "DLG_Analytique.OnDelete"
+        IDanalytique = track.IDanalytique[:8]
+        self.db.ReqDEL('cpta_analytiques', 'IDanalytique', IDanalytique, mess=mess)
+        req = """FLUSH  TABLES cpta_analytiques;"""
+        retour = self.db.ExecuterReq(req, mess=req)
+
 
 
 class DLG(xGTE.DLG_tableau):
@@ -261,7 +290,8 @@ class DLG(xGTE.DLG_tableau):
         kwds['dicParams'] = GetDicPnlParams(self)
         kwds['dicOlv'] = {}
         kwds['dicPied'] = dicPied
-        kwds['db'] = xdb.DB()
+        self.db = xdb.DB()
+        kwds['db'] = self.db
 
         super().__init__(None, **kwds)
 
@@ -278,7 +308,6 @@ class DLG(xGTE.DLG_tableau):
         self.GetDonnees()
 
     def Init(self):
-        self.db = xdb.DB()
         self.pnlParams.SetOneValue('date',self.date, codeBox='param1')
         # définition de l'OLV
         self.ctrlOlv = None
