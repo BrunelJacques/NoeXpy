@@ -239,9 +239,6 @@ class PNL_corpsReglements(xGTE.PNL_corps):
         # raz de certains champs à recomposer
         (track.IDreglement, track.date, track.IDprestation, track.differe, track.IDpiece,track.compta) = (None,)*6
 
-    def OnNewRow(self,row,track):
-        pass
-
     def OnEditStarted(self,code,track=None,editor=None):
         # affichage de l'aide
         if code in DIC_INFOS.keys():

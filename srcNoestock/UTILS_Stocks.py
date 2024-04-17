@@ -954,7 +954,7 @@ def MAJarticle(db,dlg,track):
     if hasattr(track, 'oldIDarticle'):
         oldIDarticle = track.oldIDarticle
 
-    if hasattr(track, 'dicMvt'):
+    if hasattr(track, 'dicMvt') and track.dicMvt:
         dicMvt = track.dicMvt
         oldIDarticle = dicMvt['IDarticle']
     else:
@@ -980,7 +980,7 @@ def MAJarticle(db,dlg,track):
         ret = majArticle(dicArticle,dicMvt)
 
     if ret == 'ok':
-        if hasattr(track,'dicMvt'):
+        if hasattr(track,'dicMvt') and track.dicMvt:
             track.dicMvt.update(newDicMvt)
         else: track.dicMvt = newDicMvt
         track.dicArticle.update(dicArticle)

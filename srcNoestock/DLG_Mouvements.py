@@ -450,7 +450,8 @@ def CalculeLigne(dlg,track):
     except: pxUn = 0.0
 
     try: rations = track.dicArticle['rations']
-    except: rations = 1
+    except:
+        rations = 1
     txTva = track.dicArticle['txTva']
     track.mttHT = PxUnToHT(dlg.ht_ttc,txTva) * pxUn * qte
     track.mttTTC = PxUnToTTC(dlg.ht_ttc,txTva) * pxUn * qte
@@ -485,10 +486,6 @@ def ValideLigne(dlg,track):
         return
     track.messageRefus = "Saisie incomplète\n\n"
     CalculeLigne(dlg,track)
-
-    # IDmouvement manquant
-    if track.IDmouvement in (None,0) :
-        track.messageRefus += "L'IDmouvement n'a pas été déterminé\n"
 
     # Repas non renseigné
     if dlg.sens == 'sorties' and track.repas in (None,0,'') :
@@ -541,7 +538,7 @@ class PNL_corps(xGTE.PNL_corps):
         self.dicArticle = None
 
     def InitTrackVierge(self,track,modelObject):
-        track.creer = True
+        #track.creer = True
         track.repas = None
 
     def ValideParams(self):
@@ -559,17 +556,18 @@ class PNL_corps(xGTE.PNL_corps):
         CalculeLigne(self.lanceur,track)
         nust.DelMouvement(self.parent.db,self.ctrlOlv,track)
 
-    def OnNewRow(self,row,track):
-        pass
-
     def OnEditStarted(self,code,track=None,editor=None):
         # affichage de l'aide
         if code in DIC_INFOS.keys():
             self.parent.pnlPied.SetItemsInfos( DIC_INFOS[code],
-                                               wx.ArtProvider.GetBitmap(wx.ART_FIND, wx.ART_OTHER, (16, 16)))
+                                               wx.ArtProvider.GetBitmap(wx.ART_FIND,
+                                                                        wx.ART_OTHER,
+                                                                        (16, 16)))
         else:
-            self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
-
+            self.parent.pnlPied.SetItemsInfos(INFO_OLV,
+                                              wx.ArtProvider.GetBitmap(wx.ART_INFORMATION,
+                                                                       wx.ART_OTHER,
+                                                                       (16, 16)))
         # travaux avant saisie
         if self.parent.sens == 'sorties' and track.repas == None :
             # choix par défaut selon l'heure
@@ -686,7 +684,7 @@ class PNL_pied(xGTE.PNL_pied):
 
 class DLG(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,sens='sorties',date=None,**kwd):
+    def __init__(self,sens='entrees',date=None,**kwd):
         # gestion des deux sens possibles 'entrees' et 'sorties'
         if not sens: sens = 'article'
         self.sens = sens

@@ -336,9 +336,6 @@ class PNL_corps(xGTE.PNL_corps):
     def OnDelete(self,track):
         nust.DelInventaire(self.parent.db,self.ctrlOlv,track)
 
-    def OnNewRow(self,row,track):
-        pass
-
     def OnEditStarted(self,code,track=None,editor=None):
         # affichage de l'aide
         if code in DIC_INFOS.keys():

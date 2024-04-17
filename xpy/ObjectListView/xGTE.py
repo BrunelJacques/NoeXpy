@@ -549,6 +549,9 @@ class PanelListView(wx.Panel):
         if len(self.buffertracks) == 0:
             mess = "Pas de sélection faite"
             wx.MessageBox(mess)
+        else:
+            mess = "lignes mémorisées pour prochain coller ou <ctrl> V"
+            wx.MessageBox(" %d %s"%(len(self.buffertracks),mess))
         return
 
     def OnCtrlX(self,event):
@@ -607,9 +610,6 @@ class PanelListView(wx.Panel):
         # conservation des données de la ligne en cours
         if track.valide:
             track.oldDonnees = [x for x in track.donnees]
-        # cas d'une nouvelle ligne appel des éventuels traitements
-        if self.oldRow != row and hasattr(self.parent, 'OnNewRow'):
-            self.parent.OnNewRow(row,track)
 
         # conservation de la valeur qui peut être modifiée
         if not (hasattr(track,'oldValue')):
