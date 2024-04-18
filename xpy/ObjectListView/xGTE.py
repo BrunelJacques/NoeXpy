@@ -11,7 +11,7 @@ import wx
 import os
 import datetime
 import xpy.xUTILS_SaisieParams as xusp
-from xpy.outils import xbandeau, xformat, xboutons
+from xpy.outils import xbandeau, xformat, xboutons,xexport
 
 from xpy.ObjectListView.ObjectListView import FastObjectListView
 from xpy.ObjectListView.ObjectListView  import  ColumnDefn
@@ -435,13 +435,11 @@ class ListView( FastObjectListView):
         prt.Preview()
 
     def ExportTexte(self, event):
-        import xpy.outils.xexport
-        xpy.outils.xexport.ExportTexte(self, titre=self.GetTitreImpression(), autoriseSelections=False)
+        xexport.ExportTexte(self, titre=self.GetTitreImpression())
 
     def ExportExcel(self, event):
-        import xpy.outils.xexport
         titre = self.GetTitreImpression()
-        xpy.outils.xexport.ExportExcel(self, titre=titre[:31], autoriseSelections=False)
+        xexport.ExportExcel(self, titre=titre[:31], autoriseSelections=False)
 
     def GetTracksCoches(self):
         return self.GetCheckedObjects()
@@ -465,6 +463,15 @@ class ListView( FastObjectListView):
             dlg.Destroy()
             if ret != wx.ID_YES:
                 return False
+        lstColonnes, llData = xexport.GetValeursListview(self)
+        nomFichier = "DeleteLignes"
+        try:
+            nomFichier = self.parent.parent.Name
+            nomFichier = xformat.NoPunctuation(nomFichier)
+        except:
+            pass
+        xexport.ExportTemp(lstColonnes,llData,nomFichier=nomFichier)
+
         ix = 0
         for obj in self.GetSelectedObjects():
             # suppression des lignes pour la saisie

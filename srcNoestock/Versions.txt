@@ -1,5 +1,5 @@
 version 1.1.2.35 (13/04/2024)
-    - Modifs XPY
+    - Modifs xpy
 
 version 1.1.2.34 (14/02/2024)
     - adaptations connexions nouvelle box

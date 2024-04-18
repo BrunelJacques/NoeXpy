@@ -392,12 +392,11 @@ class ListView(FastObjectListView):
 
     def ExportTexte(self, event):
         import xpy.outils.xexport
-        xpy.outils.xexport.ExportTexte(self, titre=self.GetTitreImpression(), autoriseSelections=False)
+        xpy.outils.xexport.ExportTexte(self, titre=self.GetTitreImpression())
 
     def ExportExcel(self, event):
         import xpy.outils.xexport
-        xpy.outils.xexport.ExportExcel(self, titre=self.GetTitreImpression(),
-                                           autoriseSelections=False)
+        xpy.outils.xexport.ExportExcel(self, titre=self.GetTitreImpression())
 
     def GetTracksCoches(self):
         return self.GetCheckedObjects()

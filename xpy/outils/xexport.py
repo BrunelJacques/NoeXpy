@@ -15,7 +15,7 @@ import datetime
 import decimal
 import platform
 
-from xpy.outils import xchoixListe,xformat
+from xpy.outils import xchoixListe,xformat,xchemins
 from xpy.outils.xconst import *
 from xpy.ObjectListView.ObjectListView import FastObjectListView, ColumnDefn
 
@@ -103,6 +103,7 @@ class DataType(object):
     #fin class DataType
 
 def GetValeursListview(listview=None, format="texte"):
+
     """ Récupère les valeurs affichées sous forme de liste """
     """ format = "texte" ou "original" """
     # Récupère les labels de colonnes
@@ -112,7 +113,13 @@ def GetValeursListview(listview=None, format="texte"):
 
     # Récupère les valeurs
     listeValeurs = []
-    listeObjects = listview.innerList  # listview.GetFilteredObjects()
+    listeObjects = []
+    if listview.checkColonne:
+        listeObjects = listview.GetCheckedObjects()
+    if len(listeObjects) == 0:
+        listeObjects = listview.GetSelectedObjects()
+    if len(listeObjects) <= 1:
+        listeObjects = listview.innerList  # listview.GetFilteredObjects()
     for object in listeObjects:
         valeursLigne = []
         for indexCol in range(0, listview.GetColumnCount()):
@@ -216,39 +223,7 @@ def LanceFichierExterne(nomFichier) :
     if platform.system() == "Linux":
         os.system("xdg-open " + nomFichier)
 
-def ExportTexte(listview=None, grid=None, titre=u"", lstColonnes=None, listeValeurs=None, autoriseSelections=False):
-    """ Export de la liste au format texte """
-    if (listview != None and len(listview.innerList) == 0) or (
-            grid != None and (grid.GetNumberRows() == 0 or grid.GetNumberCols() == 0)):
-        dlg = wx.MessageDialog(None, "Il n'y a aucune donnée dans la liste !", "Erreur", wx.OK | wx.ICON_ERROR)
-        dlg.ShowModal()
-        dlg.Destroy()
-        return wx.CANCEL
-
-    # Récupération des valeurs
-    if listview != None and lstColonnes == None and listeValeurs == None:
-        lstColonnes, listeValeurs = GetValeursListview(listview, format="texte")
-
-    if grid != None and lstColonnes == None and listeValeurs == None:
-        autoriseSelections = False
-        lstColonnes, listeValeurs = GetValeursGrid(grid)
-
-    # Selection des lignes
-    if autoriseSelections == True:
-        dlg = xchoixListe.DialogAffiche(None, lstColonnes=lstColonnes, lstDonnees=listeValeurs)
-        if dlg.ShowModal() == wx.OK:
-            listeSelections = dlg.GetChoix()
-            dlg.Destroy()
-        else:
-            dlg.Destroy()
-            return wx.CANCEL
-
-    nomFichier = "ExportTexte_%s.txt" % datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    wildcard = "Fichier texte (*.txt)|*.txt|" \
-               "All files (*.*)|*.*"
-    cheminFichier = ChoixDestination(nomFichier,wildcard)
-    if not cheminFichier : return wx.CANCEL
-
+def ComposeTexte(lstColonnes,lstValeurs):
     # Création du fichier texte
     texte = ""
     separateur = ";"
@@ -261,21 +236,42 @@ def ExportTexte(listview=None, grid=None, titre=u"", lstColonnes=None, listeVale
         texte += labelCol + separateur
     texte = texte[:-1] + "\n"
 
-    for valeurs in listeValeurs:
-        if autoriseSelections == False or valeurs[0] == "" or int(valeurs[0]) in listeSelections:
-            for valeur in valeurs:
-                if valeur == None:
-                    valeur = u""
-                texte += u"%s%s" % (valeur, separateur)
-            texte = texte[:-1] + "\n"
-
+    for valeurs in lstValeurs:
+        for valeur in valeurs:
+            if valeur == None:
+                valeur = u""
+            texte += u"%s%s" % (valeur, separateur)
+        texte = texte[:-1] + "\n"
     # Elimination du dernier saut à la ligne
-    texte = texte[:-1]
+    return texte[:-1]
+
+def ExportTexte(listview=None, grid=None, titre=u"",lstColonnes=None,listeValeurs=None):
+    """ Export de la liste au format texte """
+    if (listview != None and len(listview.innerList) == 0) or (
+            grid != None and (grid.GetNumberRows() == 0 or grid.GetNumberCols() == 0)):
+        dlg = wx.MessageDialog(None, "Il n'y a aucune donnée dans la liste !", "Erreur", wx.OK | wx.ICON_ERROR)
+        dlg.ShowModal()
+        dlg.Destroy()
+        return wx.CANCEL
+
+    # Récupération des valeurs
+    if listview != None and listeValeurs == None:
+        lstColonnes, listeValeurs = GetValeursListview(listview, format="texte")
+
+    if grid != None and lstColonnes == None and listeValeurs == None:
+        lstColonnes, listeValeurs = GetValeursGrid(grid)
+
+    nomFichier = "ExportTexte_%s.txt" % datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    wildcard = "Fichier texte (*.txt)|*.txt|" \
+               "All files (*.*)|*.*"
+    cheminFichier = ChoixDestination(nomFichier,wildcard)
+    if not cheminFichier : return wx.CANCEL
 
     # Création du fichier texte
+    texte = titre + "\n"
+    texte += ComposeTexte(lstColonnes,listeValeurs)
     f = open(cheminFichier, "w")
     f.write(texte)
-    print(texte.encode('utf-8'))
     f.close()
     return Confirmation(cheminFichier)
 
@@ -538,6 +534,14 @@ def ExportExcel(listview=None, grid=None, titre="Liste", lstColonnes=None, liste
 
     return Confirmation(cheminFichier)
 
+def ExportTemp(lstColonnes,llData,nomFichier="spare.txt"):
+    chemin = xchemins.GetRepTemp(nomFichier)
+    texte = ComposeTexte(lstColonnes,llData)
+    # Création du fichier texte
+    f = open(chemin, "w")
+    f.write(texte)
+    f.close()
+    return
 
 # ------------------------- POUR LES TESTS ---------------------------------------------
 
@@ -549,7 +553,6 @@ class Track(object):
         self.date = donnees["date"]
         self.montant = donnees["montant"]
         self.heure = donnees["heure"]
-
 
 class ListView(FastObjectListView):
     def __init__(self, *args, **kwds):

@@ -1539,6 +1539,9 @@ class ObjectListView(wx.ListCtrl):
             elif nb == 1 : mess = "Suppression de la ligne %sée!" % mot
             else:  mess = "Suppression des %d lignes %sées!" % (nb,mot)
             mess += "\n\n "
+            from xpy.outils import xchemins
+            path = xchemins.GetRepTemp()
+            mess += "copie de sécurité en %s" %path
             dlg = wx.MessageDialog(self,mess,'Confirmez',style=wx.YES_NO|wx.ICON_INFORMATION)
             ret = dlg.ShowModal()
             dlg.Destroy()
