@@ -59,8 +59,10 @@ FILTREOUT_16X16_IMG = PREFIXE_DOSSIER_IMG + "Images/16x16/Filtre_supprimer.png"
 # -----------------------------------------------------------
 
 #  outils/xtableau.py
-
-SUPPPRIMER_LIGNE = "Supprimer la ligne"
+COPIER_LIGNE = "Copier la ligne"
+COUPER_LIGNE = "Couper la ligne"
+COLLER_LIGNE = "Coller la ligne"
+SUPPRIMER_LIGNE = "Supprimer la ligne"
 INSERER_LIGNE = "Insérer une ligne"
 TOUT_COCHER_TXT = "Tout cocher"
 TOUT_DECOCHER_TXT = "Tout décocher"

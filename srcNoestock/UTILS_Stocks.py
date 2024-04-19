@@ -686,7 +686,7 @@ def SqlFournisseurs(db=None, **kwd):
         for record in records:
             # extrait le fournisseur et stocke le mot début
             if not record[0]: continue
-            mot = record[0].split()[0]
+            mot = record[0].split()[0].upper()
             if len(mot) > 7: mot = mot[:7]
             if mot in lstMots: continue
             lstMots.append(mot)
@@ -715,8 +715,6 @@ def SqlFournisseurs(db=None, **kwd):
     if retour == "ok":
         recordset = db.ResultatReq()
         InsFournisseurs(recordset)
-
-    lstDonnees.append('NONAME')
     lstDonnees.sort()
     return lstDonnees
 

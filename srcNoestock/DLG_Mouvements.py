@@ -140,7 +140,7 @@ MATRICE_PARAMS = {
     ],
 ("param2", "Comptes"): [
     {'name': 'fournisseur', 'genre': 'Combo', 'label': 'Fournisseur',
-                    'help': "La saisie d'un fournisseurfacilite les commandes par fournisseur, on peut mettre 'NONAME'",
+                    'help': "La saisie d'un fournisseurfacilite les commandes par fournisseur",
                     'value':0,'values':[''],
                     'ctrlAction':'OnFournisseur',
                      'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un compte pour l'origine",
@@ -303,6 +303,7 @@ def GetAnterieur(dlg,db=None):
         for ix in range(len(donnees)):
             dParams[dicOlv['listeCodesColonnes'][ix]] = donnees[ix]
         dParams['sensNum'] = dlg.sensNum
+        dParams['date'] = DateSqlToDatetime(dParams['date'])
     dlgAnte.Destroy()
     return dParams
 
@@ -761,7 +762,8 @@ class DLG(xusp.DLG_vide):
         self.ctrlOlv = self.pnlOlv.ctrlOlv
 
         # charger les valeurs de pnl_params
-        self.pnlParams.SetOneSet('fournisseur',values=nust.SqlFournisseurs(self.db),codeBox='param2')
+        self.fournisseurs = nust.SqlFournisseurs(self.db)
+        self.pnlParams.SetOneSet('fournisseur',values=self.fournisseurs,codeBox='param2')
         self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
         self.valuesAnalytiques = ['',] + [nust.MakeChoiceActivite(x) for x in self.lstAnalytiques]
         self.codesAnalytiques = [x[:2] for x in self.valuesAnalytiques]
@@ -889,7 +891,45 @@ class DLG(xusp.DLG_vide):
         if event: event.Skip()
 
     def OnFournisseur(self,event):
-        self.fournisseur = self.pnlParams.GetOneValue('fournisseur',codeBox='param2')
+        fournisseur = self.pnlParams.GetOneValue('fournisseur',codeBox='param2')
+        fournisseur = fournisseur.strip().upper()
+        lg = min(len(fournisseur),7)
+        lstChoix = [x for x in self.fournisseurs if x[:lg] == fournisseur[:lg]]
+        if len(fournisseur) ==0: pass
+        elif len(fournisseur) < 3:
+            # moins de trois caractères c'est trop court, mieux vaut rien
+            mess = "Identiant fournisseur trop court\n\n"
+            mess = "Soit à blanc fournisseur soit au moins trois caractères pour un fournisseur!"
+            wx.MessageBox(mess,"Refus")
+            return
+        elif len(lstChoix) == 1:
+            # un seul item fournisseur correspond, on le choisit
+            fournisseur = lstChoix[0]
+        elif len(lstChoix) == 0:
+            # nouvel item à confirmer
+            mess = "'%s' est-il bien un nouveau fournisseur à créer?\n\n"%fournisseur
+            if len(fournisseur) < 7:
+                # permetra un autre fournisseur avec le même début
+                fournisseur += "_"
+            ret = wx.MessageBox(mess,"Confirmez",style=wx.OK|wx.CANCEL)
+            if ret != wx.OK:
+                self.pnlParams.SetOneValue('fournisseur', None, codeBox='param2')
+                return
+        elif len(lstChoix) > 1:
+            from xpy.outils  import  xchoixListe
+            dlg = xchoixListe.DialogAffiche(lstDonnees=lstChoix,
+                lstColonnes=['nom_fournisseur',],
+                titre="Précisez  votre choix",
+                intro="Sinon créez un nouveau fournisseur avec un nom plus long")
+            ret = dlg.ShowModal()
+            choix = dlg.choix
+            getch = dlg.GetChoix()
+            if ret == wx.OK:
+                fournisseur = dlg.GetChoix()
+            else: fournisseur = ''
+            dlg.Destroy()
+        self.fournisseur = fournisseur
+        self.pnlParams.SetOneValue('fournisseur', fournisseur, codeBox='param2')
         self.GetDonnees()
         if event: event.Skip()
 
@@ -927,9 +967,11 @@ class DLG(xusp.DLG_vide):
             dParams = GetAnterieur(self,db=self.db)
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK # gestion du retour du choix dépot réactive dblClic
         else:
+            # cas du lancement par __init
             dParams = GetEnSaisie(self,db=self.db)
 
         if not 'date' in dParams.keys(): return
+
         self.pnlParams.SetOneValue('date',dParams['date'],'param1')
         self.pnlParams.SetOneValue('fournisseur',dParams['fournisseur'],'param2')
         self.SetOrigine(dParams['origine'])
@@ -951,7 +993,8 @@ class DLG(xusp.DLG_vide):
                 if not key in self.oldParams.keys(): idem = False
                 elif not key in dParams.keys(): idem = False
                 elif self.oldParams[key] != dParams[key]: idem = False
-        if idem : return
+        if idem :
+            return
         # forme la grille, puis création d'un premier modelObjects par init
         self.InitOlv()
 

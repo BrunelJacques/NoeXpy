@@ -142,6 +142,9 @@ class ListView( FastObjectListView):
         self.dictColFooter = kwds.pop('dictColFooter', {})
 
         # Choix des options du 'tronc commun' du menu contextuel
+        self.copier = kwds.pop('copier', True)
+        self.couper = kwds.pop('couper', True)
+        self.coller = kwds.pop('coller', True)
         self.supprimer = kwds.pop('supprimer', True)
         self.inserer = kwds.pop('inserer', True)
         self.exportExcel = kwds.pop('exportExcel', True)
@@ -321,10 +324,31 @@ class ListView( FastObjectListView):
             menuPop.Append(item)
             self.Bind(wx.EVT_MENU, self.OnInsert, id=21)
 
+        # Item copier Ligne
+        if self.copier and self.cellEditMode != 0:
+            item = wx.MenuItem(menuPop, 22, COPIER_LIGNE)
+            bmp = wx.Bitmap(ABANDON_16X16_IMG, wx.BITMAP_TYPE_PNG)
+            item.SetBitmap(bmp)
+            menuPop.Append(item)
+            self.Bind(wx.EVT_MENU, self.OnCopier, id=16)
+        # Item couper Ligne
+        if self.couper and self.cellEditMode != 0:
+            item = wx.MenuItem(menuPop, 22, COUPER_LIGNE)
+            bmp = wx.Bitmap(ABANDON_16X16_IMG, wx.BITMAP_TYPE_PNG)
+            item.SetBitmap(bmp)
+            menuPop.Append(item)
+            self.Bind(wx.EVT_MENU, self.OnCouper, id=17)
+        # Item coller Ligne
+        if self.coller and self.cellEditMode != 0:
+            item = wx.MenuItem(menuPop, 22, COLLER_LIGNE)
+            bmp = wx.Bitmap(ABANDON_16X16_IMG, wx.BITMAP_TYPE_PNG)
+            item.SetBitmap(bmp)
+            menuPop.Append(item)
+            self.Bind(wx.EVT_MENU, self.OnColler, id=18)
 
         # Item Supprimer Ligne
         if self.supprimer and self.cellEditMode != 0:
-            item = wx.MenuItem(menuPop, 22, SUPPPRIMER_LIGNE)
+            item = wx.MenuItem(menuPop, 22, SUPPRIMER_LIGNE)
             bmp = wx.Bitmap(ABANDON_16X16_IMG, wx.BITMAP_TYPE_PNG)
             item.SetBitmap(bmp)
             menuPop.Append(item)
@@ -450,9 +474,16 @@ class ListView( FastObjectListView):
     def SupprimerFiltres(self, event=None):
         self.parent.ctrlOutils.SupprimerFiltres()
 
+    def OnCopier(self,event=None):
+        pass
+    def OnCouper(self,event=None):
+        pass
+    def OnColler(self,event=None):
+        pass
+
     def OnDelete(self,event):
-        if event.Id == 22:
-            # origine menu contextuel
+
+        if event.Id == 22: # origine menu contextuel
             nb = len(self.GetSelectedObjects())
             if nb == 0: mess = "Pas de ligne sélectionnée pour suppression"
             elif nb == 1 : mess = "Confirmation: suppression de la ligne sélectionnée!"
@@ -463,6 +494,7 @@ class ListView( FastObjectListView):
             dlg.Destroy()
             if ret != wx.ID_YES:
                 return False
+
         lstColonnes, llData = xexport.GetValeursListview(self)
         nomFichier = "DeleteLignes"
         try:
@@ -568,15 +600,16 @@ class PanelListView(wx.Panel):
             mess = "Pas de sélection faite"
             wx.MessageBox(mess)
             return
+
+        olv = event.EventObject
         for track in self.buffertracks:
-            olv = event.EventObject
             ix = olv.lastGetObjectIndex
             if hasattr(self.parent, 'OnDelete'):
                 self.parent.OnDelete(track)
             olv.modelObjects.remove(track)
-            olv.RepopulateList()
-            olv._SelectAndFocus(ix)
-            wx.MessageBox(" %d lignes supprimées et mémorisées pour prochain <ctrl> V"%len(self.buffertracks))
+        olv.RepopulateList()
+        olv._SelectAndFocus(ix)
+        wx.MessageBox(" %d lignes supprimées et mémorisées pour prochain <ctrl> V"%len(self.buffertracks))
         return
 
     def OnCtrlV(self,event):
@@ -603,7 +636,7 @@ class PanelListView(wx.Panel):
             olv.RepopulateList()
             olv._SelectAndFocus(ix)
         else:
-            mess = "Rien en attente de collage, refaites le <ctrl> C ou <ctrl> X"
+            mess = "Rien en copier ou coller, refaites le <ctrl> C ou <ctrl> X"
             wx.MessageBox(mess)
         return
 

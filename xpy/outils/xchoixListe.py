@@ -19,8 +19,9 @@ class Track(object):
         self.donnees = donnees
         for ix in range(len(champs)):
             champ= champs[ix]
-            commande = "self.%s = donnees[ix]"%(champ)
-            exec(commande)
+            if champ != '0':
+                commande = "self.%s = donnees[ix]"%(champ)
+                exec(commande)
 
 class CTRL_Solde(wx.Panel):
     def __init__(self, parent, toolTip=None, size=(100, 30)):
@@ -113,7 +114,7 @@ class DialogLettrage(wx.Dialog):
                 self.lstLibels[i] += u"/%s"%item
             i +=1
         # le code est le dernier mot du libellé de la colonne, sans accent et en minuscule
-        self.lstCodes = [xformat.Supprime_accent(x.split(u"/")[-1].strip()).lower() for x in self.lstLibels]
+        self.lstCodes = [xformat.NoAccents(x.split(u"/")[-1].strip()).lower() for x in self.lstLibels]
         # vérif unicité code
         lstano = [x for x in self.lstCodes if self.lstCodes.count(x)>1]
         if len(lstano)>0:
@@ -497,18 +498,28 @@ class DialogAffiche(wx.Dialog):
         titre =     kwd.pop('titre',"Ici mon titre")
         intro =     kwd.pop('intro',"et mes explications")
         lstDonnees = kwd.pop('lstDonnees',[("a",2),("b",10),("c","jj")])
-        lstColonnes = kwd.pop('lstColonnes',["col1","col2"])
+        lstColonnes = kwd.pop('lstColonnes',None)
+        if not lstColonnes:
+            item = lstDonnees[0]
+            if isinstance(item,str):
+                lstColonnes = ['col1',]
+            else:
+                lstColonnes = ["col "+ str(x) for x in item]
         lstWnomsCol = [len(x)*6 for x in lstColonnes]
         self.lstWcol =   kwd.pop('lstWcol',lstWnomsCol)
         self.lstSetters = kwd.pop('lstSetters',None)
         self.withCheck  = kwd.pop('withCheck', False)
-        self.columnSort = kwd.pop('columnSort',1)
-        size =      kwd.pop('size',(600,600))
+        self.columnSort = kwd.pop('columnSort',min(1,len(lstColonnes)-1))
+        size = kwd.pop('size',(600,600))
 
 
         wx.Dialog.__init__(self, None, -1, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
         self.SetMinSize(size)
         mess = None
+        self.donneeIsStr = False
+        if isinstance(lstDonnees[0],str):
+            self.donneeIsStr = True
+            lstDonnees = [ (x,) for x in lstDonnees]
         if not lstDonnees or len(lstDonnees)==0 : mess = "xchoixListe.DialogAffiche reçoit 'lstDonnees' vide"
         if (not lstDonnees[0]) or (not isinstance(lstDonnees[0],(tuple,list))):
             mess = "xchoixListe.DialogAffiche reçoit 'lstDonnees' contenant un type :%s"%type(lstDonnees[0])
@@ -541,7 +552,6 @@ class DialogAffiche(wx.Dialog):
         # Binds
         self.Bind(wx.EVT_BUTTON, self.OnDblClicOk, self.bouton_fermer)
 
-
     def InitOlv(self):
         self.listview = FastObjectListView(self,style= wx.LC_REPORT)
         self.listview.SetToolTip(u"Double Cliquez pour choisir")
@@ -557,7 +567,6 @@ class DialogAffiche(wx.Dialog):
             width = self.lstWcol[ix]
             label = self.lstColonnes[ix]
             code = self.lstCodes[ix]
-            setter = self.lstSetters[ix]
             lstColumns.append(ColumnDefn(label, "left", width, code,  isSpaceFilling=True))
 
         self.listview.SetColumns(lstColumns)
@@ -614,6 +623,9 @@ class DialogAffiche(wx.Dialog):
             donnees = selection.donnees
         elif len(self.listview.innerList) == 1:
             donnees = self.listview.innerList[0].donnees
+        if self.donneeIsStr and donnees:
+            # les données entrées n'étant pas des tuples, il faut les détupiliser
+            donnees = donnees[0]
         return donnees
 
 if __name__ == u"__main__":

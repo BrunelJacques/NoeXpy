@@ -594,7 +594,7 @@ class DB():
             if self.cursor.rowcount > 0:
                 self.retourReq = "ok"
             else:
-                self.retourReq = "Aucun record modifié! %s"%req
+                self.retourReq = "ok inchangé! %s"%req
         except Exception as err:
             self.echec = 1
             if mess:

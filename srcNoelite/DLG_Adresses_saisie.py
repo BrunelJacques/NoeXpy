@@ -466,8 +466,8 @@ class DlgAdresses_saisie(wx.Dialog):
             self.EndModal(wx.OK)
         if self.mode == 'familles':
             ret = nua.SetDBcorrespondant(self.dicCorrespondant)
-            if ret != "ok":
-                wx.MessageBox(self, u"Pas d'écriture possible du correspondant !\n%s"%ret)
+            if ret[:2] != "ok":
+                wx.MessageBox("Pas d'écriture possible du correspondant !\n%s"%ret)
 
     def OnClicOk(self, event):
         event.Skip()

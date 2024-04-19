@@ -61,6 +61,8 @@ def dicOlvFamilles():
 
     lstTypes = ["INTEGER","INTEGER","INTEGER","VARCHAR(100)","VARCHAR(100)",
                 "VARCHAR(100)","INTEGER","VARCHAR(100)","VARCHAR(11)","VARCHAR(80)"]
+
+    #["0", "famille", "individu", "intitule famille", "nom corresp.","prenomcorresp.", "chez", "rue", "cp", "ville"]
     lstCodesColonnes = ["0","IDfamille","IDindividu","adresse_intitule","nom",
                         "prenom","adresse_auto","rue","cp","ville"]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
@@ -146,9 +148,9 @@ class Pnl_tableau(xGTR.PNL_corps):
         else:
             if nuu.VerificationDroitsUtilisateurActuel("individus_coordonnees", "modifier") == False: return
             if self.parent.mode == 'familles':
-                ID = self.choix.famille
-                nom = "famille"
-                prenom = self.choix.intitulefamille
+                ID = self.choix.IDfamille
+                nom = self.choix.nom
+                prenom = self.choix.prenom
             else:
                 ID = self.choix.individu
                 nom = self.choix.nom
@@ -173,9 +175,9 @@ class Pnl_tableau(xGTR.PNL_corps):
         else:
             if nuu.VerificationDroitsUtilisateurActuel("individus_coordonnees", "modifier") == False: return
             if self.parent.mode == 'familles':
-                ID = self.choix.famille
-                nom = "famille"
-                prenom = self.choix.intitulefamille
+                ID = self.choix.IDfamille
+                nom = self.choix.nom
+                prenom = self.choix.prenom
             else:
                 ID = self.choix.individu
                 nom = self.choix.nom
@@ -194,7 +196,7 @@ class Pnl_tableau(xGTR.PNL_corps):
         self.parent.EndModal(wx.ID_CANCEL)
 
 class Dialog(wx.Dialog):
-    def __init__(self, mode='individus', titre=TITRE, intro=INTRO):
+    def __init__(self, mode='familles', titre=TITRE, intro=INTRO):
         self.limitSql = LIMITSQL
         self.db = xdb.DB()
         wx.Dialog.__init__(self, None, -1,pos=(50,80),style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
