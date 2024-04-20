@@ -477,19 +477,26 @@ def GetMvtsByDate(db, dParams=None):
     lstChamps = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
     lstChamps.append('stArticles.qteStock')
     lstChamps.append('stArticles.prixMoyen')
-
+    andOrigine = "AND (stMouvements.origine = '%s' )"%dParams['origine']
+    if len(dParams['fournisseur'])>0:
+        andFournisseur = "AND (stMouvements.fournisseur = '%s' )"%dParams['fournisseur']
+    else: andFournisseur = """AND ((stMouvements.fournisseur = '') 
+                    OR (stMouvements.fournisseur IS NULL))"""
+    if len(dParams['analytique'])>0 and dParams['analytique'] != '00':
+        andAnalytique = """AND (stMouvements.IDanalytique = '%s')""" % dParams['analytique']
+    else:
+        andAnalytique = """AND ((stMouvements.IDanalytique IS NULL)
+                    OR (stMouvements.IDanalytique ='00'))"""
+    andWhere = """%s
+                %s
+                %s"""%(andOrigine,andFournisseur,andAnalytique)
     # Appelle les mouvements associés à un dic de choix de param et retour d'une liste de dic
-    req = """   SELECT %s
-                FROM stMouvements
-                LEFT JOIN stArticles ON stMouvements.IDarticle = stArticles.IDarticle 
-                WHERE ((date = '%s' )
-                        AND (stMouvements.origine = '%s' )
-                        AND (stMouvements.fournisseur IS NULL  
-                                OR stMouvements.fournisseur = '%s' )
-                        AND (stMouvements.IDanalytique IS NULL  
-                                OR stMouvements.IDanalytique ='00'  
-                                OR stMouvements.IDanalytique = '%s' ))
-                ;""" % (",".join(lstChamps),dParams['date'],dParams['origine'],dParams['fournisseur'],dParams['analytique'])
+    req = """
+            SELECT %s
+            FROM stMouvements
+            LEFT JOIN stArticles ON stMouvements.IDarticle = stArticles.IDarticle 
+            WHERE ((date = '%s')
+                %s);""" % (",".join(lstChamps),dParams['date'],andWhere)
 
     retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetMouvements')
     ldMouvements = []

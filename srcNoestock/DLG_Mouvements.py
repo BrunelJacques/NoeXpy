@@ -57,7 +57,7 @@ DIC_INFOS = {
             'pxUn': "HT ou TTC selon le choix en haut d'écran\nPrix d'une unité telle qu'on la sort du stock, pas celui du carton complet",
              }
 
-INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
+INFO_OLV = "Possibles sur des lignes: <Suppr> <Inser> <Ctrl C> <Ctrl X> <Ctrl V>"
 
 # Choix des params  pour reprise de mouvements antérieurs------------------------------------------------
 
@@ -122,59 +122,60 @@ def GetMatriceAnterieurs(dlg):
 # Description des paramètres de la gestion des mouvements
 
 MATRICE_PARAMS = {
-("param1", "Paramètres"): [
-    {'name': 'origine', 'genre': 'Choice', 'label': "",
-                    'help': "Le choix de la nature modifie certains contrôles",
-                    'value':0, 'values':[],
-                    'ctrlAction': 'OnOrigine',
-                    'ctrlMaxSize':(220,35),
-                    'txtSize': 90},
-    {'name': 'date', 'genre': 'Texte', 'label': "",
-                    'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
-                                          "Les séparateurs ne sont pas obligatoires en saisie.",
-                                          "Saisissez la date du mouvement de stock sans séparateurs, "),
-                    'value':"",
-                    'ctrlAction': 'OnDate',
-                    'ctrlMaxSize':(220,35),
-                    'txtSize': 90},
+    ("param1", "Paramètres"): [
+        {'name': 'origine', 'genre': 'Choice', 'label': "",
+         'help': "Le choix de la nature modifie certains contrôles",
+         'value': 0, 'values': [],
+         'ctrlAction': 'OnOrigine',
+
+         'txtSize': 90},
+        {'name': 'date', 'genre': 'Texte', 'label': "",
+         'help': "%s\n%s\n%s" % ("Saisie JJMMAA ou JJMMAAAA possible.",
+                                 "Les séparateurs ne sont pas obligatoires en saisie.",
+                                 "Saisissez la date du mouvement de stock sans séparateurs, "),
+         'value': "",
+         'ctrlAction': 'OnDate',
+
+         'txtSize': 90},
     ],
-("param2", "Comptes"): [
-    {'name': 'fournisseur', 'genre': 'Combo', 'label': 'Fournisseur',
-                    'help': "La saisie d'un fournisseurfacilite les commandes par fournisseur",
-                    'value':0,'values':[''],
-                    'ctrlAction':'OnFournisseur',
-                     'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un compte pour l'origine",
-                     'btnAction': 'OnBtnFournisseur',
-                    'size':(250,35),
-                    'ctrlMaxSize':(250,35),
-                    'txtSize': 70,
-     },
-    {'name': 'analytique', 'genre': 'Choice', 'label': 'Activité',
-                    'ctrlAction':'OnAnalytique',
-                    'help': "Il s'agit de l'activité qui a endossé la charge de la sortie",
-                    'value':'','values':[''],
-                    'btnLabel': "...", 'btnHelp': "Cliquez pour choisir l'activité de destination des mouvements",
-                    'btnAction': 'OnBtnAnalytique',
-                    'ctrlMaxSize':(250,35),
-                    'txtSize': 70,}
-],
-("param3", "saisie"): [
-    {'name': 'ht_ttc', 'genre': 'Choice', 'label': 'Saisie',
-                    'help': "Choix du mode de saisie HT ou TTC selon le plus facile pour vous",
-                    'value': 1, 'values': ['TTC', 'HT'],
-                    'ctrlAction': 'OnHt_ttc',
-                    'txtSize': 40,
-                    'ctrlMaxSize': (130,30),
-                     },
-    {'name': 'vide','genre':None,}
+    ("param2", "Comptes"): [
+        {'name': 'fournisseur', 'genre': 'Combo', 'label': 'Fournisseur',
+         'help': "La saisie d'un fournisseurfacilite les commandes par fournisseur",
+         'value': 0, 'values': [''],
+         'ctrlAction': 'OnFournisseur',
+         'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un compte pour l'origine",
+         'btnAction': 'OnBtnFournisseur',
+         'size': (250, 25),
+
+         'txtSize': 70,
+         },
+        {'name': 'analytique', 'genre': 'Choice', 'label': 'Activité',
+         'ctrlAction': 'OnAnalytique',
+         'help': "Il s'agit de l'activité qui a endossé la charge de la sortie",
+         'value': '', 'values': [''],
+         'btnLabel': "...",
+         'btnHelp': "Cliquez pour choisir l'activité de destination des mouvements",
+         'btnAction': 'OnBtnAnalytique',
+
+         'txtSize': 70, }
     ],
-("param4", "Compléments"): [
-    {'name': 'rappel', 'genre': 'anyctrl','label': ' ',
-                     'txtSize': 20,
-                        'ctrlMaxSize':(150,50),
-                     'ctrl': CtrlAnterieur,
-                     'ctrlAction': 'OnBtnAnterieur',
-                     },
+    ("param3", "saisie"): [
+        {'name': 'ht_ttc', 'genre': 'Choice', 'label': 'Saisie',
+         'help': "Choix du mode de saisie HT ou TTC selon le plus facile pour vous",
+         'value': 1, 'values': ['TTC', 'HT'],
+         'ctrlAction': 'OnHt_ttc',
+         'txtSize': 40,
+
+         },
+        {'name': 'vide', 'genre': None, }
+    ],
+    ("param4", "Compléments"): [
+        {'name': 'rappel', 'genre': 'anyctrl', 'label': ' ',
+         'txtSize': 20,
+
+         'ctrl': CtrlAnterieur,
+         'ctrlAction': 'OnBtnAnterieur',
+         },
     ],
 }
 
@@ -190,7 +191,7 @@ def GetDicPnlParams(dlg):
                 'name':"PNL_params",
                 'matrice':matrice,
                 'lblBox':None,
-                'boxesSizes': [(250, 90), (250, 90), None, (160, 90)],
+                'boxesSizes': [(250, 60), (250, 60), None, (160, 60)],
                 'pathdata':"srcNoelite/Data",
                 'nomfichier':"stparams",
                 'nomgroupe':"entrees",
@@ -547,13 +548,13 @@ class PNL_corps(xGTE.PNL_corps):
         dParams = GetParams(pnl)
         ret = ValideParams(pnl,dParams)
 
-    def OnCtrlV(self,track):
+    def OnCollerTrack(self, track):
         # avant de coller une track, raz de certains champs et recalcul
         track.IDmouvement = None
         self.ValideLigne(None,track)
         self.SauveLigne(track)
 
-    def OnDelete(self,track):
+    def OnDeleteTrack(self, track):
         CalculeLigne(self.lanceur,track)
         nust.DelMouvement(self.parent.db,self.ctrlOlv,track)
 
@@ -685,7 +686,7 @@ class PNL_pied(xGTE.PNL_pied):
 
 class DLG(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,sens='entrees',date=None,**kwd):
+    def __init__(self,sens='sorties',date=None,**kwd):
         # gestion des deux sens possibles 'entrees' et 'sorties'
         if not sens: sens = 'article'
         self.sens = sens
@@ -735,8 +736,7 @@ class DLG(xusp.DLG_vide):
         # définition de l'OLV
         self.ctrlOlv = None
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
-        self.txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"
-        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),self.txtInfo]
+        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),INFO_OLV]
         dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
 
         # lancement de l'écran en blocs principaux
@@ -849,9 +849,11 @@ class DLG(xusp.DLG_vide):
         if 'achat' in self.origine:
             setEnable('fournisseur',True)
             setEnable('analytique',False)
+            self.analytique = '00'
             self.pnlParams.SetOneValue('analytique',"", codeBox='param2')
         elif ('retour' in self.origine) or ('camp' in self.origine)  :
             setEnable('fournisseur',False)
+            self.fournisseur = ''
             self.pnlParams.SetOneValue('fournisseur',"", codeBox='param2')
             setEnable('analytique',True)
             if len(self.valuesAnalytiques) >0:
@@ -859,8 +861,10 @@ class DLG(xusp.DLG_vide):
         elif ('od' in self.origine) or ('repas' in self.origine) :
             self.pnlParams.SetOneValue('fournisseur',"", codeBox='param2')
             setEnable('fournisseur',False)
+            self.fournisseur = ''
             self.pnlParams.SetOneValue('analytique',"", codeBox='param2')
             setEnable('analytique',False)
+            self.analytique = '00'
         else:
             setEnable('fournisseur',True)
             setEnable('analytique',True)

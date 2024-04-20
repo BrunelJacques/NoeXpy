@@ -11,7 +11,7 @@ import wx
 import os
 import datetime
 import xpy.xUTILS_SaisieParams as xusp
-from xpy.outils import xbandeau, xformat, xboutons,xexport
+from xpy.outils import xbandeau, xformat, xboutons,xexport, xchemins
 
 from xpy.ObjectListView.ObjectListView import FastObjectListView
 from xpy.ObjectListView.ObjectListView  import  ColumnDefn
@@ -19,7 +19,7 @@ import xpy.ObjectListView.Footer as Footer
 from xpy.ObjectListView.ObjectListView import CTRL_Outils
 import xpy.ObjectListView.OLVEvent as OLVEvent
 import xpy.ObjectListView.CellEditor as CellEditor
-from xpy.outils.xconst          import *
+from xpy.outils.xconst import *
 
 # ----------  Objets  ObjectListView --------------------------------------------------------
 
@@ -245,8 +245,7 @@ class ListView( FastObjectListView):
         elif hasattr(self.parent.parent,'ValideParams'):
             valide = self.parent.parent.ValideParams()
         self.flagSkipEdit = False
-        if valide:
-            evt.Skip()
+        evt.Skip()
 
     def SetFooter(self, ctrl=None, dictColFooter={}):
         self.ctrl_footer = ctrl
@@ -326,22 +325,23 @@ class ListView( FastObjectListView):
 
         # Item copier Ligne
         if self.copier and self.cellEditMode != 0:
-            item = wx.MenuItem(menuPop, 22, COPIER_LIGNE)
-            bmp = wx.Bitmap(ABANDON_16X16_IMG, wx.BITMAP_TYPE_PNG)
+            item = wx.MenuItem(menuPop, 16, COPIER_LIGNE)
+            bmp = wx.Bitmap(COPIER_16X16_IMG, wx.BITMAP_TYPE_PNG)
             item.SetBitmap(bmp)
             menuPop.Append(item)
             self.Bind(wx.EVT_MENU, self.OnCopier, id=16)
+
         # Item couper Ligne
         if self.couper and self.cellEditMode != 0:
-            item = wx.MenuItem(menuPop, 22, COUPER_LIGNE)
-            bmp = wx.Bitmap(ABANDON_16X16_IMG, wx.BITMAP_TYPE_PNG)
+            item = wx.MenuItem(menuPop, 17, COUPER_LIGNE)
+            bmp = wx.Bitmap(COUPER_16X16_IMG, wx.BITMAP_TYPE_PNG)
             item.SetBitmap(bmp)
             menuPop.Append(item)
             self.Bind(wx.EVT_MENU, self.OnCouper, id=17)
         # Item coller Ligne
         if self.coller and self.cellEditMode != 0:
-            item = wx.MenuItem(menuPop, 22, COLLER_LIGNE)
-            bmp = wx.Bitmap(ABANDON_16X16_IMG, wx.BITMAP_TYPE_PNG)
+            item = wx.MenuItem(menuPop, 18, COLLER_LIGNE)
+            bmp = wx.Bitmap(COLLER_16X16_IMG, wx.BITMAP_TYPE_PNG)
             item.SetBitmap(bmp)
             menuPop.Append(item)
             self.Bind(wx.EVT_MENU, self.OnColler, id=18)
@@ -353,6 +353,9 @@ class ListView( FastObjectListView):
             item.SetBitmap(bmp)
             menuPop.Append(item)
             self.Bind(wx.EVT_MENU, self.OnDelete, id=22)
+
+        # On met le separateur
+        menuPop.AppendSeparator()
 
         # Item Tout cocher
         if self.toutCocher:
@@ -475,27 +478,84 @@ class ListView( FastObjectListView):
         self.parent.ctrlOutils.SupprimerFiltres()
 
     def OnCopier(self,event=None):
-        pass
+        # action copier
+        self.buffertracks = self.GetSelectedObjects()
+        if len(self.buffertracks) == 0:
+            mess = "Pas de sélection faite"
+            wx.MessageBox(mess)
+        else:
+            mess = "lignes mémorisées pour prochain coller ou <ctrl> V"
+            wx.MessageBox(" %d %s"%(len(self.buffertracks),mess))
+        return
+
     def OnCouper(self,event=None):
-        pass
+        # action copier
+        self.buffertracks = self.GetSelectedObjects()
+        if len(self.buffertracks) == 0:
+            mess = "Pas de sélection faite"
+            wx.MessageBox(mess)
+            return
+        for track in self.buffertracks:
+            ix = self.lastGetObjectIndex
+            if hasattr(self.parent, 'OnDelete'):
+                self.parent.OnDeleteTrack(track)
+            self.modelObjects.remove(track)
+        self.RepopulateList()
+        self._SelectAndFocus(ix)
+        wx.MessageBox(" %d lignes supprimées et mémorisées pour prochain <ctrl V>"%len(self.buffertracks))
+        return
+
     def OnColler(self,event=None):
-        pass
+        # action coller
+        if self.buffertracks and len(self.buffertracks) >0:
+            ix = self.lastGetObjectIndex
+            if len(self.GetSelectedObjects()) > 0:
+                ix = self.modelObjects.index(self.GetSelectedObjects()[0])
+            for track in self.buffertracks:
+                track.valide = False
+                track.vierge = True
+                if hasattr(self.parent,'OnCollerTrack'):
+                    self.parent.OnCollerTrack(track)
+                else:
+                    # avant de coller une track, raz du champs ID
+                    track.donnees[0] = None
+                    track.vierge = True
+                    track.oldDonnees = [None,] * len(track.donnees)
+                    self.parent.ValideLigne(None, track)
+                    self.parent.SauveLigne(track)
+                self.modelObjects.insert(ix,track)
+                ix += 1
+            self.RepopulateList()
+            self._SelectAndFocus(ix)
+        else:
+            mess = "Rien en copier ou coller, refaites le <ctrl> C ou <ctrl> X"
+            wx.MessageBox(mess)
+        return
 
     def OnDelete(self,event):
+        nb = len(self.GetSelectedObjects())
+        # avertissements
+        path = xchemins.GetRepTemp()
+        mess2 = "\n\ncopie de sécurité en %s" % path
+        if self.checkStateColumn and len(self.GetCheckedObjects()) > 0:
+            mot = "coch"
+        else:
+            mot = "sélectionn"
+        if nb == 0: mess = "Pas de lignes %sées pour suppression"%mot
+        elif nb == 1 : mess = "Confirmation: suppression de la ligne %sée!"%mot + mess2
+        else:  mess = "Confirmation: suppression des %d lignes %sées!%s"%(nb,mot,mess2)
+        dlg = wx.MessageDialog(self,
+                               mess,"Suppresion demandée",
+                               style=wx.YES_NO|wx.ICON_INFORMATION,)
+        ret = dlg.ShowModal()
+        dlg.Destroy()
+        if ret != wx.ID_YES:
+            return True
 
-        if event.Id == 22: # origine menu contextuel
-            nb = len(self.GetSelectedObjects())
-            if nb == 0: mess = "Pas de ligne sélectionnée pour suppression"
-            elif nb == 1 : mess = "Confirmation: suppression de la ligne sélectionnée!"
-            else:  mess = "Confirmation: suppression des %d lignes sélectionnées!"%nb
-            mess += "\n\n<Entrée> ou <esc>"
-            dlg = wx.MessageDialog(self,mess,"Touche Supprime",style=wx.YES_NO,)
-            ret = dlg.ShowModal()
-            dlg.Destroy()
-            if ret != wx.ID_YES:
-                return False
-
+        # get info
         lstColonnes, llData = xexport.GetValeursListview(self)
+
+        # Sauvegarde avant suppression
         nomFichier = "DeleteLignes"
         try:
             nomFichier = self.parent.parent.Name
@@ -504,19 +564,22 @@ class ListView( FastObjectListView):
             pass
         xexport.ExportTemp(lstColonnes,llData,nomFichier=nomFichier)
 
+        # suppression proprement dite
         ix = 0
         for obj in self.GetSelectedObjects():
             # suppression des lignes pour la saisie
             ix = self.lastGetObjectIndex
             # appel des éventuels spécifiques sur OnDelete
-            if hasattr(self.parent, 'OnDelete'):
-                self.parent.OnDelete(obj)
+            if hasattr(self.parent, 'OnDeleteTrack'):
+                self.parent.OnDeleteTrack(obj)
             event.Skip()
             #Suppression dans l'OLV
             self.modelObjects.remove(obj)
         self.RepopulateList()
         self._SelectAndFocus(ix)
         return True
+
+    # def OnInsert() est géré dans la classe mère ObjectListView
 
     def GetTitreImpression(self):
         if hasattr(self.lanceur,'GetTitreImpression'):
@@ -576,69 +639,12 @@ class PanelListView(wx.Panel):
 
     # Handler niveau OLV
     def OnChar(self, event):
+        # GetUnicode renvoie 0 pour les touches spéciales, cf event.GetKeyCode() == wx.WXK_LEFT
         keycode = event.GetUnicodeKey()
-        if keycode == 3: self.OnCtrlC()
-        if keycode == 24: self.OnCtrlX(event)
-        if keycode == 22: self.OnCtrlV(event)
+        if keycode == 3: self.ctrlOlv.OnCopier(event) # ctrl C
+        if keycode == 24: self.ctrlOlv.OnCouper(event) # ctrl X
+        if keycode == 22: self.ctrlOlv.OnColler(event) # ctrl V
         event.Skip()
-
-    def OnCtrlC(self):
-        # action copier
-        self.buffertracks = self.ctrlOlv.GetSelectedObjects()
-        if len(self.buffertracks) == 0:
-            mess = "Pas de sélection faite"
-            wx.MessageBox(mess)
-        else:
-            mess = "lignes mémorisées pour prochain coller ou <ctrl> V"
-            wx.MessageBox(" %d %s"%(len(self.buffertracks),mess))
-        return
-
-    def OnCtrlX(self,event):
-        # action copier
-        self.buffertracks = self.ctrlOlv.GetSelectedObjects()
-        if len(self.buffertracks) == 0:
-            mess = "Pas de sélection faite"
-            wx.MessageBox(mess)
-            return
-
-        olv = event.EventObject
-        for track in self.buffertracks:
-            ix = olv.lastGetObjectIndex
-            if hasattr(self.parent, 'OnDelete'):
-                self.parent.OnDelete(track)
-            olv.modelObjects.remove(track)
-        olv.RepopulateList()
-        olv._SelectAndFocus(ix)
-        wx.MessageBox(" %d lignes supprimées et mémorisées pour prochain <ctrl> V"%len(self.buffertracks))
-        return
-
-    def OnCtrlV(self,event):
-        # action coller
-        if self.buffertracks and len(self.buffertracks) >0:
-            olv = event.EventObject
-            ix = olv.lastGetObjectIndex
-            if len(olv.GetSelectedObjects()) > 0:
-                ix = olv.modelObjects.index(olv.GetSelectedObjects()[0])
-            for track in self.buffertracks:
-                track.valide = False
-                track.vierge = True
-                if hasattr(self.parent,'OnCtrlV'):
-                    self.parent.OnCtrlV(track)
-                else:
-                    # avant de coller une track, raz du champs ID
-                    track.donnees[0] = None
-                    track.vierge = True
-                    track.oldDonnees = [None,] * len(track.donnees)
-                    self.parent.ValideLigne(None, track)
-                    self.parent.SauveLigne(track)
-                olv.modelObjects.insert(ix,track)
-                ix += 1
-            olv.RepopulateList()
-            olv._SelectAndFocus(ix)
-        else:
-            mess = "Rien en copier ou coller, refaites le <ctrl> C ou <ctrl> X"
-            wx.MessageBox(mess)
-        return
 
     # Handlers niveau cell Editor
     def OnEditStarted(self,event):

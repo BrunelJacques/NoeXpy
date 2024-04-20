@@ -1445,7 +1445,6 @@ class ObjectListView(wx.ListCtrl):
         else:
             return False
 
-
     def OnDelete(self,evt):
         ix = -1
         for obj in self.GetSelectedObjects():
@@ -1531,41 +1530,15 @@ class ObjectListView(wx.ListCtrl):
             if self.cellEditMode == self.CELLEDIT_NONE or not self.autoAddRow:
                 return False
             self.searchPrefix = ""
-            nb = len(self.GetSelectedObjects())
-            if self.checkStateColumn and len(self.GetCheckedObjects()) > 0:
-                mot = "coch"
-            else: mot = "sélectionn"
-            if nb == 0: mess = "Suppression impossible sans lignes %sées" % mot
-            elif nb == 1 : mess = "Suppression de la ligne %sée!" % mot
-            else:  mess = "Suppression des %d lignes %sées!" % (nb,mot)
-            mess += "\n\n "
-            from xpy.outils import xchemins
-            path = xchemins.GetRepTemp()
-            mess += "copie de sécurité en %s" %path
-            dlg = wx.MessageDialog(self,mess,'Confirmez',style=wx.YES_NO|wx.ICON_INFORMATION)
-            ret = dlg.ShowModal()
-            dlg.Destroy()
-            if ret  == wx.ID_YES:
-                return self.OnDelete(evt)
-            else:
-                return False
+            return self.OnDelete(evt)
 
         if evt.GetKeyCode() == wx.WXK_INSERT:
             if self.cellEditMode == self.CELLEDIT_NONE or not self.autoAddRow:
                 return False
             self.searchPrefix = ""
-            dlg = wx.MessageDialog(self,"Confirmez-vous l'insertion d'une ligne!\n\n<Entrée> ou <esc>",
-                                   "Touche Insertion",style=wx.YES_NO|wx.ICON_INFORMATION,)
-            ret = dlg.ShowModal()
-            dlg.Destroy()
-            if ret  == wx.ID_YES:
-                return self.OnInsert(evt)
-            else:
-                return False
+            return self.OnInsert(evt)
 
-        if evt.GetKeyCode() > wx.WXK_START:
-            # tout autre key spéciale
-            return False
+        return False
 
 
         # On which column are we going to compare values? If we should search on the

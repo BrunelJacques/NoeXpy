@@ -1,6 +1,6 @@
-version 1.1.2.35 (13/04/2024)
+version 1.1.2.35 (20/04/2024)
     - Mouvement de stock: aide à la saisie fournisseur par début du nom
-    - Message avant ajout d'un noveau fournisseur
+    - Message avant ajout d'un nouveau fournisseur
     - Modifs xpy Copier couper coller possibles
 
 version 1.1.2.34 (14/02/2024)
