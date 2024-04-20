@@ -440,14 +440,13 @@ def PxUnToHT(ht_ttc, txTva):
         return 1 / (1+ (txTva / 100))
 
 def CalculeLigne(dlg,track):
-    if not hasattr(track,'dicArticle'): return
+    if not hasattr(track,'dicArticle') or not track.dicArticle: return
     if dlg.typeAchat:
         track.qte = track.nbAch * track.parAch
         if track.parAch == 0.0: track.parAch = 1
         track.pxUn = round(Nz(track.pxAch) / Nz(track.parAch),6)
     try: qte = float(track.qte)
     except: qte = 0.0
-
     try: pxUn = float(track.pxUn)
     except: pxUn = 0.0
 
@@ -533,6 +532,7 @@ class PNL_corps(xGTE.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
     def __init__(self, parent, dicOlv,*args, **kwds):
         xGTE.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
+        self.Name = "%s.PNL_corps"%self.parent.Name
         self.db = parent.db
         self.lstNewReglements = []
         self.flagSkipEdit = False

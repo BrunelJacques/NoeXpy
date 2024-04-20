@@ -120,7 +120,7 @@ def GetDicCalculs(*args):
             'name':"PNL_calculs",
             'matrice':matrice,
             'lblBox':None,
-            'boxesSizes': [None,(300, 70),(300, 70)],
+            'boxesSizes': [None,(300, 95),(300, 95)],
             }
 
 def GetBoutons(dlg):
@@ -240,9 +240,9 @@ def MAJ_calculs(dlg):
     lstChecked = ctrlOlv.GetCheckedObjects()
     if len(lstChecked) == 0:
         lstChecked = ctrlOlv.innerList
+    lstChecked = [ x for x in lstChecked if x.dicMvt]
 
     # lecture des lignes
-    mttAchats, qteAchats = 0.0, 0.0
     mttMvts, qteMvts = 0.0, 0.0
     mttStock = 0.0
     cumQte = 0.0
@@ -261,7 +261,6 @@ def MAJ_calculs(dlg):
 
     # calcul prix d'achat moyen pour stock
     pxAchatsStock = nust.PxAchatsStock(lstChecked)
-    dlg.pnlCalculs.GetPnlCtrl('pxAchatsStock').SetValue(pxAchatsStock)
     pxMoyenStock = 0.0
     if qteMvts != 0:
         pxMoyenStock = mttMvts / qteMvts
@@ -300,42 +299,24 @@ def CalculeLigne(dlg, track):
         rations = track.dicArticle['rations']
     except:
         rations = 1
-    track.qteStock = track.dicArticle['qteStock'] + (Nz(track.qte))
 
     try: pxUn = float(track.pxUn)
     except: pxUn = 0.0
 
     txTva = track.dicArticle['txTva']
-    track.mttHT = dlgMvts.PxUnToHT(dlg.ht_ttc,txTva) * pxUn * qte
     track.mttTTC = dlgMvts.PxUnToTTC(dlg.ht_ttc,txTva) * pxUn * qte
     track.prixTTC = round(dlgMvts.PxUnToTTC(dlg.ht_ttc,txTva) * pxUn,6)
-    track.qteStock = track.dicArticle['qteStock'] + (Nz(track.qte) * dlg.sensNum)
-
-    if isinstance(track.IDmouvement,int) and track.IDarticle.strip() != '':
-        # Le mouvement est déjà comptabilisé dans le stock
-        qteStock = dlg.ctrlOlv.buffArticles[track.IDarticle]['qteStock']
-        if hasattr(track, 'dicMvt') and track.IDarticle != track.dicMvt['IDarticle']:
-            # le mouvement chargé n'est plus celui de l'article
-            track.qteStock = qteStock + track.qte * dlg.sensNum
-        elif hasattr(track, 'dicMvt'):
-            # le mouvement est celui de la ligne
-            track.qteStock = qteStock + (track.qte * dlg.sensNum) - track.dicMvt[
-                'qte']
-        else:
-            track.qteStock = qteStock
-
+    track.qteStock = track.dicArticle['qteStock']
     lstCodesColonnes = dlg.ctrlOlv.lstCodesColonnes
     track.nbRations = qte * rations
-    if track.nbRations > 0:
-        track.pxRation = track.prixTTC / track.nbRations
-    else:
-        track.pxRation = 0.0
+    if track.nbRations >0:
+        track.pxRation = track.mttTTC / track.nbRations
+    else: track.pxRation = 0.0
     for ix in range(len(lstCodesColonnes)):
-        track.donnees[ix] = eval("track.%s" % lstCodesColonnes[ix])
-    MAJ_calculs(dlg)
+        track.donnees[ix] = eval("track.%s"%lstCodesColonnes[ix])
 
 def ComposeDonnees(db,dlg,ldMouvements):
-    # retourne la liste des données de l'OLv de DlgEntree
+    # retourne la liste des données de l'OLv
     ctrlOlv = dlg.ctrlOlv
 
     # liste des articles contenus dans les lignes (un ou tous)
@@ -396,7 +377,7 @@ class DLG(dlgMvts.DLG):
         listArbo=os.path.abspath(__file__).split("\\")
         kwds['title'] = listArbo[-1] + "/" + self.__class__.__name__
         super().__init__(**kwds)
-        self.Name = 'DLG_MvtOneArticle.DLG'
+        self.Name = 'newDLG_MvtOneArticle.DLG'
 
 
     def Init(self):
@@ -428,6 +409,7 @@ class DLG(dlgMvts.DLG):
         self.pnlOlv = dlgMvts.PNL_corps(self, self.dicOlv)
         self.pnlOlv.ValideParams = self.ValideParams
         self.pnlOlv.ValideLigne = self.ValideLigne
+        self.pnlOlv.CalculeLigne = self.CalculeLigne
         self.pnlPied = dlgMvts.PNL_pied(self, dicPied)
         self.ctrlOlv = self.pnlOlv.ctrlOlv
         #self.ctrlOlv.DeleteAllItems()
@@ -599,6 +581,6 @@ class DLG(dlgMvts.DLG):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(article="HUILE TOURNESOL")
+    dlg = DLG(article="CONFITURE INDIVIDUELLE")
     dlg.ShowModal()
     app.MainLoop()

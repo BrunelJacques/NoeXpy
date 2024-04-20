@@ -244,6 +244,7 @@ def PxAchatsStock(modelObjects):
     # calcul des quantités en stock et articles présents
     ix = 0
     for track in modelObjects:
+        if not track.dicMvt: continue
         if track.IDarticle not in lstArticles:
             lstArticles.append(track.IDarticle)
             dQtesFin[track.IDarticle] = 0

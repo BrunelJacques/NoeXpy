@@ -706,7 +706,7 @@ class PanelListView(wx.Panel):
             track = self.ctrlOlv.GetObjectAt(row)
             self.oldRow = row
             # si pas de saisie on passe
-            if track.noSaisie:
+            if hasattr(track, 'noSaisie') and track.noSaisie:
                 event.Skip()
                 return
 
