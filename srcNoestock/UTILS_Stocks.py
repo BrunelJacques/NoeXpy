@@ -244,7 +244,6 @@ def PxAchatsStock(modelObjects):
     # calcul des quantités en stock et articles présents
     ix = 0
     for track in modelObjects:
-        if not track.dicMvt: continue
         if track.IDarticle not in lstArticles:
             lstArticles.append(track.IDarticle)
             dQtesFin[track.IDarticle] = 0
@@ -257,8 +256,6 @@ def PxAchatsStock(modelObjects):
         if not hasattr(track,'IDmouvement'):
                 ix += 1
                 track.IDmouvement = ix
-        if not isinstance(track.date,datetime.date):
-            print(track.date,type(track.date))
     lastArticle = None
     qteAchatsTous = 0.0
     mttAchatsTous = 0.0
@@ -447,7 +444,7 @@ def CalculeInventaire(dlg, dParams):
         # Force la mise à jour dans la base avant nouveau select évitant le cache
         del db.cursor
         db.cursor = db.connexion.cursor(buffered=False)
-        req = """FLUSH  TABLES stArticles;"""
+        #req = """FLUSH  TABLES stArticles;"""
         ret = db.ExecuterReq(req, mess='SqlInventaires flush')
         if ret != 'ok': return []
 
@@ -603,7 +600,7 @@ def SqlArticles(**kwd):
 
     if not db.typeDB == 'sqlite':
         req = """FLUSH TABLES stArticles;"""
-        retour = db.ExecuterReq(req, mess="UTILS_Stocks.SqlArticles Flush")
+        #retour = db.ExecuterReq(req, mess="UTILS_Stocks.SqlArticles Flush")
 
     req = """   SELECT %s 
                 FROM stArticles 
@@ -778,7 +775,6 @@ def SqlMagasins(db):
 def SqlMvtsAnte(**kwd):
     # retourne les données pour recherche de mouvements anterieurs since last inventaire
     dicOlv = kwd.get('dicOlv',None)
-    dateEnCours = dicOlv.get('dateEnCours',None)
 
     db = kwd.get('db',None)
     filtre = kwd.pop('filtreTxt', '')
@@ -790,8 +786,7 @@ def SqlMvtsAnte(**kwd):
                 LIMIT %d""" % LIMITSQL
     origines = dicOlv['codesOrigines']
 
-    if not dateEnCours:
-        dateEnCours = GetDateLastInventaire(db,dteAnalyse=dateEnCours)
+    dateEnCours = GetDateLastInventaire(db)
     where = """
                 WHERE ( date >= '%s' )
                         AND (origine in ( %s ) )""" % (dateEnCours, str(origines)[1:-1])
@@ -907,7 +902,7 @@ def MAJarticle(db,dlg,track):
         oldQteStock = dicArt['qteStock']
         dicArt['qteStock'] += deltaQte
         # calcul du nouveau prix moyen
-        if dicArt and dlg.sens == 'article':
+        if dicArt and (dlg.sens == 'article'):
             # cas des corrections oMvtOneArticle, on recalcule
             prixMoyen = PxAchatsStock(dlg.ctrlOlv.modelObjects)
         elif not dicArt or Nz(dicArt['prixMoyen']) <= 0:

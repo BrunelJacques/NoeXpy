@@ -50,7 +50,7 @@ class TrackGeneral(object):
             mess += '\n\n'+'\n\n'.join(lst)
             wx.MessageBox(mess,caption="xGTE.TrackGeneral")
             ok = False
-        # instaciation proprement dite
+        # instanciation proprement dite
         if ok:
             # pour chaque donnée affichée, attribut et ctrl setter value
             for ix in range(len(codesColonnes)):
@@ -92,7 +92,6 @@ class TrackVierge(TrackGeneral):
         self.vierge = True
         self.valide = False
         return
-
 
 class ListView( FastObjectListView):
     """
@@ -293,13 +292,16 @@ class ListView( FastObjectListView):
             if colonne.valueSetter != None:
                 tip = colonne.valueSetter
             if tip == None:
-                tip = ''
                 if fmt:
                     fmt = colonne.stringConverter.__name__
-                    if fmt[3:] in ('Montant','Solde','Decimal','Entier'):
+                    if fmt[3:] in ('Montant','Solde','Decimal'):
                         tip = 0.0
                     elif fmt[3:] == 'Date':
                         tip = wx.DateTime.FromDMY(1,0,1900)
+                    elif fmt[3:] == 'Entier':
+                        tip = 0
+                elif colonne == self.lstColonnes[0]:
+                    tip = 0
             setterValues.append(tip)
         return setterValues
 
@@ -477,6 +479,11 @@ class ListView( FastObjectListView):
     def SupprimerFiltres(self, event=None):
         self.parent.ctrlOutils.SupprimerFiltres()
 
+    def SpareCouper(self,nomFichier="LignesPerdues.txt"):
+        # Sauvegarde avant suppression
+        lstColonnes, llData = xexport.GetValeursListview(self)
+        xexport.ExportTemp(lstColonnes,llData,nomFichier=nomFichier)
+
     def OnCopier(self,event=None):
         # action copier
         self.buffertracks = self.GetSelectedObjects()
@@ -495,9 +502,15 @@ class ListView( FastObjectListView):
             mess = "Pas de sélection faite"
             wx.MessageBox(mess)
             return
+
+        # Sauvegarde des lignes
+        nomFichier = "CutLines.txt"
+        self.SpareCouper(nomFichier)
+
+        # suprression
         for track in self.buffertracks:
             ix = self.lastGetObjectIndex
-            if hasattr(self.parent, 'OnDelete'):
+            if hasattr(self.parent, 'OnDeleteTrack'):
                 self.parent.OnDeleteTrack(track)
             self.modelObjects.remove(track)
         self.RepopulateList()
@@ -552,17 +565,9 @@ class ListView( FastObjectListView):
         if ret != wx.ID_YES:
             return True
 
-        # get info
-        lstColonnes, llData = xexport.GetValeursListview(self)
-
-        # Sauvegarde avant suppression
-        nomFichier = "DeleteLignes"
-        try:
-            nomFichier = self.parent.parent.Name
-            nomFichier = xformat.NoPunctuation(nomFichier)
-        except:
-            pass
-        xexport.ExportTemp(lstColonnes,llData,nomFichier=nomFichier)
+        # Sauvegarde des lignes
+        nomFichier = "DeletedLines.txt"
+        self.SpareCouper(nomFichier)
 
         # suppression proprement dite
         ix = 0
@@ -756,7 +761,6 @@ class PanelListView(wx.Panel):
         if hasattr(self.parent, 'InitTrackVierge'):
             self.parent.InitTrackVierge(track,modelObject)
         track.oldDonnees = [x for x in track.donnees]
-
 
 # ----------- Composition de l'écran -------------------------------------------------------
 class PNL_params(xusp.TopBoxPanel):

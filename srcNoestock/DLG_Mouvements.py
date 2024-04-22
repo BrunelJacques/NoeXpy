@@ -375,9 +375,7 @@ def GetMouvements(dlg, dParams):
 
     ldMouvements = nust.GetMvtsByDate(dlg.db, dParams)
     # appel des dicArticles des mouvements
-    ddArticles = {}
     lstArticles = [x['IDarticle'] for x in ldMouvements]
-
     ddArticles = nust.SqlDicArticles(dlg.db, dlg.ctrlOlv,lstArticles )
 
     # composition des données
@@ -462,14 +460,14 @@ def CalculeLigne(dlg,track):
     if isinstance(track.IDmouvement,int) and track.IDarticle.strip() != '':
         # Le mouvement est déjà comptabilisé dans le stock
         qteStock = dlg.ctrlOlv.buffArticles[track.IDarticle]['qteStock']
-        if hasattr(track,'dicMvt') and track.IDarticle != track.dicMvt['IDarticle']:
+        if not hasattr(track,'dicMvt') or not track.dicMvt:
+            track.qteStock = qteStock
+        elif track.IDarticle != track.dicMvt['IDarticle']:
             # le mouvement chargé n'est plus celui de l'article
             track.qteStock = qteStock + track.qte * dlg.sensNum
         elif hasattr(track,'dicMvt'):
             # le mouvement est celui de la ligne
             track.qteStock = qteStock + (track.qte * dlg.sensNum) - track.dicMvt['qte']
-        else: track.qteStock = qteStock
-
     lstCodesColonnes = dlg.ctrlOlv.lstCodesColonnes
     track.nbRations = qte * rations
     if track.nbRations >0:
@@ -552,6 +550,8 @@ class PNL_corps(xGTE.PNL_corps):
         # avant de coller une track, raz de certains champs et recalcul
         track.IDmouvement = None
         self.ValideLigne(None,track)
+        CalculeLigne(self.lanceur,track)
+        track.dicMvt['qte'] = 0.0 # ceci pour créer une différence avec tracK.qte
         self.SauveLigne(track)
 
     def OnDeleteTrack(self, track):
