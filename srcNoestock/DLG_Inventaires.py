@@ -184,7 +184,7 @@ def GetBoutons(dlg):
             'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
             'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
         {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour sortir",
-            'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnClose}
+            'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnFermer}
     ]
 
 def GetOlvColonnes(dlg):
@@ -226,6 +226,11 @@ def GetOlvOptions(dlg):
         'autoAddRow': False,
         'toutCocher':True,
         'toutDecocher':True,
+        'couper': False,
+        'coller': False,
+        'copier':False,
+        'supprimer':False,
+        'inserer':False,
         'msgIfEmpty': "Aucun article présent (avec les options ci dessus)",
         'dictColFooter': {"magasin": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
                         "qteStock": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
@@ -300,6 +305,8 @@ def ValideLigne(dlg,track):
 
 def RowFormatter(listItem, track):
     anomalie = None
+    if not hasattr(track,'deltaQte'):
+        track.deltaQte = 0.0
     if track.deltaQte > 0:
         anomalie = True
     if track.deltaValo and track.deltaValo > 5:
@@ -478,7 +485,7 @@ class DLG(xGTE.DLG_tableau):
         self.pnlOlv = PNL_corps(self, self.dicOlv)
         #self.pnlPied = PNL_pied(self, dicPied)
         self.ctrlOlv = self.pnlOlv.ctrlOlv
-        self.Bind(wx.EVT_CLOSE,self.OnClose)
+        self.Bind(wx.EVT_CLOSE, self.OnFermer)
         self.InitOlv()
 
     # ------------------- Gestion des actions -----------------------
@@ -597,7 +604,7 @@ class DLG(xGTE.DLG_tableau):
     def OnImprimer(self,event):
         self.ctrlOlv.Apercu(None)
 
-    def OnClose(self,event):
+    def OnFermer(self, event):
         #wx.MessageBox("Traitement de sortie")
         if event:
             event.Skip()

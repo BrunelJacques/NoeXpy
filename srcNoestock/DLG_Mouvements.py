@@ -212,7 +212,7 @@ def GetBoutons(dlg):
                     'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
                     'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
                 {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour sortir",
-                    'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnClose}
+                    'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnFermer}
             ]
 
 def GetOlvColonnes(dlg):
@@ -455,19 +455,12 @@ def CalculeLigne(dlg,track):
     track.mttHT = PxUnToHT(dlg.ht_ttc,txTva) * pxUn * qte
     track.mttTTC = PxUnToTTC(dlg.ht_ttc,txTva) * pxUn * qte
     track.prixTTC = round(PxUnToTTC(dlg.ht_ttc,txTva) * pxUn,6)
+    # cas de base, stock précédent corrigé du mouvement
     track.qteStock = track.dicArticle['qteStock'] + (Nz(track.qte) * dlg.sensNum)
+    if hasattr(track, 'dicMvt') and track.dicMvt and track.dicMvt['IDarticle']:
+        # Le mouvement de cet article est déjà comptabilisé dans le stock (correction)
+        track.qteStock -= track.dicMvt['qte']
 
-    if isinstance(track.IDmouvement,int) and track.IDarticle.strip() != '':
-        # Le mouvement est déjà comptabilisé dans le stock
-        qteStock = dlg.ctrlOlv.buffArticles[track.IDarticle]['qteStock']
-        if not hasattr(track,'dicMvt') or not track.dicMvt:
-            track.qteStock = qteStock
-        elif track.IDarticle != track.dicMvt['IDarticle']:
-            # le mouvement chargé n'est plus celui de l'article
-            track.qteStock = qteStock + track.qte * dlg.sensNum
-        elif hasattr(track,'dicMvt'):
-            # le mouvement est celui de la ligne
-            track.qteStock = qteStock + (track.qte * dlg.sensNum) - track.dicMvt['qte']
     lstCodesColonnes = dlg.ctrlOlv.lstCodesColonnes
     track.nbRations = qte * rations
     if track.nbRations >0:
@@ -549,9 +542,10 @@ class PNL_corps(xGTE.PNL_corps):
     def OnCollerTrack(self, track):
         # avant de coller une track, raz de certains champs et recalcul
         track.IDmouvement = None
+        if hasattr(track,'dicMvt'):
+            del track.dicMvt # ceci pour créer une différence avec tracK.qte
         self.ValideLigne(None,track)
         CalculeLigne(self.lanceur,track)
-        track.dicMvt['qte'] = 0.0 # ceci pour créer une différence avec tracK.qte
         self.SauveLigne(track)
 
     def OnDeleteTrack(self, track):
@@ -684,7 +678,7 @@ class PNL_pied(xGTE.PNL_pied):
     def __init__(self, parent, dicPied, **kwds):
         xGTE.PNL_pied.__init__(self,parent, dicPied, **kwds)
 
-class DLG(xusp.DLG_vide):
+class DLG(xGTE.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,sens='sorties',date=None,**kwd):
         # gestion des deux sens possibles 'entrees' et 'sorties'
@@ -773,7 +767,7 @@ class DLG(xusp.DLG_vide):
         self.pnlParams.SetOneSet('analytique',values=self.valuesAnalytiques,codeBox='param2')
         self.SetAnalytique('00')
         self.pnlParams.SetOneValue('origine',valeur=DICORIGINES[self.sens]['values'][0],codeBox='param1')
-        self.Bind(wx.EVT_CLOSE,self.OnClose)
+        self.Bind(wx.EVT_CLOSE,self.OnFermer)
 
     def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
@@ -1065,7 +1059,7 @@ class DLG(xusp.DLG_vide):
     def OnImprimer(self,event):
         self.ctrlOlv.Apercu(None)
 
-    def OnClose(self,event):
+    def zzOnFermer(self, event):
         #wx.MessageBox("Traitement de sortie")
         if event:
             event.Skip()

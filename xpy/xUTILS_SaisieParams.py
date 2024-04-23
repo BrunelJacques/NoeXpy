@@ -1440,6 +1440,7 @@ class DLG_vide(wx.Dialog):
             self.Close()
 
     def OnEsc(self, event):
+        # appelé par des boutons 'esc' par exec, usages non visibles
         if self.IsModal():
             self.EndModal(wx.CANCEL)
         else:
@@ -1622,19 +1623,19 @@ if __name__ == '__main__':
     dlg_4.Show()
  
     """
-    """
+
     dlg_3 = DLG_vide(None)
     #pnl = PNL_property(dlg_3,dlg_3,matrice=dictMatrice,donnees=dictDonnees)
     pnl = TopBoxPanel(dlg_3,matrice=dictMatrice,donnees=dictDonnees)
     dlg_3.Sizer(pnl)
     app.SetTopWindow(dlg_3)
     dlg_3.Show()
-
+    """
     frame_2 = FramePanels(None, )
     frame_2.Position = (500,300)
     frame_2.Show()
     """
-
+    """
     frame_1 = xFrame(None, matrice=dictMatrice, donnees=dictDonnees)
     app.SetTopWindow(frame_1)
     frame_1.Position = (50,50)
@@ -1642,6 +1643,6 @@ if __name__ == '__main__':
     font = wx.SystemSettings.GetFont(wx.SYS_SYSTEM_FONT)
     print("taille de la police systeme: ",font.GetPointSize())
 
-    """
+
     """
     app.MainLoop()

@@ -139,6 +139,7 @@ class ListView( FastObjectListView):
         self.lstDonnees = kwds.pop('lstDonnees', None)
         self.getDonnees = kwds.pop('getDonnees', None)
         self.dictColFooter = kwds.pop('dictColFooter', {})
+        self.buffertracks = None
 
         # Choix des options du 'tronc commun' du menu contextuel
         self.copier = kwds.pop('copier', True)
@@ -311,8 +312,9 @@ class ListView( FastObjectListView):
     def OnContextMenu(self, event):
        # Création du menu contextuel
         if self.menuPersonnel:
-            menuPop = self.Parent.GetMenuPersonnel()
-            # On ajoute un séparateur ici ou dans la classe parent ?
+            if hasattr(self.Parent,'GetMenuPersonnel'):
+                menuPop = self.Parent.GetMenuPersonnel()
+                # On ajoute un séparateur ici ou dans la classe parent ?
             menuPop.AppendSeparator()
         else:
             menuPop = wx.Menu()
@@ -487,12 +489,15 @@ class ListView( FastObjectListView):
     def OnCopier(self,event=None):
         # action copier
         self.buffertracks = self.GetSelectedObjects()
+
         if len(self.buffertracks) == 0:
             mess = "Pas de sélection faite"
             wx.MessageBox(mess)
         else:
             mess = "lignes mémorisées pour prochain coller ou <ctrl> V"
             wx.MessageBox(" %d %s"%(len(self.buffertracks),mess))
+            for track in self.buffertracks:
+                track.set = True
         return
 
     def OnCouper(self,event=None):
@@ -506,8 +511,10 @@ class ListView( FastObjectListView):
         # Sauvegarde des lignes
         nomFichier = "CutLines.txt"
         self.SpareCouper(nomFichier)
+        for track in self.buffertracks:
+            track.set = False
 
-        # suprression
+        # suppression
         for track in self.buffertracks:
             ix = self.lastGetObjectIndex
             if hasattr(self.parent, 'OnDeleteTrack'):
@@ -534,9 +541,14 @@ class ListView( FastObjectListView):
                     track.donnees[0] = None
                     track.vierge = True
                     track.oldDonnees = [None,] * len(track.donnees)
-                    self.parent.ValideLigne(None, track)
-                    self.parent.SauveLigne(track)
+                    if hasattr(self.parent,'ValideLigne'):
+                        self.parent.ValideLigne(None, track)
+                    if hasattr(self.parent, 'SauveLigne'):
+                        self.parent.SauveLigne(track)
                 self.modelObjects.insert(ix,track)
+                if self.buffertracks:
+                    for track in self.buffertracks:
+                        track.set = True
                 ix += 1
             self.RepopulateList()
             self._SelectAndFocus(ix)
@@ -610,7 +622,6 @@ class PanelListView(wx.Panel):
         if self.dictColFooter and len(self.dictColFooter.keys())>0:
             dicOlv['pnlFooter']=True
 
-        self.buffertracks = None
         self.ctrlOlv = ListView(self,**dicOlv)
         self.ctrl_footer = None
         self.SetFooter(reinit=False)
@@ -806,6 +817,11 @@ class PNL_corps(wx.Panel):
                         'apercuAvantImpression',
                         'imprimer',
                         'saisie',
+                        'inserer',
+                        'supprimer',
+                        'copier',
+                        'coller',
+                        'couper',
                         'toutCocher',
                         'toutDecocher',
                         'inverserSelection',
@@ -965,6 +981,24 @@ class DLG_tableau(xusp.DLG_vide):
         sizer_base.AddGrowableRow(growRow)
         self.CenterOnScreen()
         self.SetSizer(sizer_base)
+
+    def OnFermer(self, event):
+        #wx.MessageBox("Traitement de sortie")
+        if self.ctrlOlv.buffertracks:
+            lstNoSet = [x for x in self.ctrlOlv.buffertracks if x.set != True]
+            if len(lstNoSet) > 0:
+                mess = "%d lignes ont été coupées sans être collées\n\n"%len(lstNoSet)
+                mess += "La sortie de ce programme en fera disparaître la mémoire,"
+                mess += "confirmez-vous la sortie?"
+                ret = wx.MessageBox(mess, "Confirmation", style = wx.YES_NO)
+                if ret != wx.YES:
+                    return
+        if event:
+            event.Skip()
+        if self.IsModal():
+            self.EndModal(wx.ID_CANCEL)
+        else:
+            self.Close()
 
 # ------------ Pour tests ------------------------------------------------------------------
 if __name__ == '__main__':

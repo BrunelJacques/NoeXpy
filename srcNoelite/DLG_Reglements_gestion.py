@@ -44,7 +44,7 @@ def GetBoutons(dlg):
                     'help': "Cliquez ici pour imprimer et enregistrer le bordereau pour un dépôt",
                     'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
                 {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour fermer la fenêtre",
-                    'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnClose}
+                    'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnFermer}
             ]
 
 def GetOlvColonnes():
@@ -207,7 +207,7 @@ class PNL_params(wx.Panel):
                 ret = wx.MessageBox(mess,style=wx.OK|wx.CANCEL)
                 if ret == wx.OK:
                     self.ctrlBanque.SetFocusFromKbd()
-                else: self.parent.OnClose(event)
+                else: self.parent.OnFermer(event)
 
 class PNL_corpsReglements(xGTE.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties

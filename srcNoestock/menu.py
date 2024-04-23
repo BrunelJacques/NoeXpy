@@ -79,15 +79,12 @@ class MENU():
               "action": "On_prixJournee", "genre": wx.ITEM_NORMAL},
          ]},
         # troisième colonne
-        {"code": "&synchro\tCtrl-S", "label": ("Synchroniser"),
+        {"code": "&param\tCtrl-S", "label": ("Paramétrer"),
         "items": [
-            {"code": "synchro", "label": ("Synchroniser deux bases de données"),
-             "infobulle": ("La synchronisation met à jour les bases de données dans les deux sens"),
-             "image": "Images/16x16/Actualiser2.png",
-             "action": "On_synchro"},
-            {"code": "sauve", "label": ("Sauvegarder"),
-             "infobulle": ("Sauvegarde la base de données"),
-             "image": "Images/16x16/Conversion.png", "action": "On_sauve"},
+            {"code": "analytiques", "label": ("Paramétrer les codes analytiques"),
+             "infobulle": ("Les codes analytiques sont partagés entre diverses applications"),
+             "image": "Images/80x80/Analytic.png",
+             "action": "On_analytiques"},
             {"code": "articles", "label": ("Gestion des articles"),
              "infobulle": ("La gestion des articles permet de compléter ou corriger toutes les données de la table"),
              "image": "Images/80x80/Legumes.png",
@@ -157,9 +154,14 @@ class MENU():
         if ret == wx.OK:
             self.parent.ConnectBase()
 
-    def On_synchro(self,event):
-        pass
-        #CTRL_Identification.AfficheUsers()
+    def On_analytiques(self,event):
+        try:
+            from srcNoelite import DLG_Analytique
+            dlg = DLG_Analytique.DLG()
+            ret = dlg.ShowModal()
+            del dlg
+        except:
+            pass
 
     def On_articles(self,event):
         dlg = DLG_Articles.DLG_articles()
@@ -189,9 +191,6 @@ class MENU():
         xUTILS_DB.Init_tables(parent=self.parent,mode="ctrl",
                               tables=self.parent.dictAppli['LST_TABLES'],
                               db_tables=DB_schema.DB_TABLES)
-
-    def On_sauve(self,event):
-        pass
 
     def On_inStock(self,event):
         dlg = DLG_Mouvements.DLG(sens='entrees')

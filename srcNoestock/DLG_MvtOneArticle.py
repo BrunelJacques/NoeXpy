@@ -129,7 +129,7 @@ def GetBoutons(dlg):
                     'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
                     'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
                 {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour sortir",
-                    'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnClose}
+                    'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnFermer}
             ]
 
 def ValideParams(*arg,**kwds):
@@ -416,7 +416,7 @@ class DLG(dlgMvts.DLG):
 
         # charger les valeurs de pnl_params
 
-        self.Bind(wx.EVT_CLOSE,self.OnClose)
+        self.Bind(wx.EVT_CLOSE,self.OnFermer)
         self.laterDate = nust.GetDateLastInventaire(self.db,today)
         self.withInvent = True
         self.pnlParams.SetOneValue('laterDate',valeur=xformat.FmtDate(self.laterDate),

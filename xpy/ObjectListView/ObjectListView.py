@@ -287,14 +287,13 @@ class ObjectListView(wx.ListCtrl):
         self.newRowsBackColor = wx.Colour(255,250,205)      # Jaune
         self.texteRecherche = None
         self.lastGetObjectIndex = -1
-
         kwds = {}
         for key,value in kwargs.items():
             if key in ('ID','pos','size','style','validator','name'):
                 kwds[key]=value
 
         wx.ListCtrl.__init__(self, *args, **kwds)
-
+        self.Name = 'ObjecListView'
         if self.sortable:
             self.EnableSorting()
 
@@ -2549,6 +2548,7 @@ class AbstractVirtualObjectListView(ObjectListView):
         self.objectGetter = None
         self.listItemAttr = None
 
+
         self.SetObjectGetter(kwargs.pop("getter", None))
 
         # We have to set the item count after the list has been created
@@ -2559,7 +2559,6 @@ class AbstractVirtualObjectListView(ObjectListView):
         kwargs["style"] = kwargs.get("style", 0) | wx.LC_REPORT | wx.LC_VIRTUAL
 
         ObjectListView.__init__(self, *args, **kwargs)
-
     #-------------------------------------------------------------------------
     # Commands
 
@@ -2728,6 +2727,7 @@ class VirtualObjectListView(AbstractVirtualObjectListView):
             kwargs["sortable"] = False
 
         AbstractVirtualObjectListView.__init__(self, *args, **kwargs)
+        self.Name = 'VirtualObjectListView'
 
     #-------------------------------------------------------------------------
     # Commands
@@ -2796,6 +2796,7 @@ class FastObjectListView(AbstractVirtualObjectListView):
 
         AbstractVirtualObjectListView.__init__(self, *args, **kwargs)
 
+        self.Name = 'FastObjectListView'
         self.SetObjectGetter(lambda index: self.innerList[index])
 
     #-------------------------------------------------------------------------

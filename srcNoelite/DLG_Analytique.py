@@ -53,7 +53,7 @@ MATRICE_PARAMS = {
 def GetBoutons(dlg):
     return  [
         {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour sortir",
-            'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnClose}
+            'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnFermer}
     ]
 
 def GetAnalytiques(db, axe="%%",**kwd):
@@ -321,7 +321,7 @@ class DLG(xGTE.DLG_tableau):
         self.pnlOlv = PNL_corps(self, self.dicOlv)
         #self.pnlPied = PNL_pied(self, dicPied)
         self.ctrlOlv = self.pnlOlv.ctrlOlv
-        self.Bind(wx.EVT_CLOSE,self.OnClose)
+        self.Bind(wx.EVT_CLOSE, self.OnFermer)
         self.InitOlv()
 
     # ------------------- Gestion des actions -----------------------
@@ -365,7 +365,7 @@ class DLG(xGTE.DLG_tableau):
     def OnImprimer(self,event):
         self.ctrlOlv.Apercu(None)
 
-    def OnClose(self,event):
+    def OnFermer(self, event):
         #wx.MessageBox("Traitement de sortie")
         if event:
             event.Skip()
