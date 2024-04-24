@@ -121,7 +121,7 @@ MARGE_BAS_LABEL = "Bas"
 TAILLE_MARGE_HELP = "Saisissez une taille de marge"
 
 EPAISSEUR_TRAIT_LABEL = "Epaisseur de trait"
-EPAISSEUR_TRAIT_HELP = "Saisissez une épaisseur de trait (Par défaut '0.25')"
+EPAISSEUR_TRAIT_HELP = "Saisissez une épaisseur de trait par un entier (Par défaut '1')"
 
 COULEUR_TRAIT_LABEL = "Couleur de trait"
 COULEUR_TRAIT_HELP = "Sélectionnez une couleur de trait"

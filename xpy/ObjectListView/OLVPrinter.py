@@ -252,7 +252,7 @@ class ReportEngine(object):
         Calculate our page and work bounds
         """
         self.pageBounds = (0, 0) + dc.GetSizeTuple()
-        self.workBounds = list(self.pageBounds)
+        self.workBounds = [ int(x) for x in self.pageBounds]
 
     #-------------------------------------------------------------------------
     # Commands

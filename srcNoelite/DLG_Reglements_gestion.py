@@ -212,9 +212,10 @@ class PNL_params(wx.Panel):
 class PNL_corpsReglements(xGTE.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
     def __init__(self, parent, dicOlv,*args, **kwds):
+        self.lstNewReglements = []
         xGTE.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
         self.ctrlOlv.Choices={}
-        self.lstNewReglements = []
+
         self.flagSkipEdit = False
         self.oldRow = None
 
@@ -230,8 +231,8 @@ class PNL_corpsReglements(xGTE.PNL_corps):
             trackN1 = modelObject[-1]
             track.mode = trackN1.mode
             track.date = trackN1.date
-        if track.nature.lower() in ('don','donsscerfa', 'debour'):
-            # Seuls les dons et débours vont générer la prestation selon l'compte
+        if track.nature.lower() in ('don','donscerfa', 'debour'):
+            # Seuls les dons et débours vont générer la prestation selon le compte
             track.creer = True
         else: track.creer = False
 
@@ -466,7 +467,7 @@ class Dialog(wx.Dialog):
         self.pnlParams.ctrlSsDepot.Bind(wx.EVT_KILL_FOCUS,self.OnSsDepot)
         self.choicesNonDiffere = self.ctrlOlv.lstColonnes[self.ctrlOlv.lstCodesColonnes.index('mode')].choices
         self.OnSsDepot(None)
-        self.Bind(wx.EVT_CLOSE,self.OnClose)
+        self.Bind(wx.EVT_CLOSE, self.OnFermer)
         self.Sizer()
 
     def Sizer(self):
@@ -626,7 +627,7 @@ class Dialog(wx.Dialog):
         self.ctrlOlv.Apercu(None)
         self.isImpress = True
 
-    def OnClose(self,event):
+    def OnFermer(self, event):
         #wx.MessageBox("Traitement de sortie")
         if event:
             event.Skip()
