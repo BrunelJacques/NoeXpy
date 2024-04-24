@@ -247,7 +247,7 @@ class CTRL_Parametres(CTRL_Propertygrid):
         self.Append(wxpg.PropertyCategory("Quadrillage"))
 
         # Epaisseur de trait
-        propriete = wxpg.FloatProperty(label=EPAISSEUR_TRAIT_LABEL, name="grille_trait_epaisseur", value=0.25)
+        propriete = wxpg.FloatProperty(label=EPAISSEUR_TRAIT_LABEL, name="grille_trait_epaisseur", value=1)
         propriete.SetHelpString(EPAISSEUR_TRAIT_HELP)
         propriete.SetAttribute("obligatoire", True)
         self.Append(propriete)

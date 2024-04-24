@@ -102,7 +102,8 @@ import math
 
 import wx
 
-from .WordWrapRenderer import WordWrapRenderer
+from xpy.outils.xformat import Nz
+from xpy.ObjectListView.WordWrapRenderer import WordWrapRenderer
 
 #----------------------------------------------------------------------------
 
@@ -1494,7 +1495,12 @@ class CellBlock(Block):
         # Calculate where the cell contents should be drawn
         cellPadding = self.GetFormat().CalculateCellPadding()
         for x in buckets:
-            x.innerCellWidth = max(0, x.cellWidth - (cellPadding[0] + cellPadding[2]))
+            if x.cellWidth is None:
+                x.innerCellWidth = 0
+                x.text = ''
+            else:
+                x.innerCellWidth = max(
+                    0, x.cellWidth - (cellPadding[0] + cellPadding[2]))
 
         return buckets
 
@@ -1544,7 +1550,8 @@ class CellBlock(Block):
         """
         Calculate the total width of this block (cells plus padding)
         """
-        return sum(x.cellWidth for x in self.GetCombinedLists()) + self.CalculateExtrasWidth(dc)
+        return sum(
+            Nz(x.cellWidth) for x in self.GetCombinedLists()) + self.CalculateExtrasWidth(dc)
 
     # ----------------------------------------------------------------------------
     # Commands
@@ -1825,7 +1832,15 @@ class ListBlock(Block):
         columnHeaderFmt = self.engine.GetNamedFormat("ColumnHeader")
         cellPadding = columnHeaderFmt.CalculateCellPadding()
         padding = cellPadding[0] + cellPadding[2]
-        return [self.lv.GetColumnWidth(i) + padding for i in range(self.lv.GetColumnCount())]
+        nbcol = self.lv.GetColumnCount()
+        lstWidths = []
+        for i in range(nbcol):
+            w = self.lv.GetColumnWidth(i)
+            if w == 0:
+                lstWidths.append(None)
+            else: lstWidths.append(self.lv.GetColumnWidth(i) + padding)
+        return lstWidths
+    #return [self.lv.GetColumnWidth(i) + padding for i in range(self.lv.GetColumnCount())]
 
     def CalculateSlices(self, maxWidth, columnWidths):
         """
@@ -2402,6 +2417,8 @@ class RectangleDecoration(Decoration):
         if self.side == wx.RIGHT:   return RectUtils.MoveRightBy(bounds, -inset)
         if self.side == wx.TOP:     return RectUtils.MoveTopBy(bounds, inset)
         if self.side == wx.BOTTOM:  return RectUtils.MoveBottomBy(bounds, -inset)
+        for i in range(0,len(bounds)):
+            bounds[i] = int(bounds[i])
         return bounds
 
     def DrawDecoration(self, dc, bounds, block):
@@ -2441,7 +2458,8 @@ class RectangleDecoration(Decoration):
         if self.side == wx.BOTTOM:
             return (RectUtils.Left(bounds), RectUtils.Bottom(bounds) - self.width,
                     RectUtils.Width(bounds), self.width)
-
+        for i in range(0,len(bounds)):
+            bounds[i] = int(bounds[i])
         return bounds
 
 # ----------------------------------------------------------------------------
@@ -2473,13 +2491,15 @@ class LineDecoration(Decoration):
         if self.side == wx.RIGHT:   return RectUtils.MoveRightBy(bounds, -inset)
         if self.side == wx.TOP:     return RectUtils.MoveTopBy(bounds, inset)
         if self.side == wx.BOTTOM:  return RectUtils.MoveBottomBy(bounds, -inset)
+        for i in range(0, len(bounds)):
+            bounds[i] = int(bounds[i])
         return bounds
 
     def DrawDecoration(self, dc, bounds, block):
         """
         Draw this decoration
         """
-        if self.pen == None:
+        if self.pen is None:
             return
 
         if self.side == wx.LEFT:
@@ -2750,8 +2770,12 @@ class RectUtils:
     def InsetRect(r, r2):
         if r2 is None:
             return r
-        else:
-            return [r[0] + r2[0], r[1] + r2[1], r[2] - (r2[0] + r2[2]), r[3] - (r2[1] + r2[3])]
+        if r[2] is None:
+            r[2] = 0
+        return [r[0] + r2[0],
+                r[1] + r2[1],
+                r[2] - (r2[0] + r2[2]),
+                r[3] - (r2[1] + r2[3])]
 
     @staticmethod
     def MultiplyOrigin(r, factor):
