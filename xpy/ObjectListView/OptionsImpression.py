@@ -557,22 +557,6 @@ class CTRL_Parametres(CTRL_Propertygrid):
         return True
 
     def Importation(self):
-        """
-        Importation des valeurs dans le contrôle
-        #TODO: Trouver un autre moyen de stocker les différentes valeur
-            (que je ne connais même pas au passage)
-        :return:
-        """
-        # Récupération des noms et valeurs par défaut du contrôle
-        #dictValeurs = copy.deepcopy(self.GetPropertyValues())
-        # Recherche les paramètres mémorisés
-        #dictParametres = UTILS_Parametres.ParametresCategorie(mode="get", categorie="impression_facture",
-        #                                                      dictParametres=dictValeurs)
-        # Envoie les paramètres dans le contrôle
-        #for nom, valeur in dictParametres.items():
-        #    propriete = self.GetPropertyByName(nom)
-        #    ancienneValeur = propriete.GetValue()
-        #    propriete.SetValue(valeur)
         pass
 
     def Sauvegarde(self, forcer=False):
@@ -616,7 +600,7 @@ class CTRL(wx.Panel):
         self.ctrl_parametres = CTRL_Parametres(self)
         self.ctrl_parametres.Importation()
         #self.bouton_reinitialisation = CTRL_Propertygrid.Bouton_reinitialisation(self, self.ctrl_parametres)
-        #self.bouton_sauvegarde = CTRL_Propertygrid.Bouton_sauvegarde(self, self.ctrl_parametres)
+        self.bouton_sauvegarde = Bouton_sauvegarde(self, self.ctrl_parametres)
         self.ctrl_parametres.SetMinSize((440, 120))
 
         self.__do_layout()
@@ -684,7 +668,7 @@ class CTRL(wx.Panel):
 
         grid_sizer_boutons = wx.FlexGridSizer(rows=3, cols=1, vgap=5, hgap=5)
         #grid_sizer_boutons.Add(self.bouton_reinitialisation, 0, 0, 0)
-        #grid_sizer_boutons.Add(self.bouton_sauvegarde, 0, 0, 0)
+        grid_sizer_boutons.Add(self.bouton_sauvegarde, 0, 0, 0)
 
         grid_sizer_parametres.Add(grid_sizer_boutons, 0, 0, 0)
         grid_sizer_parametres.AddGrowableRow(0)
