@@ -8,11 +8,11 @@
 # Licence:         Licence GNU GPL
 # ------------------------------------------------------------------------
 
-
 from __future__ import absolute_import
 import wx
+import copy
 
-#import UTILS_Parametres
+from xpy import xUTILS_Parametres
 
 import wx.propgrid as wxpg
 import wx.html as html
@@ -86,7 +86,7 @@ class CTRL_Propertygrid(wxpg.PropertyGrid):
         event.Skip()
 
     def Reinitialisation(self):
-        dlg = wx.MessageDialog(None, REINITIALISER_PARAM_TXT,
+        dlg = wx.MessageDialog(None, "Souhaitez-vous vraiment réinitialiser tous les paramètres ?",
                                "Paramètres par défaut", wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_QUESTION)
         reponse = dlg.ShowModal()
         dlg.Destroy()
@@ -95,7 +95,6 @@ class CTRL_Propertygrid(wxpg.PropertyGrid):
                 propriete = self.GetPropertyByName(nom)
                 if self.GetPropertyAttribute(propriete, "reinitialisation_interdite") != True:
                     propriete.SetValue(valeur)
-
 
 class Bouton_reinitialisation(wx.BitmapButton):
     def __init__(self, parent, ctrl_parametres=None):
@@ -106,7 +105,6 @@ class Bouton_reinitialisation(wx.BitmapButton):
 
     def OnBouton(self, event):
         self.ctrl_parametres.Reinitialisation()
-
 
 class Bouton_sauvegarde(wx.BitmapButton):
     def __init__(self, parent, ctrl_parametres=None):
@@ -557,16 +555,24 @@ class CTRL_Parametres(CTRL_Propertygrid):
         return True
 
     def Importation(self):
-        pass
+        """ Importation des valeurs dans le contrôle """
+        # Récupération des noms et valeurs par défaut du contrôle
+        dictValeurs = copy.deepcopy(self.GetPropertyValues())
+        # Recherche les paramètres mémorisés
+        dictParametres = xUTILS_Parametres.ParametresCategorie(mode="get",
+                                                              categorie="impression_liste",
+                                                              dictParametres=dictValeurs)
+        # Envoie les paramètres dans le contrôle
+        for nom, valeur in dictParametres.items():
+            propriete = self.GetPropertyByName(nom)
+            ancienneValeur = propriete.GetValue()
+            propriete.SetValue(valeur)
 
     def Sauvegarde(self, forcer=False):
-        """
-        Mémorisation des valeurs du contrôle
-        TODO: Remettre les fonctions de sauvegarde une fois qu'on l'aura intégré.
-        """
-        pass
-        #dictValeurs = copy.deepcopy(self.GetPropertyValues())
-        #UTILS_Parametres.ParametresCategorie(mode="set", categorie="impression_facture", dictParametres=dictValeurs)
+        """ Mémorisation des valeurs du contrôle """
+        dictValeurs = copy.deepcopy(self.GetPropertyValues())
+        xUTILS_Parametres.ParametresCategorie(mode="set", categorie="impression_liste",
+                                             dictParametres=dictValeurs)
 
     def GetValeurs(self):
         return self.GetPropertyValues()

@@ -9,9 +9,9 @@
 # ------------------------------------------------------------------------
 
 import wx
-import GestionDB
 import datetime
-from Utils.UTILS_Dates import DateEngEnDateDD
+from xpy import xUTILS_DB
+from xpy.outils.xformat import DateSqlToDatetime
 
 TYPE_COULEUR = wx._core.Colour
 
@@ -29,14 +29,14 @@ def ParametresCategorie(mode="get", categorie="", dictParametres={}, **kwd):
     if not categorie or categorie == "":
         mess = 'Le paramètre catégorie est obligatoire '
         raise Exception(mess)
-    DB = GestionDB.DB()
+    DB = xUTILS_DB.DB()
 
     # Si aucun fichier n'est chargé, on renvoie la valeur par défaut :
     if DB.echec == 1:
         return dictParametres
 
     req = """SELECT IDparametre, nom, parametre FROM parametres WHERE categorie="%s";""" % categorie
-    DB.ExecuterReq(req, MsgBox="UTILS_Parametres.ParametresCategorie")
+    DB.ExecuterReq(req, mess="UTILS_Parametres.ParametresCategorie")
     listeDonnees = DB.ResultatReq()
     dictDonnees = {}
     for IDparametre, nom, parametre in listeDonnees:
@@ -73,7 +73,7 @@ def ParametresCategorie(mode="get", categorie="", dictParametres={}, **kwd):
                     elif type_parametre == list:
                         valeur = eval(valeur)
                     elif type_parametre == datetime.date:
-                        valeur = DateEngEnDateDD(valeur)
+                        valeur = DateSqlToDatetime(valeur)
                     elif type_parametre == dict:
                         valeur = eval(valeur)
                     elif type_parametre == bool:
@@ -124,7 +124,7 @@ def Parametres(mode="get", categorie="", nom="", valeur=None, **kwd):
         raise Exception(mess)
 
     # Recherche du parametre
-    DB = GestionDB.DB()
+    DB = xUTILS_DB.DB()
 
     # valeurTmp sera le retour par défaut
     valeurTmp = valeur
@@ -146,7 +146,7 @@ def Parametres(mode="get", categorie="", nom="", valeur=None, **kwd):
 
     req = """SELECT IDparametre, parametre FROM parametres WHERE %s nom='%s';""" % (
     whereCat, nom)
-    DB.ExecuterReq(req, MsgBox="ExecuterReq")
+    DB.ExecuterReq(req, mess="xUTILS_Parametres.Parametres")
     listeDonnees = DB.ResultatReq()
     if len(listeDonnees) != 0:
         if mode == "get":
@@ -166,7 +166,7 @@ def Parametres(mode="get", categorie="", nom="", valeur=None, **kwd):
                 elif type_parametre == list:
                     valeurTmp = eval(valeurTmp)
                 elif type_parametre == datetime.date:
-                    valeurTmp = DateEngEnDateDD(valeurTmp)
+                    valeurTmp = DateSqlToDatetime(valeurTmp)
                 elif type_parametre == dict:
                     valeurTmp = eval(valeurTmp)
                 elif type_parametre == bool:
