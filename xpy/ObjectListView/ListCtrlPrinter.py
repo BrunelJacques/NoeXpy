@@ -105,7 +105,10 @@ import wx
 from xpy.outils.xformat import Nz
 from xpy.ObjectListView.WordWrapRenderer import WordWrapRenderer
 
+LISTINTRO = ""
+LISTFOOTER= ""
 #----------------------------------------------------------------------------
+
 
 class ListCtrlPrinter(object):
 
@@ -115,7 +118,9 @@ class ListCtrlPrinter(object):
     """
 
     def __init__(self, listCtrl=None, title="ListCtrl Printing"):
-
+        global LISTINTRO, LISTFOOTER
+        LISTINTRO = ""
+        LISTFOOTER=u""
         self.printout = ListCtrlPrintout(self)
         self.engine = ReportEngine()
         if listCtrl is not None:
@@ -461,11 +466,14 @@ class ReportEngine(object):
         Create a watermark decoration, replacing any existing watermark
         """
         pageFmt = self.GetNamedFormat("Page")
-        pageFmt.decorations = [x for x in pageFmt.decorations if not isinstance(x, WatermarkDecoration)]
+        pageFmt.decorations = [
+            x for x in pageFmt.decorations if not isinstance(
+                x, WatermarkDecoration)]
 
         watermarkFmt = self.GetNamedFormat("Watermark")
         pageFmt.Add(WatermarkDecoration(self.watermark, font=watermarkFmt.Font,
-                                        color=watermarkFmt.TextColor, angle=watermarkFmt.Angle,
+                                        color=watermarkFmt.TextColor,
+                                        angle=watermarkFmt.Angle,
                                         over=watermarkFmt.Over))
 
 # ----------------------------------------------------------------------------
@@ -540,7 +548,7 @@ class ListCtrlPrintout(wx.Printout):
         """
         self.preview = self.GetPrintPreview()
 
-        if not self.preview.Ok():
+        if not self.preview.IsOk():
             return False
 
         pfrm = wx.PreviewFrame(self.preview, parent, title)
@@ -561,7 +569,8 @@ class ListCtrlPrintout(wx.Printout):
             printer = wx.Printer(pdd)
 
             if printer.Print(parent, self, True):
-                self.printData = wx.PrintData(printer.GetPrintDialogData().GetPrintData())
+                self.printData = wx.PrintData(
+                    printer.GetPrintDialogData().GetPrintData())
             else:
                 error = printer.GetLastError()
                 if error == wx.PRINTER_ERROR:
@@ -667,15 +676,13 @@ class ReportFormat(object):
     def __init__(self):
         """
         """
-        # Initialize the formats that control the various portions of the
-        # report
-        self.ListIntro = BlockFormat()
-        self.ColumnFooter = BlockFormat()
+        # Initialize the formats that control the various portions of the report
         self.Page = BlockFormat()
         self.PageHeader = BlockFormat()
         self.ListHeader = BlockFormat()
         self.GroupTitle = BlockFormat()
         self.ColumnHeader = BlockFormat()
+        self.ColumnFooter = BlockFormat()
         self.Row = BlockFormat()
         self.ListFooter = BlockFormat()
         self.PageFooter = BlockFormat()
@@ -689,7 +696,11 @@ class ReportFormat(object):
         # Initialize the watermark format to default values
         self.WatermarkFormat()
 
-    # ----------------------------------------------------------------------------
+        # Ajout Noethys CTRL_ObjectListView
+        self.ListIntro = BlockFormat()
+        self.ColumnFooter = BlockFormat()
+
+    #-------------------------------------------------------------------------
     # Accessing
 
     def GetNamedFormat(self, name):
@@ -708,7 +719,8 @@ class ReportFormat(object):
         The actual text of the water mark is set by `LCprinter.Watermark` property.
         """
         defaultFaceName = "Stencil"
-        self.Watermark.Font = font or wx.FFont(96, wx.FONTFAMILY_DEFAULT, 0, defaultFaceName)
+        self.Watermark.Font = font or wx.FFont(96, wx.FONTFAMILY_DEFAULT, 0,
+                                               defaultFaceName)
         self.Watermark.TextColor = color or wx.Colour(204, 204, 204)
         self.Watermark.Angle = angle
         self.Watermark.Over = over
@@ -725,11 +737,13 @@ class ReportFormat(object):
         fmt = ReportFormat()
         fmt.IsShrinkToFit = False
 
-        fmt.PageHeader.Font = wx.FFont(12, wx.FONTFAMILY_DEFAULT, faceName=headerFontName)
+        fmt.PageHeader.Font = wx.FFont(12, wx.FONTFAMILY_DEFAULT,
+                                       faceName=headerFontName)
         fmt.PageHeader.Line(wx.BOTTOM, wx.BLACK, 1, space=5)
         fmt.PageHeader.Padding = (0, 0, 0, 12)
 
-        fmt.ListHeader.Font = wx.FFont(18, wx.FONTFAMILY_DEFAULT, faceName=headerFontName)
+        fmt.ListHeader.Font = wx.FFont(18, wx.FONTFAMILY_DEFAULT,
+                                       faceName=headerFontName)
         fmt.ListHeader.Padding = (0, 12, 0, 12)
         fmt.ListHeader.Line(wx.BOTTOM, wx.BLACK, 1, space=5)
 
@@ -747,7 +761,8 @@ class ReportFormat(object):
         fmt.ColumnHeader.Line(wx.BOTTOM, wx.Colour(192, 192, 192), 1, space=3)
         fmt.ColumnHeader.AlwaysCenter = True
 
-        fmt.ColumnFooter.Font = wx.FFont(14, wx.FONTFAMILY_DEFAULT, wx.FONTFLAG_BOLD, faceName=headerFontName)
+        fmt.ColumnFooter.Font = wx.FFont(14, wx.FONTFAMILY_DEFAULT, wx.FONTFLAG_BOLD,
+                                         faceName=headerFontName)
         fmt.ColumnFooter.Padding = (0, 12, 0, 12)
         fmt.ColumnFooter.CellPadding = 5
         fmt.ColumnFooter.Line(wx.BOTTOM, wx.Colour(192, 192, 192), 1, space=3)
@@ -772,7 +787,8 @@ class ReportFormat(object):
         fmt.PageHeader.Line(wx.BOTTOM, wx.BLUE, 2, space=5)
         fmt.PageHeader.Padding = (0, 0, 0, 12)
 
-        fmt.ListHeader.Font = wx.FFont(26, wx.FONTFAMILY_SWISS, wx.FONTFLAG_BOLD, faceName=headerFontName)
+        fmt.ListHeader.Font = wx.FFont(26, wx.FONTFAMILY_SWISS, wx.FONTFLAG_BOLD,
+                                       faceName=headerFontName)
         fmt.ListHeader.TextColor = wx.WHITE
         fmt.ListHeader.Padding = (0, 12, 0, 12)
         fmt.ListHeader.TextAlignment = wx.ALIGN_LEFT
@@ -785,7 +801,8 @@ class ReportFormat(object):
         fmt.PageFooter.Font = wx.FFont(10, wx.FONTFAMILY_DEFAULT, faceName=headerFontName)
         fmt.PageFooter.Background(wx.WHITE, wx.BLUE, space=(0, 4, 0, 4))
 
-        fmt.ColumnHeader.Font = wx.FFont(14, wx.FONTFAMILY_DEFAULT, wx.FONTFLAG_BOLD, faceName=headerFontName)
+        fmt.ColumnHeader.Font = wx.FFont(14, wx.FONTFAMILY_DEFAULT, wx.FONTFLAG_BOLD,
+                                         faceName=headerFontName)
         fmt.ColumnHeader.CellPadding = 2
         fmt.ColumnHeader.Background(wx.Colour(192, 192, 192))
         fmt.ColumnHeader.GridPen = wx.Pen(wx.WHITE, 1)
@@ -814,27 +831,32 @@ class ReportFormat(object):
         fmt = ReportFormat()
         fmt.IsShrinkToFit = False
 
-        fmt.PageHeader.Font = wx.FFont(12, wx.FONTFAMILY_DECORATIVE, wx.FONTFLAG_BOLD, faceName=headerFontName)
+        fmt.PageHeader.Font = wx.FFont(12, wx.FONTFAMILY_DECORATIVE, wx.FONTFLAG_BOLD,
+                                       faceName=headerFontName)
         fmt.PageHeader.TextColor = wx.WHITE
         fmt.PageHeader.Background(wx.GREEN, wx.RED, space=(16, 4, 0, 4))
         fmt.PageHeader.Padding = (0, 0, 0, 12)
 
-        fmt.ListHeader.Font = wx.FFont(24, wx.FONTFAMILY_DECORATIVE, faceName=headerFontName)
+        fmt.ListHeader.Font = wx.FFont(24, wx.FONTFAMILY_DECORATIVE,
+                                       faceName=headerFontName)
         fmt.ListHeader.TextColor = wx.WHITE
         fmt.ListHeader.Padding = (0, 12, 0, 12)
         fmt.ListHeader.TextAlignment = wx.ALIGN_CENTER
         fmt.ListHeader.Background(wx.RED, wx.GREEN, space=(16, 4, 0, 4))
 
-        fmt.GroupTitle.Font = wx.FFont(14, wx.FONTFAMILY_DECORATIVE, wx.FONTFLAG_BOLD, faceName=headerFontName)
+        fmt.GroupTitle.Font = wx.FFont(14, wx.FONTFAMILY_DECORATIVE, wx.FONTFLAG_BOLD,
+                                       faceName=headerFontName)
         fmt.GroupTitle.TextColor = wx.BLUE
         fmt.GroupTitle.Padding = (0, 12, 0, 12)
         fmt.GroupTitle.Line(wx.BOTTOM, wx.GREEN, 4, toColor=wx.WHITE, space=5)
 
-        fmt.PageFooter.Font = wx.FFont(10, wx.FONTFAMILY_DECORATIVE, faceName=headerFontName)
+        fmt.PageFooter.Font = wx.FFont(10, wx.FONTFAMILY_DECORATIVE,
+                                       faceName=headerFontName)
         fmt.PageFooter.Line(wx.TOP, wx.GREEN, 2, toColor=wx.RED, space=3)
         fmt.PageFooter.Padding = (0, 16, 0, 0)
 
-        fmt.ColumnHeader.Font = wx.FFont(14, wx.FONTFAMILY_SWISS, wx.FONTFLAG_BOLD, faceName=headerFontName)
+        fmt.ColumnHeader.Font = wx.FFont(14, wx.FONTFAMILY_SWISS, wx.FONTFLAG_BOLD,
+                                         faceName=headerFontName)
         fmt.ColumnHeader.Background(wx.Colour(255, 215, 0))
         fmt.ColumnHeader.CellPadding = 5
         fmt.ColumnHeader.GridPen = wx.Pen(wx.Colour(192, 192, 192), 1)
@@ -1079,7 +1101,8 @@ class BlockFormat(object):
         """
         self.decorations.append(decoration)
 
-    def Line(self, side=wx.BOTTOM, color=wx.BLACK, width=1, toColor=None, space=0, pen=None):
+    def Line(self, side=wx.BOTTOM, color=wx.BLACK, width=1, toColor=None,
+             space=0, pen=None):
         """
         Add a line to our decorations.
         If a pen is given, we use a straight Line decoration, otherwise we use a
@@ -1326,7 +1349,8 @@ class Block(object):
         """
         pass
 
-    def DrawText(self, dc, txt, bounds, font=None, alignment=wx.ALIGN_LEFT, valignment=wx.ALIGN_CENTRE,
+    def DrawText(self, dc, txt, bounds, font=None, alignment=wx.ALIGN_LEFT,
+                 valignment=wx.ALIGN_CENTRE,
                  image=None, color=None, canWrap=True, imageIndex=-1, listCtrl=None):
         """
         Draw the given text in the given DC according to the given characteristics.
@@ -1357,6 +1381,8 @@ class Block(object):
                 return RectUtils.Top(r)
 
         # Draw any image
+        if imageIndex == None :
+            imageIndex = 0
         if image:
             y = _CalcBitmapPosition(bounds, image.Height)
             dc.DrawBitmap(image, RectUtils.Left(bounds), y)
@@ -1364,8 +1390,10 @@ class Block(object):
         elif listCtrl and imageIndex and imageIndex >= 0:
             imageList = listCtrl.GetImageList(wx.IMAGE_LIST_SMALL)
             y = _CalcBitmapPosition(bounds, imageList.GetSize(0)[1])
-            imageList.Draw(imageIndex, dc, RectUtils.Left(bounds), y, wx.IMAGELIST_DRAW_TRANSPARENT)
-            RectUtils.MoveLeftBy(bounds, imageList.GetSize(0)[0] + GAP_BETWEEN_IMAGE_AND_TEXT)
+            imageList.Draw(imageIndex, dc, RectUtils.Left(bounds), y,
+                           wx.IMAGELIST_DRAW_TRANSPARENT)
+            RectUtils.MoveLeftBy(bounds,
+                                 imageList.GetSize(0)[0] + GAP_BETWEEN_IMAGE_AND_TEXT)
 
         # Draw the text
         dc.SetFont(font or self.GetFont())
@@ -1481,8 +1509,9 @@ class CellBlock(Block):
         Return a collection of Buckets that hold all the values of the
         subclass-overridable collections above
         """
-        buckets = [Bucket(cellWidth=x, text="", align=None,
-                          image=None) for x in self.GetCellWidths()]
+        buckets = [
+            Bucket(cellWidth=x, text="", align=None, image=None)
+            for x in self.GetCellWidths()]
         for (i, x) in enumerate(self.GetSubstitutedTexts()):
             buckets[i].text = x
         for (i, x) in enumerate(self.GetAlignments()):
@@ -1818,9 +1847,9 @@ class ListBlock(Block):
             if not first:
                 self.engine.AddBlock(PageBreakBlock())
             self.engine.AddBlock(ListHeaderBlock(self.lv, self.title))
-            self.engine.AddBlock(
-                ListSliceBlock(self.lv,left,right,cellWidths))
-            self.engine.AddBlock(ListFooterBlock(self.lv, ""))
+            self.engine.AddBlock(ListIntroBlock(self.lv, LISTINTRO))
+            self.engine.AddBlock(ListSliceBlock(self.lv, left, right, cellWidths))
+            self.engine.AddBlock(ListFooterBlock(self.lv, LISTFOOTER))
             first = False
 
         return True
@@ -1895,7 +1924,24 @@ class ListHeaderBlock(TextBlock):
         """
         return self.title
 
-# ----------------------------------------------------------------------------
+#----------------------------------------------------------------------------
+
+class ListIntroBlock(TextBlock):
+    """
+    Ajout perso !
+    """
+
+    def __init__(self, lv, text):
+        self.lv = lv
+        self.text = text
+
+    def GetText(self):
+        """
+        Return the text that will be printed in this block
+        """
+        return self.text
+
+#----------------------------------------------------------------------------
 
 class ListFooterBlock(TextBlock):
 
@@ -2559,8 +2605,8 @@ class WatermarkDecoration(Decoration):
         cx, cy = RectUtils.Center(bounds)
         w, h = dc.GetTextExtent(self.text)
 
-        x = cx - w / 2
-        y = cy - h / 2 + (w / 2 * math.sin(math.radians(self.angle)))
+        x = int(cx - w / 2)
+        y = int(cy - h / 2 + (w / 2 * math.sin(math.radians(self.angle))))
 
         dc.DrawRotatedText(self.text, x, y, self.angle)
 
@@ -2781,5 +2827,71 @@ class RectUtils:
     def MultiplyOrigin(r, factor):
         return [r[0] * factor, r[1] * factor, r[2], r[3]]
 
+#----------------------------------------------------------------------------
+# TESTING ONLY
+#----------------------------------------------------------------------------
+
 if __name__ == '__main__':
-    pass
+    import wx
+    from ObjectListView import ObjectListView, FastObjectListView, GroupListView, ColumnDefn
+
+    # Where can we find the Example module?
+    import sys
+    sys.path.append("wx.CURSOR_Examples")
+
+
+    class MyFrame(wx.Frame):
+        def __init__(self, *args, **kwds):
+            kwds["style"] = wx.DEFAULT_FRAME_STYLE
+            wx.Frame.__init__(self, *args, **kwds)
+
+            self.panel = wx.Panel(self, -1)
+            #self.lv = ObjectListView(self.panel, -1, style=wx.LC_REPORT|wx.SUNKEN_BORDER)
+            self.lv = FastObjectListView(self.panel, -1, style=wx.LC_REPORT|wx.SUNKEN_BORDER)
+
+            sizer_2 = wx.BoxSizer(wx.VERTICAL)
+            sizer_2.Add(self.lv, 1, wx.ALL|wx.EXPAND, 4)
+            self.panel.SetSizer(sizer_2)
+            self.panel.Layout()
+
+            sizer_1 = wx.BoxSizer(wx.VERTICAL)
+            sizer_1.Add(self.panel, 1, wx.EXPAND)
+            self.SetSizer(sizer_1)
+            self.Layout()
+
+            self.lv.SetColumns([
+                ColumnDefn("Title", "left", 200, "title" ),
+                ColumnDefn("Artist", "left", 150, "artist"),
+                ColumnDefn("Last Played", "left", 100, "lastPlayed"),
+                ColumnDefn("Size", "center", 100, "sizeInBytes"),
+                ColumnDefn("Rating", "center", 100, "rating"),
+             ])
+
+            #self.lv.CreateCheckStateColumn()
+            self.lv.SetSortColumn(self.lv.columns[2])
+
+            wx.CallLater(50, self.run)
+
+        def run(self):
+            printer = ListCtrlPrinter(self.lv, "Playing with ListCtrl Printing")
+            printer.ReportFormat = ReportFormat.Normal()
+            printer.ReportFormat.WatermarkFormat(over=True)
+            printer.ReportFormat.IsColumnHeadingsOnEachPage = True
+
+            #printer.ReportFormat.Page.Add(ImageDecoration(ExampleImages.getGroup32Bitmap(), wx.RIGHT, wx.BOTTOM))
+
+            #printer.PageHeader("%(listTitle)s") # nice idea but not possible at the moment
+            printer.PageHeader = "Playing with ListCtrl Printing"
+            printer.PageFooter = ("Bright Ideas Software", "%(date)s", "%(currentPage)d of %(totalPages)d")
+            printer.Watermark = "Sloth!"
+
+            #printer.PageSetup()
+            printer.PrintPreview(self)
+
+
+    app = wx.PySimpleApp(0)
+    wx.InitAllImageHandlers()
+    frame_1 = MyFrame(None, -1, "")
+    app.SetTopWindow(frame_1)
+    frame_1.Show()
+    app.MainLoop()

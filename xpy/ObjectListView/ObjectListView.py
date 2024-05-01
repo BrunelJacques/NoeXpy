@@ -105,10 +105,10 @@ import operator
 import time
 import unicodedata
 from io import BytesIO
-from . import Filter
-from . import CellEditor
-from . import OLVEvent
-from . import ListeFiltres
+from xpy.ObjectListView import Filter
+from xpy.ObjectListView import CellEditor
+from xpy.ObjectListView import OLVEvent
+from xpy.ObjectListView import ListeFiltres
 
 def cmp(a, b):
     # protect for unorderable types in Py3

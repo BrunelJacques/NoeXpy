@@ -9,7 +9,7 @@ import wx
 import os
 import datetime
 import xpy.xUTILS_SaisieParams as xusp
-from . import Filter
+import xpy.ObjectListView.Filter as Filter
 from xpy.outils import xboutons
 
 #**************************  Gestion des filtres à ajouter************************************************************
