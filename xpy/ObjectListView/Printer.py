@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: iso-8859-15 -*-
 # ------------------------------------------------------------------------
-# Application :    Noethys, gestion multi-activités
+# Application :    Noethys, UTILS_Printer
 # Site internet :  www.noethys.com
 # Auteur:           Ivan LUCAS
 # Copyright:       (c) 2010-11 Ivan LUCAS
@@ -12,10 +12,9 @@
 from builtins import object
 import datetime
 import wx
-from xpy.ObjectListView.ListCtrlPrinter import ReportFormat,ListCtrlPrinter
-import xpy.ObjectListView.ListCtrlPrinter as LCP
-import xpy.ObjectListView.OptionsImpression as OptionsImpression
-from xpy.outils                import xformat
+from ListCtrlPrinter import ReportFormat,ListCtrlPrinter
+import OptionsImpression
+from xpy.outils import xformat
 
 
 class PreviewControlBar(wx.PyPreviewControlBar):
@@ -246,13 +245,16 @@ class ObjectListViewPrinter(object):
         fmt = ReportFormat()
 
         # Entête de page
-        ##        fmt.PageHeader.Font = wx.FFont(10, wx.FONTFAMILY_DECORATIVE, wx.FONTFLAG_BOLD, face=headerFontName)
-        ##        fmt.PageHeader.TextColor = wx.WHITE
-        ##        fmt.PageHeader.Background(wx.GREEN, wx.RED, space=(16, 4, 0, 4))
-        ##        fmt.PageHeader.Padding = (0, 0, 0, 12)
+        fmt.PageHeader.Font = wx.FFont(10, wx.FONTFAMILY_DECORATIVE,
+                                       wx.FONTFLAG_BOLD, faceName="Arial")
+        fmt.PageHeader.TextColor = wx.WHITE
+        fmt.PageHeader.Background(wx.GREEN, wx.RED, space=(16, 4, 0, 4))
+        fmt.PageHeader.Padding = (0, 0, 0, 12)
 
         # Titre de liste
-        fmt.ListHeader.Font = wx.Font(int(dictOptions["titre_taille_texte"]), wx.SWISS, wx.NORMAL, int(dictOptions["titre_style"]), faceName="Arial")
+        fmt.ListHeader.Font = wx.Font(int(dictOptions["titre_taille_texte"]), wx.SWISS,
+                                      wx.NORMAL, int(dictOptions["titre_style"]),
+                                      faceName="Arial")
         fmt.ListHeader.TextColor = dictOptions["titre_couleur"]
         fmt.ListHeader.Padding = (0, 12, 0, 10)
         fmt.ListHeader.TextAlignment = dictOptions["titre_alignement"]
@@ -260,14 +262,19 @@ class ObjectListViewPrinter(object):
         test = wx.Pen()
 
         # Intro
-        fmt.ListIntro.Font = wx.Font(int(dictOptions["intro_taille_texte"]), wx.SWISS, wx.NORMAL, int(dictOptions["intro_style"]), faceName="Arial")
+        fmt.ListIntro.Font = wx.Font(int(dictOptions["intro_taille_texte"]), wx.SWISS,
+                                     wx.NORMAL, int(dictOptions["intro_style"]),
+                                     faceName="Arial")
         fmt.ListIntro.TextColor = dictOptions["intro_couleur"]
         fmt.ListIntro.Padding = (12, 2, 12, 2)
         fmt.ListIntro.TextAlignment = dictOptions["intro_alignement"]
         fmt.ListIntro.CanWrap = True
 
         # Titre de colonne
-        fmt.ColumnHeader.Font = wx.Font(int(dictOptions["titre_colonne_taille_texte"]), wx.SWISS, wx.NORMAL, int(dictOptions["titre_colonne_style"]), faceName="Arial")
+        fmt.ColumnHeader.Font = wx.Font(int(dictOptions["titre_colonne_taille_texte"]),
+                                        wx.SWISS, wx.NORMAL,
+                                        int(dictOptions["titre_colonne_style"]),
+                                        faceName="Arial")
         fmt.ColumnHeader.TextColor = dictOptions["titre_colonne_couleur"]
         fmt.ColumnHeader.Padding = (0, 15, 0, 0)
         fmt.ColumnHeader.Background(dictOptions["titre_colonne_couleur_fond"])
@@ -302,7 +309,10 @@ class ObjectListViewPrinter(object):
         fmt.PageFooter.Padding = (0, 16, 0, 0)
 
         # Pied de colonne
-        fmt.ColumnFooter.Font = wx.Font(int(dictOptions["pied_colonne_taille_texte"]), wx.SWISS, wx.NORMAL, int(dictOptions["pied_colonne_style"]), faceName="Arial")
+        fmt.ColumnFooter.Font = wx.Font(int(dictOptions["pied_colonne_taille_texte"]),
+                                        wx.SWISS, wx.NORMAL,
+                                        int(dictOptions["pied_colonne_style"]),
+                                        faceName="Arial")
         fmt.ColumnFooter.TextColor = dictOptions["pied_colonne_couleur"]
         fmt.ColumnFooter.Padding = (0, 0, 0, 0)
         fmt.ColumnFooter.Background(dictOptions["pied_colonne_couleur_fond"])
@@ -312,7 +322,9 @@ class ObjectListViewPrinter(object):
                                           wx.SOLID)
 
         # Conclusion
-        fmt.ListFooter.Font = wx.Font(int(dictOptions["conclusion_taille_texte"]), wx.SWISS, wx.NORMAL, int(dictOptions["conclusion_style"]), faceName="Arial")
+        fmt.ListFooter.Font = wx.Font(int(dictOptions["conclusion_taille_texte"]), wx.SWISS,
+                                      wx.NORMAL, int(dictOptions["conclusion_style"]),
+                                      faceName="Arial")
         fmt.ListFooter.TextColor = dictOptions["conclusion_couleur"]
         fmt.ListFooter.Padding = (12, 12, 0, 0)
         fmt.ListFooter.CellPadding = 5
@@ -360,10 +372,10 @@ class ObjectListViewPrinter(object):
         rowFontName = "Arial"
 
         # Entête de page
-        ##        fmt.PageHeader.Font = wx.FFont(10, wx.FONTFAMILY_DECORATIVE, wx.FONTFLAG_BOLD, face=headerFontName)
-        ##        fmt.PageHeader.TextColor = wx.WHITE
-        ##        fmt.PageHeader.Background(wx.GREEN, wx.RED, space=(16, 4, 0, 4))
-        ##        fmt.PageHeader.Padding = (0, 0, 0, 12)
+        fmt.PageHeader.Font = wx.FFont(10, wx.FONTFAMILY_DECORATIVE, wx.FONTFLAG_BOLD, face=headerFontName)
+        fmt.PageHeader.TextColor = wx.WHITE
+        fmt.PageHeader.Background(wx.GREEN, wx.RED, space=(16, 4, 0, 4))
+        fmt.PageHeader.Padding = (0, 0, 0, 12)
 
         # Titre de liste
         fmt.ListHeader.Font = wx.FFont(16, wx.FONTFAMILY_DECORATIVE, wx.FONTFLAG_BOLD, face=headerFontName)

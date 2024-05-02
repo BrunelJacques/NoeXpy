@@ -99,7 +99,6 @@ and the second look a different way.
 
 import datetime
 import math
-
 import wx
 
 from xpy.outils.xformat import Nz
@@ -476,7 +475,7 @@ class ReportEngine(object):
 class ListCtrlPrintout(wx.Printout):
     """
     An ListCtrlPrintout is the interface between the wx printing system
-    and LCprinter.
+    and ListCtrlPrinter.
     """
 
     def __init__(self, olvPrinter, margins=None):
@@ -711,7 +710,7 @@ class ReportFormat(object):
         """
         Change the format of the watermark printed on this report.
 
-        The actual text of the water mark is set by `LCprinter.Watermark` property.
+        The actual text of the water mark is set by `ListCtrlPrinter.Watermark` property.
         """
         defaultFaceName = "Stencil"
         self.Watermark.Font = font or wx.FFont(96, wx.FONTFAMILY_DEFAULT, 0,
@@ -750,7 +749,8 @@ class ReportFormat(object):
         fmt.PageFooter.Line(wx.TOP, wx.BLACK, 1, space=3)
         fmt.PageFooter.Padding = (0, 16, 0, 0)
 
-        fmt.ColumnHeader.Font = wx.FFont(14, wx.FONTFAMILY_DEFAULT, wx.FONTFLAG_BOLD, faceName=headerFontName)
+        fmt.ColumnHeader.Font = wx.FFont(14, wx.FONTFAMILY_DEFAULT, wx.FONTFLAG_BOLD,
+                                         faceName=headerFontName)
         fmt.ColumnHeader.Padding = (0, 12, 0, 12)
         fmt.ColumnHeader.CellPadding = 5
         fmt.ColumnHeader.Line(wx.BOTTOM, wx.Colour(192, 192, 192), 1, space=3)
@@ -804,7 +804,8 @@ class ReportFormat(object):
         fmt.ColumnHeader.Padding = (0, 0, 0, 12)
         fmt.ColumnHeader.AlwaysCenter = True
 
-        fmt.ColumnFooter.Font = wx.FFont(14, wx.FONTFAMILY_DEFAULT, wx.FONTFLAG_BOLD, faceName=headerFontName)
+        fmt.ColumnFooter.Font = wx.FFont(14, wx.FONTFAMILY_DEFAULT, wx.FONTFLAG_BOLD,
+                                         faceName=headerFontName)
         fmt.ColumnFooter.CellPadding = 2
         fmt.ColumnFooter.Background(wx.Colour(192, 192, 192))
         fmt.ColumnFooter.GridPen = wx.Pen(wx.WHITE, 1)
@@ -1821,6 +1822,10 @@ class ListBlock(Block):
     def __init__(self, lv, title):
         self.lv = lv
         self.title = title
+        if not hasattr(self.lv,'lstIntroduction'):
+            self.lv.lstIntroduction = None
+        if not hasattr(self.lv,'lstConclusion'):
+            self.lv.lstConclusion = None
 
     # -------------------------------------------------------------------------
     # Commands
@@ -2099,9 +2104,6 @@ class ColumnHeaderBlock(ColumnBasedBlock):
     """
     A ColumnHeaderBlock prints a portion of the columns header in a ListCtrl.
     """
-
-    # -------------------------------------------------------------------------
-    # Accessing
 
     def GetTexts(self):
         """
@@ -2816,12 +2818,7 @@ class RectUtils:
 
 if __name__ == '__main__':
     import wx
-    from ObjectListView import ObjectListView, FastObjectListView, GroupListView, ColumnDefn
-
-    # Where can we find the Example module?
-    import sys
-    sys.path.append("wx.CURSOR_Examples")
-
+    from ObjectListView import FastObjectListView, ColumnDefn
 
     class MyFrame(wx.Frame):
         def __init__(self, *args, **kwds):
@@ -2829,7 +2826,6 @@ if __name__ == '__main__':
             wx.Frame.__init__(self, *args, **kwds)
 
             self.panel = wx.Panel(self, -1)
-            #self.lv = ObjectListView(self.panel, -1, style=wx.LC_REPORT|wx.SUNKEN_BORDER)
             self.lv = FastObjectListView(self.panel, -1, style=wx.LC_REPORT|wx.SUNKEN_BORDER)
 
             sizer_2 = wx.BoxSizer(wx.VERTICAL)
@@ -2850,7 +2846,6 @@ if __name__ == '__main__':
                 ColumnDefn("Rating", "center", 100, "rating"),
              ])
 
-            #self.lv.CreateCheckStateColumn()
             self.lv.SetSortColumn(self.lv.columns[2])
 
             wx.CallLater(50, self.run)
@@ -2861,14 +2856,10 @@ if __name__ == '__main__':
             printer.ReportFormat.WatermarkFormat(over=True)
             printer.ReportFormat.IsColumnHeadingsOnEachPage = True
 
-            #printer.ReportFormat.Page.Add(ImageDecoration(ExampleImages.getGroup32Bitmap(), wx.RIGHT, wx.BOTTOM))
-
-            #printer.PageHeader("%(listTitle)s") # nice idea but not possible at the moment
             printer.PageHeader = "Playing with ListCtrl Printing"
             printer.PageFooter = ("Bright Ideas Software", "%(date)s", "%(currentPage)d of %(totalPages)d")
             printer.Watermark = "Sloth!"
 
-            #printer.PageSetup()
             printer.PrintPreview(self)
 
 
