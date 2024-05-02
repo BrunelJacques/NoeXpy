@@ -105,8 +105,6 @@ import wx
 from xpy.outils.xformat import Nz
 from xpy.ObjectListView.WordWrapRenderer import WordWrapRenderer
 
-LISTINTRO = ""
-LISTFOOTER= ""
 #----------------------------------------------------------------------------
 
 
@@ -118,9 +116,6 @@ class ListCtrlPrinter(object):
     """
 
     def __init__(self, listCtrl=None, title="ListCtrl Printing"):
-        global LISTINTRO, LISTFOOTER
-        LISTINTRO = ""
-        LISTFOOTER=u""
         self.printout = ListCtrlPrintout(self)
         self.engine = ReportEngine()
         if listCtrl is not None:
@@ -1526,11 +1521,11 @@ class CellBlock(Block):
         for x in buckets:
             if x.cellWidth is None:
                 x.innerCellWidth = 0
+                x.cellWidth = 0
                 x.text = ''
             else:
                 x.innerCellWidth = max(
                     0, x.cellWidth - (cellPadding[0] + cellPadding[2]))
-
         return buckets
 
     def GetListCtrl(self):
@@ -1836,10 +1831,8 @@ class ListBlock(Block):
 
         Return True if the Block has finished printing
         """
-
         cellWidths = self.CalculateCellWidths()
         boundsWidth = RectUtils.Width(self.GetWorkBounds())
-
         # Break the list into vertical slices. Each one but the first will be placed on a
         # new page.
         first = True
@@ -1847,9 +1840,9 @@ class ListBlock(Block):
             if not first:
                 self.engine.AddBlock(PageBreakBlock())
             self.engine.AddBlock(ListHeaderBlock(self.lv, self.title))
-            self.engine.AddBlock(ListIntroBlock(self.lv, LISTINTRO))
+            self.engine.AddBlock(ListIntroBlock(self.lv, self.lv.lstIntroduction))
             self.engine.AddBlock(ListSliceBlock(self.lv, left, right, cellWidths))
-            self.engine.AddBlock(ListFooterBlock(self.lv, LISTFOOTER))
+            self.engine.AddBlock(ListFooterBlock(self.lv, self.lv.lstConclusion))
             first = False
 
         return True
@@ -2050,7 +2043,6 @@ class ListSliceBlock(Block):
 
 # ----------------------------------------------------------------------------
 
-
 class ColumnBasedBlock(CellBlock):
 
     """
@@ -2099,7 +2091,6 @@ class ColumnBasedBlock(CellBlock):
             wx.LIST_FORMAT_CENTRE: wx.ALIGN_CENTRE,
         }
         return [mapping[x] for x in listAlignments]
-
 
 # ----------------------------------------------------------------------------
 
@@ -2205,7 +2196,6 @@ class ListRowsBlock(Block):
 
 # ----------------------------------------------------------------------------
 
-
 class GroupListRowsBlock(Block):
 
     """
@@ -2255,7 +2245,6 @@ class GroupListRowsBlock(Block):
         self.engine.AddBlock(self)
 
         return True
-
 
 # ----------------------------------------------------------------------------
 
@@ -2372,7 +2361,6 @@ class RowBlock(ColumnBasedBlock):
     #    modelObjects = self.lv.GetObjectAt(self.rowIndex)
     # return [self.lv.GetImageAt(modelObjects, i) for i in range(self.left,
     # self.right+1)]
-
 
 # ----------------------------------------------------------------------------
 
@@ -2510,7 +2498,6 @@ class RectangleDecoration(Decoration):
 
 # ----------------------------------------------------------------------------
 
-
 class LineDecoration(Decoration):
 
     """
@@ -2566,7 +2553,6 @@ class LineDecoration(Decoration):
 
 # ----------------------------------------------------------------------------
 
-
 class WatermarkDecoration(Decoration):
 
     """
@@ -2611,7 +2597,6 @@ class WatermarkDecoration(Decoration):
         dc.DrawRotatedText(self.text, x, y, self.angle)
 
 # ----------------------------------------------------------------------------
-
 
 class ImageDecoration(Decoration):
 
@@ -2672,7 +2657,6 @@ class ImageDecoration(Decoration):
         else:
             dc.DrawBitmap(self.bitmap, x, y, True)
 
-
 # ----------------------------------------------------------------------------
 
 class Bucket(object):
@@ -2689,7 +2673,6 @@ class Bucket(object):
         return "Bucket(" + ", ".join(strs) + ")"
 
 # ----------------------------------------------------------------------------
-
 
 class RectUtils:
 
@@ -2889,7 +2872,7 @@ if __name__ == '__main__':
             printer.PrintPreview(self)
 
 
-    app = wx.PySimpleApp(0)
+    app = wx.App(0)
     wx.InitAllImageHandlers()
     frame_1 = MyFrame(None, -1, "")
     app.SetTopWindow(frame_1)

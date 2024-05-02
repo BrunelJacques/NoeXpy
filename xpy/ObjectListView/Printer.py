@@ -13,7 +13,8 @@ from builtins import object
 import datetime
 import wx
 from xpy.ObjectListView.ListCtrlPrinter import ReportFormat,ListCtrlPrinter
-from xpy.ObjectListView import  OptionsImpression
+import xpy.ObjectListView.ListCtrlPrinter as LCP
+import xpy.ObjectListView.OptionsImpression as OptionsImpression
 from xpy.outils                import xformat
 
 
@@ -80,17 +81,17 @@ class PreviewControlBar(wx.PyPreviewControlBar):
         self.Bind(wx.EVT_BUTTON, self.OnZoomPlus, self.bouton_zoom_plus)
 
     def __set_properties(self):
-        self.bouton_imprimer.SetToolTip(wx.ToolTip(_("Cliquez ici pour afficher l'impression")))
-        self.bouton_rapide_x1.SetToolTip(wx.ToolTip(_("Cliquez ici pour lancer une impression rapide en 1 exemplaire")))
-        self.bouton_rapide_x2.SetToolTip(wx.ToolTip(_("Cliquez ici pour lancer une impression rapide en 2 exemplaires")))
-        self.bouton_premier.SetToolTip(wx.ToolTip(_("Cliquez ici pour accéder à la première page")))
-        self.bouton_precedent.SetToolTip(wx.ToolTip(_("Cliquez ici pour accéder à la page précédente")))
-        self.bouton_suivant.SetToolTip(wx.ToolTip(_("Cliquez ici pour accéder à la page suivante")))
-        self.bouton_dernier.SetToolTip(wx.ToolTip(_("Cliquez ici pour accéder à la dernière page")))
-        self.bouton_zoom_moins.SetToolTip(wx.ToolTip(_("Cliquez ici pour faire un zoom arrière")))
-        self.ctrl_zoom.SetToolTip(wx.ToolTip(_("Déplacez la règlette pour zoomer")))
-        self.bouton_zoom_plus.SetToolTip(wx.ToolTip(_("Cliquez ici pour faire un zoom avant")))
-        self.bouton_fermer.SetToolTip(wx.ToolTip(_("Cliquez ici pour fermer l'aperçu")))
+        self.bouton_imprimer.SetToolTip(wx.ToolTip("Cliquez ici pour afficher l'impression"))
+        self.bouton_rapide_x1.SetToolTip(wx.ToolTip("Cliquez ici pour lancer une impression rapide en 1 exemplaire"))
+        self.bouton_rapide_x2.SetToolTip(wx.ToolTip("Cliquez ici pour lancer une impression rapide en 2 exemplaires"))
+        self.bouton_premier.SetToolTip(wx.ToolTip("Cliquez ici pour accéder à la première page"))
+        self.bouton_precedent.SetToolTip(wx.ToolTip("Cliquez ici pour accéder à la page précédente"))
+        self.bouton_suivant.SetToolTip(wx.ToolTip("Cliquez ici pour accéder à la page suivante"))
+        self.bouton_dernier.SetToolTip(wx.ToolTip("Cliquez ici pour accéder à la dernière page"))
+        self.bouton_zoom_moins.SetToolTip(wx.ToolTip("Cliquez ici pour faire un zoom arrière"))
+        self.ctrl_zoom.SetToolTip(wx.ToolTip("Déplacez la règlette pour zoomer"))
+        self.bouton_zoom_plus.SetToolTip(wx.ToolTip("Cliquez ici pour faire un zoom avant"))
+        self.bouton_fermer.SetToolTip(wx.ToolTip("Cliquez ici pour fermer l'aperçu"))
 
     def __do_layout(self):
         grid_sizer_base = wx.GridSizer(rows=2, cols=1, vgap=0, hgap=0)
@@ -236,11 +237,10 @@ class ObjectListViewPrinter(object):
         self.printer = ListCtrlPrinter(self.listview, dictOptions["titre"])
         self.printer.printout.margins = (wx.Point(int(dictOptions["marge_gauche"]), int(dictOptions["marge_haut"])), wx.Point(int(dictOptions["marge_droite"]), int(dictOptions["marge_bas"])))
         self.printer.printout.printData.SetOrientation(dictOptions["orientation"])
-        self.printer.printout.printData.SetQuality(dictOptions["qualite_impression"])
-        self.printer.PageFooter = (dictOptions["pied_page_texte_gauche"], dictOptions["pied_page_texte_milieu"],
-                                   dictOptions["pied_page_texte_droite"])
-        ListCtrlPrinter.LISTINTRO = dictOptions["introduction"]
-        ListCtrlPrinter.LISTFOOTER = dictOptions["conclusion"]
+        self.printer.printout.printData.SetQuality(int(dictOptions["qualite_impression"]))
+        self.printer.PageFooter = (dictOptions["pied_page_texte_gauche"], dictOptions["pied_page_texte_milieu"], dictOptions["pied_page_texte_droite"])
+        self.listview.lstIntroduction = dictOptions["introduction"]
+        self.listview.lstConclusion = dictOptions["conclusion"]
 
         # Préparation du format
         fmt = ReportFormat()
@@ -252,8 +252,7 @@ class ObjectListViewPrinter(object):
         ##        fmt.PageHeader.Padding = (0, 0, 0, 12)
 
         # Titre de liste
-        fmt.ListHeader.Font = wx.Font(dictOptions["titre_taille_texte"], wx.SWISS, wx.NORMAL,
-                                      dictOptions["titre_style"], faceName="Arial")
+        fmt.ListHeader.Font = wx.Font(int(dictOptions["titre_taille_texte"]), wx.SWISS, wx.NORMAL, int(dictOptions["titre_style"]), faceName="Arial")
         fmt.ListHeader.TextColor = dictOptions["titre_couleur"]
         fmt.ListHeader.Padding = (0, 12, 0, 10)
         fmt.ListHeader.TextAlignment = dictOptions["titre_alignement"]
@@ -261,16 +260,14 @@ class ObjectListViewPrinter(object):
         test = wx.Pen()
 
         # Intro
-        fmt.ListIntro.Font = wx.Font(dictOptions["intro_taille_texte"], wx.SWISS, wx.NORMAL, dictOptions["intro_style"],
-                                     faceName="Arial")
+        fmt.ListIntro.Font = wx.Font(int(dictOptions["intro_taille_texte"]), wx.SWISS, wx.NORMAL, int(dictOptions["intro_style"]), faceName="Arial")
         fmt.ListIntro.TextColor = dictOptions["intro_couleur"]
         fmt.ListIntro.Padding = (12, 2, 12, 2)
         fmt.ListIntro.TextAlignment = dictOptions["intro_alignement"]
         fmt.ListIntro.CanWrap = True
 
         # Titre de colonne
-        fmt.ColumnHeader.Font = wx.Font(dictOptions["titre_colonne_taille_texte"], wx.SWISS, wx.NORMAL,
-                                        dictOptions["titre_colonne_style"], faceName="Arial")
+        fmt.ColumnHeader.Font = wx.Font(int(dictOptions["titre_colonne_taille_texte"]), wx.SWISS, wx.NORMAL, int(dictOptions["titre_colonne_style"]), faceName="Arial")
         fmt.ColumnHeader.TextColor = dictOptions["titre_colonne_couleur"]
         fmt.ColumnHeader.Padding = (0, 15, 0, 0)
         fmt.ColumnHeader.Background(dictOptions["titre_colonne_couleur_fond"])
@@ -315,8 +312,7 @@ class ObjectListViewPrinter(object):
                                           wx.SOLID)
 
         # Conclusion
-        fmt.ListFooter.Font = wx.Font(dictOptions["conclusion_taille_texte"], wx.SWISS, wx.NORMAL,
-                                      dictOptions["conclusion_style"], faceName="Arial")
+        fmt.ListFooter.Font = wx.Font(int(dictOptions["conclusion_taille_texte"]), wx.SWISS, wx.NORMAL, int(dictOptions["conclusion_style"]), faceName="Arial")
         fmt.ListFooter.TextColor = dictOptions["conclusion_couleur"]
         fmt.ListFooter.Padding = (12, 12, 0, 0)
         fmt.ListFooter.CellPadding = 5
@@ -511,13 +507,6 @@ class FramePreview(wx.Frame):
 
         # Initialisation des contrôles
         self.OnZoom(None)
-
-    def OnPageSetup(self, event):
-        self.LCprinter.PageSetup()
-        self.RefreshPreview()
-
-    def OnPrint(self, event):
-        self.LCprinter.Print()
 
     def OnPremierePage(self, event):  # wxGlade: MyFrame.<event_handler>
         self.printPreview.SetCurrentPage(self.printPreview.GetMinPage())

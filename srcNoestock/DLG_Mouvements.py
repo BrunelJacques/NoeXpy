@@ -1059,15 +1059,6 @@ class DLG(xGTE.DLG_tableau):
     def OnImprimer(self,event):
         self.ctrlOlv.Apercu(None)
 
-    def zzOnFermer(self, event):
-        #wx.MessageBox("Traitement de sortie")
-        if event:
-            event.Skip()
-        if self.IsModal():
-            self.EndModal(wx.ID_CANCEL)
-        else:
-            self.Close()
-
 #------------------------ Lanceur de test  -------------------------------------------
 
 if __name__ == '__main__':

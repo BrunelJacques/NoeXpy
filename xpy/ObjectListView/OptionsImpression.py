@@ -21,7 +21,6 @@ import sys
 from xpy.outils.xconst import *
 from xpy.outils import xboutons
 
-
 class EditeurComboBoxAvecBoutons(wxpg.PGChoiceEditor):
     """
     Les classes qui suivent (jusqu'au séparateur) sont issues de CTRL_Propertygrid
@@ -53,7 +52,6 @@ class EditeurComboBoxAvecBoutons(wxpg.PGChoiceEditor):
                 propGrid.GetPanel().OnBoutonParametres(prop)
 
         return self.CallSuperMethod("OnEvent", propGrid, prop, ctrl, event)
-
 
 class CTRL_Propertygrid(wxpg.PropertyGrid):
     def __init__(self, parent, style=wxpg.PG_SPLITTER_AUTO_CENTER):
@@ -182,7 +180,7 @@ class CTRL_Parametres(CTRL_Propertygrid):
         CTRL_Propertygrid.__init__(self, parent)
 
     def Remplissage(self):
-        lstChampsPiedsPages = ["{DATE_JOUR}", "{TITRE_DOCUMENT}", "{NOM_ORGANISATEUR}", "{NUM_PAGE}", "{NBRE_PAGES}"]
+        lstChampsPiedsPages = ["{DATE_JOUR}", "{TITRE_DOCUMENT}", "{NUM_PAGE}", "{NBRE_PAGES}"]
 
         # --------------------------- Divers ------------------------------------------
         self.Append(wxpg.PropertyCategory("Divers"))
@@ -418,7 +416,7 @@ class CTRL_Parametres(CTRL_Propertygrid):
         self.Append(propriete)
 
         # Texte du milieu
-        valeur = "{TITRE_DOCUMENT} - {NOM_ORGANISATEUR}"
+        valeur = "{TITRE_DOCUMENT}"
         propriete = wxpg.StringProperty(label=PIED_TEXTE_MILIEU_LABEL, name="pied_page_texte_milieu", value=valeur)
         propriete.SetHelpString(
             "Saisissez le texte du milieu du pied de page (Par défaut '%s'). Vous pouvez intégrer les mots-clés suivants : %s" % (
