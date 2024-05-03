@@ -16,7 +16,6 @@ from xpy.ObjectListView.ListCtrlPrinter import ReportFormat,ListCtrlPrinter
 from xpy.ObjectListView import OptionsImpression
 from xpy.outils import xformat
 
-
 class PreviewControlBar(wx.PyPreviewControlBar):
     def __init__(self, preview, buttons, parent):
         wx.PyPreviewControlBar.__init__(self, preview, buttons, parent)
