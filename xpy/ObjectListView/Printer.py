@@ -12,7 +12,7 @@
 from builtins import object
 import datetime
 import wx
-from ListCtrlPrinter import ReportFormat,ListCtrlPrinter
+from xpy.ObjectListView.ListCtrlPrinter import ReportFormat,ListCtrlPrinter
 import OptionsImpression
 from xpy.outils import xformat
 
