@@ -1,55 +1,32 @@
-import wx
+import git
 
-########################################################################
-class MyPanel(wx.Panel):
-    """"""
 
-    #----------------------------------------------------------------------
-    def __init__(self, parent):
-        """Constructor"""
-        wx.Panel.__init__(self, parent)
+def update_app(repo_path, stash_changes=False, reset_hard=False):
+    try:
+        # Ouvrir le dépôt Git
+        repo = git.Repo(repo_path)
 
-        self.text = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER)
-        self.text.Bind(wx.EVT_KEY_DOWN, self.onEnter)
-        btn = wx.Button(self, label="Do something")
-        self.text.SetFocus()
+        # Stasher les changements locaux si nécessaire
+        if stash_changes:
+            repo.git.stash("save", "--include-untracked")
+            print("Changements stashed.")
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.text, 0, wx.EXPAND|wx.ALL, 5)
-        sizer.Add(btn, 0, wx.ALL|wx.CENTER, 5)
-        self.SetSizer(sizer)
+        # Réinitialiser les changements locaux si nécessaire
+        if reset_hard:
+            repo.git.reset("--hard", "HEAD")
+            print("Changements locaux réinitialisés.")
 
-    #----------------------------------------------------------------------
-    def onEnter(self, event):
-        """"""
-        keycode = event.GetKeyCode()
-        if keycode == wx.WXK_RETURN or keycode == wx.WXK_NUMPAD_ENTER or keycode == wx.WXK_TAB:
-            self.process_text(event=None)
-            event.EventObject.Navigate()
-        event.Skip()
+        # Effectuer git pull depuis la branche actuelle
+        origin = repo.remote(name='origin')
+        origin.pull()
 
-    #----------------------------------------------------------------------
-    def process_text(self, event):
-        """
-        Do something with the text
-        """
-        text = self.text.GetValue()
-        print(text.upper())
-        for word in text.split():
-            print(word)
+        print("Mise à jour réussie.")
 
-########################################################################
-class MyFrame(wx.Frame):
-    """"""
+    except git.exc.GitCommandError as e:
+        print("Erreur lors de la mise à jour : ", e)
 
-    #----------------------------------------------------------------------
-    def __init__(self):
-        """Constructor"""
-        wx.Frame.__init__(self, None, title="TextCtrl Demo")
-        panel = MyPanel(self)
-        self.Show()
 
+# Exemple d'utilisation
 if __name__ == "__main__":
-    app = wx.App(False)
-    frame = MyFrame()
-    app.MainLoop()
+    repo_path = "/chemin/vers/votre/app"
+    update_app(repo_path, stash_changes=True, reset_hard=False)
