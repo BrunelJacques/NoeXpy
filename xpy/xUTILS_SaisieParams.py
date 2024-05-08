@@ -786,7 +786,7 @@ class PNL_listCtrl(wx.Panel):
         # Alimente les valeurs dans la grille
         self.ctrl.DeleteAllItems()
         for items in llItems:
-            self.ctrl.Append(items)
+            self.ctrl.Append(items[:6])
         for i in range(len(ltColonnes)):
             self.ctrl.SetColumnWidth(i,wx.LIST_AUTOSIZE_USEHEADER)
 

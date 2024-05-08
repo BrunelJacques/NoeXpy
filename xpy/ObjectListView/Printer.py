@@ -340,11 +340,6 @@ class ObjectListViewPrinter(object):
         self.printer.ReportFormat = fmt
         return True
 
-    def PreviewStandard(self):
-        if self.InitParametres() == False:
-            return
-        self.printer.PrintPreview()
-
     def Print(self):
         if self.InitParametres() == False:
             return
