@@ -274,6 +274,10 @@ class DLG(wx.Dialog):
 if __name__ == "__main__":
     os.chdir("..")
     app = wx.App(False)
+    #repo = git.Repo(os.getcwd())
+    repo = git.Repo("D:\\temp\\zztest\\NoeXpy")
+    ret = repo.git.status()
+
     dlg = DLG("Noexpy")
     app.MainLoop()
 
