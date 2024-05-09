@@ -33,6 +33,10 @@ class MENU():
                 "infobulle": ("Reconfigurer l'accès à la base de données principale"),
                 "image": "Images/16x16/Utilisateur_reseau.png",
                 "action": "On_config", "genre": wx.ITEM_NORMAL},
+            {"code": "config", "label": ("&Mise à jour des programmes\tCtrl-R"),
+             "infobulle": ("Release ou réinstallation ailleurs"),
+             "image": "Images/16x16/Utilisateur_reseau.png",
+             "action": "On_github", "genre": wx.ITEM_NORMAL},
             "-",
             {"code": "identification", "label": ("S'identifier"),
                 "infobulle": ("Appel de l'écran d'identification"),
@@ -153,6 +157,12 @@ class MENU():
         ret = self.parent.SaisieConfig()
         if ret == wx.OK:
             self.parent.ConnectBase()
+
+    def On_github(self,event):
+        from xpy import xGithub
+        dlg = xGithub.DLG("NoeXpy")
+        ret = dlg.ShowModal()
+        del dlg
 
     def On_analytiques(self,event):
         try:

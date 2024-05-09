@@ -23,6 +23,10 @@ class MENU():
         menu = [
         # Première colonne
         {"code": "&params\tCtrl-P", "label": ("Paramètres_et_outils"), "items": [
+            {"code": "config", "label": ("&Mise à jour des programmes\tCtrl-R"),
+             "infobulle": ("Release ou réinstallation ailleurs"),
+             "image": "Images/16x16/Utilisateur_reseau.png",
+             "action": "On_github", "genre": wx.ITEM_NORMAL},
             {"code": "config", "label": ("&Accès aux Bases de données\tCtrl-A"),
              "infobulle": ("Reconfigurer l'accès à la base de données principale"),
              "image": "Images/16x16/Utilisateur_reseau.png",
@@ -110,10 +114,15 @@ class MENU():
         dlg = DLG_Reglements_gestion.Dialog()
         dlg.ShowModal()
 
+    def On_github(self,event):
+        from xpy import xGithub
+        dlg = xGithub.DLG("NoeXpy")
+        ret = dlg.ShowModal()
+        del dlg
+
     def On_config(self,event):
         #lance la configuration initiale à la base de donnée pincipale
         return self.parent.SaisieConfig()
-
 
     def On_utilisateurs(self,event):
         ret = xUTILS_Identification.AfficheUsers(self.parent)

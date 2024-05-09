@@ -1,6 +1,7 @@
 version 1.1.2.37 (08/05/2024)
     - non diffusée
     - Impressions ListCtrlPrinter
+    - Release des programmes par Github
 
 version 1.1.2.36 (26/04/2024)
     - Impressions python 3.11
