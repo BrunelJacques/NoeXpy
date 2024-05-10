@@ -26,6 +26,24 @@ try:
 except Exception as err:
     raise Exception("Echec %s: %s\n%s" % (mess, err, messRaise))
 
+del mess
+del messRaise
+
+def is_pull_needed(repo_path):
+    try:
+        repo = git.Repo(repo_path)
+        origin = repo.remotes.origin
+        # Fetch changes from remote repository
+        origin.fetch()
+        # Get the commit IDs of the local and remote branches
+        local_branch = repo.head.commit
+        remote_branch = origin.refs.master.commit
+        # Check if local branch is behind remote branch
+        return local_branch != remote_branch
+    except git.exc.GitCommandError as e:
+        print(f"Error: {e}")
+        return False
+
 def PullGithub(appli_path, stash_changes=False, reset_hard=False):
     mess = "Lancement Update\n"
     err = None
@@ -274,9 +292,10 @@ class DLG(wx.Dialog):
 if __name__ == "__main__":
     os.chdir("..")
     app = wx.App(False)
-    #repo = git.Repo(os.getcwd())
-    repo = git.Repo("D:\\temp\\zztest\\NoeXpy")
-    ret = repo.git.status()
+
+    #path = os.getcwd()
+    path= "D:\\temp\\zztest\\NoeXpy"
+    ret = is_pull_needed(path)
 
     dlg = DLG("Noexpy")
     app.MainLoop()
