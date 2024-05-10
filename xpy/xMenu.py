@@ -6,7 +6,6 @@ class Accueil(wx.Frame):
 
     def __init__(self, *args, **kw):
         super(Accueil, self).__init__(*args, **kw)
-
         pnl = wx.Panel(self)
         st = wx.StaticText(pnl, label="Choisir une option du menu!", pos=(25,25))
         font = st.GetFont()

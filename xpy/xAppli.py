@@ -13,7 +13,8 @@ import os
 import sys
 import xpy.outils.xrapportBugs
 import xpy.outils.xshelve    as xshelve
-from  xpy.outils import xaccueil
+from xpy.outils import xaccueil
+from xpy import xGithub
 
 
 def CrashReport(dictAppli):
@@ -40,6 +41,7 @@ class MainFrame(wx.Frame):
         self.pathXpy = os.path.dirname(os.path.abspath(__file__))
         if not self.pathXpy in sys.path:
             sys.path = [self.pathXpy] + sys.path
+        ret = xGithub.IsPullNeeded(os.getcwd())
         # le dictionnaire config contiendra  toutes les configurations de l'utilisateur,
         #       enregistrées dans des fichiers  soit dans profilUser ou dans Data selon xUTILS_Shelve
         self.config = None
