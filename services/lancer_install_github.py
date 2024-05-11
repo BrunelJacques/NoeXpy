@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#-------------------------------------------------------------------------
-# Application :    lanceur de xGithub programme d'installation et MAJ
+# -------------------------------------------------------------------------
+# Application :    Gestion GITHUB install ou mise à jour d'application
 # Auteur:          Jacques BRUNEL
 # Licence:         Licence GNU GPL
-#--------------------------------------------------------------------------
-
+# --------------------------------------------------------------------------
 
 import os, sys
 import importlib.util
@@ -13,8 +12,9 @@ import importlib.util
 # imports préalables aux connexions git
 try:
     mess = "lancement gitPython"
-    messRaise = "Installer git par commande windows 'pip install gitpython'\n"
+    messRaise = "Installer git par commande windows 'pip install GitPython'\n"
     SEP = "\\"
+    git = "GitPython"
     if "linux" in sys.platform:
         messRaise = "Installer git sous linux: 'sudo apt install git'"
         SEP = "/"
@@ -24,7 +24,7 @@ try:
         mess = "test de présence de package github"
         import subprocess
 
-        commande = ['pip', 'install', 'github']
+        commande = ['pip', 'install', git]
         subprocess.call(commande)
     import git
 

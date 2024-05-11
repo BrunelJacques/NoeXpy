@@ -32,7 +32,7 @@ sudo chmod 775 -R /home/noegest
 Spécifique Noexpy
 ```
 cd /home/noegest
-git clone https://github.com/BrunelJacques/Noexpy
+git clone https://github.com/BrunelJacques/NoeXpy
 cd Noexpy
 pip3 install -r requirements.txt
 cp services/doc/lancer_noestock.sh ./
@@ -46,7 +46,7 @@ source ../envnoexpy/bin/activate
 python3 Noestock.py
 python3 Noelite.py
 ```
-pour un lien dans la barre 'activités'
+#pour un lien dans la barre 'activités'
 ```
 sudo mkdir /usr/local/share/applications
 sudo cp /home/noegest/Noexpy/services/doc/lancer_noestock.desktop  /usr/local/share/applications/

@@ -5,12 +5,13 @@ Pour Windows, vous devez aller sur les sites des auteurs pour
 rechercher et installer les bibliothèques suivantes.
 - Python 3+ avec pip (http://www.python.org/)
 - wxPython 3+ - version unicode (http://www.wxpython.org/)
-Télécharger le code source
+- git https://git-scm.com/download/win
 
-#### dans un terminal shell lancez 'pip install -r requirements.txt'
+#Cloner les sources via git qui céera le répertoire NoeXpy (shell en mode administrateur)
+git clone https://github.com/BrunelJacques/NoeXpy
 
-Dans le répertoire Noexpy, 'python Noelite' 
+#### dans un terminal shell dans /NoeXpy lancez le chargement des packages
+pip install -r requirements.txt'
 
-voir l'installation de Noethys-Matthania et faire pareil
-
-
+#  fatal error: "detected dubious ownership" =>lancer en mode administrateur par shell
+git config --system --add safe.directory '*' # For all users and all repositories

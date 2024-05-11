@@ -12,8 +12,9 @@ import importlib.util
 # imports préalables aux connexions git
 try:
     mess = "lancement gitPython"
-    messRaise = "Installer git par commande windows 'pip install gitpython'\n"
+    messRaise = "Installer git par commande windows 'pip install GitPython'\n"
     SEP = "\\"
+    git = "GitPython"
     if "linux" in sys.platform:
         messRaise = "Installer git sous linux: 'sudo apt install git'"
         SEP = "/"
@@ -23,7 +24,7 @@ try:
         mess = "test de présence de package github"
         import subprocess
 
-        commande = ['pip', 'install', 'github']
+        commande = ['pip', 'install', git]
         subprocess.call(commande)
     import git
 
@@ -38,6 +39,7 @@ try:
     del messRaise
 except Exception as err:
     raise Exception("Echec %s: %s\n%s" % (mess, err, messRaise))
+
 
 
 def IsPullNeeded(repo_path, mute=False):
@@ -70,7 +72,6 @@ def IsPullNeeded(repo_path, mute=False):
     except git.exc.GitCommandError as e:
         wx.MessageBox(f"Error: {e}", "Accès GITHUB échoué", wx.ICON_ERROR)
         return False
-
 
 def PullGithub(appli_path, stash_changes=False, reset_hard=False):
     mess = "Lancement Update\n"
