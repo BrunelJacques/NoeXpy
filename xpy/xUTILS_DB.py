@@ -249,10 +249,10 @@ class DB():
             self.erreur = "%s\n\nEtape: %s"%(mess,etape)
             return
         nomFichier = config['nameDB']
-        etape = 'Ping serveur'
-        ret = self.Ping(host)
-        if not ret == 'ok':
-            print("%s\n%s"%(etape, str(ret)))
+        #etape = 'Ping serveur'
+        #ret = self.Ping(host)
+        #if not ret == 'ok':
+        #    print("%s\n%s"%(etape, str(ret)))
 
         etape = 'Création du connecteur %s:%s user: %s - %s'%(host, port,userdb,passwd)
         if self.typeDB != 'mysql':
