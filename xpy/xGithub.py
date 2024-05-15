@@ -206,7 +206,7 @@ class DLG(wx.Dialog):
         dir = self.dirPicker.GetPath()
         lstDir = dir.split(SEP)
         dirLower_1 = SEP.join([x.lower() for x in lstDir[:-1]])
-        if ok and lstDir[0] == "":
+        if ok and lstDir <= 1:
             # absence de dir
             wx.MessageBox("Déterminez une localisation pour l'appli\n\nutilisez Browse",
                           "Pas de répertoire")
@@ -262,7 +262,7 @@ class DLG(wx.Dialog):
             wx.MessageBox(mess, "Versions identiques")
             ok = ok and self.checkForce.GetValue()
 
-        # l'ensemble de tests est ok
+        # l'ensemble de tests est ok.
         return ok
 
     def Execution(self):

@@ -17,7 +17,7 @@ COULEUR_FOND = wx.Colour(176,153,203)
 
 def GetVersion(topwindows):
     chemin = topwindows.dictAppli['REP_SOURCES']
-    fichier = ximport.GetFichierCsv(chemin + '/Versions.txt')
+    fichier = ximport.GetFichierCsv('Versions.txt')
     version = None
     if fichier and len(fichier) > 0:
         version = fichier[0][0]

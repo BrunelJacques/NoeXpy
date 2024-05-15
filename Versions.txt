@@ -12,6 +12,9 @@ version 1.1.2.35 (20/04/2024)
     - Mouvement de stock: aide à la saisie fournisseur par début du nom
     - Message avant ajout d'un nouveau fournisseur
     - Modifs xpy Copier couper coller possibles
+    - Km Véhicules: évolution
+    - gestion de tables communes (analytique, coûts)
+    - adaptations tailles de police linux
 
 version 1.1.2.34 (14/02/2024)
     - adaptations connexions nouvelle box

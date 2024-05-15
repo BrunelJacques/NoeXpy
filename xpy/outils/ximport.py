@@ -110,7 +110,7 @@ def GetFichierCsv(nomFichier,delimiter="\t",detect=True):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    donnees = GetFichierCsv("../srcNoestock/Versions.txt")
+    donnees = GetFichierCsv("../Versions.txt")
     #donnees = GetFichierXls("c:/temp/FichierTest.xls")
 
     print(donnees[0])
