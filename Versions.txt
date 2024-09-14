@@ -1,3 +1,6 @@
+version 1.1.2.39 (14/09/2024)
+    - bug mise à jour
+
 version 1.1.2.38 (13/05/2024)
     - suppresseion des tests ping
 

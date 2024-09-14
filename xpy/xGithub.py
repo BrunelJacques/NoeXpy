@@ -206,7 +206,7 @@ class DLG(wx.Dialog):
         dir = self.dirPicker.GetPath()
         lstDir = dir.split(SEP)
         dirLower_1 = SEP.join([x.lower() for x in lstDir[:-1]])
-        if ok and lstDir <= 1:
+        if ok and len(lstDir) <= 1:
             # absence de dir
             wx.MessageBox("Déterminez une localisation pour l'appli\n\nutilisez Browse",
                           "Pas de répertoire")
