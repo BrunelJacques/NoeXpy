@@ -368,7 +368,7 @@ class DB():
         # Initialisation de la connexion
         try:
             self.connexion = sqlite3.connect(self.nomBase.encode('utf-8'))
-            self.cursor = self.connexion.cursor()
+            self.cursor = self.connexion.cursor(buffered=True)
             self.echec = 0
         except Exception as err:
             wx.MessageBox("xDB: La connexion avec la base de donnees SQLITE a echoué : \nErreur détectée :%s" % err, style = wx.ICON_WARNING)
@@ -409,7 +409,9 @@ class DB():
                 self.cursor.Close()
             else:
                 # autres types de connecteurs
-                ret = self.cursor.execute(req)
+                if self.cursor.with_rows:
+                    # purge d'existant non lu
+                    rows = self.cursor.fetchall()
                 self.retourReq = 'ok'
         except Exception as err:
             self.echec = 1

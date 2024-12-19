@@ -463,7 +463,6 @@ def MouvementsPosterieurs(dlg):
         %s ;""" % (where)
 
     retour = db.ExecuterReq(req, mess="UTILS_Stocks.MouvementsPosterieurs Select" )
-    recordset = ()
     if retour == "ok":
         recordset = db.ResultatReq()
         if recordset[0][0] > 0:
