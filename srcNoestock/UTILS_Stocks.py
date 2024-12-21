@@ -233,7 +233,8 @@ def GetDateLastMvt(db):
         ;"""
     mess = "Echec UTILS_Stocks.GetLastMouvement"
     ret = db.ExecuterReq(req, mess=mess, affichError=True)
-    if ret != 'ok': return str(datetime.date.today())
+    if ret != 'ok':
+        return str(datetime.date.today())
     recordset = db.ResultatReq()
     return recordset[0][0]
 
@@ -305,7 +306,7 @@ def CalculeInventaire(dlg, dParams):
 
     # écritures postérieures à la date d'analyse, pas de maj PU et qte de l'article
     majArticles = True
-    if untilDate > GetDateLastMvt(db):
+    if untilDate < GetDateLastMvt(db):
         majArticles = False
 
     # complète les paramètres façon DLG_MvtOneArticle
@@ -444,10 +445,11 @@ def CalculeInventaire(dlg, dParams):
         # Force la mise à jour dans la base avant nouveau select évitant le cache
         del db.cursor
         db.cursor = db.connexion.cursor(buffered=False)
-        #req = """FLUSH  TABLES stArticles;"""
-        ret = db.ExecuterReq(req, mess='SqlInventaires flush')
-        if ret != 'ok': return []
 
+        req = """FLUSH  TABLES individus;"""
+        ret = db.ExecuterReq(req, mess='SqlInventaires flush',affichError=True)
+        if retour != "ok":
+            return []
     return lstDonnees
 
 # Select de données  ----------------------------------------------------------

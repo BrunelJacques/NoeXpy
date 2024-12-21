@@ -488,7 +488,7 @@ def ExportExcel(listview=None, grid=None, titre="Liste", lstColonnes=None, liste
         except:
             pass
 
-        if type(valeur) in (str):
+        if type(valeur) in (str,):
             if len(valeur) == 10:
                 if valeur[2] == "/" and valeur[5] == "/": return (valeur, styleDate)
                 if valeur[4] == "-" and valeur[7] == "-": return (xformat.DateSqlToIso(valeur), styleDate)

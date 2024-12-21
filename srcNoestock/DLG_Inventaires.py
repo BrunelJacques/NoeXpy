@@ -192,11 +192,11 @@ def GetOlvColonnes(dlg):
     lstCol = [
             ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter=" ",isSpaceFilling=True,
                        isEditable=False),
-            ColumnDefn("Fournisseur", 'left', 100, 'fournisseur', valueSetter=" ",isSpaceFilling=True,
+            ColumnDefn("Fournisseur", 'left', 100, 'fournisseur', valueSetter=" ",isSpaceFilling=False,
                        isEditable=False),
-            ColumnDefn("Magasin", 'left', 100, 'magasin', valueSetter=" ",isSpaceFilling=True,
+            ColumnDefn("Magasin", 'left', 100, 'magasin', valueSetter=" ",isSpaceFilling=False,
                        isEditable=False),
-            ColumnDefn("Rayon", 'left', 100, 'rayon', valueSetter=" ",isSpaceFilling=True,
+            ColumnDefn("Rayon", 'left', 100, 'rayon', valueSetter=" ",isSpaceFilling=False,
                        isEditable=False),
             ColumnDefn("Qté stock", 'right', 80, 'qteStock',  valueSetter=0.0,isSpaceFilling=False,
                                         stringConverter=xformat.FmtDecimal),
@@ -210,14 +210,16 @@ def GetOlvColonnes(dlg):
                         isEditable=False, stringConverter=xformat.FmtDecimal, ),
             ColumnDefn("Maj Prix", 'left', 80, 'lastBuy', valueSetter=datetime.date.today(),isSpaceFilling=False,
                         isEditable=False, stringConverter=xformat.FmtDate,),
-            ColumnDefn("Prix Actuel", 'left', 40, 'prixActuel', valueSetter= 0.0,isSpaceFilling=False,
+            ColumnDefn("Prix Actuel", 'left', 60, 'prixActuel', valueSetter= 0.0,isSpaceFilling=False,
+                        isEditable=False, stringConverter=xformat.FmtDecimal),
+            ColumnDefn("Pb Prix", 'right', 50, 'deltaValo', valueSetter= 0.0,isSpaceFilling=False,
                         isEditable=False, stringConverter=xformat.FmtDecimal),
             ]
     return lstCol
 
 def GetOlvCodesSup():
     # codes dans les données olv, mais pas dans les colonnes, attributs des tracks non visibles en tableau
-    return ['qteMvts','artRations','deltaValo']
+    return ['qteMvts','artRations']
 
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
