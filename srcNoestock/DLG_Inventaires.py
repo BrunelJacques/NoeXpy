@@ -208,11 +208,11 @@ def GetOlvColonnes(dlg):
                         isEditable=False, stringConverter=xformat.FmtDecimal, ),
             ColumnDefn("Nbre Rations", 'right', 80, 'rations',  valueSetter=0.0,isSpaceFilling=False,
                         isEditable=False, stringConverter=xformat.FmtDecimal, ),
-            ColumnDefn("Maj Prix", 'left', 80, 'lastBuy', valueSetter=datetime.date.today(),isSpaceFilling=False,
+            ColumnDefn("Last Achat", 'right', 80, 'lastBuy', isSpaceFilling=False,
                         isEditable=False, stringConverter=xformat.FmtDate,),
-            ColumnDefn("Prix Actuel", 'left', 60, 'prixActuel', valueSetter= 0.0,isSpaceFilling=False,
+            ColumnDefn("Prix", 'left', 50, 'prixActuel', valueSetter= 0.0,isSpaceFilling=False,
                         isEditable=False, stringConverter=xformat.FmtDecimal),
-            ColumnDefn("Pb Prix", 'right', 50, 'deltaValo', valueSetter= 0.0,isSpaceFilling=False,
+            ColumnDefn("Pb Prix", 'left', 65, 'deltaValo', valueSetter= 0.0,isSpaceFilling=False,
                         isEditable=False, stringConverter=xformat.FmtDecimal),
             ]
     return lstCol

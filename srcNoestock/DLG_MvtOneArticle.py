@@ -48,12 +48,12 @@ MATRICE_PARAMS = {
     ],
 # param2 pour periode car interaction avec super (DLG_Mouvements)
 ("param2", "Periode"): [
-    {'name': 'laterDate', 'genre': 'Texte', 'label': "Après le",
+    {'name': 'previousDate', 'genre': 'Texte', 'label': "Après le",
                     'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
                                           "Les séparateurs ne sont pas obligatoires en saisie.",
                                           "Saisissez la date de l'entrée en stock sans séparateurs, "),
                     'value':'',
-                    'ctrlAction': 'OnLaterDate',
+                    'ctrlAction': 'OnpreviousDate',
                     'ctrlMaxSize':(150,35),
                     'txtSize': 50},
     ],
@@ -417,9 +417,9 @@ class DLG(dlgMvts.DLG):
         # charger les valeurs de pnl_params
 
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
-        self.laterDate = nust.GetDateLastInventaire(self.db,today)
+        self.previousDate = nust.GetDateLastInventaire(self.db,today)
         self.withInvent = True
-        self.pnlParams.SetOneValue('laterDate',valeur=xformat.FmtDate(self.laterDate),
+        self.pnlParams.SetOneValue('previousDate',valeur=xformat.FmtDate(self.previousDate),
                                    codeBox='param2')
         if self.article:
             self.pnlParams.SetOneValue('article',self.article,codeBox='param0')
@@ -467,7 +467,7 @@ class DLG(dlgMvts.DLG):
     def GetParams(self):
         dParams = {'article':self.article,
                    'origine': self.origine,
-                   'laterDate': self.laterDate,
+                   'previousDate': self.previousDate,
                    'withInvent': self.withInvent}
         return dParams
 
@@ -537,17 +537,17 @@ class DLG(dlgMvts.DLG):
         if self.tous:
             self.GetDonnees(self.GetParams())
 
-    def OnLaterDate(self,event):
+    def OnpreviousDate(self,event):
         # éviter la redondance de l'évènement 'Enter'
         if event and event.EventType != wx.EVT_KILL_FOCUS.evtType[0]:
             return
-        saisie = self.pnlParams.GetOneValue('laterDate',codeBox='param2')
+        saisie = self.pnlParams.GetOneValue('previousDate',codeBox='param2')
         saisie = xformat.FmtDate(saisie)
-        self.laterDate = xformat.DateFrToDatetime(saisie)
+        self.previousDate = xformat.DateFrToDatetime(saisie)
         lastInvent = xformat.DateSqlToDatetime(nust.GetDateLastInventaire(self.db))
-        self.pnlParams.SetOneValue('laterDate',valeur=xformat.FmtDate(saisie),codeBox='param2')
+        self.pnlParams.SetOneValue('previousDate',valeur=xformat.FmtDate(saisie),codeBox='param2')
         self.withInvent = False
-        if self.laterDate < lastInvent:
+        if self.previousDate < lastInvent:
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
             mess = "Désactivation des modifications\n\n"
             mess += "Un inventaire a été archivé au '%s', "% xformat.FmtDate(lastInvent)

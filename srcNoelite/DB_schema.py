@@ -326,7 +326,7 @@ DB_TABLES = {
                 ('prixActuel', 'FLOAT', "Prix forcé pour valorisation de l'inventaire"),
                 ('ordi', 'VARCHAR(16)', "Nom de l'ordi utilisé pour l'entrée ou la modif"),
                 ('dateSaisie', 'DATE', "Date de l'entrée ou la modif"),
-                ('modifiable', 'INTEGER', "0/1 Marque un transfert export  réussi ou import"),], # stocks: inventaire à une date
+                ('modifiable', 'INTEGER', "0/1 pour 'est modifiable': Non/Oui "),], # stocks: inventaire à une date
     }
 
 # PK index clé unique, 'PRIMARY' à utiliser exclusivement pour clé à champs multiples sinon 'PK'

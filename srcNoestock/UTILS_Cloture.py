@@ -6,7 +6,7 @@
 import datetime
 from  UTILS_Stocks import GetMvtsPeriode
 from  UTILS_Stocks import GetLastInventaire
-from  UTILS_Stocks import PostInventaire, PostMouvements
+from  UTILS_Stocks import PostMouvements
 from xpy.outils    import xformat
 
 class Inventaire:
@@ -32,8 +32,49 @@ class Inventaire:
         # Enregistre les lignes d'inventaire à la date cloture
         ret = self.RecalculPrixSorties()
         if ret:
-            llinventaire = self.CalculInventaire()
-            ret = PostInventaire(self.cloture, llinventaire)
+            llInventaire = self.CalculInventaire()
+            # delete puis recrée l'inventaire à la date de cloture
+            cloture = datetime.date.today()
+            ordi = os.environ['USERDOMAIN']
+            dteSaisie = xformat.DatetimeToStr(datetime.date.today(), iso=True)
+            # Appelle l'inventaire précédent
+            lstChamps = ['IDdate',
+                         'IDarticle',
+                         'qteStock',
+                         'prixMoyen',
+                         'prixActuel',
+                         'ordi',
+                         'dateSaisie', ]
+            llDonnees = []
+            # lignes reçues [date,article,qte,prixMoyen,montant,lastPrix]
+            for dte, article, qte, pxMoyen, mtt, pxLast in llInventaire:
+                if dte != str(cloture): raise Exception(
+                    "cloture = %s diff de inventaire = %s" % (str(cloture), str(dte)))
+                llDonnees.append(
+                    [dte, article, qte, pxMoyen, pxLast, ordi, dteSaisie])
+
+            # test présence inventaire
+            db = xdb.DB()
+            finIso = xformat.DatetimeToStr(cloture, iso=True)
+            condition = "stInventaires.IDdate = '%s'" % finIso
+            req = """   SELECT *
+                        FROM stInventaires
+                        WHERE %s
+                        ;""" % (condition)
+
+            retour = db.ExecuterReq(req, mess='UTILS_Stocks.testPrésenceInventaire')
+            if retour == "ok":
+                recordset = db.ResultatReq()
+                if len(recordset) > 0:
+                    mess = "UTILS_Cloture.PostInventaire.ReqDel"
+                    ret = db.ReqDEL('stInventaires', condition=condition, mess=mess)
+
+            ret = db.ReqInsert('stInventaires', lstChamps=lstChamps,
+                               lstlstDonnees=llDonnees,
+                               mess="UTILS_Cloture.PostInventaire")
+            db.Close()
+            if ret == 'ok':
+                ret =  True
         return ret
 
     def _xAjoutInventaire(self,lstMmouvements):
