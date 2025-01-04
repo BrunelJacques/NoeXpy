@@ -472,6 +472,7 @@ class DLG(xGTE.DLG_tableau):
 
     def Init(self):
         self.db = xdb.DB()
+        self.db.cursor = self.db.connexion.cursor(buffered=False)
         if not self.date:
             self.date = xformat.DateSqlToDatetime(nust.GetDateLastMvt(self.db))
         self.pnlParams.SetOneValue('date',self.date, codeBox='param1')
@@ -595,11 +596,9 @@ class DLG(xGTE.DLG_tableau):
         dlg.ShowModal()
         dlg.Destroy()
         self.oldParams = None
-        del self.db.cursor
+        self.db.Close()
+        self.db = xdb.DB()
         self.db.cursor = self.db.connexion.cursor(buffered=False)
-        req = """FLUSH  TABLES stMouvements, stArticles;"""
-        ret = self.db.ExecuterReq(req, mess='OnOneArticle flush')
-        if ret != 'ok': return []
         self.GetDonnees()
         self.ctrlOlv.MAJ(id)
 

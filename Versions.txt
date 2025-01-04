@@ -1,3 +1,6 @@
+version 1.1.2.41 (05/01/2025)
+    - Corrections diverses pour clôture
+
 version 1.1.2.40 (19/12/2024)
     - Correctif unread results traité par fetchall()
 

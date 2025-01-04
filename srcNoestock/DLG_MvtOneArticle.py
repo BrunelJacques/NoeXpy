@@ -575,7 +575,6 @@ class DLG(dlgMvts.DLG):
         event.Skip()
         MAJ_calculs(self)
 
-
 #------------------------ Lanceur de test  -------------------------------------------
 
 if __name__ == '__main__':

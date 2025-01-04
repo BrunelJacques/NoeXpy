@@ -423,7 +423,7 @@ class DB():
             else: self.retourReq = 'Erreur xUTILS_DB\n\n'
             self.retourReq +=  ("ExecuterReq:\n%s\n\nErreur detectee:\n%s"% (req, str(err)))
             if affichError:
-                raise Exception(self.retourReq)
+                wx.MessageBox(self.retourReq,"Erreur accès BD")
         return self.retourReq
 
     def Executermany(self, req="", lstDonnees=[], commit=True):
