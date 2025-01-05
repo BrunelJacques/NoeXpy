@@ -17,8 +17,8 @@ LIMITSQL = 1000
 # codes repas [ 1,      2,     3,     4       5]
 CHOIX_REPAS = ['PtDej','Midi','Soir','5eme','Tous']
 
-class TrackInvent:
-    #  Utilisé en composition de l'inventaire
+class SetAttrDicToTrack:
+    #  Pour créer les attributs de tracks par un dict de données
     def __init__(self,codesTrack,codesDic, dicDon):
         for ix in range(len(codesTrack)):
             self.__setattr__(codesTrack[ix],dicDon[codesDic[ix]])
@@ -39,6 +39,27 @@ def PostMouvements(champs=(),mouvements=([],)):
             retour = False
     db.Close()
     return retour
+
+def PostInventaire(dlg):
+    lstTracks = dlg.ctrlOlv.GetObjects()
+    lstFields = [
+        'IDdate', 'IDarticle', 'qteStock','qteConstat', 'prixMoyen','prixActuel',
+        'ordi','dateSaisie','modifiable']
+    today = str(datetime.date.today())
+
+    # Compose les données à intégrer dans la table inventaires
+    llDonnees = []
+    for track in lstTracks:
+        llDonnees.append([
+            str(dlg.date),track.IDarticle,track.qteStock,0,track.pxUn,track.prixActuel,
+            dlg.ordi,today,0])
+
+    # Ecriture dans la base de donnée
+    mess = "UTILS_Stocks.PostInventaire"
+    ret = dlg.db.ReqInsert('stInventaires', lstFields,llDonnees,mess=mess)
+    if ret == 'ok':
+        mess = "Archivage terminé avec succés au %s"% llDonnees[0][0]
+        wx.MessageBox(mess,"succés")
 
 def GetDateLastInventaire(db,dteAnalyse=None):
     # return: date du dernier inventaire précédant la date d'analyse
@@ -195,7 +216,7 @@ def GetDateLastMvt(db):
     return recordset[0][0]
 
 def PxAchatsStock(modelObjects):
-    # retourne px moyens achetés pour sorties et stock FIFO dans modelObjects
+    # retourne px moyens achetés du stock restant dans modelObjects: méthode FIFO
     lstArticles = []
     dQtesFin = {}
     # calcul des quantités en stock et articles présents
@@ -245,24 +266,23 @@ def PxAchatsStock(modelObjects):
         mttAchatsArt += qteAchat * prixUnit
         dQtesFin[article] -= qteAchat
         if dQtesFin[article] < 0.0001:
-            #provoque la rupture en sautant la suite de l'article
+            # Les achats retenus couvrent le stock restant, on ignore l'antérieur
             finArticle = True
 
     if Nz(qteAchatsTous) != 0:
-        prixMoyen =  mttAchatsTous / qteAchatsTous
+        prixMoyen = round(mttAchatsTous / qteAchatsTous,4)
     else: prixMoyen = None
     return prixMoyen
 
 def CalculeInventaire(dlg, dParams):
     # nouveau calcul
     db = dlg.db
-
-    untilDate = dParams['date']
-    previousDate = GetDateLastInventaire(db,untilDate)
+    endDate = dParams['date']
+    previousDate = GetDateLastInventaire(db,endDate)
 
     # écritures postérieures à la date d'analyse, pas de maj PU et qte de l'article
     majArticles = True
-    if untilDate < GetDateLastMvt(db):
+    if endDate < GetDateLastMvt(db):
         majArticles = False
 
     # complète les paramètres façon DLG_MvtOneArticle
@@ -273,7 +293,7 @@ def CalculeInventaire(dlg, dParams):
     dParams['article'] = 'tous'
     dParams['origine'] = 'tous'
     dParams['previousDate'] = previousDate
-    dParams['untilDate'] = untilDate
+    dParams['endDate'] = endDate
 
     # appel de l'inventaire précédent et des mouvements
     ldMouvements = [x for x in GetLastInventForMvts(db, dParams)]
@@ -318,9 +338,9 @@ def CalculeInventaire(dlg, dParams):
 
     # Composition de la ligne olv sur un article selon les colonnes  ---------------------
     def ComposeLigne(dArt, ldMvts):
-        dl = dParams["untilDate"]
+        dl = dParams["endDate"]
         # calcul le prix du stock sur derniers achats
-        lstObjects = [TrackInvent(codesTrack,codesDic,x) for x in ldMvts if x["date"] <= dl]
+        lstObjects = [SetAttrDicToTrack(codesTrack,codesDic,x) for x in ldMvts if x["date"] <= dl]
         pxAchatsStock = PxAchatsStock(lstObjects)
 
         # choix du prix unitaire retenu pour valoriser le stock, priorité FIFO
@@ -379,9 +399,10 @@ def CalculeInventaire(dlg, dParams):
         donnees[lstCodes.index('rations')] = qteMvts * Nz(dArt['rations'])
         donnees[lstCodes.index('artRations')] = Nz(dArt['rations'])
         donnees[lstCodes.index('deltaValo')] = deltaValoAchats
+
         if lastBuy != datetime.date(2000,1,1):
             donnees[lstCodes.index('lastBuy')] = lastBuy
-            donnees[lstCodes.index('prixActuel')] = pxUnArt
+            donnees[lstCodes.index('prixActuel')] = round(pxUnArt,4)
         else:
             donnees[lstCodes.index('lastBuy')] = None
 
@@ -506,9 +527,9 @@ def GetMvtsByArticles(db, dParams=None):
         condDate = ''
     else:
         condDate = "(date > '%s')" % previousDate
-        untilDate = dParams.get('untilDate',None)
-        if untilDate:
-            condDate += " AND (date <= '%s')" % untilDate
+        endDate = dParams.get('endDate',None)
+        if endDate:
+            condDate += " AND (date <= '%s')" % endDate
 
     where = "WHERE %s" % condDate
     lstCond = [condArticle,condOrigine,]
@@ -862,7 +883,6 @@ def MAJarticle(db,dlg,track):
 
     # Maj dicArt
     def majArticle(dicArt,dicMvt):
-
         # calcul de la correction quantités stock
         deltaQte = (track.qte * dlg.sensNum) - dicMvt['qte']
         oldQteStock = dicArt['qteStock']

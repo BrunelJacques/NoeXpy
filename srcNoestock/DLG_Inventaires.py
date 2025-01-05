@@ -27,7 +27,6 @@ from srcNoestock                import DLG_Articles
 from srcNoelite                 import DB_schema
 from xpy.ObjectListView.ObjectListView import ColumnDefn
 from xpy.outils                 import xformat,xboutons, xdates
-
 #---------------------- Matrices de paramétres -------------------------------------
 
 DIC_BANDEAU = {'titre': "Suivi et ajustement de l'inventaire",
@@ -177,9 +176,9 @@ def GetBoutons(dlg):
          'help': "Permet de visualiser les mouvements de l'article sélectionné",
          'size': (150, 35), 'onBtn': dlg.OnOneArticle},
 
-        {'name': 'btnVerif', 'label': "Conserver cet \ninventaire",
-            'help': "Confirme et historise les quantités en stock vérifiées ce jour.\nTout cocher et cliquer à l'inventaire de clôture",
-            'size': (150, 35),'onBtn':dlg.OnImprimer},
+        {'name': 'btnVerif', 'label': "Archiver cet \ninventaire",
+            'help': "Confirme et historise les quantités en stock vérifiées ce jour.\nVérifier la cohérence préalablement",
+            'size': (150, 35),'onBtn':dlg.OnArchiver},
         {'name': 'btnImp', 'label': "Imprimer\nl'inventaire",
             'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
             'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
@@ -192,11 +191,11 @@ def GetOlvColonnes(dlg):
     lstCol = [
             ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter=" ",isSpaceFilling=True,
                        isEditable=False),
-            ColumnDefn("Fournisseur", 'left', 100, 'fournisseur', valueSetter=" ",isSpaceFilling=False,
+            ColumnDefn("Fournisseur", 'left', 110, 'fournisseur', valueSetter=" ",isSpaceFilling=False,
                        isEditable=False),
-            ColumnDefn("Magasin", 'left', 100, 'magasin', valueSetter=" ",isSpaceFilling=False,
+            ColumnDefn("Magasin", 'left', 90, 'magasin', valueSetter=" ",isSpaceFilling=False,
                        isEditable=False),
-            ColumnDefn("Rayon", 'left', 100, 'rayon', valueSetter=" ",isSpaceFilling=False,
+            ColumnDefn("Rayon", 'left', 90, 'rayon', valueSetter=" ",isSpaceFilling=False,
                        isEditable=False),
             ColumnDefn("Qté stock", 'right', 80, 'qteStock',  valueSetter=0.0,isSpaceFilling=False,
                                         stringConverter=xformat.FmtDecimal),
@@ -219,7 +218,7 @@ def GetOlvColonnes(dlg):
 
 def GetOlvCodesSup():
     # codes dans les données olv, mais pas dans les colonnes, attributs des tracks non visibles en tableau
-    return ['qteMvts','artRations']
+    return ['qteMvts','artRations','anomalie']
 
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
@@ -264,16 +263,29 @@ def GetAnterieur(dlg,db=None):
     dlg.Destroy()
     return dParams
 
+def AnomalieLigne(track):
+    # gestion des incohérences bloquant la clôture et affichées en rouge
+    anomalie = None
+    if not hasattr(track,'deltaQte'):
+        track.deltaQte = 0.0
+    if track.deltaQte > 0:
+        anomalie = True
+    if track.deltaValo and track.deltaValo > 10:
+        anomalie = True
+    if track.qteStock < 0:
+        anomalie = True
+    track.anomalie = anomalie
+    
 def CalculeLigne(dlg,track):
     try: qte = float(track.qteStock)
     except: qte = 0.0
     try: pu = float(track.pxUn)
     except: pu = 0.0
-    track.mttTTC = qte * pu
+    track.mttTTC = round(qte * pu,2)
     track.rations = qte * track.artRations
-    track.valide = dlg.date
     deltaQte =  qte - track.qteMvts
     track.deltaQte = deltaQte
+    AnomalieLigne(track)    
 
 def ValideLigne(dlg,track):
 
@@ -306,20 +318,13 @@ def ValideLigne(dlg,track):
     return
 
 def RowFormatter(listItem, track):
-    anomalie = None
-    if not hasattr(track,'deltaQte'):
-        track.deltaQte = 0.0
-    if track.deltaQte > 0:
-        anomalie = True
-    if track.deltaValo and track.deltaValo > 5:
-        anomalie = True
-    if anomalie:
+    if track.anomalie:
         # anomalie rouge / fushia
         listItem.SetTextColour(wx.RED)
         listItem.SetBackgroundColour(wx.Colour(255, 180, 200))
-    elif track.qteStock < 0 or track.rations > 1000:
-        # stock négatif ou plus de 1000 rations: écrit en rouge
-        listItem.SetTextColour(wx.RED)
+    elif track.rations > 1000:
+        # plus de 1000 rations: écrit en BLEU
+        listItem.SetTextColour(wx.BLUE)
     elif track.qteMini > 0 and track.qteStock < track.qteMini:
         # niveau de stock  inférieur au minimum saison: fond jaune
         listItem.SetBackgroundColour(wx.Colour(255, 245, 160))
@@ -332,6 +337,7 @@ class PNL_corps(xGTE.PNL_corps):
     def __init__(self, parent, dicOlv,*args, **kwds):
         xGTE.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
         self.db = parent.db
+        self.lanceur = parent
 
     def ValideParams(self):
         return
@@ -458,6 +464,7 @@ class DLG(xGTE.DLG_tableau):
 
         super().__init__(None, **kwds)
 
+        self.Name = "DLG_Inventaires.DLG"
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
         self.date = date
@@ -579,11 +586,26 @@ class DLG(xGTE.DLG_tableau):
 
     def GetTitreImpression(self):
         date = xformat.DateSqlToFr(self.date)
-        mini = 'Sans'
-        if self.qteMini: mini = 'Avec'
-        zer = 'Sans'
-        if self.qteZero: zer = 'Avec'
-        return "Inventaire STOCKS du %s, Qtés à zéro: %s, Qtés au dessus du minimum: %s"%(date, zer, mini)
+        mini = ', sans Qtés au dessus du minimum'
+        if self.qteMini: mini = ''
+        zer = 'sans'
+        if self.qteZero: zer = 'avec'
+        return "Inventaire STOCKS du %s, %s Qtés à zéro%s."%(date, zer, mini)
+
+    def OkCloture(self):
+        nbAnomalies = 0
+        for track in self.ctrlOlv:
+            if track.anomalie:
+                nbAnomalies +=1
+        ret = True
+        if nbAnomalies >0:
+            mess = "Archiver un inventaire incohérent n'est pas possible !\n\n"
+            mess += "%d lignes avec anomalies ont un fond rouge.\n"%nbAnomalies
+            mess += "Stock fin négatif, Pb de prix > 10€, Pb qtés en stock...\n\n"
+            mess += "Consultez 'Mouvements article' et corrigez."
+            wx.MessageBox(mess,style=wx.OK|wx.ICON_STOP)
+            ret = False
+        return ret
 
     def OnOneArticle(self,event):
         selection = self.ctrlOlv.GetSelectedObject()
@@ -604,6 +626,19 @@ class DLG(xGTE.DLG_tableau):
 
     def OnImprimer(self,event):
         self.ctrlOlv.Apercu(None)
+
+    def OnArchiver(self,event):
+        self.pnlParams.SetOneValue('qteZero',False,'param2')
+        self.pnlParams.SetOneValue('qteMini',True,'param2')
+        self.OnQte(None)
+        ret = self.OkCloture()
+        if self.OkCloture():
+            mess = "Ok pour archiver l'inventaire!\n\n"
+            mess += "Après vous ne pourrez plus modifier les mouvements antérieurs\n"
+            mess += "Pensez à faire un export Excel par un clic Gauche ou une édition."
+            ret = wx.MessageBox(mess,'confirmez',style=wx.ICON_INFORMATION|wx.YES_NO)
+            if ret == wx.YES:
+                nust.PostInventaire(self)
 
     def OnFermer(self, event):
         #wx.MessageBox("Traitement de sortie")
