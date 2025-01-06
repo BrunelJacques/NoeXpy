@@ -30,7 +30,7 @@ from xpy.outils                 import xformat,xboutons, xdates
 #---------------------- Matrices de paramétres -------------------------------------
 
 DIC_BANDEAU = {'titre': "Suivi et ajustement de l'inventaire",
-        'texte': "La saisie dans le tableau modifie la table article, voire crée un mouvement correctif de quantité",
+        'texte': "La saisie dans le tableau peut modifier la table article ou créer un mouvement correctif de quantité",
         'hauteur': 20,
         'sizeImage': (60, 60),
         'nomImage':"xpy/Images/80x80/Inventaire.png",
@@ -176,7 +176,7 @@ def GetBoutons(dlg):
          'help': "Permet de visualiser les mouvements de l'article sélectionné",
          'size': (150, 35), 'onBtn': dlg.OnOneArticle},
 
-        {'name': 'btnVerif', 'label': "Archiver cet \ninventaire",
+        {'name': 'btnArchiver', 'label': "Archiver cet \ninventaire",
             'help': "Confirme et historise les quantités en stock vérifiées ce jour.\nVérifier la cohérence préalablement",
             'size': (150, 35),'onBtn':dlg.OnArchiver},
         {'name': 'btnImp', 'label': "Imprimer\nl'inventaire",
@@ -465,7 +465,14 @@ class DLG(xGTE.DLG_tableau):
         super().__init__(None, **kwds)
 
         self.Name = "DLG_Inventaires.DLG"
-        self.ordi = xuid.GetNomOrdi()
+        self.dictUser = xuid.GetDictUtilisateur()
+        if self.dictUser:
+            nom = (self.dictUser['prenom'][:5].capitalize()
+                   + self.dictUser['nom'][:4].upper())
+            self.ordi = "%s/%s"%(nom,self.dictUser['userdomain'])
+        else:
+            self.ordi = xuid.GetNomOrdi()
+        self.ordi = self.ordi[:16]
         self.today = datetime.date.today()
         self.date = date
         self.lstSaisons = SAISONS
@@ -493,7 +500,6 @@ class DLG(xGTE.DLG_tableau):
                 self.libelleDefaut = colonne.valueSetter
 
         self.pnlOlv = PNL_corps(self, self.dicOlv)
-        #self.pnlPied = PNL_pied(self, dicPied)
         self.ctrlOlv = self.pnlOlv.ctrlOlv
         self.Bind(wx.EVT_CLOSE, self.OnFermer)
         self.InitOlv()
@@ -628,6 +634,12 @@ class DLG(xGTE.DLG_tableau):
         self.ctrlOlv.Apercu(None)
 
     def OnArchiver(self,event):
+        if not self.dictUser or self.dictUser['profil'][:5] != 'admin':
+            mess = "Accès non autorisé\n\n"
+            mess += "Authentifiez-vous comme admin dans le menu d'entrée\n"
+            mess += "ou exportez vers Excel par un clic Droit dans le tableau"
+            wx.MessageBox(mess,style=wx.ICON_STOP|wx.OK)
+            return
         self.pnlParams.SetOneValue('qteZero',False,'param2')
         self.pnlParams.SetOneValue('qteMini',True,'param2')
         self.OnQte(None)

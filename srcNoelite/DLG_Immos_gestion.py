@@ -12,7 +12,7 @@ import xpy.ObjectListView.xGTE as xGTE
 import xpy.xGestionConfig               as xgc
 import xpy.xUTILS_SaisieParams          as xusp
 import srcNoelite.UTILS_Noelite         as nunoegest
-import srcNoelite.UTILS_Utilisateurs    as nuutil
+import xpy.xUTILS_Identification as nuutil
 from copy                       import deepcopy
 from srcNoelite                 import DB_schema
 from xpy.ObjectListView.ObjectListView import ColumnDefn, CellEditor

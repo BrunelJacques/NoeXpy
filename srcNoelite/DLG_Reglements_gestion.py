@@ -12,7 +12,7 @@ import os
 import datetime
 import xpy.ObjectListView.xGTE as xGTE
 import xpy.xUTILS_DB                   as xdb
-import srcNoelite.UTILS_Utilisateurs    as nuu
+import xpy.xUTILS_Identification as nuu
 import srcNoelite.UTILS_Reglements      as nur
 import srcNoelite.DLG_Reglements_ventilation      as ndrv
 from xpy.ObjectListView.ObjectListView  import ColumnDefn, CellEditor

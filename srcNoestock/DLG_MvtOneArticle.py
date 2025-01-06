@@ -19,7 +19,7 @@ from srcNoelite                                 import DB_schema
 from xpy.outils.xformat                         import Nz
 from xpy.ObjectListView.ObjectListView   import ColumnDefn
 from xpy.ObjectListView.CellEditor       import ChoiceEditor
-from xpy.outils                                 import xformat,xbandeau,xchoixListe
+from xpy.outils                          import xformat,xbandeau,xchoixListe, xdates
 
 class CTRL_calcul(xchoixListe.CTRL_Solde):
     def __init__(self,parent,):
@@ -48,22 +48,35 @@ MATRICE_PARAMS = {
     ],
 # param2 pour periode car interaction avec super (DLG_Mouvements)
 ("param2", "Periode"): [
-    {'name': 'previousDate', 'genre': 'Texte', 'label': "Après le",
-                    'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
-                                          "Les séparateurs ne sont pas obligatoires en saisie.",
-                                          "Saisissez la date de l'entrée en stock sans séparateurs, "),
-                    'value':'',
-                    'ctrlAction': 'OnpreviousDate',
-                    'ctrlMaxSize':(150,35),
-                    'txtSize': 50},
+    {'name': 'anteDate', 'genre':'anyctrl', 'label': "Après  le",
+        'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
+                              "Les séparateurs ne sont pas obligatoires en saisie.",
+                              "Saisissez la date de l'entrée en stock sans séparateurs, "),
+        'ctrl': xdates.CTRL_SaisieDateAnnuel,
+        'value':'',
+        'ctrlAction': 'OnAnteDate',
+        'size': (150, 25),
+        'ctrlMaxSize':(170,50),
+        'txtSize': 100},
+    {'name': 'lastDate', 'genre': 'anyctrl', 'label': "Jusqu'au",
+         'help': "%s\n%s\n%s" % ("Saisie JJMMAA ou JJMMAAAA possible.",
+                                 "Les séparateurs ne sont pas obligatoires en saisie.",
+                                 "Saisissez la date de l'inventaire, "),
+         'ctrl': xdates.CTRL_SaisieDateAnnuel,
+         'value': xformat.DatetimeToStr(datetime.date.today()),
+         'ctrlAction': 'OnLastDate',
+         'size': (150, 25),
+         'ctrlMaxSize': (170,50),
+         'txtSize': 100, },
     ],
-("param1", "Origine"): [
+("param3", "Origine"): [
     {'name': 'origine', 'genre': 'Choice', 'label': "Mouvements",
                     'help': "Le choix de la nature filtrera les lignes sur une valeur",
                     'value':0, 'values':[],
                     'ctrlAction': 'OnOrigine',
                     'ctrlMaxSize':(350,35),
                     'txtSize': 120},
+    {'name': '', 'genre': None,}
     ],
 }
 
@@ -108,7 +121,7 @@ def GetDicPnlParams(*args):
                 'name':"PNL_params",
                 'matrice':matrice,
                 'lblBox':None,
-                'boxesSizes': [(300,50), (250, 50),(250, 50), None],
+                'boxesSizes': [(250,60), (250, 65),(250, 30), None],
                 'pathdata':"srcNoelite/Data",
                 'nomfichier':"stparams",
                 'nomgroupe':"article",
@@ -264,10 +277,13 @@ def MAJ_calculs(dlg):
     pxMoyenStock = 0.0
     if qteMvts != 0:
         pxMoyenStock = mttMvts / qteMvts
-    dlg.pnlCalculs.GetPnlCtrl('pxMoyenStock').SetValue(pxMoyenStock)
 
     erreur = (Nz(pxAchatsStock) * Nz(qteMvts)) - Nz(mttMvts)
+
+    # Inscription dans l'écran
     dlg.pnlCalculs.GetPnlCtrl('mttStock').SetValue(mttStock)
+    dlg.pnlCalculs.GetPnlCtrl('pxMoyenStock').SetValue(pxMoyenStock)
+    dlg.pnlCalculs.GetPnlCtrl('pxAchatsStock').SetValue(pxAchatsStock)
 
     # gestion de la couleur de l'erreur
     if abs(erreur) <= 0.01:
@@ -377,8 +393,7 @@ class DLG(dlgMvts.DLG):
         listArbo=os.path.abspath(__file__).split("\\")
         kwds['title'] = listArbo[-1] + "/" + self.__class__.__name__
         super().__init__(**kwds)
-        self.Name = 'newDLG_MvtOneArticle.DLG'
-
+        self.Name = 'DLG_MvtOneArticle.DLG'
 
     def Init(self):
         self.lanceur = self
@@ -388,7 +403,7 @@ class DLG(dlgMvts.DLG):
         # définition de l'OLV
         self.ctrlOlv = None
         self.typeAchat = None
-        self.origine = 'tous'
+        self.origine = ['tous',]
         today = datetime.date.today()
 
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
@@ -417,9 +432,12 @@ class DLG(dlgMvts.DLG):
         # charger les valeurs de pnl_params
 
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
-        self.previousDate = nust.GetDateLastInventaire(self.db,today)
+        self.anteDate = nust.GetDateLastInventaire(self.db,today)
+        self.lastDate = xformat.DateSqlToDatetime(nust.GetDateLastMvt(self.db))
         self.withInvent = True
-        self.pnlParams.SetOneValue('previousDate',valeur=xformat.FmtDate(self.previousDate),
+        self.pnlParams.SetOneValue('anteDate',valeur=self.anteDate,
+                                   codeBox='param2')
+        self.pnlParams.SetOneValue('lastDate',valeur=self.lastDate,
                                    codeBox='param2')
         if self.article:
             self.pnlParams.SetOneValue('article',self.article,codeBox='param0')
@@ -467,13 +485,16 @@ class DLG(dlgMvts.DLG):
     def GetParams(self):
         dParams = {'article':self.article,
                    'origine': self.origine,
-                   'previousDate': self.previousDate,
+                   'anteDate': self.anteDate,
+                   'lastDate': self.lastDate,
                    'withInvent': self.withInvent}
         return dParams
 
     def GetDonnees(self,dParams=None):
         # forme la grille, puis création d'un premier modelObjects par init
         if not dParams:
+            dParams = self.GetParams()
+        if self.ParamsIdem(self.oldParams,dParams):
             return
         attente = wx.BusyInfo("Recherche des données de l'article", None)
         self.InitOlv()
@@ -489,6 +510,7 @@ class DLG(dlgMvts.DLG):
             MAJ_calculs(self)
         del attente
 
+
     # -------- gestion des actions évènements sur les ctrl -------------------------------
 
     def GetOneArticle(self,saisie):
@@ -497,6 +519,14 @@ class DLG(dlgMvts.DLG):
         article = dlgArt.GetOneIDarticle(self.db, saisie.upper())
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK #réactive dblClic
         return article
+
+    def GetFournisseur(self):
+        # désactiver dans le superClass
+        pass
+
+    def GetTva(self):
+        # désactiver dans le superClass
+        pass
 
     def OnArticle(self,event=None):
         # éviter la redondance de l'évènement 'Enter'
@@ -537,28 +567,41 @@ class DLG(dlgMvts.DLG):
         if self.tous:
             self.GetDonnees(self.GetParams())
 
-    def OnpreviousDate(self,event):
-        # éviter la redondance de l'évènement 'Enter'
-        if event and event.EventType != wx.EVT_KILL_FOCUS.evtType[0]:
+    def OnAnteDate(self, event):
+        saisie = self.pnlParams.GetOneValue('anteDate',codeBox='param2')
+        saisie = xformat.DateFrToDatetime(xformat.FmtDate(saisie))
+
+        # si non nouvelle valeur saisie, on sort
+        if self.anteDate == saisie:
             return
-        saisie = self.pnlParams.GetOneValue('previousDate',codeBox='param2')
-        saisie = xformat.FmtDate(saisie)
-        self.previousDate = xformat.DateFrToDatetime(saisie)
+
         lastInvent = xformat.DateSqlToDatetime(nust.GetDateLastInventaire(self.db))
-        self.pnlParams.SetOneValue('previousDate',valeur=xformat.FmtDate(saisie),codeBox='param2')
+        if self.lastDate > lastInvent:
+            self.lastDate = lastInvent
+            self.pnlParams.SetOneValue('lastDate',self.lastDate,'param2')
         self.withInvent = False
-        if self.previousDate < lastInvent:
+        if saisie < lastInvent:
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
-            mess = "Désactivation des modifications\n\n"
+            mess = "Modifications d'écritures impossible\n\n"
             mess += "Un inventaire a été archivé au '%s', "% xformat.FmtDate(lastInvent)
-            mess += "la modification de mouvements pouvant être antérieurs n'est pas possible"
-            mess += ", mais vous pouvez les consulter."
+            mess += ", vous pouvez seulement consulter."
             wx.MessageBox(mess,"Information",style = wx.ICON_INFORMATION)
         else:
             if len(str(lastInvent)) > 0:
-                self.withInvent = lastInvent
+                self.withInvent = True
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK  # réactive dblClic
-        if self.article:
+        if self.anteDate != saisie:
+            self.anteDate = saisie
+            self.GetDonnees(self.GetParams())
+
+    def OnLastDate(self,event):
+        saisie = self.pnlParams.GetOneValue('lastDate',codeBox='param2')
+        saisie = xformat.DateFrToDatetime(xformat.FmtDate(saisie))
+        # si non nouvelle valeur saisie, on sort
+        if self.lastDate == saisie:
+            return
+        if self.lastDate != saisie:
+            self.lastDate = saisie
             self.GetDonnees(self.GetParams())
 
     def OnOrigine(self,event):

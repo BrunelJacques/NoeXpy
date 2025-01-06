@@ -21,7 +21,7 @@ import datetime
 from xpy.ObjectListView.ObjectListView import ColumnDefn
 import xpy.ObjectListView.xGTR     as xGTR
 import xpy.xUTILS_DB           as xdb
-import srcNoelite.UTILS_Utilisateurs  as nuu
+import xpy.xUTILS_Identification as nuu
 import srcNoelite.DLG_Adresses_saisie   as nsa
 import srcNoelite.UTILS_Adresses        as nua
 import srcNoelite.DLG_AdrMelTel_saisie  as nsc

@@ -10,7 +10,7 @@
 import wx
 import datetime
 import xpy.ObjectListView.xGTR as xGTR
-import srcNoelite.UTILS_Utilisateurs    as nuutil
+import xpy.xUTILS_Identification as nuutil
 import srcNoelite.UTILS_Compta          as nucompta
 from xpy.ObjectListView.ObjectListView import ColumnDefn
 from xpy.outils                 import xformat,xboutons,xdates

@@ -14,7 +14,7 @@ import xpy.xGestionConfig               as xgc
 import xpy.xUTILS_SaisieParams          as xusp
 from srcNoelite import UTILS_Noelite
 from srcNoelite import UTILS_Compta
-import srcNoelite.UTILS_Utilisateurs    as nuutil
+import xpy.xUTILS_Identification as nuutil
 from xpy.ObjectListView.ObjectListView import ColumnDefn, CellEditor
 from xpy.outils                 import xformat,xbandeau,ximport,xexport
 

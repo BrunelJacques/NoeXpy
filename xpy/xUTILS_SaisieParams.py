@@ -218,11 +218,10 @@ def DicFiltre(dic,options):
 
 
 class AnyCtrl(wx.Panel):
-    # Exemple d'un controle pour s'insérer dans une matrice 'genre':'anyctrl', 'ctrl':'MyAnyCtrl'
+    # Controle pour s'insérer dans une matrice 'genre':'anyctrl' ou vide si not name
     def __init__(self,parent):
         super().__init__(parent,wx.ID_ANY)
-        self.choice = wx.Choice(self,wx.ID_ANY,choices=[])
-        self.Sizer()
+        #self.Sizer()
 
     def Sizer(self):
         box = wx.BoxSizer(wx.HORIZONTAL)
@@ -230,14 +229,13 @@ class AnyCtrl(wx.Panel):
         self.SetSizer(box)
 
     def SetValue(self,value):
-        self.choice.SetStringSelection(value)
+        pass
 
     def GetValue(self):
-        return self.choice.GetStringSelection()
+        pass
 
     def Set(self,values):
-        # définie les values possibles dans le contrôle
-        self.choice.Set(values)
+        pass
 
 class CTRL_property(wxpg.PropertyGrid):
     # grille property affiche les paramètres gérés par PNL_property
@@ -485,8 +483,10 @@ class PNL_ctrl(wx.Panel):
             if isinstance(ctrl,str):
                 action = "self.lanceur.%s()"%ctrl
                 self.ctrl = eval(action)
-            else:
+            elif ctrl:
                 self.ctrl = ctrl(self)
+            else:
+                self.ctrl = (10,10)
 
         elif not lgenre:
             self.ctrl = (10,10)
@@ -522,7 +522,10 @@ class PNL_ctrl(wx.Panel):
         self.PnlSizer()
 
     def Proprietes(self,ligne):
-        if not ligne['genre']:
+        if not ligne['genre'] or not ligne['name']:
+            self.ctrl = AnyCtrl(self.parent)
+            self.ctrl.name = ''
+            self.ctrl.nameCtrl = '.'
             return
         self.codename = self.parent.code + '.' + ligne['name']
         self.ctrl.genreCtrl = ligne['genre'].lower()
@@ -580,7 +583,6 @@ class PNL_ctrl(wx.Panel):
             # selon la nature texte ou pas
             if isinstance(actionCtrl,str):
                 action = "self.lanceur."+actionCtrl+"(event)"
-                #print("lance: %s lanceur: %s"%(action, self.lanceur.Name))
                 eval(action)
             else:
                 # actionCtrl est un pointeur de Fonction
@@ -1175,7 +1177,7 @@ class TopBoxPanel(wx.Panel):
         # deuxième passage moins sélectif
         if not panel:
             for pnlctrl in box.lstPanels:
-                if name in pnlctrl.name:
+                if pnlctrl.name and name in pnlctrl.name:
                     panel = pnlctrl
                     break
         return panel

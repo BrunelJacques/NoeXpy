@@ -153,7 +153,7 @@ def GetLastInventForMvts(dlg, dParams):
         oneArticle = dParams['article']
     if oneArticle.lower() == "tous":
         oneArticle = None
-    kwd = {'dteAnalyse': dParams['withInvent'],
+    kwd = {'dteAnalyse': dParams['anteDate'],
            'lstChamps': lstChampsInvent,
            'oneArticle': oneArticle}
     llInventaire = GetLastInventaire(**kwd)
@@ -278,7 +278,7 @@ def CalculeInventaire(dlg, dParams):
     # nouveau calcul
     db = dlg.db
     endDate = dParams['date']
-    previousDate = GetDateLastInventaire(db,endDate)
+    anteDate = GetDateLastInventaire(db,endDate)
 
     # écritures postérieures à la date d'analyse, pas de maj PU et qte de l'article
     majArticles = True
@@ -288,11 +288,11 @@ def CalculeInventaire(dlg, dParams):
     # complète les paramètres façon DLG_MvtOneArticle
     lstChampsMvts = ['IDarticle', 'date', 'qte', 'prixUnit','origine']
     # appel des mouvements de la période
-    dParams['withInvent'] = previousDate
+    dParams['withInvent'] = True
     dParams['lstChamps'] = lstChampsMvts
     dParams['article'] = 'tous'
-    dParams['origine'] = 'tous'
-    dParams['previousDate'] = previousDate
+    dParams['origine'] = ['tous',]
+    dParams['anteDate'] = anteDate
     dParams['endDate'] = endDate
 
     # appel de l'inventaire précédent et des mouvements
@@ -462,7 +462,7 @@ def GetMvtsByDate(db, dParams=None):
     lstChamps = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
     lstChamps.append('stArticles.qteStock')
     lstChamps.append('stArticles.prixMoyen')
-    andOrigine = "AND (stMouvements.origine = '%s' )"%dParams['origine']
+    andOrigine = "AND (stMouvements.origine in (%s) )"%str(dParams['origine'])[1:-1]
     if len(dParams['fournisseur'])>0:
         andFournisseur = "AND (stMouvements.fournisseur = '%s' )"%dParams['fournisseur']
     else: andFournisseur = """AND ((stMouvements.fournisseur = '') 
@@ -517,16 +517,17 @@ def GetMvtsByArticles(db, dParams=None):
         condArticle = "stMouvements.IDarticle = '%s'" % article
 
     origine = dParams.get('origine','')
-    if origine .lower() == 'tous':
+    firstOrigine = origine[0]
+    if firstOrigine == 'tous':
         condOrigine = ""
     else:
-        condOrigine = "origine = '%s'" % origine
+        condOrigine = "origine in (%s)" % str(origine)[1:-1]
 
-    previousDate = dParams.get('previousDate',None)
-    if not previousDate:
+    anteDate = dParams.get('anteDate',None)
+    if not anteDate:
         condDate = ''
     else:
-        condDate = "(date > '%s')" % previousDate
+        condDate = "(date > '%s')" % anteDate
         endDate = dParams.get('endDate',None)
         if endDate:
             condDate += " AND (date <= '%s')" % endDate
@@ -535,7 +536,7 @@ def GetMvtsByArticles(db, dParams=None):
     lstCond = [condArticle,condOrigine,]
     where = xformat.AppendConditionWhere(where,lstCond)
 
-    # Appelle les mouvements associés à un dic de choix de param et retour d'une liste de dic
+    # Appelle les mouvements selon dic param et retour d'une liste de dic
     req = """   
                 SELECT %s
                 FROM stMouvements

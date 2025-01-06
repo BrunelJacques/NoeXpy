@@ -11,7 +11,7 @@
 
 import wx
 import xpy.xUTILS_DB                   as xdb
-import srcNoelite.UTILS_Utilisateurs    as nuu
+import xpy.xUTILS_Identification as nuu
 from xpy.ObjectListView.ObjectListView import FastObjectListView, ColumnDefn, Filter, CTRL_Outils
 
 

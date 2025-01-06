@@ -39,11 +39,13 @@ DICORIGINES = {
                 'sorties': {'codes': ['repas', 'camp', 'od_out'],
                            'label':"Nature  sortie",
                            'values': ['vers cuisine', 'revente ou camp', 'od sortie']},
-                'article': {'codes': ['tous','achat','retour','od_in',
-                                      'repas', 'camp', 'od_out'],
+                'article': {'codes': [  'tous','achat','retour','od_in',
+                                        'repas', 'camp', 'od_out'
+                                        'entrees','sorties'],
                             'label': "Nature Mouvements",
                             'values': ['tous...','achat livraison', 'retour camp', 'od entrée',
-                                       'vers cuisine', 'revente ou camp', 'od sortie']},
+                                       'vers cuisine', 'revente ou camp', 'od sortie',
+                                       'Entrées','Sorties']},
                 }
 
 DICDATE = {     'entrees':{'label':"Date d' entrée"},
@@ -146,7 +148,6 @@ MATRICE_PARAMS = {
          'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un compte pour l'origine",
          'btnAction': 'OnBtnFournisseur',
          'size': (250, 25),
-
          'txtSize': 70,
          },
         {'name': 'analytique', 'genre': 'Choice', 'label': 'Activité',
@@ -156,23 +157,23 @@ MATRICE_PARAMS = {
          'btnLabel': "...",
          'btnHelp': "Cliquez pour choisir l'activité de destination des mouvements",
          'btnAction': 'OnBtnAnalytique',
-
          'txtSize': 70, }
     ],
     ("param3", "saisie"): [
-        {'name': 'ht_ttc', 'genre': 'Choice', 'label': 'Saisie',
+        {'name': 'ht_ttc', 'genre': 'Choice', 'label': 'Saisie de la TVA',
          'help': "Choix du mode de saisie HT ou TTC selon le plus facile pour vous",
          'value': 1, 'values': ['TTC', 'HT'],
          'ctrlAction': 'OnHt_ttc',
-         'txtSize': 40,
-
+         'txtSize': 70,
          },
+        {'name': '', 'genre': None, }
+    ],
+    ("espace", "vide"): [
         {'name': 'vide', 'genre': None, }
     ],
     ("param4", "Compléments"): [
         {'name': 'rappel', 'genre': 'anyctrl', 'label': ' ',
          'txtSize': 20,
-
          'ctrl': CtrlAnterieur,
          'ctrlAction': 'OnBtnAnterieur',
          },
@@ -191,7 +192,7 @@ def GetDicPnlParams(dlg):
                 'name':"PNL_params",
                 'matrice':matrice,
                 'lblBox':None,
-                'boxesSizes': [(250, 60), (250, 60), None, (160, 60)],
+                'boxesSizes': [(250, 60), (250, 60),(160, 60), None, (160, 60)],
                 'pathdata':"srcNoelite/Data",
                 'nomfichier':"stparams",
                 'nomgroupe':"entrees",
@@ -701,6 +702,7 @@ class DLG(xGTE.DLG_tableau):
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
         self.date = date
+        self.origine = None
         self.analytique = '00'
         self.fournisseur = ''
         self.ht_ttc = 'TTC'
@@ -710,10 +712,9 @@ class DLG(xGTE.DLG_tableau):
         ret = self.Init()
         if ret == wx.ID_ABORT: self.Destroy()
         try:
-            self.ht_ttc = self.pnlParams.GetOneValue('ht_ttc',codeBox='param3')
+            self.ht_ttc = self.GetTva()
             self.origine = self.GetOrigine()
             self.OnOrigine(None)
-            self.OnBtnAnterieur(None) # appel de la saisie du jour encours
         except:
             pass
         self.pnlParams.sensNum = self.sensNum
@@ -792,10 +793,18 @@ class DLG(xGTE.DLG_tableau):
 
     # gestion des ctrl choices avec codes différents des items
 
+    def GetTva(self):
+        return self.pnlParams.GetOneValue('ht_ttc', codeBox='param3')
+
     def GetOrigine(self):
-        lblOrigine = self.pnlParams.GetOneValue('origine',codeBox='param1')
+        lblOrigine = self.pnlParams.GetOneValue('origine')
         ixo = DICORIGINES[self.sens]['values'].index(lblOrigine)
-        return DICORIGINES[self.sens]['codes'][ixo]
+        origine =  DICORIGINES[self.sens]['codes'][ixo]
+        if origine in ('entrees','sorties'):
+            lstOrigine = DICORIGINES[origine]['codes']
+        else:
+            lstOrigine = [origine,]
+        return lstOrigine
 
     def SetOrigine(self,code):
         ixo = DICORIGINES[self.sens]['codes'].index(code)
@@ -977,12 +986,7 @@ class DLG(xGTE.DLG_tableau):
         self.GetDonnees(dParams)
         if event: event.Skip()
 
-    def GetDonnees(self,dParams=None):
-        if not dParams:
-            dParams = GetParams(self.pnlParams)
-
-        valide = ValideParams(self.pnlParams,dParams, mute=True)
-
+    def ParamsIdem(self,oldParams,dParams):
         idem = True
         if self.oldParams == None :
             idem = False
@@ -991,8 +995,14 @@ class DLG(xGTE.DLG_tableau):
                 if not key in self.oldParams.keys(): idem = False
                 elif not key in dParams.keys(): idem = False
                 elif self.oldParams[key] != dParams[key]: idem = False
-        if idem :
+        return idem
+
+    def GetDonnees(self,dParams=None):
+        if not dParams:
+            dParams = GetParams(self.pnlParams)
+        if self.ParamsIdem(self.oldParams,dParams):
             return
+        valide = ValideParams(self.pnlParams,dParams, mute=True)
         # forme la grille, puis création d'un premier modelObjects par init
         self.InitOlv()
 
@@ -1015,7 +1025,7 @@ class DLG(xGTE.DLG_tableau):
         if len(self.ctrlOlv.lstDonnees) > 0:
             # set origine
 
-            ixo = DICORIGINES[self.sens]['codes'].index(dParams['origine'])
+            ixo = DICORIGINES[self.sens]['codes'].index(dParams['origine'][0])
             self.pnlParams.SetOneValue('origine',DICORIGINES[self.sens]['values'][ixo])
             self.OnOrigine(None)
 
