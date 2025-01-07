@@ -108,7 +108,7 @@ def GetMatriceAnterieurs(dlg):
     lstLargeurColonnes = [70,90,120,80,60,100]
     lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
     return {
-        'codesOrigines': dlg.origines,
+        'codesOrigines': dlg.codesOrigines,
         'lstColonnes': lstColonnes,
         'lstChamps': lstChamps,
         'listeNomsColonnes': lstNomsColonnes,
@@ -200,7 +200,7 @@ def GetDicPnlParams(dlg):
 
 def GetParams(pnl):
     return {
-        'origine': pnl.parent.origine,
+        'lstOrigines': pnl.parent.GetOrigines(),
         'date': pnl.parent.date,
         'fournisseur': pnl.GetOneValue('fournisseur', codeBox='param2'),
         'analytique': pnl.parent.analytique,
@@ -209,12 +209,15 @@ def GetParams(pnl):
 
 def GetBoutons(dlg):
     return  [
-                {'name': 'btnImp', 'label': "Imprimer\npour contrôle",
-                    'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
-                    'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
-                {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour sortir",
-                    'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnFermer}
-            ]
+        {'name': 'btnCorrections', 'label': "Correction\nde saisie",
+         'help': "Cliquez ici pour changer la date, la nature... de lignes sélectionnées",
+         'size': (120, 35), 'onBtn': dlg.OnBtnCorrections},
+        {'name': 'btnImp', 'label': "Imprimer\npour contrôle",
+            'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
+            'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
+        {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour sortir",
+            'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnFermer}
+    ]
 
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
@@ -270,9 +273,9 @@ def GetOlvCodesSup():
 
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
-    origines = DICORIGINES[dlg.sens]['codes']
+    codesOrigines = DICORIGINES[dlg.sens]['codes']
     return {
-            'codesOrigines': origines,
+            'codesOrigines': codesOrigines,
             'checkColonne': False,
             'recherche': True,
             'minSize': (600, 100),
@@ -293,7 +296,7 @@ def GetDlgOptions(dlg):
 
     #----------------------- Parties de l'écrans -----------------------------------------
 
-def GetAnterieur(dlg,db=None):
+def GetParamsAnterieur(dlg, db=None):
     # retourne un dict de params après lancement d'un tableau de choix de l'existants pour reprise
     dParams = {}
     dicOlv = GetMatriceAnterieurs(dlg)
@@ -307,6 +310,7 @@ def GetAnterieur(dlg,db=None):
         dParams['sensNum'] = dlg.sensNum
         dParams['date'] = DateSqlToDatetime(dParams['date'])
     dlgAnte.Destroy()
+    dParams['lstOrigines'] = [dParams['origine'],]
     return dParams
 
 def GetEnSaisie(dlg,db=None):
@@ -352,7 +356,7 @@ def ValideParams(pnl,dParams,mute=False):
         valide = False
         pnlDate.SetFocus()
 
-    if dParams['origine'] in ('retour','camp'):
+    if dParams['lstOrigines'][0] in ('retour','camp'):
         if (dParams['analytique'] == '00') and len(pnl.lanceur.codesAnalytiques)>1:
             valide = False
             if not mute:
@@ -383,7 +387,7 @@ def GetMouvements(dlg, dParams):
     lstDonnees = []
     lstCodesCol = ctrlOlv.GetLstCodesColonnes()
     dIxCol = {}
-    if dParams['origine'] == 'achat':
+    if dParams['lstOrigines'][0] == 'achat':
         for code in ('nbAch', 'parAch', 'pxAch','pxUn','qte'):
             dIxCol[code] = lstCodesCol.index(code)
 
@@ -697,8 +701,8 @@ class DLG(xGTE.DLG_tableau):
         self.dicOlv = {'lstCodesSup': GetOlvCodesSup()}
         self.dicOlv.update(GetOlvOptions(self))
         self.dicOlv['db'] = xdb.DB()
-        self.lastInventaire = DateSqlToDatetime(nust.GetDateLastInventaire(self.dicOlv['db']))
-        self.origines = self.dicOlv.pop("codesOrigines",[])
+        self.lastInventaire = nust.GetDateLastInventaire(self.dicOlv['db'])
+        self.codesOrigines = self.dicOlv.pop("codesOrigines",[])
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
         self.date = date
@@ -713,7 +717,7 @@ class DLG(xGTE.DLG_tableau):
         if ret == wx.ID_ABORT: self.Destroy()
         try:
             self.ht_ttc = self.GetTva()
-            self.origine = self.GetOrigine()
+            self.origine = self.GetOrigines()
             self.OnOrigine(None)
         except:
             pass
@@ -785,7 +789,7 @@ class DLG(xGTE.DLG_tableau):
     # ------------------- Gestion des actions -----------------------
 
     def InitOlv(self):
-        self.origine = self.GetOrigine()
+        self.origine = self.GetOrigines()
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
         self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
         self.ctrlOlv.InitObjectListView()
@@ -796,15 +800,15 @@ class DLG(xGTE.DLG_tableau):
     def GetTva(self):
         return self.pnlParams.GetOneValue('ht_ttc', codeBox='param3')
 
-    def GetOrigine(self):
+    def GetOrigines(self):
         lblOrigine = self.pnlParams.GetOneValue('origine')
         ixo = DICORIGINES[self.sens]['values'].index(lblOrigine)
         origine =  DICORIGINES[self.sens]['codes'][ixo]
         if origine in ('entrees','sorties'):
-            lstOrigine = DICORIGINES[origine]['codes']
+            lstOrigines = DICORIGINES[origine]['codes']
         else:
-            lstOrigine = [origine,]
-        return lstOrigine
+            lstOrigines = [origine,]
+        return lstOrigines
 
     def SetOrigine(self,code):
         ixo = DICORIGINES[self.sens]['codes'].index(code)
@@ -840,7 +844,7 @@ class DLG(xGTE.DLG_tableau):
         if event:
             self.ctrlOlv.lstDonnees = []
             self.oldParams = {}
-        self.origine = self.GetOrigine()
+        self.origine = self.GetOrigines()
         self.dicOlv.update({'lstColonnes': GetOlvColonnes(self)})
         # grise les ctrl inutiles
         def setEnable(namePnlCtrl,flag):
@@ -971,7 +975,7 @@ class DLG(xGTE.DLG_tableau):
             # lancement de la recherche d'un lot antérieur, on enlève le cellEdit pour éviter l'écho des double clics
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
             # choix d'un lot de lignes définies par des params
-            dParams = GetAnterieur(self,db=self.db)
+            dParams = GetParamsAnterieur(self, db=self.db)
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK # gestion du retour du choix dépot réactive dblClic
         else:
             # cas du lancement par __init
@@ -981,10 +985,19 @@ class DLG(xGTE.DLG_tableau):
 
         self.pnlParams.SetOneValue('date',dParams['date'],'param1')
         self.pnlParams.SetOneValue('fournisseur',dParams['fournisseur'],'param2')
-        self.SetOrigine(dParams['origine'])
+        self.SetOrigine(dParams['lstOrigines'][0])
         self.oldParams = {}
         self.GetDonnees(dParams)
         if event: event.Skip()
+
+    def OnBtnCorrections(self,event):
+        objects = self.ctrlOlv.GetSelectedObjects()
+        if len(objects) == 0:
+            mess = "Sélectionnez un groupe de lignes.\n\n"
+            mess += "Pour cela utilisez <shift> ou <ctrl> + clic gauche souris"
+            mess += "Pour tout selectionnez, utilisez <ctrl> <A>"
+            wx.MessageBox(mess, "Selection vide",style=wx.ICON_INFORMATION|wx.OK)
+            return
 
     def ParamsIdem(self,oldParams,dParams):
         idem = True
@@ -1025,7 +1038,7 @@ class DLG(xGTE.DLG_tableau):
         if len(self.ctrlOlv.lstDonnees) > 0:
             # set origine
 
-            ixo = DICORIGINES[self.sens]['codes'].index(dParams['origine'][0])
+            ixo = DICORIGINES[self.sens]['codes'].index(dParams['lstOrigines'][0])
             self.pnlParams.SetOneValue('origine',DICORIGINES[self.sens]['values'][ixo])
             self.OnOrigine(None)
 

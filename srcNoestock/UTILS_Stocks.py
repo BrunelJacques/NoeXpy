@@ -10,7 +10,7 @@
 import wx, decimal, datetime
 from srcNoelite     import DB_schema
 from xpy.outils     import xformat
-from xpy.outils.xformat import Nz
+from xpy.outils.xformat import Nz,DateSqlToDatetime
 from xpy  import xUTILS_DB as xdb
 
 LIMITSQL = 1000
@@ -80,7 +80,7 @@ def GetDateLastInventaire(db,dteAnalyse=None):
         recordset = db.ResultatReq()
         if len(recordset) > 0:
             dteLast = recordset[-1][0]
-    return dteLast
+    return DateSqlToDatetime(dteLast)
 
 def GetLastInventaire(dteAnalyse=None,lstChamps=None,oneArticle=None):
     # return: lignes de l'inventaire précédant dteAnalyse ou seulement une ligne article
@@ -288,10 +288,9 @@ def CalculeInventaire(dlg, dParams):
     # complète les paramètres façon DLG_MvtOneArticle
     lstChampsMvts = ['IDarticle', 'date', 'qte', 'prixUnit','origine']
     # appel des mouvements de la période
-    dParams['withInvent'] = True
     dParams['lstChamps'] = lstChampsMvts
     dParams['article'] = 'tous'
-    dParams['origine'] = ['tous',]
+    dParams['lstOrigines'] = ['tous',]
     dParams['anteDate'] = anteDate
     dParams['endDate'] = endDate
 
@@ -462,7 +461,7 @@ def GetMvtsByDate(db, dParams=None):
     lstChamps = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
     lstChamps.append('stArticles.qteStock')
     lstChamps.append('stArticles.prixMoyen')
-    andOrigine = "AND (stMouvements.origine in (%s) )"%str(dParams['origine'])[1:-1]
+    andOrigine = "AND (stMouvements.origine in (%s) )"%str(dParams['lstOrigines'])[1:-1]
     if len(dParams['fournisseur'])>0:
         andFournisseur = "AND (stMouvements.fournisseur = '%s' )"%dParams['fournisseur']
     else: andFournisseur = """AND ((stMouvements.fournisseur = '') 
@@ -516,12 +515,12 @@ def GetMvtsByArticles(db, dParams=None):
     else:
         condArticle = "stMouvements.IDarticle = '%s'" % article
 
-    origine = dParams.get('origine','')
-    firstOrigine = origine[0]
+    lstOrigines = dParams.get('lstOrigines',['tous',])
+    firstOrigine = lstOrigines[0]
     if firstOrigine == 'tous':
         condOrigine = ""
     else:
-        condOrigine = "origine in (%s)" % str(origine)[1:-1]
+        condOrigine = "origine in (%s)" % str(lstOrigines)[1:-1]
 
     anteDate = dParams.get('anteDate',None)
     if not anteDate:
@@ -759,11 +758,9 @@ def SqlMagasins(db):
     lstDonnees = ["",] + lstDonnees
     return lstDonnees
 
-# Appel des mouvements antérieurs
 def SqlMvtsAnte(**kwd):
-    # retourne les données pour recherche de mouvements anterieurs since last inventaire
+    # retourne les mouvements anterieurs pour un écran DLG_Mouvements
     dicOlv = kwd.get('dicOlv',None)
-
     db = kwd.get('db',None)
     filtre = kwd.pop('filtreTxt', '')
     nbreFiltres = kwd.pop('nbreFiltres', 0)
@@ -772,12 +769,12 @@ def SqlMvtsAnte(**kwd):
     if nbreFiltres == 0:
         limit = """
                 LIMIT %d""" % LIMITSQL
-    origines = dicOlv['codesOrigines']
+    codesOrigines = dicOlv['codesOrigines']
 
     dateEnCours = GetDateLastInventaire(db)
     where = """
                 WHERE ( date >= '%s' )
-                        AND (origine in ( %s ) )""" % (dateEnCours, str(origines)[1:-1])
+                        AND (origine in ( %s ) )""" % (dateEnCours, str(codesOrigines)[1:-1])
 
     order = "ORDER BY date DESC"
     if encours:
@@ -807,10 +804,28 @@ def SqlMvtsAnte(**kwd):
             lstDonnees.append([x for x in record])
     return lstDonnees
 
-# Appel des inventaires antérieurs
-def SqlInvAnte(**kwd):
-    #à faire selon rappel de l'antérieur des mouvements en modifiant les champs
-    return []
+def SqlTable(**kwd):
+    # retourne les données pour une liste des  anterieurs
+    dicOlv = kwd.get('dicOlv',None)
+    db = kwd.get('db',None)
+    table = dicOlv.get('table',None)
+    groupby = dicOlv.get('groupby',"")
+    where = dicOlv.get('where',"")
+    lstChamps = dicOlv['lstChamps']
+    if where != "": where = "WHERE %s"%where
+    if groupby != "": groupby = "GROUP BY %s"%groupby
+    req = """   SELECT %s
+                FROM %s
+                    %s
+                    %s
+                ;""" % (",".join(lstChamps),table,where,groupby)
+    retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlTable')
+    lstDonnees = []
+    if retour == 'ok':
+        recordset = db.ResultatReq()
+        for record in recordset:
+            lstDonnees.append([x for x in record])
+    return lstDonnees
 
 def MakeChoiceActivite(analytique):
     if not analytique:

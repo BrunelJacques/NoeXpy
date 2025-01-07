@@ -646,7 +646,7 @@ if __name__ == u"__main__":
     app.SetTopWindow(dialog_3)
 
     #print(xformat.FmtMontant(-124566.45765,prec=3))
-    print(dialog_1.ShowModal())
-    print(dialog_1.choix)
+    print(dialog_2.ShowModal())
+    print(dialog_2.choix)
     app.MainLoop()
 

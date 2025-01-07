@@ -194,6 +194,8 @@ def Parametres(mode="get", categorie="", nom="", valeur=None, **kwd):
 
 # ----------------------- TESTS ---------------------------------------------------------
 if __name__ == "__main__":
+
+    # va tester l'écriture dans la table PARAMETRES de la base de donnée par défaut
     setCateg = ParametresCategorie(mode="set", categorie="parametres_test",
                                    dictParametres={"today": datetime.date.today(),
                                                    "test": "écrit"})
@@ -202,10 +204,6 @@ if __name__ == "__main__":
                                                    "test": "no retour"})
     print("Ecrit", setCateg, "\nLu categories", getCateg)
 
-    setParam = Parametres(mode="set", categorie="parametres_test", nom="aDic",
-                          valeur={'un': 1, 'lst': [1, 'deux'], 2: 'deux', 3: None})
-    getParam = Parametres(mode="get", nom="aDic", valeur={})
-    print("Ecrit", setParam, "\nLu param", getParam, type(getParam))
     getParam2 = Parametres(mode="get", nom="aDic")
     print("sans valeur fournie:", getParam2, type(getParam2))
 

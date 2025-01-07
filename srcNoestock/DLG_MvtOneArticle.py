@@ -306,7 +306,7 @@ def MAJ_calculs(dlg):
 
 def CalculeLigne(dlg, track):
     # après chaque saisie d'une valeur on recalcule les champs dépendants
-    if not hasattr(track, 'dicArticle'): return
+    if not hasattr(track, 'dicArticle') or not track.dicArticle: return
     try:
         qte = float(track.qte)
     except:
@@ -403,7 +403,7 @@ class DLG(dlgMvts.DLG):
         # définition de l'OLV
         self.ctrlOlv = None
         self.typeAchat = None
-        self.origine = ['tous',]
+        self.lstOrigines = ['tous',]
         today = datetime.date.today()
 
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
@@ -434,7 +434,6 @@ class DLG(dlgMvts.DLG):
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
         self.anteDate = nust.GetDateLastInventaire(self.db,today)
         self.lastDate = xformat.DateSqlToDatetime(nust.GetDateLastMvt(self.db))
-        self.withInvent = True
         self.pnlParams.SetOneValue('anteDate',valeur=self.anteDate,
                                    codeBox='param2')
         self.pnlParams.SetOneValue('lastDate',valeur=self.lastDate,
@@ -484,10 +483,9 @@ class DLG(dlgMvts.DLG):
 
     def GetParams(self):
         dParams = {'article':self.article,
-                   'origine': self.origine,
+                   'lstOrigines': self.GetOrigines(),
                    'anteDate': self.anteDate,
-                   'lastDate': self.lastDate,
-                   'withInvent': self.withInvent}
+                   'lastDate': self.lastDate,}
         return dParams
 
     def GetDonnees(self,dParams=None):
@@ -500,9 +498,7 @@ class DLG(dlgMvts.DLG):
         self.InitOlv()
         # appel des données de l'Olv principal à éditer
         dParams['lstChamps'] = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
-        ldMouvements = []
-        if dParams['withInvent']:
-            ldMouvements = [x for x in nust.GetLastInventForMvts(self.db, dParams)]
+        ldMouvements = [x for x in nust.GetLastInventForMvts(self.db, dParams)]
         ldMouvements += [x for x in nust.GetMvtsByArticles(self.db, dParams)]
         self.ctrlOlv.lstDonnees = ComposeDonnees(self.db,self,ldMouvements)
         self.ctrlOlv.MAJ()
@@ -575,11 +571,10 @@ class DLG(dlgMvts.DLG):
         if self.anteDate == saisie:
             return
 
-        lastInvent = xformat.DateSqlToDatetime(nust.GetDateLastInventaire(self.db))
+        lastInvent = nust.GetDateLastInventaire(self.db)
         if self.lastDate > lastInvent:
             self.lastDate = lastInvent
             self.pnlParams.SetOneValue('lastDate',self.lastDate,'param2')
-        self.withInvent = False
         if saisie < lastInvent:
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
             mess = "Modifications d'écritures impossible\n\n"
@@ -587,8 +582,6 @@ class DLG(dlgMvts.DLG):
             mess += ", vous pouvez seulement consulter."
             wx.MessageBox(mess,"Information",style = wx.ICON_INFORMATION)
         else:
-            if len(str(lastInvent)) > 0:
-                self.withInvent = True
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK  # réactive dblClic
         if self.anteDate != saisie:
             self.anteDate = saisie
@@ -608,7 +601,7 @@ class DLG(dlgMvts.DLG):
         if event:
             self.ctrlOlv.lstDonnees = []
             self.oldParams = {}
-        self.origine = self.GetOrigine()
+        self.lstOrigines = self.GetOrigines()
         self.dicOlv.update({'lstColonnes': GetOlvColonnes(self)})
         if event: event.Skip()
         if self.article:

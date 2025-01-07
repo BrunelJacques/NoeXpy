@@ -13,7 +13,7 @@ import wx
 import sys
 import subprocess
 import mysql.connector
-from mysql.connector import errorcode
+import mysql.connector.errorcode as errorcode
 import sqlite3
 import copy
 import datetime
@@ -423,7 +423,7 @@ class DB():
             else: self.retourReq = 'Erreur xUTILS_DB\n\n'
             self.retourReq +=  ("ExecuterReq:\n%s\n\nErreur detectee:\n%s"% (req, str(err)))
             if affichError:
-                wx.MessageBox(self.retourReq,"Erreur accès BD")
+                wx.MessageBox(self.retourReq,"Erreur accès BD",style=wx.ICON_ERROR)
         return self.retourReq
 
     def Executermany(self, req="", lstDonnees=[], commit=True):

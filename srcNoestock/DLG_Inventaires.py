@@ -78,31 +78,32 @@ class CtrlAnterieur(wx.Panel):
         return
 
 def GetMatriceAnterieurs(dlg):
-    dicBandeau = {'titre': "Rappel d'un anterieur existant",
-                  'texte': "les mots clés du champ en bas permettent de filtrer d'autres lignes et d'affiner la recherche",
+    dicBandeau = {'titre': "Rappel d'un inventaire Archivé",
+                  'texte': "Attention l'écran précédent reconstituera l'inventaire, comparez les totaux",
                   'hauteur': 15, 'nomImage': "xpy/Images/32x32/Zoom_plus.png",
                   'bgColor':(220, 250, 220),}
 
     # Composition de la matrice de l'OLV anterieurs, retourne un dictionnaire
 
-    lstChamps = ['date', 'fournisseur', 'IDanalytique', 'COUNT(IDinventaire)']
+    lstChamps = ['IDdate','SUM(qteStock)','SUM(qteStock * prixMoyen)','MAX(dateSaisie)', 'COUNT(IDarticle)']
 
-    lstNomsColonnes = ['date', 'fournisseur', 'analytique', 'nbLignes']
+    lstNomsColonnes = ['date','qtés stocks','montants','calculé Le','nbLignes']
 
-    lstTypes = [ 'DATE', 'VARCHAR(32)', 'VARCHAR(32)', 'INT']
+    lstTypes = [ 'date', 'int','float','date', 'int']
     lstCodesColonnes = [xformat.NoAccents(x).lower() for x in lstNomsColonnes]
     lstValDefColonnes = xformat.ValeursDefaut(lstNomsColonnes, lstTypes)
-    lstLargeurColonnes = [100,180,180,200]
+    lstLargeurColonnes = [100,100,100,150,100]
     lstColonnes = xformat.DefColonnes(lstNomsColonnes, lstCodesColonnes, lstValDefColonnes, lstLargeurColonnes)
     return {
-        'lstSaisons': dlg.lstSaisons,
+        'table': 'stInventaires',
         'lstColonnes': lstColonnes,
         'lstChamps': lstChamps,
+        'groupby': 'IDdate',
         'listeNomsColonnes': lstNomsColonnes,
         'listeCodesColonnes': lstCodesColonnes,
-        'getDonnees': nust.SqlInvAnte,
+        'getDonnees': nust.SqlTable,
         'dicBandeau': dicBandeau,
-        'sortColumnIndex': 2,
+        'sortColumnIndex': 0,
         'sensTri': False,
         'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
         'size': (650, 400)}
@@ -441,6 +442,7 @@ class DLG(xGTE.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,date=None,**kwd):
         kwds = GetDlgOptions(self)
+        self.skip = False
         self.dicParams = GetDicPnlParams(self)
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
@@ -450,8 +452,9 @@ class DLG(xGTE.DLG_tableau):
         self.dicOlv['db'] = xdb.DB()
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
         txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"
-        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),txtInfo]
-        dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
+        self.lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION,wx.ART_OTHER,(16, 16)),
+                          txtInfo]
+        dicPied = {'lstBtns': GetBoutons(self), "lstInfos": self.lstInfos}
 
 
         # Propriétés de l'écran global type Dialog
@@ -543,12 +546,13 @@ class DLG(xGTE.DLG_tableau):
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
         # choix d'un lot de lignes définies par des params
         dParams = GetAnterieur(self,db=self.db)
-        self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK        # gestion du retour du choix dépot
         if not 'date' in dParams.keys(): return
-        self.GetDonnees(dParams)
+        self.pnlParams.SetOneValue('date',dParams['date'],'param1')
+        self.OnDate(None)
         if event: event.Skip()
 
     def GetDonnees(self,dParams=None):
+        messInfos = ""
         # test si les paramètres ont changé
         if not dParams:
             dParams = self.pnlParams.GetValues(fmtDD=False)
@@ -576,19 +580,36 @@ class DLG(xGTE.DLG_tableau):
             return True
         lstDonnees = [x for x in nust.CalculeInventaire(self,dParams) if filtreQte(x)]
 
-        self.mouvementsPost = nust.MouvementsPosterieurs(self)
-        if self.mouvementsPost:
-            self.pnlPied.SetItemsInfos("Présence de mouvements postérieurs\nLe stock dans l'article en tient compte",
-                                       wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
+        if nust.MouvementsPosterieurs(self):
+            messInfos = "Présence de mouvements postérieurs, le stock dans l'article en tient compte\n"
+
+        dateLastestInvent = nust.GetDateLastInventaire(self.db)
+        if  self.date <= dateLastestInvent:
+            self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE  # gestion du retour du choix dépot
+            messInfos = "Présence d'un inventaire archivé au %s, modifs impossibles\n"%dateLastestInvent
+        else:
+            self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK  # gestion du retour du choix dépot
 
         # alimente la grille, puis création de modelObejects pr init
         self.ctrlOlv.lstDonnees = lstDonnees
         self.ctrlOlv.MAJ()
+        nbStNeg = 0
         # les écritures reprises sont censées être valides
         for track in self.ctrlOlv.modelObjects[:-1]:
             track.IDmouvement = None
+            if track.qteStock < 0: nbStNeg += 1
+        if nbStNeg > 1:
+            messInfos += "%d articles ont des stocks négatifs, veuillez saisir des entrées.\n"%nbStNeg
+        elif nbStNeg == 1:
+            messInfos += "un article a des stocks négatifs, veuillez saisir des entrées par Mouvements articles.\n"
         self.oldParams = None
         del attente
+        if len(messInfos) > 0:
+            styleInfos = wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER,(16, 16))
+        else:
+            messInfos = self.lstInfos[1]
+            styleInfos = self.lstInfos[0]
+        self.pnlPied.SetItemsInfos(messInfos, styleInfos)
 
     def GetTitreImpression(self):
         date = xformat.DateSqlToFr(self.date)
@@ -609,7 +630,7 @@ class DLG(xGTE.DLG_tableau):
             mess += "%d lignes avec anomalies ont un fond rouge.\n"%nbAnomalies
             mess += "Stock fin négatif, Pb de prix > 10€, Pb qtés en stock...\n\n"
             mess += "Consultez 'Mouvements article' et corrigez."
-            wx.MessageBox(mess,style=wx.OK|wx.ICON_STOP)
+            wx.MessageBox(mess,'Préalable nécessaire',style=wx.OK|wx.ICON_STOP)
             ret = False
         return ret
 
@@ -634,6 +655,8 @@ class DLG(xGTE.DLG_tableau):
         self.ctrlOlv.Apercu(None)
 
     def OnArchiver(self,event):
+        self.ctrlOlv.SortItems(self.compare_items)
+        self.ctrlOlv.MAJ()
         if not self.dictUser or self.dictUser['profil'][:5] != 'admin':
             mess = "Accès non autorisé\n\n"
             mess += "Authentifiez-vous comme admin dans le menu d'entrée\n"
@@ -644,7 +667,7 @@ class DLG(xGTE.DLG_tableau):
         self.pnlParams.SetOneValue('qteMini',True,'param2')
         self.OnQte(None)
         ret = self.OkCloture()
-        if self.OkCloture():
+        if ret:
             mess = "Ok pour archiver l'inventaire!\n\n"
             mess += "Après vous ne pourrez plus modifier les mouvements antérieurs\n"
             mess += "Pensez à faire un export Excel par un clic Gauche ou une édition."
@@ -661,6 +684,13 @@ class DLG(xGTE.DLG_tableau):
             self.EndModal(wx.ID_CANCEL)
         else:
             self.Close()
+
+    def compare_items(self, item1, item2):
+        color1 = self.list_ctrl.GetItemBackgroundColour(item1)
+        color2 = self.list_ctrl.GetItemBackgroundColour(item2)
+        palette1 = (color1.Red() + color1.Green() + color1.Blue())
+        palette2 = (color2.Red() + color2.Green() + color2.Blue())
+        return palette1 - palette2
 
 #------------------------ Lanceur de test  -------------------------------------------
 
