@@ -306,7 +306,7 @@ def CalculeInventaire(dlg, dParams):
         dldArtMouvements[dMvt['IDarticle']].append(dMvt)
 
     # appel du détail des articles présents dans les mouvements
-    lstIDarticles = [x for x in dldArtMouvements.keys()]
+    lstIDarticles = [x for x in dldArtMouvements]
     lstChampsArt = ['IDarticle','fournisseur', 'magasin', 'rayon','qteMini', 'qteSaison',
                     'qteStock','rations', 'prixMoyen','prixActuel', 'dernierAchat']
     where = ""
@@ -1304,7 +1304,7 @@ def GetPrixJourLignes(dlg, grouper='date', **kwd):
         elif grouper == 'article':
             keyLigne = IDarticle
             date = None
-        if not keyLigne in dicLignes.keys():
+        if not keyLigne in dicLignes:
             dicLignes[keyLigne] = {'IDarticle': IDarticle,
                                 'date': date,
                                 'rayon': rayon,

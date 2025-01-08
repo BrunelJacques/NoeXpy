@@ -1,5 +1,7 @@
-version 1.1.2.41 (05/01/2025)
-    - Corrections diverses pour clôture
+version 1.1.2.41 (09/01/2025)
+    - NoeStock: Ajout correction par lot
+    - Modifs XPY refactorisation
+    - Noestock: Corrections diverses pour clôture
 
 version 1.1.2.40 (19/12/2024)
     - Correctif unread results traité par fetchall()

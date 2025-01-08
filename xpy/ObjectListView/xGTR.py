@@ -458,7 +458,8 @@ class DLG_saisie(xusp.DLG_vide):
         else:
             titre = "Modification de la base de données"
             ctrl = self.pnl.GetPnlCtrl('ID')
-            self.pnl.GetPnlCtrl('ID').Enable(False)
+            if ctrl:
+                self.pnl.GetPnlCtrl('ID').Enable(False)
         texte = "Définissez les valeurs souhaitées pour la ligne"
 
         # personnalisation des éléments de l'écran

@@ -354,7 +354,7 @@ class PNL_corps(xGTE.PNL_corps):
 
     def OnEditStarted(self,code,track=None,editor=None):
         # affichage de l'aide
-        if code in DIC_INFOS.keys():
+        if code in DIC_INFOS:
             self.parent.pnlPied.SetItemsInfos( DIC_INFOS[code],
                                                wx.ArtProvider.GetBitmap(wx.ART_FIND, wx.ART_OTHER, (16, 16)))
         else:
@@ -546,7 +546,7 @@ class DLG(xGTE.DLG_tableau):
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
         # choix d'un lot de lignes définies par des params
         dParams = GetAnterieur(self,db=self.db)
-        if not 'date' in dParams.keys(): return
+        if not 'date' in dParams: return
         self.pnlParams.SetOneValue('date',dParams['date'],'param1')
         self.OnDate(None)
         if event: event.Skip()
@@ -561,8 +561,8 @@ class DLG(xGTE.DLG_tableau):
             idem = False
         else:
             for key in ('origine','date','analytique','fournisseur'):
-                if not key in self.oldParams.keys(): idem = False
-                elif not key in dParams.keys(): idem = False
+                if not key in self.oldParams: idem = False
+                elif not key in dParams: idem = False
                 elif self.oldParams[key] != dParams[key]: idem = False
         if idem : return
 

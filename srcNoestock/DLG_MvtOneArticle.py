@@ -136,15 +136,6 @@ def GetDicCalculs(*args):
             'boxesSizes': [None,(300, 95),(300, 95)],
             }
 
-def GetBoutons(dlg):
-    return  [
-                {'name': 'btnImp', 'label': "Imprimer\npour contrôle",
-                    'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
-                    'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
-                {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour sortir",
-                    'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnFermer}
-            ]
-
 def ValideParams(*arg,**kwds):
     return True
 
@@ -364,9 +355,9 @@ def ComposeDonnees(db,dlg,ldMouvements):
                 donnees.append(cumQte)
             elif code == 'pxMoyen':
                 donnees.append(dArticle['prixMoyen'])
-            elif code in dMvt.keys():
+            elif code in dMvt:
                 donnees.append(dMvt[code])
-            elif code in dArticle.keys():
+            elif code in dArticle:
                 donnees.append(dArticle)
             else:
                 donnees.append(None)
@@ -380,36 +371,39 @@ class PNL_calculs(xusp.TopBoxPanel):
         kwdsTopBox = {}
         kwds = GetDicCalculs(parent)
         for key in xusp.OPTIONS_TOPBOX:
-            if key in kwds.keys(): kwdsTopBox[key] = kwds[key]
+            if key in kwds: kwdsTopBox[key] = kwds[key]
         super().__init__(parent, *args, **kwdsTopBox)
         self.parent = parent
 
 class DLG(dlgMvts.DLG):
     # ------------------- Composition de l'écran de gestion-----------------------------
     def __init__(self, **kwds):
-        # gestion des deux sens possibles 'entrees' et 'sorties'
+        # récupération d'un code transmis par un éventuel parent'
         self.article = kwds.pop('article',None)
-        kwds['sens'] = 'article'
+
         listArbo=os.path.abspath(__file__).split("\\")
+        self.GetDicPnlParams = GetDicPnlParams
+
+        self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
+        self.dicOlv['lstCodes'] = xformat.GetCodesColonnes(GetOlvColonnes(self))
+        self.dicOlv['lstCodesSup'] = dlgMvts.GetOlvCodesSup()
+
+        # spécificités structure écran à transmettre au super
+        kwds['sens'] = 'article'
         kwds['title'] = listArbo[-1] + "/" + self.__class__.__name__
+        kwds['autoSizer'] = False
+        kwds['dicParams'] = GetDicPnlParams(self)
+        kwds['dicOlv'] = self.dicOlv
+
         super().__init__(**kwds)
         self.Name = 'DLG_MvtOneArticle.DLG'
 
     def Init(self):
         self.lanceur = self
-        self.db = xdb.DB()
-        self.GetDicPnlParams = GetDicPnlParams
         self.pnlCalculs = PNL_calculs(self)
-        # définition de l'OLV
-        self.ctrlOlv = None
-        self.typeAchat = None
         self.lstOrigines = ['tous',]
         today = datetime.date.today()
 
-        # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
-        self.txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"
-        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),self.txtInfo]
-        dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
 
         # lancement de l'écran en blocs principaux
         self.pnlBandeau = xbandeau.Bandeau(self, dlgMvts.TITRE[self.sens],
@@ -418,16 +412,11 @@ class DLG(dlgMvts.DLG):
                                            sizeImage=(60, 40))
         self.pnlBandeau.SetBackgroundColour(wx.Colour(250, 250, 180))
 
-        self.pnlParams = dlgMvts.PNL_params(self)
-
         self.dicOlv['checkColonne'] = True
-        self.pnlOlv = dlgMvts.PNL_corps(self, self.dicOlv)
         self.pnlOlv.ValideParams = self.ValideParams
         self.pnlOlv.ValideLigne = self.ValideLigne
         self.pnlOlv.CalculeLigne = self.CalculeLigne
-        self.pnlPied = dlgMvts.PNL_pied(self, dicPied)
         self.ctrlOlv = self.pnlOlv.ctrlOlv
-        #self.ctrlOlv.DeleteAllItems()
 
         # charger les valeurs de pnl_params
 
@@ -489,6 +478,8 @@ class DLG(dlgMvts.DLG):
         return dParams
 
     def GetDonnees(self,dParams=None):
+        if not dParams or not dParams['article']:
+            return
         # forme la grille, puis création d'un premier modelObjects par init
         if not dParams:
             dParams = self.GetParams()

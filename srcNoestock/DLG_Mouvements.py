@@ -17,7 +17,7 @@ import xpy.ObjectListView.xGTR as xGTR
 import xpy.xUTILS_Identification       as xuid
 import xpy.xUTILS_SaisieParams         as xusp
 import xpy.xUTILS_DB                   as xdb
-from srcNoestock                import DLG_Articles
+from srcNoestock                import DLG_Articles, DLG_MvtCorrection
 from xpy.ObjectListView.ObjectListView  import ColumnDefn, CellEditor
 from xpy.outils                 import xformat,xbandeau,xboutons
 from xpy.outils.xformat         import Nz,DateSqlToDatetime
@@ -209,9 +209,11 @@ def GetParams(pnl):
 
 def GetBoutons(dlg):
     return  [
-        {'name': 'btnCorrections', 'label': "Correction\nde saisie",
+        {'name': 'btnCorrections', 'label': "Correction\npar lot",
          'help': "Cliquez ici pour changer la date, la nature... de lignes sélectionnées",
-         'size': (120, 35), 'onBtn': dlg.OnBtnCorrections},
+         'size': (120, 35),
+         'onBtn': dlg.OnBtnCorrections,
+         'image': "xpy/Images/32x32/Depannage.png"},
         {'name': 'btnImp', 'label': "Imprimer\npour contrôle",
             'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
             'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
@@ -250,7 +252,7 @@ def GetOlvColonnes(dlg):
     if dlg.sens == 'entrees':
         # supprime la saisie du repas
         del lstCol[1]
-    if dlg.origine[:5] == 'achat':
+    if dlg.lstOrigines[0][:5] == 'achat':
         dlg.typeAchat = True
         for col in lstCol:
             if col.valueGetter in ('qte','pxUn'):
@@ -407,11 +409,11 @@ def GetMouvements(dlg, dParams):
             if code == 'pxMoy':
                 donnees.append(ConvTva(dArticle['prixMoyen'],dArticle['txTva'],dlg.ht_ttc))
                 continue
-            if code in dMvt.keys():
+            if code in dMvt:
                 donnees.append(dMvt[code])
                 continue
             # ajout de l'article associé
-            if code in dArticle.keys():
+            if code in dArticle:
                 donnees.append(dArticle)
                 continue
 
@@ -514,16 +516,6 @@ def ValideLigne(dlg,track):
     else: track.messageRefus = ""
     return
 
-class PNL_params(xGTE.PNL_params):
-    #panel de paramètres de l'application
-    def __init__(self, parent, **kwds):
-        self.parent = parent
-        kwds = parent.GetDicPnlParams(parent)
-        super().__init__(parent, **kwds)
-        if hasattr(parent,'lanceur'):
-            self.lanceur = parent.lanceur
-        else: self.lanceur = parent
-
 class PNL_corps(xGTE.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
     def __init__(self, parent, dicOlv,*args, **kwds):
@@ -559,7 +551,7 @@ class PNL_corps(xGTE.PNL_corps):
 
     def OnEditStarted(self,code,track=None,editor=None):
         # affichage de l'aide
-        if code in DIC_INFOS.keys():
+        if code in DIC_INFOS:
             self.parent.pnlPied.SetItemsInfos( DIC_INFOS[code],
                                                wx.ArtProvider.GetBitmap(wx.ART_FIND,
                                                                         wx.ART_OTHER,
@@ -685,28 +677,45 @@ class PNL_pied(xGTE.PNL_pied):
 
 class DLG(xGTE.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,sens='sorties',date=None,**kwd):
+    def __init__(self,sens='sorties',date=None,**kwdIn):
+        self.db = xdb.DB()
+
         # gestion des deux sens possibles 'entrees' et 'sorties'
-        if not sens: sens = 'article'
         self.sens = sens
         self.sensNum = 1
         if self.sens == "sorties":
             self.sensNum = -1
-        self.GetDicPnlParams = GetDicPnlParams
-        kwds = GetDlgOptions(self)
+
+        self.lstOrigines = ['',]
         listArbo=os.path.abspath(__file__).split("\\")
-        kwds['title'] = kwd.pop('title',listArbo[-1] + "/" + self.__class__.__name__)
-        super().__init__(None,**kwds)
+
+        dicOlv = {'lstColonnes': GetOlvColonnes(self)}
+        dicOlv.update(GetOlvOptions(self))
+        dicOlv['lstCodes'] = xformat.GetCodesColonnes(GetOlvColonnes(self))
+        dicOlv['lstCodesSup'] = GetOlvCodesSup()
+        dicOlv['db'] = self.db
+
+        # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
+        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),INFO_OLV]
+        dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
+
+        kwds = GetDlgOptions(self)
+        kwds['title'] = listArbo[-1] + "/" + self.__class__.__name__
+        kwds['autoSizer'] = False
+        kwds['dicParams'] = GetDicPnlParams(self)
+        kwds['dicOlv'] = dicOlv
+        kwds['dicPied'] = dicPied
+        kwds['db'] = self.db
+        # si est super, garder l'instance
+        kwds.update(kwdIn)
+
+        super().__init__(self,**kwds)
         # l'appel des colonnes se fera dans OnOrigine
-        self.dicOlv = {'lstCodesSup': GetOlvCodesSup()}
-        self.dicOlv.update(GetOlvOptions(self))
-        self.dicOlv['db'] = xdb.DB()
-        self.lastInventaire = nust.GetDateLastInventaire(self.dicOlv['db'])
+        self.lastInventaire = nust.GetDateLastInventaire(self.db)
         self.codesOrigines = self.dicOlv.pop("codesOrigines",[])
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
         self.date = date
-        self.origine = None
         self.analytique = '00'
         self.fournisseur = ''
         self.ht_ttc = 'TTC'
@@ -717,7 +726,7 @@ class DLG(xGTE.DLG_tableau):
         if ret == wx.ID_ABORT: self.Destroy()
         try:
             self.ht_ttc = self.GetTva()
-            self.origine = self.GetOrigines()
+            self.lstOrigines = self.GetOrigines()
             self.OnOrigine(None)
         except:
             pass
@@ -731,12 +740,6 @@ class DLG(xGTE.DLG_tableau):
             pnlDate.SetValue("")
 
     def Init(self):
-        self.db = xdb.DB()
-        # définition de l'OLV
-        self.ctrlOlv = None
-        # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
-        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),INFO_OLV]
-        dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
 
         # lancement de l'écran en blocs principaux
         if self.sens == 'entrees':
@@ -755,10 +758,6 @@ class DLG(xGTE.DLG_tableau):
                                                 nomImage="xpy/Images/80x80/Sortie.png",
                                                 sizeImage=(60,40))
             self.pnlBandeau.SetBackgroundColour(wx.Colour(250, 220, 220))
-        self.pnlParams = PNL_params(self)
-        self.pnlOlv = PNL_corps(self, self.dicOlv)
-        self.pnlPied = PNL_pied(self, dicPied)
-        self.ctrlOlv = self.pnlOlv.ctrlOlv
 
         # charger les valeurs de pnl_params
         self.fournisseurs = nust.SqlFournisseurs(self.db)
@@ -789,7 +788,7 @@ class DLG(xGTE.DLG_tableau):
     # ------------------- Gestion des actions -----------------------
 
     def InitOlv(self):
-        self.origine = self.GetOrigines()
+        self.lstOrigines = self.GetOrigines()
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
         self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
         self.ctrlOlv.InitObjectListView()
@@ -844,7 +843,7 @@ class DLG(xGTE.DLG_tableau):
         if event:
             self.ctrlOlv.lstDonnees = []
             self.oldParams = {}
-        self.origine = self.GetOrigines()
+        self.lstOrigines = self.GetOrigines()
         self.dicOlv.update({'lstColonnes': GetOlvColonnes(self)})
         # grise les ctrl inutiles
         def setEnable(namePnlCtrl,flag):
@@ -853,19 +852,19 @@ class DLG(xGTE.DLG_tableau):
             pnlCtrl.ctrl.Enable(flag)
             pnlCtrl.btn.Enable(flag)
         #'achat livraison', 'retour camp', 'od_in'
-        if 'achat' in self.origine:
+        if 'achat' in self.lstOrigines:
             setEnable('fournisseur',True)
             setEnable('analytique',False)
             self.analytique = '00'
             self.pnlParams.SetOneValue('analytique',"", codeBox='param2')
-        elif ('retour' in self.origine) or ('camp' in self.origine)  :
+        elif ('retour' in self.lstOrigines) or ('camp' in self.lstOrigines)  :
             setEnable('fournisseur',False)
             self.fournisseur = ''
             self.pnlParams.SetOneValue('fournisseur',"", codeBox='param2')
             setEnable('analytique',True)
             if len(self.valuesAnalytiques) >0:
                 self.pnlParams.SetOneValue('analytique',self.valuesAnalytiques[0], codeBox='param2')
-        elif ('od' in self.origine) or ('repas' in self.origine) :
+        elif ('od' in self.lstOrigines) or ('repas' in self.lstOrigines) :
             self.pnlParams.SetOneValue('fournisseur',"", codeBox='param2')
             setEnable('fournisseur',False)
             self.fournisseur = ''
@@ -981,7 +980,7 @@ class DLG(xGTE.DLG_tableau):
             # cas du lancement par __init
             dParams = GetEnSaisie(self,db=self.db)
 
-        if not 'date' in dParams.keys(): return
+        if not 'date' in dParams: return
 
         self.pnlParams.SetOneValue('date',dParams['date'],'param1')
         self.pnlParams.SetOneValue('fournisseur',dParams['fournisseur'],'param2')
@@ -991,13 +990,10 @@ class DLG(xGTE.DLG_tableau):
         if event: event.Skip()
 
     def OnBtnCorrections(self,event):
-        objects = self.ctrlOlv.GetSelectedObjects()
-        if len(objects) == 0:
-            mess = "Sélectionnez un groupe de lignes.\n\n"
-            mess += "Pour cela utilisez <shift> ou <ctrl> + clic gauche souris"
-            mess += "Pour tout selectionnez, utilisez <ctrl> <A>"
-            wx.MessageBox(mess, "Selection vide",style=wx.ICON_INFORMATION|wx.OK)
-            return
+        donnees = [x for x in self.ctrlOlv.GetObjects()]
+        dlgCorr = DLG_MvtCorrection.DLG(self,donnees=donnees)
+        dlgCorr.ShowModal()
+        self.GetDonnees()
 
     def ParamsIdem(self,oldParams,dParams):
         idem = True
@@ -1005,8 +1001,8 @@ class DLG(xGTE.DLG_tableau):
             idem = False
         else:
             for key in ('origine','date','analytique','fournisseur','ht_ttx'):
-                if not key in self.oldParams.keys(): idem = False
-                elif not key in dParams.keys(): idem = False
+                if not key in self.oldParams: idem = False
+                elif not key in dParams: idem = False
                 elif self.oldParams[key] != dParams[key]: idem = False
         return idem
 
@@ -1059,7 +1055,7 @@ class DLG(xGTE.DLG_tableau):
         if self.fournisseur: tiers += ", Fournisseur: %s"%self.fournisseur.capitalize()
         if self.analytique: tiers += ", Camp: %s"%self.analytique.capitalize()
         date = xformat.DateSqlToFr(self.date)
-        return "Mouvements STOCKS %s du %s, %s%s"%(self.sens, date, self.origine,tiers)
+        return "Mouvements STOCKS %s du %s, %s%s"%(self.sens, date, str(self.lstOrigines[1:-1]),tiers)
 
     def ValideImpress(self):
         # test de présence d'écritures non valides
@@ -1087,6 +1083,6 @@ class DLG(xGTE.DLG_tableau):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG()
+    dlg = DLG(sens='entrees')
     dlg.ShowModal()
     app.MainLoop()

@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 #  Jacques Brunel x Sébastien Gouast
-#  MATTHANIA - Projet XPY -Evolution surcouche OLV permettant la saisie)
-# module xGTE remplace xGestionTableauEditor
+#  MATTHANIA - Projet XPY -Evolution surcouche OLV permettant la saisie sur la ligne)
+# module xGTE remplace xGTR qui permet la saisie dans un nouvel écran
 #  2022-08-01 appelle OLV façon Noethys
 #
 
@@ -930,11 +930,20 @@ class PNL_pied(wx.Panel):
 class DLG_tableau(xusp.DLG_vide):
     # minimum fonctionnel dans dialog tout est dans les trois pnl
     def __init__(self,parent,dicParams={},dicOlv={},dicPied={}, **kwds):
-        self.db = kwds.pop('db',None) #purge d'éventuels arguments db à ne pas envoyer à super()
+        #purge d'éventuels arguments db à ne pas envoyer à super()
+        self.db = kwds.pop('db',None)
         autoSizer =     kwds.pop('autoSizer', True)
         size = kwds.get('size',None)
         if not 'style' in kwds.keys():
             kwds['style'] = wx.DEFAULT_FRAME_STYLE
+
+        # recherche éventuelle base de donnée
+        if not self.db and hasattr(parent,'db'):
+            self.db = parent.db
+        if not self.db:
+            self.db = dicOlv.get('db',None)
+        if not self.db:
+            self.db = dicParams.get('db',None)
 
         # si size pas dans kwds, on pique celle de l'olv qui serait contrainte donc inutile
         if not size and dicOlv.get('size',None):
@@ -953,12 +962,13 @@ class DLG_tableau(xusp.DLG_vide):
         # Création des différentes parties de l'écran
         self.pnlParams = PNL_params(self, **dicParams)
         kwds['db'] = self.db
-        if dicOlv != {}:
-            self.dicOlv = xformat.CopyDic(dicOlv)
-            self.pnlOlv = PNL_corps(self, dicOlv,  **kwds )
-            self.ctrlOlv = self.pnlOlv.ctrlOlv
-        else:
+        if dicOlv == {}:
             autoSizer = False
+        else:
+            if not hasattr(self, 'dicOlv'):
+                self.dicOlv = xformat.CopyDic(dicOlv)
+            self.pnlOlv = PNL_corps(self, self.dicOlv, **kwds)
+            self.ctrlOlv = self.pnlOlv.ctrlOlv
         self.pnlPied = PNL_pied(self, dicPied,  **kwds )
 
         # permet un Sizer de substitution différé après l'init propre à l'instance
