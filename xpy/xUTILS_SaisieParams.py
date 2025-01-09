@@ -403,18 +403,18 @@ class PNL_ctrl(wx.Panel):
         self.txtSize = kwds.pop('txtSize',0) * PT_AJUSTE
 
         if not label: label = ''
-        lgTxtCtrl = max(self.txtSize,int(len(label)* PT_CARACTERE)) * PT_AJUSTE
+        lgTxtCtrl = int(max(self.txtSize,int(len(label)* PT_CARACTERE)) * PT_AJUSTE)
         minSize =   kwds.pop('ctrlMinSize',(int(lgTxtCtrl * 1.5),30))
         maxSize =   kwds.pop('ctrlMaxSize',(lgTxtCtrl * 3, minSize[1] * 2))
-        minSize = tuple(i * PT_AJUSTE for i in minSize)
-        maxSize = tuple(i * PT_AJUSTE for i in maxSize)
+        minSize = tuple(int(i * PT_AJUSTE) for i in minSize)
+        maxSize = tuple(int(i * PT_AJUSTE) for i in maxSize)
 
         # size renseignée est prioritaire
         size = kwds.pop('size',None)
         if not size:
             size = kwds.pop('ctrlSize',None)
         if size:
-            size = tuple(i * PT_AJUSTE for i in size)
+            size = tuple(int(i * PT_AJUSTE) for i in size)
         else:
             size =  maxSize
         lg, ht = size
@@ -439,9 +439,9 @@ class PNL_ctrl(wx.Panel):
             self.avecBouton = True
         else: self.avecBouton = False
         if label and len(label.strip())>0:
-            self.txt = wx.StaticText(self, wx.ID_ANY, label + " :")
+            self.txt = wx.StaticText(self, wx.ID_ANY, label + " :",size=(lgTxtCtrl,25))
         else:
-            self.txt = wx.StaticText(self, wx.ID_ANY, label)
+            self.txt = wx.StaticText(self, wx.ID_ANY, label,size=(lgTxtCtrl,25))
         self.txt.SetMinSize((lgTxtCtrl, 25))
         if maxSize :
             self.SetMaxSize(maxSize)
@@ -749,7 +749,7 @@ class PNL_listCtrl(wx.Panel):
         for btn in self.lstBtnAction:
             droite_flex.Add(btn, 0, wx.ALL|wx.TOP, 4)
         topbox.Add(droite_flex,0,wx.ALL|wx.TOP,1)
-        topbox.MinSize = tuple(i * PT_AJUSTE for i in (300,400))
+        topbox.MinSize = tuple(int(i * PT_AJUSTE) for i in (300,400))
         self.SetSizer(topbox)
 
     def InitMatrice(self, ltColonnes=[]):
@@ -1044,8 +1044,7 @@ class TopBoxPanel(wx.Panel):
                 box = BoxPanel(self, wx.ID_ANY, lblBox= titre,
                                code = code,
                                lignes=self.matrice[(code,label)],
-                               dictDonnees=self.ddDonnees[code],
-                               **kwdBox)
+                               dictDonnees=self.ddDonnees[code], **kwdBox)
                 self.lstBoxes.append(box)
                 self.topbox.Add(box, width,wx.ALL|wx.EXPAND,3)
                 if grow and self.topbox.ClassName == 'wxFlexGridSizer':
@@ -1368,7 +1367,7 @@ class DLG_vide(wx.Dialog):
         couleur =   kwds.pop('couleur',wx.WHITE)
         self.kwValideSaisie = kwds.pop('kwValideSaisie',None)
 
-        super().__init__(None, wx.ID_ANY, *args, title=title, style=style, pos=pos, **kwds)
+        super().__init__(None, wx.ID_ANY, *args, title=title, style=style, pos=pos)
         self.Name = title
         self.marge = marge
         self.parent = parent
@@ -1559,7 +1558,7 @@ if __name__ == '__main__':
                 # le minZize pris en compte est le plus grand de toutes les lignes
 
                 {'genre': 'String', 'name': 'test', 'label':    'Mon ctrl test', 'value': "valeur initiale",
-                     'ctrlSize':(420,40),'ctrlMinSize':(290,25),'ctrlMaxSize':(450,60),'txtSize':90},
+                     'ctrlSize':(420,40),'ctrlMinSize':(290,25),'ctrlMaxSize':(450,60),'txtSize':15},
                 {'genre': 'String', 'name': 'domaine', 'label': 'noM ctrl tset', 'value': "valeur Nom DuPC",
                     'ctrlSize':(560,40),'ctrlMinSize':(290,25),'ctrlMaxSize':(600,60), 'txtSize': 120,
                                  'help': 'Ce préfixe à votre nom permet de vous identifier','enable':False},

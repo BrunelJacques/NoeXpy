@@ -267,8 +267,6 @@ class PNL_corps(xGTE.PNL_corps):
         req = """FLUSH  TABLES cpta_analytiques;"""
         retour = self.db.ExecuterReq(req, mess=req)
 
-
-
 class DLG(xGTE.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,date=None,**kwd):
@@ -319,7 +317,6 @@ class DLG(xGTE.DLG_tableau):
                 self.libelleDefaut = colonne.valueSetter
 
         self.pnlOlv = PNL_corps(self, self.dicOlv)
-        #self.pnlPied = PNL_pied(self, dicPied)
         self.ctrlOlv = self.pnlOlv.ctrlOlv
         self.Bind(wx.EVT_CLOSE, self.OnFermer)
         self.InitOlv()

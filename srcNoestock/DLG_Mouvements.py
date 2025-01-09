@@ -19,7 +19,7 @@ import xpy.xUTILS_SaisieParams         as xusp
 import xpy.xUTILS_DB                   as xdb
 from srcNoestock                import DLG_Articles, DLG_MvtCorrection
 from xpy.ObjectListView.ObjectListView  import ColumnDefn, CellEditor
-from xpy.outils                 import xformat,xbandeau,xboutons
+from xpy.outils                 import xformat,xbandeau,xboutons,xdates
 from xpy.outils.xformat         import Nz,DateSqlToDatetime
 
 #---------------------- Matrices de paramétres -------------------------------------
@@ -126,19 +126,19 @@ def GetMatriceAnterieurs(dlg):
 MATRICE_PARAMS = {
     ("param1", "Paramètres"): [
         {'name': 'origine', 'genre': 'Choice', 'label': "",
-         'help': "Le choix de la nature modifie certains contrôles",
-         'value': 0, 'values': [],
-         'ctrlAction': 'OnOrigine',
+             'help': "Le choix de la nature modifie certains contrôles",
+             'value': 0, 'values': [],
+             'ctrlAction': 'OnOrigine',
+             'size': (250, 30),
+             'txtSize': 90},
 
-         'txtSize': 90},
-        {'name': 'date', 'genre': 'Texte', 'label': "",
-         'help': "%s\n%s\n%s" % ("Saisie JJMMAA ou JJMMAAAA possible.",
-                                 "Les séparateurs ne sont pas obligatoires en saisie.",
-                                 "Saisissez la date du mouvement de stock sans séparateurs, "),
-         'value': "",
-         'ctrlAction': 'OnDate',
-
-         'txtSize': 90},
+        {'name': 'date', 'genre': 'anyctrl', 'label': "Date",
+             'ctrl': xdates.CTRL_SaisieDateAnnuel,
+             'help': "%s\n%s\n%s" % ("Saisie JJMMAA ou JJMMAAAA possible.",
+                                     "Les séparateurs ne sont pas obligatoires en saisie.",
+                                     "Saisissez la date du mouvement de stock sans séparateurs, "),
+             'ctrlAction': 'OnDate',
+             'txtSize': 70},
     ],
     ("param2", "Comptes"): [
         {'name': 'fournisseur', 'genre': 'Combo', 'label': 'Fournisseur',
@@ -147,8 +147,8 @@ MATRICE_PARAMS = {
          'ctrlAction': 'OnFournisseur',
          'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un compte pour l'origine",
          'btnAction': 'OnBtnFournisseur',
-         'size': (250, 25),
-         'txtSize': 70,
+         'size': (250, 30),
+         'txtSize': 80,
          },
         {'name': 'analytique', 'genre': 'Choice', 'label': 'Activité',
          'ctrlAction': 'OnAnalytique',
@@ -157,7 +157,8 @@ MATRICE_PARAMS = {
          'btnLabel': "...",
          'btnHelp': "Cliquez pour choisir l'activité de destination des mouvements",
          'btnAction': 'OnBtnAnalytique',
-         'txtSize': 70, }
+         'size': (250, 30),
+         'txtSize': 80, }
     ],
     ("param3", "saisie"): [
         {'name': 'ht_ttc', 'genre': 'Choice', 'label': 'Saisie de la TVA',
@@ -173,9 +174,10 @@ MATRICE_PARAMS = {
     ],
     ("param4", "Compléments"): [
         {'name': 'rappel', 'genre': 'anyctrl', 'label': ' ',
-         'txtSize': 20,
+         'txtSize': 0,
          'ctrl': CtrlAnterieur,
          'ctrlAction': 'OnBtnAnterieur',
+         'ctrlSize': (150,80)
          },
     ],
 }
@@ -191,8 +193,8 @@ def GetDicPnlParams(dlg):
     return {
                 'name':"PNL_params",
                 'matrice':matrice,
-                'lblBox':None,
-                'boxesSizes': [(250, 60), (250, 60),(160, 60), None, (160, 60)],
+                'lblBox':False,
+                'boxesSizes': [(300, 60), (250, 60),(160, 60), None, (190, 60)],
                 'pathdata':"srcNoelite/Data",
                 'nomfichier':"stparams",
                 'nomgroupe':"entrees",
@@ -291,6 +293,9 @@ def GetOlvOptions(dlg):
 def GetDlgOptions(dlg):
     # Options du Dlg de lancement
     return {
+        'pnl_params': None, # Le standart GTE sera utilisé
+        'pnl_corps': PNL_corps,
+        'pnl_pied': PNL_pied,
         'style': wx.DEFAULT_FRAME_STYLE,
         'minSize': (700, 450),
         'size': (1150, 800),
@@ -694,7 +699,6 @@ class DLG(xGTE.DLG_tableau):
         dicOlv['lstCodes'] = xformat.GetCodesColonnes(GetOlvColonnes(self))
         dicOlv['lstCodesSup'] = GetOlvCodesSup()
         dicOlv['db'] = self.db
-
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
         lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),INFO_OLV]
         dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
@@ -733,11 +737,8 @@ class DLG(xGTE.DLG_tableau):
         self.pnlParams.sensNum = self.sensNum
         self.GetDonnees()
         pnlDate = self.pnlParams.GetPnlCtrl('date')
-        if pnlDate:
-            pnlDate.SetValue("-")
+
         self.Sizer()
-        if pnlDate:
-            pnlDate.SetValue("")
 
     def Init(self):
 
@@ -804,12 +805,14 @@ class DLG(xGTE.DLG_tableau):
         ixo = DICORIGINES[self.sens]['values'].index(lblOrigine)
         origine =  DICORIGINES[self.sens]['codes'][ixo]
         if origine in ('entrees','sorties'):
+            # ces deux origines sont des groupes d'origines
             lstOrigines = DICORIGINES[origine]['codes']
         else:
             lstOrigines = [origine,]
         return lstOrigines
 
     def SetOrigine(self,code):
+        # passe du code d'un mouvement au libellé affiché
         ixo = DICORIGINES[self.sens]['codes'].index(code)
         value = DICORIGINES[self.sens]['values'][ixo]
         self.pnlParams.SetOneValue('origine',valeur=value,codeBox='param1')
@@ -844,6 +847,7 @@ class DLG(xGTE.DLG_tableau):
             self.ctrlOlv.lstDonnees = []
             self.oldParams = {}
         self.lstOrigines = self.GetOrigines()
+        self.origine = self.lstOrigines[0]
         self.dicOlv.update({'lstColonnes': GetOlvColonnes(self)})
         # grise les ctrl inutiles
         def setEnable(namePnlCtrl,flag):
@@ -891,7 +895,7 @@ class DLG(xGTE.DLG_tableau):
             if saisie - self.lastInventaire > datetime.timedelta(days=366):
                 wx.MessageBox("Le dernier inventaire date de '%s'"%self.lastInventaire,
                               "VERIFICATION",wx.ICON_INFORMATION)
-            self.pnlParams.SetOneValue('date',valeur=xformat.FmtDate(saisie),codeBox='param1')
+            self.pnlParams.SetOneValue('date',valeur=saisie,codeBox='param1')
             self.GetDonnees()
         if event: event.Skip()
 
@@ -902,6 +906,8 @@ class DLG(xGTE.DLG_tableau):
 
     def OnFournisseur(self,event):
         fournisseur = self.pnlParams.GetOneValue('fournisseur',codeBox='param2')
+        if fournisseur == self.fournisseur:
+            return
         fournisseur = fournisseur.strip().upper()
         lg = min(len(fournisseur),7)
         lstChoix = [x for x in self.fournisseurs if x[:lg] == fournisseur[:lg]]
@@ -1039,7 +1045,7 @@ class DLG(xGTE.DLG_tableau):
             self.OnOrigine(None)
 
             # set date du lot importé
-            self.pnlParams.SetOneValue('date',xformat.FmtDate(dParams['date']),'param1')
+            self.pnlParams.SetOneValue('date',dParams['date'],'param1')
             self.date = dParams['date']
 
             # set Fournisseur et analytique
@@ -1083,6 +1089,6 @@ class DLG(xGTE.DLG_tableau):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(sens='entrees')
+    dlg = DLG(sens='sorties')
     dlg.ShowModal()
     app.MainLoop()

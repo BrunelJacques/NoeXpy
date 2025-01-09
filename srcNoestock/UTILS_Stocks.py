@@ -647,7 +647,7 @@ def SqlDicArticles(db, olv, lstArticles):
                         FROM stArticles
                         WHERE %s
                         ;""" % (','.join(lstChamps),condArticle)
-        retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlOneArticle req1')
+        retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlDicArticle req1')
         if retour == "ok":
             recordset = db.ResultatReq()
             for record in recordset:

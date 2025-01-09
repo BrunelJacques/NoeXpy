@@ -3,8 +3,8 @@
 
 #  Jacques Brunel x Sébastien Gouast
 #  MATTHANIA - Projet XPY -Evolution surcouche OLV permettant la saisie sur la ligne)
-# module xGTE remplace xGTR qui permet la saisie dans un nouvel écran
-#  2022-08-01 appelle OLV façon Noethys
+#  module xGTE remplace xGTR qui permet la saisie dans un nouvel écran façon Noethys
+#  xGTE propose 4 zones: Bandeau d'annonce, Params de gestion, ObjectListView, Pied
 #
 
 import wx
@@ -930,49 +930,79 @@ class PNL_pied(wx.Panel):
 class DLG_tableau(xusp.DLG_vide):
     # minimum fonctionnel dans dialog tout est dans les trois pnl
     def __init__(self,parent,dicParams={},dicOlv={},dicPied={}, **kwds):
+        lDics = [dicParams, dicOlv, dicPied]
+        lScreenParts = [x != {} for x in lDics]
         #purge d'éventuels arguments db à ne pas envoyer à super()
+        pnl_params = kwds.pop('pnl_params',None)
+        pnl_corps = kwds.pop('pnl_corps',None)
+        pnl_pied = kwds.pop('pnl_pied',None)
         self.db = kwds.pop('db',None)
         autoSizer =     kwds.pop('autoSizer', True)
         size = kwds.get('size',None)
         if not 'style' in kwds.keys():
             kwds['style'] = wx.DEFAULT_FRAME_STYLE
 
-        # recherche éventuelle base de donnée
-        if not self.db and hasattr(parent,'db'):
-            self.db = parent.db
-        if not self.db:
-            self.db = dicOlv.get('db',None)
-        if not self.db:
-            self.db = dicParams.get('db',None)
+        # recherche élargie db: déclaration de base de donnée
+        def GetDb():
+            if hasattr(parent, 'db') and parent.db:
+                self.db = parent.db
+            elif dicOlv.get('db', None):
+                self.db = dicOlv.get('db', None)
+            elif dicParams.get('db', None):
+                self.db = dicParams.get('db', None)
+        if not self.db: GetDb()
+        kwds['db'] = self.db
 
         # si size pas dans kwds, on pique celle de l'olv qui serait contrainte donc inutile
         if not size and dicOlv.get('size',None):
             kwds['size'] = dicOlv.pop('size',None)
-        # recherche d'un dicBandeau
+
+        # recherche de présence d'un dicBandeau
         for dic in (kwds, dicParams, dicOlv):
             dicBandeau = dic.pop('dicBandeau',None)
             if dicBandeau != None:
                 break
 
         super().__init__(parent,**kwds)
+        self.Bind(wx.EVT_CLOSE, self.OnFermer)
+
+        # Création du ctrl Bandeau à partir du dictionnaire fourni
         if dicBandeau:
             self.bandeau = xbandeau.Bandeau(self,**dicBandeau)
         else: self.bandeau = None
 
-        # Création des différentes parties de l'écran
-        self.pnlParams = PNL_params(self, **dicParams)
-        kwds['db'] = self.db
-        if dicOlv == {}:
-            autoSizer = False
-        else:
+        # Création de l'écran pnlParams, si dicParam fourni
+        if dicParams != {}:
+            if pnl_params:
+                # pnl_params était fourni par le module de l'instance
+                self.pnlParams = pnl_params(self, **dicParams)
+            else:
+                # self.pnl_params non fournis on prend celui dans ce module
+                self.pnlParams = PNL_params(self, **dicParams)
+
+        # Création du principal écran, l'olv
+        if dicOlv != {}:
             if not hasattr(self, 'dicOlv'):
                 self.dicOlv = xformat.CopyDic(dicOlv)
-            self.pnlOlv = PNL_corps(self, self.dicOlv, **kwds)
+            if pnl_corps:
+                self.pnlOlv = pnl_corps(self, self.dicOlv, **kwds)
+            else:
+                self.pnlOlv = PNL_corps(self, self.dicOlv, **kwds)
             self.ctrlOlv = self.pnlOlv.ctrlOlv
-        self.pnlPied = PNL_pied(self, dicPied,  **kwds )
+
+        # Création du pied d'écran
+        if dicPied != {}:
+            if pnl_pied:
+                self.pnlPied = pnl_pied(self, dicPied,  **kwds )
+            else:
+                self.pnlPied = PNL_pied(self, dicPied,  **kwds )
 
         # permet un Sizer de substitution différé après l'init propre à l'instance
+        if False in lScreenParts:
+            # Une des parties d'écran n'a pas été fournie, le Sizer de base est inadapté
+            autoSizer = False
         if autoSizer:
+            # le Sizer peut être lancé, sinon il devra être modifié dans l'instance
             self.ctrlOlv.MAJ()
             self.Sizer()
 
@@ -993,7 +1023,7 @@ class DLG_tableau(xusp.DLG_vide):
         self.SetSizer(sizer_base)
 
     def OnFermer(self, event):
-        #wx.MessageBox("Traitement de sortie")
+        #wx.MessageBox("Traitement de sortie") à gérer dans l'instance
         if self.ctrlOlv.buffertracks:
             lstNoSet = [x for x in self.ctrlOlv.buffertracks if x.set != True]
             if len(lstNoSet) > 0:
@@ -1005,6 +1035,8 @@ class DLG_tableau(xusp.DLG_vide):
                     return
         if event:
             event.Skip()
+        if hasattr(self, 'db') and self.db:
+            self.db.Close()
         if self.IsModal():
             self.EndModal(wx.ID_CANCEL)
         else:

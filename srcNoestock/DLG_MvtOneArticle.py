@@ -520,6 +520,8 @@ class DLG(dlgMvts.DLG):
         if event and event.EventType != wx.EVT_KILL_FOCUS.evtType[0]:
             return
         saisie = self.pnlParams.GetOneValue('article',codeBox='param0')
+        if saisie == self.article:
+            return
         # vérification de l'existence et choix si nécessaire
         self.article = self.GetOneArticle(saisie.upper())
         if self.article:
