@@ -686,8 +686,12 @@ class PNL_ctrl(wx.Panel):
         if str(test) != str(value) and value != 0:
             raise Exception("SetValue échoué pour '%s' = %s(%s)"%(str(test),self.ctrl.name,str(value)))
 
-    # c'est la mise à jour des choices du controle
+    def SetValues(self,values):
+        # Pseudo pour choices.set
+        ret = self.ctrl.Set(values)
+
     def Set(self,values):
+        # c'est la mise à jour des choices du controle
         ret = self.ctrl.Set(values)
 
     def OnDir(self,event):

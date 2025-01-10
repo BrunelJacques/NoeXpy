@@ -1115,7 +1115,7 @@ class CTRL_SaisieDate(wx.Panel):
         # vérification de la validité de la date par passage en datetime et réaffichage
         dtDate = None
         try:
-            dtDate = xformat.DateToDatetime(self.GetValue())
+            dtDate = xformat.DateFrToDatetime(self.GetValue())
         except:
             self.SetValue('')
             self.SetFocus()
@@ -1141,11 +1141,18 @@ class CTRL_SaisieDate(wx.Panel):
 
     def SetValue(self,date):
         # affichée en format fr
-        self.ctrlDate.SetValue(xformat.DateToFr(date))
+        value = xformat.DateToFr(date)
+        if len(value) == 0:
+            value =str(date)
+        self.ctrlDate.SetValue(value)
 
     def GetValue(self):
         #date retournée en ansi
-        return xformat.DateFrToSql(self.ctrlDate.GetValue())
+        dte = xformat.DateFrToSql(self.ctrlDate.GetValue())
+        if dte and len(dte)>0:
+            return dte
+        # si qui est saisi n"est pas une date on le retourne
+        return self.ctrlDate.GetValue()
 
 class CTRL_SaisieDateAnnuel(CTRL_SaisieDate):
     def __init__(self,parent, **kwds):

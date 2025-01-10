@@ -409,7 +409,7 @@ class DB():
                 self.cursor.Close()
             else:
                 # autres types de connecteurs
-                if self.cursor.with_rows:
+                if hasattr(self.cursor,'with_rows') and self.cursor.with_rows:
                     # purge d'existant non lu
                     rows = self.cursor.fetchall()
                     if len(rows) > 0:

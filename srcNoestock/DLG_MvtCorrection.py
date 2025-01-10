@@ -10,13 +10,14 @@
 import wx
 import os
 import datetime
-import srcNoestock.UTILS_Stocks        as nust
-import srcNoelite.UTILS_Noelite        as nung
-import xpy.ObjectListView.xGTE as xGTE
-import xpy.xUTILS_Identification       as xuid
-import xpy.xUTILS_DB                   as xdb
-from xpy.ObjectListView.ObjectListView import ColumnDefn
-from xpy.outils                 import xformat, xdates
+import srcNoestock.UTILS_Stocks         as nust
+import srcNoelite.UTILS_Noelite         as nung
+import xpy.ObjectListView.xGTE          as xGTE
+import xpy.xUTILS_Identification        as xuid
+import xpy.xUTILS_DB                    as xdb
+import srcNoestock.DLG_Mouvements       as ndlgmvts
+from xpy.ObjectListView.ObjectListView  import ColumnDefn
+from xpy.outils                         import xformat, xdates
 
 #---------------------- Matrices de paramétres -------------------------------------
 
@@ -60,38 +61,34 @@ MATRICE_PARAMS = {
                                  "Saisissez la date du mouvement de stock sans séparateurs, "),
          'value': "--NoChange--",
          'ctrlAction': 'OnDate',
-         'ctrlSize': (300,40),
+         #'ctrlSize': (300,40),
          'txtSize': 125},
     ],
     ("param2", "Comptes"): [
-        {'name': 'fournisseur', 'genre': 'Combo', 'label': 'Fournisseur',
+        {'name': 'fournisseur', 'genre': 'Choice', 'label': 'Fournisseur',
          'help': "La saisie d'un fournisseurfacilite les commandes par fournisseur",
-         'value': 0, 'values': ['--NoChange--'],
+         'value': 0, 'values': ['--NoChange--',],
          'ctrlAction': 'OnFournisseur',
-         'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un compte pour l'origine",
-         'btnAction': 'OnBtnFournisseur',
          'txtSize': 80,
-         'ctrlSize': (500,30),
          'ctrlMinSize': (200,30),
          },
-        {'name': 'analytique', 'genre': 'Choice', 'label': 'Activité',
+
+        {'name': 'analytique', 'genre': 'Choice', 'label': 'Camp',
          'ctrlAction': 'OnAnalytique',
          'help': "Il s'agit de l'activité qui a endossé la charge de la sortie",
-         'value': '--NoChange--', 'values': [''],
+         'value': 0, 'values': ['--NoChange--',],
          'btnLabel': "...",
          'btnHelp': "Cliquez pour choisir l'activité de destination des mouvements",
          'btnAction': 'OnBtnAnalytique',
          'txtSize': 80,
-         'ctrlSize': (200,30),
+         #'ctrlSize': (260,30),
         },
     ],
     ("param3", "Repas"): [
         {'name': 'repas', 'genre': 'Combo', 'label': 'Repas',
-         'help': "La saisie du repas n'a de sens que pour les sorties cuisine ou od_out",
-         'value': 0, 'values': ['--NoChange--'],
-         'ctrlAction': 'OnFournisseur',
-         'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un compte pour l'origine",
-         'btnAction': 'OnBtnFournisseur',
+         'help': "La saisie du repas n'a de sens que pour les sorties cuisine",
+         'value': 0, 'values': ['--NoChange--','-'] + nust.CHOIX_REPAS,
+         'ctrlAction': 'OnRepas',
          'size': (250, 40),
          'ctrlMinSize': (250,30),
          'txtSize': 50,
@@ -109,7 +106,7 @@ def GetBoutons(dlg):
             'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
             'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
         {'name':'btnOK','ID':wx.ID_OK,'label':"Enregistrer\n et Fermer",'help':"Cliquez ici pour sortir et corriger",
-            'size':(120,35),'image':"xpy/Images/32x32/Actualiser.png",'onBtn':dlg.OnAction},
+            'size':(120,35),'image':"xpy/Images/32x32/Actualiser.png",'onBtn':dlg.OnFinal},
         {'name': 'btnAbandon', 'ID': wx.ID_CANCEL, 'label': "Abandon",
          'help': "Cliquez ici pour fermer sans modifs",
          'size': (120, 36), 'image': "xpy/Images/16x16/Abandon.png",
@@ -122,7 +119,7 @@ def GetDicPnlParams(dlg):
                 'matrice':MATRICE_PARAMS,
                 'dicBandeau':DIC_BANDEAU,
                 'lblBox': False,
-                'boxesSizes': [(280, 65),None,(200, 60),None],
+                'boxesSizes': [(280, 65),(260, 60),(180, 60),None],
             }
 
 def GetOlvColonnes(dlg):
@@ -130,25 +127,31 @@ def GetOlvColonnes(dlg):
     lstCol = [
             ColumnDefn("ID", 'centre', 0, 'IDmouvement'),
             ColumnDefn("Nature", 'left', 70, 'origine',),
-            ColumnDefn("Date Mvt", 'left', 80, 'date',valueSetter=datetime.date(1900,1,1),
-                        stringConverter=xformat.FmtDate),
-            ColumnDefn("Camp", 'left', 40, 'analytique',),
+            ColumnDefn("Date Mvt", 'left', 80, 'date',
+                       valueSetter=datetime.date(1900,1,1),
+                       stringConverter=xformat.FmtDate),
+            ColumnDefn("Camp", 'left', 40, 'IDanalytique',),
             ColumnDefn("Repas", 'left', 60, 'repas',),
-            ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",isSpaceFilling=True),
-            ColumnDefn("Quantité", 'right', 80, 'qte',  valueSetter=0.0,
-                                stringConverter=xformat.FmtQte),
-            ColumnDefn("Prix Unit.", 'right', 80, 'pxUn',  valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal),
-            ColumnDefn("Mtt TTC", 'right', 80, 'mttTTC',  valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal, ),
-            ColumnDefn("Coût Ration", 'right', 80, 'pxRation',  valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal, ),
-            ColumnDefn("Nbre Rations", 'right', 80, 'nbRations',  valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal, ),
-            ColumnDefn("Fournisseur", 'left', 170, 'fournisseur', isSpaceFilling=True ),
-            ColumnDefn("Saisie le", 'left', 80, 'date', valueSetter=datetime.date(1900, 1, 1),
-                        stringConverter=xformat.FmtDate),
-            ColumnDefn("par Ordinateur", 'left', 50, 'ordi',isSpaceFilling=True ),
+            ColumnDefn("Article", 'left', 200, 'IDarticle',
+                       valueSetter="",isSpaceFilling=True),
+            ColumnDefn("Quantité", 'right', 80, 'qte',
+                       valueSetter=0.0, stringConverter=xformat.FmtQte),
+            ColumnDefn("Prix Unit.", 'right', 80, 'prixUnit',
+                       valueSetter=0.0, stringConverter=xformat.FmtDecimal),
+            ColumnDefn("Mtt TTC", 'right', 80, '__mttTTC',
+                       valueSetter=0.0, stringConverter=xformat.FmtDecimal, ),
+            ColumnDefn("Coût Ration", 'right', 80, '__pxRation',
+                       valueSetter=0.0, stringConverter=xformat.FmtDecimal, ),
+            ColumnDefn("Nbre Rations", 'right', 80, 'rations',
+                       valueSetter=0.0, stringConverter=xformat.FmtDecimal, ),
+            ColumnDefn("Fournisseur", 'left', 170, 'fournisseur',
+                       isSpaceFilling=True ),
+            ColumnDefn("Saisie le", 'left', 80, 'date',
+                       valueSetter=datetime.date(1900, 1, 1),
+                       stringConverter=xformat.FmtDate),
+            ColumnDefn("par Ordinateur", 'left', 50, 'ordi',
+                       isSpaceFilling=True ),
+            ColumnDefn("mofifiable", 'centre', 0, 'modifiable'),
     ]
     return lstCol
 
@@ -172,6 +175,9 @@ def GetOlvOptions(dlg):
 def GetDlgOptions(dlg):
     # Options du Dlg de lancement
     return {
+        'pnl_params': None,  # Le standart GTE sera utilisé
+        'pnl_corps': xGTE.PNL_corps,
+        'pnl_pied': None,
         'minSize': (800, 450),
         'size': (1200, 800),
         'autoSizer': True,
@@ -179,10 +185,41 @@ def GetDlgOptions(dlg):
 
     #----------------------- Parties de l'écrans -----------------------------------------
 
+def CalculeLigne(dlg,track):
+    dlg = dlg.parent
+    qte = round(track.qte,4)
+    prixUnit = round(track.prixUnit,4)
+    rations = track.rations
+    if rations == 0: rations = 1
+    track.__mttTTC = round(qte * prixUnit,2)
+    track.__pxRation =  round(qte * prixUnit / rations,2)
+    anomalie = None
+    if dlg.origine  and dlg.origine != track.origine:
+        anomalie = True
+    if dlg.date  and dlg.date != track.date:
+        anomalie = True
+    if dlg.fournisseur  and dlg.fournisseur != track.fournisseur:
+        anomalie = True
+    if dlg.analytique and dlg.analytique != track.IDanalytique:
+        anomalie = True
+    if dlg.repas  and dlg.repas != track.repas:
+        anomalie = True
+    track.anomalie = anomalie
 
+def RowFormatter(listItem, track):
+    if track.anomalie:
+        # anomalie est colorée
+        listItem.SetBackgroundColour(wx.Colour(220, 237, 200))
+        listItem.SetTextColour(wx.BLUE)
+    else:
+        #listItem.SetBackgroundColour(wx.Colour(220, 237, 200))
+        listItem.SetTextColour(wx.BLACK)
+        pass
 class DLG(xGTE.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,date=None,**kwd):
+    def __init__(self,parent, **kwd):
+        tracks = kwd.get('donnees',[])
+        self.lstIDmvts = [x.IDmouvement for x in tracks]
         kwds = GetDlgOptions(self)
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update(GetOlvOptions(self))
@@ -199,23 +236,42 @@ class DLG(xGTE.DLG_tableau):
         kwds['dicParams'] = GetDicPnlParams(self)
         kwds['dicOlv'] = self.dicOlv
         kwds['dicPied'] = dicPied
-        self.db = xdb.DB()
         kwds['db'] = self.db
 
-        super().__init__(None, **kwds)
+        super().__init__(self, **kwds)
 
         self.ordi = xuid.GetNomOrdi()
         self.today = datetime.date.today()
-        self.date = date
+        self.date = None
 
-        ret = self.Init()
-        if ret == wx.ID_ABORT: self.Destroy()
+        self.Init()
         self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
-        # appel des données
-        self.oldParams = None
         self.GetDonnees()
 
     def Init(self):
+        # charger les valeurs de pnl_params
+        self.fournisseurs = (['--NoChange--','-'] + nust.SqlFournisseurs(self.db))
+        self.fournisseur = None
+        self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
+        self.analytique = None
+        lstAnalytiques = [(None,'--NoChange--'),('00','-')]
+        lstAnalytiques += nust.SqlAnalytiques(self.db,'ACTIVITES')
+        self.valuesAnalytiques = [x[1] for x in lstAnalytiques]
+        self.codesAnalytiques = [x[0] for x in lstAnalytiques]
+        self.lastInventaire = nust.GetDateLastInventaire(self.db)
+
+        pnl = self.pnlParams.GetPnlCtrl('fournisseur','param2')
+        pnl.SetValues(self.fournisseurs)
+        pnl.SetValue(self.fournisseurs[0])
+        pnl = self.pnlParams.GetPnlCtrl('analytique','param2')
+        pnl.SetValues(self.valuesAnalytiques)
+        pnl.SetValue(self.valuesAnalytiques[0])
+
+        self.repas = None
+        self.origine = None
+
+        self.pnlOlv.CalculeLigne = CalculeLigne
+        self.pnlOlv.parent = self
         self.Bind(wx.EVT_CLOSE, self.OnFermer)
         self.InitOlv()
 
@@ -225,80 +281,63 @@ class DLG(xGTE.DLG_tableau):
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
         self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
         self.ctrlOlv.InitObjectListView()
+        self.ctrlOlv.rowFormatter = RowFormatter
 
-    def GetDonnees(self,dParams=None):
-        # test si les paramètres ont changé
-        if not dParams:
-            dParams = self.pnlParams.GetValues(fmtDD=False)
-        idem = True
-        if self.oldParams == None :
-            idem = False
-        else:
-            for key in ('axe',):
-                if not key in self.oldParams: idem = False
-                elif not key in dParams: idem = False
-                elif self.oldParams[key] != dParams[key]: idem = False
-        if idem : return
+    def GetAnalytique(self):
+        choixAnalytique = self.pnlParams.GetOneValue('analytique',codeBox='param2')
+        if len(choixAnalytique) > 0:
+            ix = self.valuesAnalytiques.index(choixAnalytique)
+            code = self.codesAnalytiques[ix]
+        else: code = '00'
+        return code
 
-        attente = wx.BusyInfo("Recherche des données...", None)
-        # appel des données de l'Olv principal à éditer
-        lstDonnees = []
+    def GetDonnees(self):
+        # appel des données selon les ID reçus
+        lstCodesCol = self.dicOlv['lstCodes']
+        lstChamps = []
+        # les champs calculés ne sont pas appelés dans sql
+        for x in lstCodesCol:
+            if x.startswith('__'):
+                lstChamps.append('0')
+            elif x in ('IDarticle','fournisseur','ordi'):
+                lstChamps.append('stMouvements.%s'%x)
+            else:
+                lstChamps.append(x)
 
-        # alimente la grille, puis création de modelObejects pr init
+        if len(self.lstIDmvts) > 0:
+            where = 'IDmouvement in (%s)'% str(self.lstIDmvts)[1:-1]
+        else: where = ''
+        dicOlv = {
+            'table': ' stMouvements INNER JOIN stArticles ON stMouvements.IDarticle = stArticles.IDarticle',
+            'lstChamps': lstChamps,
+            'where': where,
+        }
+        kwds = {'db' : self.db,'dicOlv': dicOlv}
+        lstDonnees = nust.SqlTable(**kwds)
+        # alimente la grille, puis création de modelObjects pr init
         self.ctrlOlv.lstDonnees = lstDonnees
         self.ctrlOlv.MAJ()
-        self.oldParams = None
-        del attente
 
     # gestion des actions ctrl
     def OnOrigine(self, event):
-        if event:
-            self.ctrlOlv.lstDonnees = []
-            self.oldParams = {}
-        self.lstOrigines = self.GetOrigines()
-        self.dicOlv.update({'lstColonnes': GetOlvColonnes(self)})
-
-        # grise les ctrl inutiles
-        def setEnable(namePnlCtrl, flag):
-            pnlCtrl = self.pnlParams.GetPnlCtrl(namePnlCtrl, codebox='param2')
-            pnlCtrl.txt.Enable(flag)
-            pnlCtrl.ctrl.Enable(flag)
-            pnlCtrl.btn.Enable(flag)
-
-        # 'achat livraison', 'retour camp', 'od_in'
-        if 'achat' in self.lstOrigines:
-            setEnable('fournisseur', True)
-            setEnable('analytique', False)
-            self.analytique = '00'
-            self.pnlParams.SetOneValue('analytique', "", codeBox='param2')
-        elif ('retour' in self.lstOrigines) or ('camp' in self.lstOrigines):
-            setEnable('fournisseur', False)
-            self.fournisseur = ''
-            self.pnlParams.SetOneValue('fournisseur', "", codeBox='param2')
-            setEnable('analytique', True)
-            if len(self.valuesAnalytiques) > 0:
-                self.pnlParams.SetOneValue('analytique', self.valuesAnalytiques[0],
-                                           codeBox='param2')
-        elif ('od' in self.lstOrigines) or ('repas' in self.lstOrigines):
-            self.pnlParams.SetOneValue('fournisseur', "", codeBox='param2')
-            setEnable('fournisseur', False)
-            self.fournisseur = ''
-            self.pnlParams.SetOneValue('analytique', "", codeBox='param2')
-            setEnable('analytique', False)
-            self.analytique = '00'
+        lblOrigine = self.pnlParams.GetOneValue('origine')
+        if 'NoChange' in lblOrigine:
+            self.origine = None
+            self.lstOrigines = [None,]
+            self.sens = None
         else:
-            setEnable('fournisseur', True)
-            setEnable('analytique', True)
-
-        self.pnlParams.Refresh()
-        if event: event.Skip()
-        self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
-        self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
-        if event:
-            self.GetDonnees()
+            self.origine = CODESORIGINES[VALUESORIGINES.index(lblOrigine)]
+            self.lstOrigines = [self.origine,]
+            self.sens = SENS[VALUESORIGINES.index(lblOrigine)]
+        self.dicOlv.update({'lstColonnes': GetOlvColonnes(self)})
+        ndlgmvts.GriseCtrlsParams(self, self.lstOrigines)
+        self.ctrlOlv.MAJ()
 
     def OnDate(self, event):
-        saisie = self.GetDate()
+        saisie = self.pnlParams.GetOneValue('date',codeBox='param1')
+        saisie = xformat.DateFrToDatetime(saisie,mute=True)
+        if saisie == self.date:
+            return
         if saisie:
             if saisie <= self.lastInventaire:
                 wx.MessageBox("La date saisie est dans un exercice antérieur",
@@ -307,94 +346,67 @@ class DLG(xGTE.DLG_tableau):
                 wx.MessageBox("Le dernier inventaire date de '%s'" % self.lastInventaire,
                               "VERIFICATION", wx.ICON_INFORMATION)
             self.pnlParams.SetOneValue('date', valeur=saisie, codeBox='param1')
-            self.GetDonnees()
+            self.date = saisie
+        else:
+            self.date = None
+            self.pnlParams.SetOneValue('date', valeur='--NoChange--', codeBox='param1')
         if event: event.Skip()
+        self.ctrlOlv.MAJ()
 
     def OnFournisseur(self,event):
+        if event: event.Skip()
         fournisseur = self.pnlParams.GetOneValue('fournisseur',codeBox='param2')
         if fournisseur == self.fournisseur:
             return
-        fournisseur = fournisseur.strip().upper()
-        lg = min(len(fournisseur),7)
-        lstChoix = [x for x in self.fournisseurs if x[:lg] == fournisseur[:lg]]
-        if len(fournisseur) ==0: pass
+        if fournisseur == self.fournisseurs[0]:
+            fournisseur = None
         elif len(fournisseur) < 3:
-            # moins de trois caractères c'est trop court, mieux vaut rien
-            mess = "Identiant fournisseur trop court\n\n"
-            mess = "Soit à blanc fournisseur soit au moins trois caractères pour un fournisseur!"
-            wx.MessageBox(mess,"Refus")
-            return
-        elif len(lstChoix) == 1:
-            # un seul item fournisseur correspond, on le choisit
-            fournisseur = lstChoix[0]
-        elif len(lstChoix) == 0:
-            # nouvel item à confirmer
-            mess = "'%s' est-il bien un nouveau fournisseur à créer?\n\n"%fournisseur
-            if len(fournisseur) < 7:
-                # permetra un autre fournisseur avec le même début
-                fournisseur += "_"
-            ret = wx.MessageBox(mess,"Confirmez",style=wx.OK|wx.CANCEL)
-            if ret != wx.OK:
-                self.pnlParams.SetOneValue('fournisseur', None, codeBox='param2')
-                return
-        elif len(lstChoix) > 1:
-            from xpy.outils  import  xchoixListe
-            dlg = xchoixListe.DialogAffiche(lstDonnees=lstChoix,
-                lstColonnes=['nom_fournisseur',],
-                titre="Précisez  votre choix",
-                intro="Sinon créez un nouveau fournisseur avec un nom plus long")
-            ret = dlg.ShowModal()
-            choix = dlg.choix
-            getch = dlg.GetChoix()
-            if ret == wx.OK:
-                fournisseur = dlg.GetChoix()
-            else: fournisseur = ''
-            dlg.Destroy()
+            fournisseur = ''
         self.fournisseur = fournisseur
-        self.pnlParams.SetOneValue('fournisseur', fournisseur, codeBox='param2')
-        self.GetDonnees()
-        if event: event.Skip()
+        self.ctrlOlv.MAJ()
 
-    def OnBtnFournisseur(self,event):
-        # Simple message explication
-        mess = "Choix FOURNISSEURS\n\n"
-        mess += "Les fournisseurs proposés sont cherchés dans les utilisations précédentes,\n"
-        mess += "Il vous suffit de saisir un nouveau nom pour qu'il vous soit proposé la prochaine fois"
-        wx.MessageBox(mess,"Information",style=wx.ICON_INFORMATION|wx.OK)
-        if event: event.Skip()
 
     def OnAnalytique(self,event):
+        if event: event.Skip()
         self.analytique = self.GetAnalytique()
-        choixAnalytique = self.pnlParams.GetOneValue('analytique',codeBox='param2')
-        if len(choixAnalytique) > 0:
-            ix = self.valuesAnalytiques.index(choixAnalytique) -1
-            if isinstance(ix,int) and ix <= len(self.lstAnalytiques):
-                self.analytique = self.lstAnalytiques[ix][0]
-            else: return
-        self.GetDonnees()
+        self.ctrlOlv.MAJ()
+
 
     def OnBtnAnalytique(self,event):
         # Appel du choix d'un camp via un écran complet
         noegest = nung.Noelite(self)
         dicAnalytique = noegest.GetActivite(mode='dlg')
         if dicAnalytique:
-            codeAct = nust.MakeChoiceActivite(dicAnalytique)
-            self.pnlParams.SetOneValue('analytique',codeAct,codeBox='param2')
+            codeAct = dicAnalytique['idanalytique']
+            valAct = dicAnalytique['abrege']
+            self.pnlParams.SetOneValue('analytique',valAct,codeBox='param2')
+            self.analytique = codeAct
+        self.ctrlOlv.MAJ()
 
     def OnRepas(self,event):
-        pass
+        saisie = self.pnlParams.GetOneValue('repas','param3')
+        if 'NoChange' in saisie:
+            self.repas = None
+        elif '-' == saisie:
+            self.repas = 0
+        else:
+            self.repas = nust.CHOIX_REPAS.index(saisie) + 1
+        self.ctrlOlv.MAJ()
 
     def OnImprimer(self,event):
         self.ctrlOlv.Apercu(None)
 
-    def OnAction(self,event):
-        self.OnFermer()
+    def OnFinal(self,event):
+        donnees = [x for x in self.ctrlOlv.GetSelectedObjects() if x.IDmouvement > 0]
+        if len(donnees) == 0:
+            donnees = self.ctrlOlv.innerList
+        self.OnFermer(None)
 
 #------------------------ Lanceur de test  -------------------------------------------
 
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG()
+    dlg = DLG(None)
     dlg.ShowModal()
     app.MainLoop()

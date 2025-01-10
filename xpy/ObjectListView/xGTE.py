@@ -218,7 +218,7 @@ class ListView( FastObjectListView):
             tracks.append(TrackGeneral(self,ligneDonnees))
         if hasattr(self.parent,"CalculeLigne"):
             for track in tracks:
-                self.parent.CalculeLigne(self,track)
+                self.parent.CalculeLigne(self.parent,track)
         for track in tracks:
             # les lignes remontées sont sensées être valides
             track.valide = True
@@ -754,7 +754,7 @@ class PanelListView(wx.Panel):
         if hasattr(self.parent, 'ValideLigne'):
             self.parent.ValideLigne(code,track)
 
-    def CalculeLigne(self,code,track):
+    def zzCalculeLigne(self,code,track):
         if hasattr(self.parent, 'CalculeLigne'):
             self.parent.CalculeLigne(code,track)
 
@@ -985,8 +985,10 @@ class DLG_tableau(xusp.DLG_vide):
             if not hasattr(self, 'dicOlv'):
                 self.dicOlv = xformat.CopyDic(dicOlv)
             if pnl_corps:
+                # fourni par le module de l'instance
                 self.pnlOlv = pnl_corps(self, self.dicOlv, **kwds)
             else:
+                # on prend le basique
                 self.pnlOlv = PNL_corps(self, self.dicOlv, **kwds)
             self.ctrlOlv = self.pnlOlv.ctrlOlv
 

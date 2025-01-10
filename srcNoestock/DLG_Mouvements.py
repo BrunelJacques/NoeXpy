@@ -209,6 +209,40 @@ def GetParams(pnl):
         'ht_ttc': pnl.GetOneValue('ht_ttc', codeBox='param3'),
         'sensNum': pnl.sensNum}
 
+def GriseCtrlsParams(dlg, lstOrigines):
+        # grise les ctrl inutiles
+        def setEnable(namePnlCtrl,flag):
+            pnlCtrl =  dlg.pnlParams.GetPnlCtrl(namePnlCtrl,codebox='param2')
+            pnlCtrl.txt.Enable(flag)
+            pnlCtrl.ctrl.Enable(flag)
+            if hasattr(pnlCtrl,'btn'):
+                pnlCtrl.btn.Enable(flag)
+        #'achat livraison', 'retour camp', 'od_in'
+        codeAnalytique0 = dlg.codesAnalytiques[0]
+        valAnalytique0 = dlg.valuesAnalytiques[0]
+        valFourn0 = dlg.fournisseurs[0]
+        if 'achat' in lstOrigines:
+            setEnable('fournisseur',True)
+            setEnable('analytique',False)
+            dlg.analytique = codeAnalytique0
+            dlg.pnlParams.SetOneValue('analytique',valAnalytique0)
+        elif ('retour' in lstOrigines) or ('camp' in lstOrigines)  :
+            setEnable('fournisseur',False)
+            dlg.fournisseur = valFourn0
+            dlg.pnlParams.SetOneValue('fournisseur',valFourn0, codeBox='param2')
+            setEnable('analytique',True)
+            dlg.pnlParams.SetOneValue('analytique',valAnalytique0, codeBox='param2')
+        elif ('od' in lstOrigines) or ('repas' in lstOrigines) :
+            dlg.pnlParams.SetOneValue('fournisseur',valFourn0, codeBox='param2')
+            setEnable('fournisseur',False)
+            dlg.fournisseur = valFourn0
+            dlg.pnlParams.SetOneValue('analytique',valAnalytique0, codeBox='param2')
+            setEnable('analytique',False)
+            dlg.analytique = codeAnalytique0
+        else:
+            setEnable('fournisseur',True)
+            setEnable('analytique',True)
+
 def GetBoutons(dlg):
     return  [
         {'name': 'btnCorrections', 'label': "Correction\npar lot",
@@ -254,7 +288,7 @@ def GetOlvColonnes(dlg):
     if dlg.sens == 'entrees':
         # supprime la saisie du repas
         del lstCol[1]
-    if dlg.lstOrigines[0][:5] == 'achat':
+    if dlg.origine[:5] == 'achat':
         dlg.typeAchat = True
         for col in lstCol:
             if col.valueGetter in ('qte','pxUn'):
@@ -691,7 +725,7 @@ class DLG(xGTE.DLG_tableau):
         if self.sens == "sorties":
             self.sensNum = -1
 
-        self.lstOrigines = ['',]
+        self.origine = ''
         listArbo=os.path.abspath(__file__).split("\\")
 
         dicOlv = {'lstColonnes': GetOlvColonnes(self)}
@@ -728,12 +762,9 @@ class DLG(xGTE.DLG_tableau):
 
         ret = self.Init()
         if ret == wx.ID_ABORT: self.Destroy()
-        try:
-            self.ht_ttc = self.GetTva()
-            self.lstOrigines = self.GetOrigines()
-            self.OnOrigine(None)
-        except:
-            pass
+        self.ht_ttc = self.GetTva()
+        self.lstOrigines = self.GetOrigines()
+        self.OnOrigine(None)
         self.pnlParams.sensNum = self.sensNum
         self.GetDonnees()
         pnlDate = self.pnlParams.GetPnlCtrl('date')
@@ -761,7 +792,7 @@ class DLG(xGTE.DLG_tableau):
             self.pnlBandeau.SetBackgroundColour(wx.Colour(250, 220, 220))
 
         # charger les valeurs de pnl_params
-        self.fournisseurs = nust.SqlFournisseurs(self.db)
+        self.fournisseurs = ["",] + nust.SqlFournisseurs(self.db)
         self.pnlParams.SetOneSet('fournisseur',values=self.fournisseurs,codeBox='param2')
         self.lstAnalytiques = nust.SqlAnalytiques(self.db,'ACTIVITES')
         self.valuesAnalytiques = ['',] + [nust.MakeChoiceActivite(x) for x in self.lstAnalytiques]
@@ -828,7 +859,7 @@ class DLG(xGTE.DLG_tableau):
 
     def SetAnalytique(self,code):
         if not code or code == '':
-            code = "00"
+            code = '00'
         value = self.valuesAnalytiques[self.codesAnalytiques.index(code)]
         self.pnlParams.SetOneValue('analytique',valeur=value,codeBox='param2')
         self.analytique = code
@@ -836,12 +867,13 @@ class DLG(xGTE.DLG_tableau):
     def GetDate(self):
         saisie = self.pnlParams.GetOneValue('date',codeBox='param1')
         saisie = xformat.FmtDate(saisie)
-        self.date = xformat.DateFrToDatetime(saisie)
+        date = xformat.DateFrToDatetime(saisie)
         if not saisie:
             return None
-        else: return self.date
+        else: return date
 
     # gestion des actions ctrl
+
     def OnOrigine(self,event):
         if event:
             self.ctrlOlv.lstDonnees = []
@@ -849,36 +881,7 @@ class DLG(xGTE.DLG_tableau):
         self.lstOrigines = self.GetOrigines()
         self.origine = self.lstOrigines[0]
         self.dicOlv.update({'lstColonnes': GetOlvColonnes(self)})
-        # grise les ctrl inutiles
-        def setEnable(namePnlCtrl,flag):
-            pnlCtrl =  self.pnlParams.GetPnlCtrl(namePnlCtrl,codebox='param2')
-            pnlCtrl.txt.Enable(flag)
-            pnlCtrl.ctrl.Enable(flag)
-            pnlCtrl.btn.Enable(flag)
-        #'achat livraison', 'retour camp', 'od_in'
-        if 'achat' in self.lstOrigines:
-            setEnable('fournisseur',True)
-            setEnable('analytique',False)
-            self.analytique = '00'
-            self.pnlParams.SetOneValue('analytique',"", codeBox='param2')
-        elif ('retour' in self.lstOrigines) or ('camp' in self.lstOrigines)  :
-            setEnable('fournisseur',False)
-            self.fournisseur = ''
-            self.pnlParams.SetOneValue('fournisseur',"", codeBox='param2')
-            setEnable('analytique',True)
-            if len(self.valuesAnalytiques) >0:
-                self.pnlParams.SetOneValue('analytique',self.valuesAnalytiques[0], codeBox='param2')
-        elif ('od' in self.lstOrigines) or ('repas' in self.lstOrigines) :
-            self.pnlParams.SetOneValue('fournisseur',"", codeBox='param2')
-            setEnable('fournisseur',False)
-            self.fournisseur = ''
-            self.pnlParams.SetOneValue('analytique',"", codeBox='param2')
-            setEnable('analytique',False)
-            self.analytique = '00'
-        else:
-            setEnable('fournisseur',True)
-            setEnable('analytique',True)
-
+        GriseCtrlsParams(self, self.lstOrigines)
         self.pnlParams.Refresh()
         if event: event.Skip()
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
@@ -888,6 +891,9 @@ class DLG(xGTE.DLG_tableau):
 
     def OnDate(self,event):
         saisie = self.GetDate()
+        if saisie == self.date:
+            return
+        self.date = saisie
         if saisie:
             if saisie <= self.lastInventaire:
                 wx.MessageBox("La date saisie est dans un exercice antérieur",
@@ -961,7 +967,7 @@ class DLG(xGTE.DLG_tableau):
         self.analytique = self.GetAnalytique()
         choixAnalytique = self.pnlParams.GetOneValue('analytique',codeBox='param2')
         if len(choixAnalytique) > 0:
-            ix = self.valuesAnalytiques.index(choixAnalytique) -1
+            ix = self.valuesAnalytiques.index(choixAnalytique) - 1
             if isinstance(ix,int) and ix <= len(self.lstAnalytiques):
                 self.analytique = self.lstAnalytiques[ix][0]
             else: return
@@ -996,7 +1002,9 @@ class DLG(xGTE.DLG_tableau):
         if event: event.Skip()
 
     def OnBtnCorrections(self,event):
-        donnees = [x for x in self.ctrlOlv.GetObjects()]
+        donnees = [x for x in self.ctrlOlv.GetSelectedObjects() if x.IDmouvement > 0]
+        if len(donnees) == 0:
+            donnees = self.ctrlOlv.innerList
         dlgCorr = DLG_MvtCorrection.DLG(self,donnees=donnees)
         dlgCorr.ShowModal()
         self.GetDonnees()
@@ -1089,6 +1097,6 @@ class DLG(xGTE.DLG_tableau):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(sens='sorties')
+    dlg = DLG(sens='entrees')
     dlg.ShowModal()
     app.MainLoop()

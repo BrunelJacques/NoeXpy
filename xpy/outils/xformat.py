@@ -422,18 +422,34 @@ def DateFrToWxdate(datefr):
     return dateout
 
 def DateFrToDatetime(datefr, mute=False):
+    datestr = str(datefr)
     # Conversion de date française jj/mm/aaaa (ou déjà en datetime) en datetime
-    if datefr == None or datefr == '':
-        return None
-    elif isinstance(datefr,datetime.date):
-        return datefr
-    elif isinstance(datefr, str) and len(datefr) >= 10:
-        try:
-            return datetime.date(int(datefr[6:10]), int(datefr[3:5]), int(datefr[:2]))
-        except:
-            if not mute:
-                wx.MessageBox("La date saisie n'existe pas")
+    try:
+        if datefr == None or datefr == '':
             return None
+        elif isinstance(datefr,datetime.date):
+            return datefr
+        elif len(datestr.split('-')) == 3:
+            # le format était  date ansi
+            lDteSplit = datestr.split('-')
+            lDteInt = [int(x) for x in lDteSplit]
+            return datetime.date(int(lDteInt[0]), int(lDteInt[1]), int(lDteInt[2]))
+        elif len(datestr.split('/')) == 3:
+            # le format était bien une date fr
+            lDteSplit = datestr.split('/')
+            if len(lDteSplit[2]) == 2:
+                lDteSplit[2] = '20%s'%lDteSplit[2]
+            lDteInt = [int(x) for x in lDteSplit]
+            return datetime.date(int(lDteInt[2]), int(lDteInt[1]), int(lDteInt[0]))
+        else:
+            chiffres = FiltreChiffres(datestr)
+            if len(chiffres) < 7:
+                return None
+            return DateFrToDatetime(DateToFr(chiffres))
+    except:
+        if not mute:
+            wx.MessageBox("La date '%s' n'est pas reconnue"%datestr)
+    return None
 
 
 def WxDateToStr(dte,iso=False):
@@ -933,6 +949,15 @@ def ProrataCommercial(entree,sortie,debutex,finex):
         return 1 + jour30(fin) - jour30(deb) + ((fin.month - deb.month) + ((fin.year - deb.year) * 12)) * 30
     taux = round(delta360(debutAm,finAm) / 360,6)
     return taux
+
+def FiltreChiffres(txt = ""):
+    if txt == None: txt = ""
+    permis = "0123456789+-.,"
+    new = ""
+    for a in txt:
+        if a in permis:
+            new += a
+    return new
 
 if __name__ == '__main__':
     import os
