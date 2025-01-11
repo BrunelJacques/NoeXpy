@@ -21,6 +21,8 @@ from xpy.ObjectListView.ObjectListView   import ColumnDefn
 from xpy.ObjectListView.CellEditor       import ChoiceEditor
 from xpy.outils                          import xformat,xbandeau,xchoixListe, xdates
 
+MODULE = os.path.abspath(__file__).split("\\")[-1]
+
 class CTRL_calcul(xchoixListe.CTRL_Solde):
     def __init__(self,parent,):
         super().__init__(parent,size=(80,35))
@@ -377,9 +379,9 @@ class PNL_calculs(xusp.TopBoxPanel):
 
 class DLG(dlgMvts.DLG):
     # ------------------- Composition de l'écran de gestion-----------------------------
-    def __init__(self, **kwds):
+    def __init__(self, **kwd):
         # récupération d'un code transmis par un éventuel parent'
-        self.article = kwds.pop('article',None)
+        self.article = kwd.pop('article',None)
 
         listArbo=os.path.abspath(__file__).split("\\")
         self.GetDicPnlParams = GetDicPnlParams
@@ -389,6 +391,8 @@ class DLG(dlgMvts.DLG):
         self.dicOlv['lstCodesSup'] = dlgMvts.GetOlvCodesSup()
 
         # spécificités structure écran à transmettre au super
+        kwds = {}
+        kwds['name'] = '(%s)DLG'% MODULE
         kwds['sens'] = 'article'
         kwds['title'] = listArbo[-1] + "/" + self.__class__.__name__
         kwds['autoSizer'] = False
@@ -396,7 +400,6 @@ class DLG(dlgMvts.DLG):
         kwds['dicOlv'] = self.dicOlv
 
         super().__init__(**kwds)
-        self.Name = 'DLG_MvtOneArticle.DLG'
 
     def Init(self):
         self.lanceur = self

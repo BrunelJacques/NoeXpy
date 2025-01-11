@@ -1362,7 +1362,7 @@ class DLG_vide(wx.Dialog):
 
         listArbo=os.path.abspath(__file__).split("\\")
         name =      kwds.pop('name',self.__class__.__name__)
-        title =     kwds.pop('title',listArbo[-1] + "/" + name)
+        title =     kwds.pop('title',"(%s.DLG_vide)%s"%(listArbo[-1],name))
         style =     kwds.pop('style',wx.DEFAULT_FRAME_STYLE)
         pos =       kwds.pop('pos',(200,100))
         size =      kwds.pop('size',(600, 450))
@@ -1372,7 +1372,7 @@ class DLG_vide(wx.Dialog):
         self.kwValideSaisie = kwds.pop('kwValideSaisie',None)
 
         super().__init__(None, wx.ID_ANY, *args, title=title, style=style, pos=pos)
-        self.Name = title
+        self.Name = name
         self.marge = marge
         self.parent = parent
         if parent:

@@ -21,6 +21,8 @@ import xpy.ObjectListView.OLVEvent as OLVEvent
 import xpy.ObjectListView.CellEditor as CellEditor
 from xpy.outils.xconst import *
 
+MODULE = os.path.abspath(__file__).split("\\")[-1]
+
 # ----------  Objets  ObjectListView --------------------------------------------------------
 
 class TrackGeneral(object):
@@ -216,9 +218,12 @@ class ListView( FastObjectListView):
 
         for ligneDonnees in self.lstDonnees:
             tracks.append(TrackGeneral(self,ligneDonnees))
+
         if hasattr(self.parent,"CalculeLigne"):
+            if not hasattr(self,'lanceur'):
+                self.lanceur = self.parent
             for track in tracks:
-                self.parent.CalculeLigne(self.parent,track)
+                self.parent.CalculeLigne(self.lanceur,track)
         for track in tracks:
             # les lignes remontées sont sensées être valides
             track.valide = True
@@ -782,6 +787,12 @@ class PNL_params(xusp.TopBoxPanel):
         super().__init__(parent, *args, **kwdsTopBox)
         self.parent = parent
 
+        if parent and hasattr(parent,'lanceur'):
+            self.lanceur = self.parent.lanceur
+        module = os.path.abspath(__file__).split("\\")[-1]
+        self.Name = "(%s)%s." % (module, kwds.get('name', 'PNL_params'))
+        pass
+
 class PNL_corps(wx.Panel):
     #panel olv avec habillage optionnel pour recherche (en bas), boutons actions (à droite)
     def __init__(self, parent, dicOlv,*args, **kwds):
@@ -791,7 +802,7 @@ class PNL_corps(wx.Panel):
         self.db = kwds.pop('db',None) #d'éventuels arguments db seront envoyés à olv pour les get données
         self.avecRecherche= dicOlv.pop('recherche',True)
         self.parent = parent
-        self.lanceur = parent
+        self.lanceur = kwds.get('lanceur',parent)
         self.flagSkipEdit = False
         if hasattr(parent,'lanceur'): self.lanceur = parent.lanceur
         # récupére les éventuels boutons d'actions
@@ -801,6 +812,8 @@ class PNL_corps(wx.Panel):
 
         # init du super()
         wx.Panel.__init__(self, parent, *args)
+        module = os.path.abspath(__file__).split("\\")[-1]
+        self.Name = "(%s)%s.PNL_corps"%(module, kwds.get('name',''))
 
         #ci dessous l'ensemble des autres paramètres possibles pour OLV
         lstParamsOlv = ['id',
@@ -963,32 +976,41 @@ class DLG_tableau(xusp.DLG_vide):
             if dicBandeau != None:
                 break
 
+        kwds['name'] = "%s.(%s)DLG_tableau"%(kwds.get('name',"-"),MODULE)
+
         super().__init__(parent,**kwds)
+
         self.Bind(wx.EVT_CLOSE, self.OnFermer)
 
         # Création du ctrl Bandeau à partir du dictionnaire fourni
         if dicBandeau:
             self.bandeau = xbandeau.Bandeau(self,**dicBandeau)
+            self.bandeau.Name = kwds['name']
+
         else: self.bandeau = None
 
         # Création de l'écran pnlParams, si dicParam fourni
         if dicParams != {}:
+            dicParams['name'] = kwds['name']
             if pnl_params:
                 # pnl_params était fourni par le module de l'instance
                 self.pnlParams = pnl_params(self, **dicParams)
             else:
                 # self.pnl_params non fournis on prend celui dans ce module
                 self.pnlParams = PNL_params(self, **dicParams)
+        else:
+            # pas de pnlParam créé
+            pass
 
         # Création du principal écran, l'olv
         if dicOlv != {}:
             if not hasattr(self, 'dicOlv'):
                 self.dicOlv = xformat.CopyDic(dicOlv)
             if pnl_corps:
-                # fourni par le module de l'instance
+                # fourni par kwds de l'instance via GetDlgOptions()
                 self.pnlOlv = pnl_corps(self, self.dicOlv, **kwds)
             else:
-                # on prend le basique
+                # on prend le basique dans ce module si pas d'autre info
                 self.pnlOlv = PNL_corps(self, self.dicOlv, **kwds)
             self.ctrlOlv = self.pnlOlv.ctrlOlv
 

@@ -19,6 +19,7 @@ import srcNoestock.DLG_Mouvements       as ndlgmvts
 from xpy.ObjectListView.ObjectListView  import ColumnDefn
 from xpy.outils                         import xformat, xdates
 
+MODULE = os.path.abspath(__file__).split("\\")[-1]
 #---------------------- Matrices de paramétres -------------------------------------
 
 DIC_BANDEAU = {'titre': "Correction d'écritures en lot",
@@ -161,14 +162,12 @@ def GetOlvOptions(dlg):
         'recherche': True,
         'autoAddRow': False,
         'checkColonne': True,
-        'recherche': True,
         'toutCocher':True,
         'toutDecocher':True,
         'msgIfEmpty': "Aucune ligne n'a été transmise au lancement",
         'dictColFooter': {"IDarticle": {"mode": "nombre", "alignement": wx.ALIGN_CENTER},
-                          "qte": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
-                          "mttHT": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
-                          "mttTTC": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
+                          "qte": {"mode": "total", "alignement": wx.ALIGN_LEFT},
+                          "__mttTTC": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
                           },
     }
 
@@ -181,46 +180,45 @@ def GetDlgOptions(dlg):
         'minSize': (800, 450),
         'size': (1200, 800),
         'autoSizer': True,
+        'name': '(%s)DLG'%MODULE
     }
 
     #----------------------- Parties de l'écrans -----------------------------------------
 
 def CalculeLigne(dlg,track):
-    dlg = dlg.parent
     qte = round(track.qte,4)
     prixUnit = round(track.prixUnit,4)
     rations = track.rations
     if rations == 0: rations = 1
     track.__mttTTC = round(qte * prixUnit,2)
     track.__pxRation =  round(qte * prixUnit / rations,2)
-    anomalie = None
+    modif = False
     if dlg.origine  and dlg.origine != track.origine:
-        anomalie = True
+        modif = True
     if dlg.date  and dlg.date != track.date:
-        anomalie = True
+        modif = True
     if dlg.fournisseur  and dlg.fournisseur != track.fournisseur:
-        anomalie = True
+        modif = True
     if dlg.analytique and dlg.analytique != track.IDanalytique:
-        anomalie = True
+        modif = True
     if dlg.repas  and dlg.repas != track.repas:
-        anomalie = True
-    track.anomalie = anomalie
+        modif = True
+    track.modif = modif
 
 def RowFormatter(listItem, track):
-    if track.anomalie:
-        # anomalie est colorée
+    if track.modif:
+        # modif est colorée
         listItem.SetBackgroundColour(wx.Colour(220, 237, 200))
         listItem.SetTextColour(wx.BLUE)
     else:
-        #listItem.SetBackgroundColour(wx.Colour(220, 237, 200))
         listItem.SetTextColour(wx.BLACK)
-        pass
+
 class DLG(xGTE.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,parent, **kwd):
-        tracks = kwd.get('donnees',[])
-        self.lstIDmvts = [x.IDmouvement for x in tracks]
-        kwds = GetDlgOptions(self)
+        self.tracksOrigine = kwd.get('donnees',[])
+
+        self.lstIDmvts = [x.IDmouvement for x in self.tracksOrigine]
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update(GetOlvOptions(self))
         self.checkColonne = self.dicOlv.get('checkColonne',False)
@@ -233,10 +231,12 @@ class DLG(xGTE.DLG_tableau):
         dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
 
         # Propriétés de l'écran global type Dialog
+        kwds = GetDlgOptions(self)
         kwds['dicParams'] = GetDicPnlParams(self)
         kwds['dicOlv'] = self.dicOlv
         kwds['dicPied'] = dicPied
         kwds['db'] = self.db
+        kwds['lanceur'] = self
 
         super().__init__(self, **kwds)
 
@@ -306,7 +306,9 @@ class DLG(xGTE.DLG_tableau):
 
         if len(self.lstIDmvts) > 0:
             where = 'IDmouvement in (%s)'% str(self.lstIDmvts)[1:-1]
-        else: where = ''
+        else:
+            # pour lancement de test on limite à 100 mouvements
+            where = '1 LIMIT 100'
         dicOlv = {
             'table': ' stMouvements INNER JOIN stArticles ON stMouvements.IDarticle = stArticles.IDarticle',
             'lstChamps': lstChamps,
@@ -317,6 +319,7 @@ class DLG(xGTE.DLG_tableau):
         # alimente la grille, puis création de modelObjects pr init
         self.ctrlOlv.lstDonnees = lstDonnees
         self.ctrlOlv.MAJ()
+        self.CocheAnomalies()
 
     # gestion des actions ctrl
     def OnOrigine(self, event):
@@ -331,7 +334,7 @@ class DLG(xGTE.DLG_tableau):
             self.sens = SENS[VALUESORIGINES.index(lblOrigine)]
         self.dicOlv.update({'lstColonnes': GetOlvColonnes(self)})
         ndlgmvts.GriseCtrlsParams(self, self.lstOrigines)
-        self.ctrlOlv.MAJ()
+        self.GetDonnees()
 
     def OnDate(self, event):
         saisie = self.pnlParams.GetOneValue('date',codeBox='param1')
@@ -351,7 +354,7 @@ class DLG(xGTE.DLG_tableau):
             self.date = None
             self.pnlParams.SetOneValue('date', valeur='--NoChange--', codeBox='param1')
         if event: event.Skip()
-        self.ctrlOlv.MAJ()
+        self.GetDonnees()
 
     def OnFournisseur(self,event):
         if event: event.Skip()
@@ -363,14 +366,12 @@ class DLG(xGTE.DLG_tableau):
         elif len(fournisseur) < 3:
             fournisseur = ''
         self.fournisseur = fournisseur
-        self.ctrlOlv.MAJ()
-
+        self.GetDonnees()
 
     def OnAnalytique(self,event):
         if event: event.Skip()
         self.analytique = self.GetAnalytique()
-        self.ctrlOlv.MAJ()
-
+        self.GetDonnees()
 
     def OnBtnAnalytique(self,event):
         # Appel du choix d'un camp via un écran complet
@@ -381,7 +382,7 @@ class DLG(xGTE.DLG_tableau):
             valAct = dicAnalytique['abrege']
             self.pnlParams.SetOneValue('analytique',valAct,codeBox='param2')
             self.analytique = codeAct
-        self.ctrlOlv.MAJ()
+        self.GetDonnees()
 
     def OnRepas(self,event):
         saisie = self.pnlParams.GetOneValue('repas','param3')
@@ -391,15 +392,119 @@ class DLG(xGTE.DLG_tableau):
             self.repas = 0
         else:
             self.repas = nust.CHOIX_REPAS.index(saisie) + 1
-        self.ctrlOlv.MAJ()
+        self.GetDonnees()
 
     def OnImprimer(self,event):
         self.ctrlOlv.Apercu(None)
 
+    def CocheAnomalies(self):
+        for track in self.ctrlOlv.innerList:
+            self.ctrlOlv.SetCheckState(track,track.modif)
+
+    def Sauve(self,donnees):
+        codesOrigines = ['origine','date','repas','fournisseur','analytique']
+        newValues = [self.origine,self.date,self.repas,self.fournisseur,self.analytique]
+        # les values NoChange sont à None donc ignorées
+        ixValues = [newValues.index(x) for x in newValues if x]
+
+        # Voici les deux listes qui seront envoyées à la mise à jour
+        lstChamps = [codesOrigines[x] for x in ixValues]
+        lstDonnees=[]
+        lstIdModifies= []
+        mess = "Erreur sur ReqMAJ, DLG_MvtCorrection.Sauve"
+        ableChgSens = False
+        if 'origine' in lstChamps:
+            mess ="Vous demandez de changer la nature des mouvements\n\n"
+            mess += "Si des entrées deviennent sorties ou inversement des sorties deviennent entrées\n"
+            mess += "faut-il inverser le sens des quantités, pour respecter le sens initial?\n\n"
+            mess += "répondez 'NON pour ne rien changer, OUI pour inverser les qtes si le mouvement change de sens"
+            ret = wx.MessageBox(mess,"Confirmez",wx.YES_NO|wx.ICON_WARNING)
+            if ret == wx.YES:
+                ableChgSens = True
+                newSens = SENS[CODESORIGINES.index(self.origine)]
+
+        # composition des listes pour mise à jour dans db
+        for track in donnees:
+            values = []
+            for ix in range(len(ixValues)):
+                values.append(newValues[ix])
+                #modif de la track pour le retour éventuel
+                exec("track.%s = self.%s "%(lstChamps[ix],lstChamps[ix]))
+            # Inversion possible des quantités
+            if ableChgSens:
+                oldSens = SENS[CODESORIGINES.index(track.origine)]
+                chgSens = newSens * oldSens
+                values.append(track.qte * chgSens)
+                exec("track.%s = track.%s * %d"%('qte','qte',chgSens))
+            track.ordi = self.ordi
+            track.dateSaisie = datetime.date.today()
+            lstDonnees.append(values)
+            lstIdModifies.append(track.IDmouvement )
+        # la liste des champs est envoyé une seule fois pour toutes les modifs
+        if ableChgSens:
+            lstChamps.append('qte')
+        lstChamps += ['ordi', 'dateSaisie']
+
+        # modif des tracks d'origine
+        retReqMAJ = 'ok' #self.db.ReqMAJ(lstDonnees=lstDonnees,lstChamps=lstChamps,mess=mess)
+        if retReqMAJ == 'ok':
+            # mise à jour des tracks d'origine
+            if self.tracksOrigine != []:
+                for track in self.tracksOrigine:
+                    if track.IDmouvement in lstIdModifies:
+                        newTrack = donnees[lstIdModifies.index(track.IDmouvement)]
+                        for champ in lstChamps:
+                            exec("track.%s = newTrack.%s" % (champ,champ))
+        return retReqMAJ
+
     def OnFinal(self,event):
-        donnees = [x for x in self.ctrlOlv.GetSelectedObjects() if x.IDmouvement > 0]
-        if len(donnees) == 0:
-            donnees = self.ctrlOlv.innerList
+        # analyse du lot à modifier
+        nbNonModifiables = 0
+        for track in self.ctrlOlv.GetCheckedObjects():
+            # Décoche les lignes sans modification
+            if track.modif != True:
+                self.ctrlOlv.SetCheckState(track, False)
+            # Les lignes modifiées sont-elles modifiables
+            elif track.modifiable != 1 or track.date <= self.lastInventaire:
+                    nbNonModifiables +=1
+            self.ctrlOlv.RefreshObjects()
+        if nbNonModifiables > 0:
+            mess = "%d Mouvements ne sont pas modifiables\n\n"%nbNonModifiables
+            mess += "Il peut s'agir de dates antérieures au dernier inventaire conservé\n"
+            mess += "ou d'écritures marquées comme non modifiables dans la base\n\n"
+            mess += "Vous pouvez passez outre en cliquant sur 'oui'"
+            ret = wx.MessageBox(mess,'NON bloquant, mais confirmez',wx.YES_NO|wx.ICON_WARNING)
+            if ret != wx.YES:
+                return
+        # Constitution du lot à traiter
+        donnees = [x for x in self.ctrlOlv.GetCheckedObjects()]
+        nb = len(donnees)
+        if nb == 0:
+            mess = "Aucune ligne à traiter\n\n"
+            mess += "car aucune modification n'est proposée dans la sélection\n"
+            mess += "les lignes cochées non colorées ont été décochées\n\n"
+            mess += "'OUI' pour sortir sans modif, 'NON' pour retourner'"
+            ret = wx.MessageBox(mess,"Sortie ou retour",wx.YES_NO)
+            if ret != wx.YES:
+                return
+        # lancement du traitement
+        else:
+            if nb > 1: s = "s"
+            else: s=""
+            mess = "Traitement de %d ligne%s qui vont être modifiée%s\n\n"%(nb,s,s)
+            mess += "Le 'non' vous fait retourner, le bouton 'abandon' permettra sortir"
+            ret = wx.MessageBox(mess,"Confirmez",wx.YES_NO|wx.ICON_WARNING)
+            if ret == wx.YES:
+                ok = self.Sauve(donnees)
+                if ok == 'ok':
+                    mess = "Traitement terminé, au revoir!"
+                else:
+                    mess = ok
+                wx.MessageBox(mess, "Résultat", wx.OK)
+
+            else:
+                return
+        # sortie normale ok
         self.OnFermer(None)
 
 #------------------------ Lanceur de test  -------------------------------------------

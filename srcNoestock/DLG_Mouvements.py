@@ -22,6 +22,8 @@ from xpy.ObjectListView.ObjectListView  import ColumnDefn, CellEditor
 from xpy.outils                 import xformat,xbandeau,xboutons,xdates
 from xpy.outils.xformat         import Nz,DateSqlToDatetime
 
+MODULE = os.path.abspath(__file__).split("\\")[-1]
+
 #---------------------- Matrices de paramétres -------------------------------------
 
 TITRE = {'entrees':"Entrées en stock",
@@ -718,7 +720,8 @@ class DLG(xGTE.DLG_tableau):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,sens='sorties',date=None,**kwdIn):
         self.db = xdb.DB()
-
+        name = kwdIn.get('name',"")
+        kwdIn['name'] = "%s/(%s)DLG"%(name,MODULE)
         # gestion des deux sens possibles 'entrees' et 'sorties'
         self.sens = sens
         self.sensNum = 1
@@ -744,7 +747,7 @@ class DLG(xGTE.DLG_tableau):
         kwds['dicOlv'] = dicOlv
         kwds['dicPied'] = dicPied
         kwds['db'] = self.db
-        # si est super, garder l'instance
+        # si est super, garder les params de l'instance
         kwds.update(kwdIn)
 
         super().__init__(self,**kwds)
@@ -1031,7 +1034,6 @@ class DLG(xGTE.DLG_tableau):
 
         # appel des données de l'Olv principal à éditer
         self.oldParams = xformat.CopyDic(dParams)
-
         if valide:
             self.ctrlOlv.lstDonnees = [x for x in GetMouvements(self,dParams)]
         else:

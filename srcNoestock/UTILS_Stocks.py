@@ -810,7 +810,7 @@ def SqlTable(**kwd):
     db = kwd.get('db',None)
     table = dicOlv.get('table',None)
     groupby = dicOlv.get('groupby',"")
-    where = dicOlv.get('where',"")
+    where = dicOlv.get('where',"LIMIT 100")
     lstChamps = dicOlv['lstChamps']
     if where != "": where = "WHERE %s"%where
     if groupby != "": groupby = "GROUP BY %s"%groupby
