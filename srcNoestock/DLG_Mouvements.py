@@ -270,8 +270,17 @@ def GetOlvColonnes(dlg):
             ColumnDefn("Repas", 'left', 60, 'repas',
                                 cellEditorCreator=CellEditor.ChoiceEditor),
             ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",isSpaceFilling=True),
+            ColumnDefn("Nb Unités", 'right', 80, 'nbAch', isSpaceFilling=False,
+                       valueSetter=0.0,
+                       stringConverter=xformat.FmtDecimal, isEditable=True),
+            ColumnDefn("Prix unité", 'right', 80, 'pxAch', isSpaceFilling=False,
+                       valueSetter=0.0,
+                       stringConverter=xformat.FmtDecimal, isEditable=True),
+            ColumnDefn("Qte/unité", 'right', 80, 'parAch', isSpaceFilling=False,
+                       valueSetter=1.0,
+                       stringConverter=xformat.FmtQte, isEditable=True),
             ColumnDefn("Quantité", 'right', 80, 'qte', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtQte),
+                                    stringConverter=xformat.FmtQte),
             ColumnDefn(titlePrix, 'right', 80, 'pxUn', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal),
             ColumnDefn("Coût Ration", 'right', 80, 'pxRation', isSpaceFilling=False, valueSetter=0.0,
@@ -288,23 +297,22 @@ def GetOlvColonnes(dlg):
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
             ]
     if dlg.sens == 'entrees':
-        # supprime la saisie du repas
-        del lstCol[1]
+        # invisibilise la saisie du repas
+        lstCol[1].width = 0
+        lstCol[1].isEditable = False
+
     if dlg.origine[:5] == 'achat':
         dlg.typeAchat = True
-        for col in lstCol:
-            if col.valueGetter in ('qte','pxUn'):
-                col.isEditable = False
-        lstColAchat = [
-            ColumnDefn("Nb Unités", 'right', 80, 'nbAch', isSpaceFilling=False, valueSetter=0.0,
-                       stringConverter=xformat.FmtDecimal, isEditable=True),
-            ColumnDefn("Prix unité", 'right', 80, 'pxAch', isSpaceFilling=False, valueSetter=0.0,
-                       stringConverter=xformat.FmtDecimal, isEditable=True),
-            ColumnDefn("Qte/unité", 'right', 80, 'parAch', isSpaceFilling=False, valueSetter=1.0,
-                       stringConverter=xformat.FmtQte, isEditable=True),
-            ]
-        lstCol = lstCol[:2] + lstColAchat + lstCol[2:]
-    else: dlg.typeAchat = False
+    else:
+        dlg.typeAchat = False
+    # bascule de la saisibilité du pxUnit et qte
+    for col in lstCol:
+        if col.valueGetter in ('qte','pxUn'):
+            col.isEditable = int(not dlg.typeAchat)
+            col.width = col.width * int(not dlg.typeAchat)
+        if col.valueGetter in ('nbAch','pxAch','parAch'):
+            col.isEditable = dlg.typeAchat
+            col.width = col.width * int(dlg.typeAchat)
     return lstCol
 
 def GetOlvCodesSup():
@@ -431,7 +439,7 @@ def GetMouvements(dlg, dParams):
     lstCodesCol = ctrlOlv.GetLstCodesColonnes()
     dIxCol = {}
     if dParams['lstOrigines'][0] == 'achat':
-        for code in ('nbAch', 'parAch', 'pxAch','pxUn','qte'):
+        for code in ('nbAch', 'parAch', 'pxAch','pxUn','qte','nbAch','parAch','pxAch'):
             dIxCol[code] = lstCodesCol.index(code)
 
     # Enrichissement des lignes pour olv à partir des mouvements remontés
@@ -465,7 +473,7 @@ def GetMouvements(dlg, dParams):
                     dMvt,]
         # correctif si présence des colonnes spéciales Achat
 
-        if 'parAch' in lstCodesCol:
+        if dlg.typeAchat:
             donnees[dIxCol['parAch']] = 1
             donnees[dIxCol['nbAch']] = donnees[dIxCol['qte']]
             donnees[dIxCol['pxAch']] = donnees[dIxCol['pxUn']]
@@ -488,8 +496,14 @@ def PxUnToHT(ht_ttc, txTva):
 def CalculeLigne(dlg,track):
     if not hasattr(track,'dicArticle') or not track.dicArticle: return
     if dlg.typeAchat:
-        track.qte = track.nbAch * track.parAch
-        if track.parAch == 0.0: track.parAch = 1
+        if not hasattr(track,'parAch') or track.parAch == 0.0:
+            # l'origine de la ligne vierge n'était pas un achat
+            track.parAch = 1
+            track.nbAch = track.qte
+            track.pxAch = track.pxUn
+
+        if hasattr(track,'nbAch'):
+            track.qte = track.nbAch * track.parAch
         track.pxUn = round(Nz(track.pxAch) / Nz(track.parAch),6)
     try: qte = float(track.qte)
     except: qte = 0.0
@@ -560,8 +574,8 @@ def ValideLigne(dlg,track):
 class PNL_corps(xGTE.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
     def __init__(self, parent, dicOlv,*args, **kwds):
-        xGTE.PNL_corps.__init__(self,parent,dicOlv,*args,**kwds)
-        self.Name = "%s.PNL_corps"%self.parent.Name
+        super().__init__(parent,dicOlv,*args,**kwds)
+        self.Name = "%s/(%s)PNL_corps"%(self.parent.Name,MODULE)
         self.db = parent.db
         self.lstNewReglements = []
         self.flagSkipEdit = False
@@ -577,18 +591,37 @@ class PNL_corps(xGTE.PNL_corps):
         dParams = GetParams(pnl)
         ret = ValideParams(pnl,dParams)
 
+    def OnCopierTrack(self,track):
+        # action copier complémentaire
+        for track in self.buffertracks:
+            track.IDmouvement = None
+            track.origine = self.lanceur.origine
+            track.sens = self.lanceur.sens
+
     def OnCollerTrack(self, track):
         # avant de coller une track, raz de certains champs et recalcul
-        track.IDmouvement = None
-        if hasattr(track,'dicMvt'):
+        if hasattr(track,'dicMvt') and track.IDmouvement == None:
             del track.dicMvt # ceci pour créer une différence avec tracK.qte
+
+        if self.lanceur.origine == 'achat':
+            if track .origine != 'achat':
+                track.nbAch = track.qte
+                track.pxAch = track.pxUn
+                track.parAch = 1
+
+        if track.sens != self.lanceur.sens:
+            track.qte = -track.qte
+
         self.ValideLigne(None,track)
         CalculeLigne(self.lanceur,track)
         self.SauveLigne(track)
 
     def OnDeleteTrack(self, track):
-        CalculeLigne(self.lanceur,track)
         nust.DelMouvement(self.parent.db,self.ctrlOlv,track)
+        track.IDmouvement = None
+        track.donnees[0] = None
+        track.vierge = True
+        track.oldDonnees = [None, ] * len(track.donnees)
 
     def OnEditStarted(self,code,track=None,editor=None):
         # affichage de l'aide
@@ -767,6 +800,7 @@ class DLG(xGTE.DLG_tableau):
         if ret == wx.ID_ABORT: self.Destroy()
         self.ht_ttc = self.GetTva()
         self.lstOrigines = self.GetOrigines()
+        self.origine = 'achat'
         self.OnOrigine(None)
         self.pnlParams.sensNum = self.sensNum
         self.GetDonnees()
@@ -807,6 +841,7 @@ class DLG(xGTE.DLG_tableau):
         self.SetAnalytique('00')
         self.pnlParams.SetOneValue('origine',valeur=DICORIGINES[self.sens]['values'][0],codeBox='param1')
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
+        self.buffertracks = None
 
     def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
@@ -1093,6 +1128,7 @@ class DLG(xGTE.DLG_tableau):
 
     def OnImprimer(self,event):
         self.ctrlOlv.Apercu(None)
+
 
 #------------------------ Lanceur de test  -------------------------------------------
 

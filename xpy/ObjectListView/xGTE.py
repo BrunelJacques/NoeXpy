@@ -141,7 +141,8 @@ class ListView( FastObjectListView):
         self.lstDonnees = kwds.pop('lstDonnees', None)
         self.getDonnees = kwds.pop('getDonnees', None)
         self.dictColFooter = kwds.pop('dictColFooter', {})
-        self.buffertracks = None
+        self.buffertracks = []
+
 
         # Choix des options du 'tronc commun' du menu contextuel
         self.copier = kwds.pop('copier', True)
@@ -493,22 +494,26 @@ class ListView( FastObjectListView):
 
     def OnCopier(self,event=None):
         # action copier
-        self.buffertracks = self.GetSelectedObjects()
-
-        if len(self.buffertracks) == 0:
+        buffertracks = self.GetSelectedObjects()
+        if len(buffertracks) == 0:
             mess = "Pas de sélection faite"
             wx.MessageBox(mess)
-        else:
-            mess = "lignes mémorisées pour prochain coller ou <ctrl> V"
-            wx.MessageBox(" %d %s"%(len(self.buffertracks),mess))
-            for track in self.buffertracks:
-                track.set = True
+            return
+        if event:
+            event.Skip()
+        pnlCorps = self.lanceur.pnlOlv
+        pnlCorps.buffertracks = [ x for x in buffertracks]
+        for track in pnlCorps.buffertracks:
+            if hasattr(pnlCorps, 'OnCopierTrack'):
+                pnlCorps.OnCopierTrack(track)
+        mess = "lignes mémorisées pour prochain coller ou <ctrl> V"
+        wx.MessageBox(" %d %s"%(len(buffertracks),mess))
         return
 
     def OnCouper(self,event=None):
         # action copier
-        self.buffertracks = self.GetSelectedObjects()
-        if len(self.buffertracks) == 0:
+        buffertracks = self.GetSelectedObjects()
+        if len(buffertracks) == 0:
             mess = "Pas de sélection faite"
             wx.MessageBox(mess)
             return
@@ -516,47 +521,38 @@ class ListView( FastObjectListView):
         # Sauvegarde des lignes
         nomFichier = "CutLines.txt"
         self.SpareCouper(nomFichier)
-        for track in self.buffertracks:
-            track.set = False
 
-        # suppression
-        for track in self.buffertracks:
-            ix = self.lastGetObjectIndex
-            if hasattr(self.parent, 'OnDeleteTrack'):
-                self.parent.OnDeleteTrack(track)
+        pnlCorps = self.lanceur.pnlOlv
+        pnlCorps.buffertracks = [ x for x in buffertracks]
+        for track in pnlCorps.buffertracks:
+            if hasattr(pnlCorps, 'OnCouperTrack'):
+                pnlCorps.OnCouperTrack(track)
+            elif hasattr(self.parent, 'OnCopierTrack'):
+                pnlCorps.OnCopierTrack(track)
             self.modelObjects.remove(track)
+            if hasattr(pnlCorps,'OnDeleteTrack'):
+                pnlCorps.OnDeleteTrack(track)
         self.RepopulateList()
-        self._SelectAndFocus(ix)
-        wx.MessageBox(" %d lignes supprimées et mémorisées pour prochain <ctrl V>"%len(self.buffertracks))
+        wx.MessageBox(" %d lignes supprimées et mémorisées pour prochain <ctrl V>"%len(buffertracks))
         return
 
     def OnColler(self,event=None):
         # action coller
-        if self.buffertracks and len(self.buffertracks) >0:
+        if len(self.innerList) >0:
             ix = self.lastGetObjectIndex
             if len(self.GetSelectedObjects()) > 0:
                 ix = self.modelObjects.index(self.GetSelectedObjects()[0])
-            for track in self.buffertracks:
+
+            pnlCorps = self.lanceur.pnlOlv
+            for track in pnlCorps.buffertracks:
                 track.valide = False
-                track.vierge = True
-                if hasattr(self.parent,'OnCollerTrack'):
-                    self.parent.OnCollerTrack(track)
-                else:
-                    # avant de coller une track, raz du champs ID
-                    track.donnees[0] = None
-                    track.vierge = True
-                    track.oldDonnees = [None,] * len(track.donnees)
-                    if hasattr(self.parent,'ValideLigne'):
-                        self.parent.ValideLigne(None, track)
-                    if hasattr(self.parent, 'SauveLigne'):
-                        self.parent.SauveLigne(track)
+                if hasattr(pnlCorps,'OnCollerTrack'):
+                    pnlCorps.OnCollerTrack(track)
                 self.modelObjects.insert(ix,track)
-                if self.buffertracks:
-                    for track in self.buffertracks:
-                        track.set = True
                 ix += 1
             self.RepopulateList()
             self._SelectAndFocus(ix)
+            pnlCorps.buffertracks = []
         else:
             mess = "Rien en copier ou coller, refaites le <ctrl> C ou <ctrl> X"
             wx.MessageBox(mess)
@@ -596,7 +592,10 @@ class ListView( FastObjectListView):
                 self.parent.OnDeleteTrack(obj)
             event.Skip()
             #Suppression dans l'OLV
-            self.modelObjects.remove(obj)
+            if obj in self.modelObjects:
+                self.modelObjects.remove(obj)
+            if obj in self.lanceur.pnlOlv.buffertracks:
+                self.lanceur.pnlOlv.buffertracks.remove(obj)
         self.RepopulateList()
         self._SelectAndFocus(ix)
         return True
@@ -759,10 +758,6 @@ class PanelListView(wx.Panel):
         if hasattr(self.parent, 'ValideLigne'):
             self.parent.ValideLigne(code,track)
 
-    def zzCalculeLigne(self,code,track):
-        if hasattr(self.parent, 'CalculeLigne'):
-            self.parent.CalculeLigne(code,track)
-
     def SauveLigne(self,track):
         # teste old donnees % en cas de modif lance le sauve ligne du parent
         if hasattr(self.parent, 'SauveLigne'):
@@ -812,9 +807,7 @@ class PNL_corps(wx.Panel):
 
         # init du super()
         wx.Panel.__init__(self, parent, *args)
-        module = os.path.abspath(__file__).split("\\")[-1]
-        self.Name = "(%s)%s.PNL_corps"%(module, kwds.get('name',''))
-
+        self.Name = "%s.(%s)PNL_corps"%(kwds.get('name',''),MODULE)
         #ci dessous l'ensemble des autres paramètres possibles pour OLV
         lstParamsOlv = ['id',
                         'style',
@@ -1009,6 +1002,7 @@ class DLG_tableau(xusp.DLG_vide):
             if pnl_corps:
                 # fourni par kwds de l'instance via GetDlgOptions()
                 self.pnlOlv = pnl_corps(self, self.dicOlv, **kwds)
+                self.pnlOlv.buffertracks = []
             else:
                 # on prend le basique dans ce module si pas d'autre info
                 self.pnlOlv = PNL_corps(self, self.dicOlv, **kwds)
@@ -1048,15 +1042,14 @@ class DLG_tableau(xusp.DLG_vide):
 
     def OnFermer(self, event):
         #wx.MessageBox("Traitement de sortie") à gérer dans l'instance
-        if self.ctrlOlv.buffertracks:
-            lstNoSet = [x for x in self.ctrlOlv.buffertracks if x.set != True]
-            if len(lstNoSet) > 0:
-                mess = "%d lignes ont été coupées sans être collées\n\n"%len(lstNoSet)
-                mess += "La sortie de ce programme en fera disparaître la mémoire,"
-                mess += "confirmez-vous la sortie?"
-                ret = wx.MessageBox(mess, "Confirmation", style = wx.YES_NO)
-                if ret != wx.YES:
-                    return
+        nbl = len(self.pnlOlv.buffertracks)
+        if  nbl > 0:
+            mess = "%d lignes ont été coupées sans être collées\n\n"%nbl
+            mess += "La sortie de ce programme en fera disparaître la mémoire,"
+            mess += "confirmez-vous la sortie?"
+            ret = wx.MessageBox(mess, "Confirmation", style = wx.YES_NO)
+            if ret != wx.YES:
+                return
         if event:
             event.Skip()
         if hasattr(self, 'db') and self.db:

@@ -850,14 +850,18 @@ def SauveMouvement(db,dlg,track):
         if len(track.repas) > 0:
             repas = CHOIX_REPAS.index(track.repas)+1
     lstDonnees = [
-                    ('IDarticle', track.IDarticle),
-                    ('repas', repas),
-                    ('qte', track.qte * dlg.sensNum),
-                    ('prixUnit', track.prixTTC),
-
-                    ('ordi', dlg.ordi),
-                    ('dateSaisie', dlg.today),
-                    ('modifiable', 1),]
+                ('IDarticle', track.IDarticle),
+                ('repas', repas),
+                ('qte', track.qte * dlg.sensNum),
+                ('prixUnit', track.prixTTC),
+                ('ordi', dlg.ordi),
+                ('dateSaisie', dlg.today),
+                ('modifiable', 1),
+                ('origine', dlg.origine),
+                ('date', dlg.date),
+                ('fournisseur', dlg.fournisseur),
+                ('IDanalytique', analytique),
+    ]
 
     try: IDmouvement = int(track.IDmouvement)
     except: IDmouvement = None
@@ -866,11 +870,6 @@ def SauveMouvement(db,dlg,track):
     if IDmouvement :
         ret = db.ReqMAJ("stMouvements", lstDonnees, "IDmouvement", IDmouvement,mess="UTILS_Stocks.SauveLigne Modif: %d"%IDmouvement)
     else:
-        lstDonnees += [('origine', dlg.origine),
-                       ('date', dlg.date),
-                       ('fournisseur', dlg.fournisseur),
-                       ('IDanalytique', analytique),
-                       ]
         ret = db.ReqInsert("stMouvements",lstDonnees= lstDonnees, mess="UTILS_Stocks.SauveLigne Insert")
         if ret == 'ok': IDmouvement = db.newID
     if ret == 'ok':

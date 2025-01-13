@@ -960,8 +960,9 @@ class BoxPanel(wx.Panel):
                 ok = True
                 break
         if  not ok:
-            wx.MessageBox("Impossible de trouver le ctrl '%s'"%name,
-                          "Echec: %s/%s.SetOneValue"%(self.GrandParent.Name,self.Parent))
+            mess = "Impossible de trouver le ctrl '%s'\n\n"%name
+            mess += "de %s"%(self.Parent.Name)
+            ret = wx.MessageBox(mess,"Echec: SetOneValue",style=wx.OK|wx.ICON_WARNING)
         return
 
     # SetChoices du ctrl nommé

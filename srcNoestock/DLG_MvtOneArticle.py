@@ -13,7 +13,6 @@ import datetime
 import srcNoestock.DLG_Mouvements      as dlgMvts
 import srcNoestock.DLG_Articles        as dlgArt
 import srcNoestock.UTILS_Stocks        as nust
-import xpy.xUTILS_DB                   as xdb
 import xpy.xUTILS_SaisieParams         as xusp
 from srcNoelite                                 import DB_schema
 from xpy.outils.xformat                         import Nz
@@ -28,49 +27,55 @@ class CTRL_calcul(xchoixListe.CTRL_Solde):
         super().__init__(parent,size=(80,35))
 
 MATRICE_PARAMS = {
-("param0", "Article"): [
+('param1', "Article"): [
     {'name': 'article', 'genre': 'texte', 'label': 'Article',
                     'help': "Le choix de l'article génère la liste ci-dessous'",
-                    'value':0,
+                    'value':'0',
                     'ctrlAction':'OnArticle',
                      'btnLabel': "...", 'btnHelp': "Cliquez pour choisir un article",
                      'btnAction': 'OnBtnArticle',
-                    'size':(250,28),
-                    'ctrlMaxSize':(250,28),
+                    'size':(300,28),
+                    'ctrlMaxSize':(350,28),
                     'txtSize': 50,
      },
     {'name': 'tous', 'genre': 'check', 'label': 'Tous',
                     'help': "Cochez pour prendre tous les articles, la date 'Après le' détermine le nombre de lignes!",
                     'value':False,
                     'ctrlAction':'OnTous',
-                    'size':(250,35),
+                    'size':(280,35),
                     'ctrlMaxSize':(250,35),
                     'txtSize': 50,
      },
     ],
+
 # param2 pour periode car interaction avec super (DLG_Mouvements)
 ("param2", "Periode"): [
-    {'name': 'anteDate', 'genre':'anyctrl', 'label': "Après  le",
-        'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
-                              "Les séparateurs ne sont pas obligatoires en saisie.",
-                              "Saisissez la date de l'entrée en stock sans séparateurs, "),
-        'ctrl': xdates.CTRL_SaisieDateAnnuel,
-        'value':'',
-        'ctrlAction': 'OnAnteDate',
-        'size': (150, 25),
-        'ctrlMaxSize':(170,50),
-        'txtSize': 100},
-    {'name': 'lastDate', 'genre': 'anyctrl', 'label': "Jusqu'au",
-         'help': "%s\n%s\n%s" % ("Saisie JJMMAA ou JJMMAAAA possible.",
-                                 "Les séparateurs ne sont pas obligatoires en saisie.",
-                                 "Saisissez la date de l'inventaire, "),
-         'ctrl': xdates.CTRL_SaisieDateAnnuel,
-         'value': xformat.DatetimeToStr(datetime.date.today()),
-         'ctrlAction': 'OnLastDate',
-         'size': (150, 25),
-         'ctrlMaxSize': (170,50),
-         'txtSize': 100, },
-    ],
+    {'name': 'anteDate',
+             'genre': 'anyctrl',
+             'label': "Après  le",
+             'help': "%s\n%s\n%s" % ("Saisie JJMMAA ou JJMMAAAA possible.",
+                                     "Les séparateurs ne sont pas obligatoires en saisie.",
+                                     "Saisissez la date de l'entrée en stock sans séparateurs, "),
+             'ctrl': xdates.CTRL_SaisieDateAnnuel,
+             'value': xformat.DatetimeToStr(datetime.date.today()),
+             'ctrlAction': 'OnAnteDate',
+             'size': (280, 35),
+             'ctrlMaxSize': (370, 40),
+             'txtSize': 55},
+    {'name': 'lastDate',
+            'genre': 'anyctrl',
+            'label': "Jusqu'au",
+            'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
+                                  "Les séparateurs ne sont pas obligatoires en saisie.",
+                                  "Saisissez la date de l'inventaire, "),
+            'ctrl': xdates.CTRL_SaisieDateAnnuel,
+            'value':xformat.DatetimeToStr(datetime.date.today()),
+            'ctrlAction': 'OnLastDate',
+            'size':(280,35),
+            'ctrlMaxSize': (370, 40),
+            'txtSize': 55,},
+],
+
 ("param3", "Origine"): [
     {'name': 'origine', 'genre': 'Choice', 'label': "Mouvements",
                     'help': "Le choix de la nature filtrera les lignes sur une valeur",
@@ -81,6 +86,7 @@ MATRICE_PARAMS = {
     {'name': '', 'genre': None,}
     ],
 }
+
 
 HELP_CALCULS = "de tous les mouvements ou seulement des codhés"
 
@@ -123,7 +129,7 @@ def GetDicPnlParams(*args):
                 'name':"PNL_params",
                 'matrice':matrice,
                 'lblBox':None,
-                'boxesSizes': [(250,60), (250, 65),(250, 30), None],
+                'boxesSizes': [(320,60), (250, 65),(250, 30), None],
                 'pathdata':"srcNoelite/Data",
                 'nomfichier':"stparams",
                 'nomgroupe':"article",
@@ -431,8 +437,9 @@ class DLG(dlgMvts.DLG):
         self.pnlParams.SetOneValue('lastDate',valeur=self.lastDate,
                                    codeBox='param2')
         if self.article:
-            self.pnlParams.SetOneValue('article',self.article,codeBox='param0')
+            self.pnlParams.SetOneValue('article',self.article,codeBox='param1')
             self.OnArticle()
+
 
         # le bind check item met à jour les soustotaux puis cherche MAJ_calculs
         self.ctrlOlv.MAJ_calculs = MAJ_calculs
@@ -500,7 +507,6 @@ class DLG(dlgMvts.DLG):
             MAJ_calculs(self)
         del attente
 
-
     # -------- gestion des actions évènements sur les ctrl -------------------------------
 
     def GetOneArticle(self,saisie):
@@ -522,20 +528,20 @@ class DLG(dlgMvts.DLG):
         # éviter la redondance de l'évènement 'Enter'
         if event and event.EventType != wx.EVT_KILL_FOCUS.evtType[0]:
             return
-        saisie = self.pnlParams.GetOneValue('article',codeBox='param0')
+        saisie = self.pnlParams.GetOneValue('article',codeBox='param1')
         if saisie == self.article:
             return
         # vérification de l'existence et choix si nécessaire
         self.article = self.GetOneArticle(saisie.upper())
         if self.article:
-            self.pnlParams.SetOneValue('article', self.article, codeBox='param0')
+            self.pnlParams.SetOneValue('article', self.article, codeBox='param1')
             self.GetDonnees(self.GetParams())
 
     def OnBtnArticle(self,event):
         # Appel du choix d'un ARTICLE via un écran complet
         # id = DLG_Articles.GetOneIDarticle(db,value,f4=f4)
         self.article = self.GetOneArticle("")
-        self.pnlParams.SetOneValue('article',self.article,codeBox='param0')
+        self.pnlParams.SetOneValue('article',self.article,codeBox='param1')
         if self.article:
             self.GetDonnees(self.GetParams())
 
@@ -543,15 +549,15 @@ class DLG(dlgMvts.DLG):
         # éviter la redondance de l'évènement 'Check' et kill focus
         if event and event.EventType == wx.EVT_KILL_FOCUS.evtType[0]:
             return
-        self.tous = self.pnlParams.GetOneValue('tous', codeBox='param0')
+        self.tous = self.pnlParams.GetOneValue('tous', codeBox='param1')
         if self.tous:
             self.article = 'Tous'
             flag = False
         else:
             self.article = ''
             flag = True
-        self.pnlParams.SetOneValue('article', self.article, codeBox='param0')
-        pnlCtrl = self.pnlParams.GetPnlCtrl('article', codebox='param0')
+        self.pnlParams.SetOneValue('article', self.article, codeBox='param1')
+        pnlCtrl = self.pnlParams.GetPnlCtrl('article', codebox='param1')
         # active ou désactive le choix de l'article
         pnlCtrl.txt.Enable(flag)
         pnlCtrl.ctrl.Enable(flag)
