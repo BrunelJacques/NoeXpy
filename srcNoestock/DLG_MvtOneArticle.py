@@ -147,6 +147,25 @@ def GetDicCalculs(*args):
 def ValideParams(*arg,**kwds):
     return True
 
+def GetBoutons(dlg):
+    return  [
+        {'name': 'btnAjuste', 'label': "Ajustement\nPrix out",
+         'help': "Cliquez ici pour Ajuster les prix d'od ou sorties, selon les prix d'achat ou inventaire",
+         'size': (120, 35),
+         'onBtn': dlg.OnBtnAjuste,
+         'image': "xpy/Images/32x32/Actualiser.png"},
+        {'name': 'btnCorrections', 'label': "Correction\npar lot",
+         'help': "Cliquez ici pour changer la date, la nature... de lignes sélectionnées",
+         'size': (120, 35),
+         'onBtn': dlg.OnBtnCorrections,
+         'image': "xpy/Images/32x32/Depannage.png"},
+        {'name': 'btnImp', 'label': "Imprimer\npour contrôle",
+            'help': "Cliquez ici pour imprimer et enregistrer la saisie de l'entrée en stock",
+            'size': (120, 35), 'image': wx.ART_PRINT,'onBtn':dlg.OnImprimer},
+        {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour sortir",
+            'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnFermer}
+    ]
+
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal, valueGetter correspond aux champ des tables ou calculs
     titlePrix = "Prix Unit."
@@ -395,6 +414,8 @@ class DLG(dlgMvts.DLG):
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv['lstCodes'] = xformat.GetCodesColonnes(GetOlvColonnes(self))
         self.dicOlv['lstCodesSup'] = dlgMvts.GetOlvCodesSup()
+        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),""]
+        dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
 
         # spécificités structure écran à transmettre au super
         kwds = {}
@@ -404,7 +425,7 @@ class DLG(dlgMvts.DLG):
         kwds['autoSizer'] = False
         kwds['dicParams'] = GetDicPnlParams(self)
         kwds['dicOlv'] = self.dicOlv
-
+        kwds['dicPied'] = dicPied
         super().__init__(**kwds)
 
     def Init(self):
@@ -613,11 +634,85 @@ class DLG(dlgMvts.DLG):
         event.Skip()
         MAJ_calculs(self)
 
+    def OnBtnAjuste(self,event):
+        # recalcule et modifie les prix unitaires en sorties selon les prix achats
+
+        lstAjuster = []
+        cumQte = 0.0
+        cumMtt = 0.0
+        cumCorr = 0.0
+
+        puLastIn = None
+        fnSort = lambda trk: (trk.IDarticle, trk.date, trk.IDmouvement)
+        modelObjects = sorted( self.ctrlOlv.GetObjects(), key=fnSort)
+
+        # fn qui retourne le prochain prix d'achat suivant la track
+        def getPuNextIn(track):
+            qte = abs(track.qte)
+            qteAffectee = 0
+            pxUn = None
+            for tr in modelObjects[modelObjects.index(track):]:
+                if tr.origine == 'achat':
+                    if qteAffectee >0:
+                        # proratisation nécessaire si plusieurs achats pour justifier la sortie
+                        qtePlus = min(qte-qteAffectee, tr.qte)
+                        pxUn = (pxUn * qteAffectee + tr.pxUn * qtePlus) / (qteAffectee + qtePlus)
+                        qteAffectee += qtePlus
+                    else:
+                        pxUn = tr.pxUn
+                        qteAffectee += min(qte - qteAffectee, tr.qte)
+                    pxUn = round(pxUn,4)
+                    if qteAffectee >= qte:
+                        break
+            return pxUn
+
+        for track in modelObjects:
+            if not track.qte or track.qte == 0:
+                continue
+
+            if track.date == datetime.date(2024,4,12):
+                pass
+
+            oldPU = track.pxUn
+
+            if track.origine in ('inventaire','achat'):
+                puLastIn = round(track.pxUn,4)
+                ajust = False
+            elif track.qte <= 0:
+                # Il s'agit d'une sortie ou odIn on ajuste
+                ajust = True
+                if cumQte > 0:
+                    # on a une référence
+                    track.pxUn = round(cumMtt / cumQte,4)
+                elif puLastIn:
+                    # pas d'antérieur dispo, on applique le dernier prix connu
+                    track.pxUn = puLastIn
+                elif getPuNextIn(track):
+                    # recherche un prochain achat
+                    track.pxUn = getPuNextIn(track)
+                else:
+                    ajust = False
+
+                if ajust and track.IDmouvement and abs(oldPU - track.pxUn) > 0.01:
+                    # on ne sauvegardera que les modifs déjà enregisrées
+                    lstAjuster.append(track)
+
+            cumQte += track.qte
+            cumMtt += track.qte * track.pxUn
+            cumCorr += track.qte * (track.pxUn-oldPU)
+
+        MAJ_calculs(self)
+        self.Refresh()
+        if lstAjuster != []:
+            for track in lstAjuster:
+                nust.SauveMouvement(self.db, self, track)
+
+
 #------------------------ Lanceur de test  -------------------------------------------
 
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(article="CONFITURE INDIVIDUELLE")
+    dlg = DLG(article="confiture individuelle")
     dlg.ShowModal()
     app.MainLoop()
