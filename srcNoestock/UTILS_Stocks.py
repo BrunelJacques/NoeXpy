@@ -219,8 +219,7 @@ def PxAchatsStock(modelObjects):
     # retourne px moyens achetés du stock restant dans modelObjects: méthode FIFO
     lstArticles = []
     dQtesFin = {}
-    # calcul des quantités en stock et articles présents
-    ix = 0
+    # calcul des quantités en stock, crée liste articles présents, attribution d'index
     for track in modelObjects:
         if track.IDarticle not in lstArticles:
             lstArticles.append(track.IDarticle)
@@ -231,32 +230,36 @@ def PxAchatsStock(modelObjects):
                 track.date = xformat.DateSqlToDatetime(track.date)
         if not track.date:
                 track.date = datetime.date(2000,1,1)
-        if not hasattr(track,'IDmouvement'):
-                ix += 1
-                track.IDmouvement = ix
+
     lastArticle = None
     qteAchatsTous = 0.0
     mttAchatsTous = 0.0
-    finArticle = False
+    finiPourArticle = False
     qteAchatsArt = 0.0
     mttAchatsArt = 0.0
 
     # recherche des prix d'achat sur liste triée dates décroissantes après articles
     fnSort = lambda trk: (trk.IDarticle,trk.date,trk.IDmouvement)
     for track in sorted(modelObjects, key=fnSort,reverse=True):
+        # on ne s'occupe que des mouvements enregistrés, pas de saisies en cours.
+        if not track.IDmouvement:
+            continue
         article = track.IDarticle
         if not lastArticle:
-            # skip premier item
+            # seulement pour le premier item pas de rupture article à faire
             lastArticle = article
         if track.origine not in ('achat','inventaire'):
+            # on ne s'occupe que des achats pour le prix moyen d'achat du stock fin
             continue
         # rupture article,
         if lastArticle != article:
-            finArticle = False
+            finiPourArticle = False
             qteAchatsArt = 0.0
             mttAchatsArt = 0.0
-        if finArticle:
-            continue # jusqu'à rupture
+        # purge des lignes non nécessaires
+        if finiPourArticle:
+            continue # jusqu'à changement article pour rupture
+        # progression dans le suivi des achats
         qteAchat = Nz(track.qte)
         prixUnit = Nz(track.pxUn)
         qteAchat = min(dQtesFin[article],qteAchat)
@@ -267,7 +270,7 @@ def PxAchatsStock(modelObjects):
         dQtesFin[article] -= qteAchat
         if dQtesFin[article] < 0.0001:
             # Les achats retenus couvrent le stock restant, on ignore l'antérieur
-            finArticle = True
+            finiPourArticle = True
 
     if Nz(qteAchatsTous) != 0:
         prixMoyen = round(mttAchatsTous / qteAchatsTous,4)

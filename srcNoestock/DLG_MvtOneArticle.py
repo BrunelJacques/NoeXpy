@@ -635,16 +635,62 @@ class DLG(dlgMvts.DLG):
         MAJ_calculs(self)
 
     def OnBtnAjuste(self,event):
-        # recalcule et modifie les prix unitaires en sorties selon les prix achats
-
+        # recalcule et modifie les prix unitaires en sorties de l'article selon FIFO
         lstAjuster = []
         cumQte = 0.0
         cumMtt = 0.0
         cumCorr = 0.0
+        dAchats =  {}
+        lstIDmouvements = []
 
         puLastIn = None
         fnSort = lambda trk: (trk.IDarticle, trk.date, trk.IDmouvement)
-        modelObjects = sorted( self.ctrlOlv.GetObjects(), key=fnSort)
+        modelObjects = sorted( [x for x in self.ctrlOlv.GetObjects() if x.IDmouvement], key=fnSort)
+
+        # Création d'un récap historique d'achats
+        for track in modelObjects:
+            if track.origine not in ('achat', 'inventaire'):
+                continue
+            # cas d'un achat correctif non encore imputé sur les précédents
+            if track.qte <= 0 :
+                # s'impute sur les derniers achats en corrigeant les prix des précédents
+                qte = -track.qte
+                mttDiff = 0.0
+                dAch = dAchats[lstIDmouvements[-1]]
+                while qte > 0 and len(lstIDmouvements) > 0:
+                    # si le retour d'achat a un prix différent de l'original
+                    if abs(dAch['pxUn'] - track.pxUn) > 0.01:
+                        # imputera le différentiel
+                        mtEntree = dAch['pxUn'] * dAch['qte']
+                        mtSortie = track.pxUn * track.qte
+                        mttDiff += ( mtEntree - mtSortie) / nbcorr
+                        dAch['qte'] -= nbcorr
+                        qte -= nbcorr
+                        # suppression de l'entrée précédente
+                        if dAch['qte'] == 0 :
+                            del dAchats[lstIDmouvements[-1]]
+                            del lstIDmouvements[-1]
+                            dAch = dAchats[lstIDmouvements[-1]]
+                            nbcorr = min(qte, dAch['qte'])
+                if round(mttDiff,1) != 0:
+                    # différentiel entrées - sorties à imputer
+                    pass
+
+            # cas normal ajoute cet achat à l'historique
+            lstIDmouvements.append(track.IDmouvement)
+            dAch = {
+                'IDmouvement': track.IDmouvement,
+                'date': track.date,
+                'qte': track.qte,
+                'pxUn': track.pxUn}
+            dAchats[track.IDmouvement] = dAch
+
+        # fonction qui sort du stock en FIFO, prix à déterminer
+        def pxUnFirstIn(qteSortie):
+            while qteSortie < 0:
+                pass
+
+
 
         # fn qui retourne le prochain prix d'achat suivant la track
         def getPuNextIn(track):
@@ -666,6 +712,7 @@ class DLG(dlgMvts.DLG):
                         break
             return pxUn
 
+        # traitement des lignes de l'article
         for track in modelObjects:
             if not track.qte or track.qte == 0:
                 continue
