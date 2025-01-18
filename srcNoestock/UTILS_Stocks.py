@@ -24,23 +24,8 @@ class SetAttrDicToTrack:
             self.__setattr__(codesTrack[ix],dicDon[codesDic[ix]])
 
 # Nouvelle Gestion des inventaires --------------------------------------------
-def PostMouvements(champs=(),mouvements=([],)):
-    # uddate des champs d'un mouvement, l'ID en dernière position
-    db = xdb.DB()
 
-    retour = True
-    for mouvement in mouvements:
-        ret = db.ReqMAJ('stMouvements',
-                    nomChampID=champs[-1],
-                    ID = mouvement[-1],
-                    lstChamps=champs[:-1],lstValues=mouvement[:-1],
-                    mess="UTILS_Stocks.PostMouvements")
-        if ret != 'ok':
-            retour = False
-    db.Close()
-    return retour
-
-def PostInventaire(dlg):
+def InsertInventaire(dlg):
     lstTracks = dlg.ctrlOlv.GetObjects()
     lstFields = [
         'IDdate', 'IDarticle', 'qteStock','qteConstat', 'prixMoyen','prixActuel',
@@ -239,11 +224,8 @@ def PxAchatsStock(modelObjects):
     mttAchatsArt = 0.0
 
     # recherche des prix d'achat sur liste triée dates décroissantes après articles
-    fnSort = lambda trk: (trk.IDarticle,trk.date,trk.IDmouvement)
+    fnSort = lambda trk: (trk.IDarticle,trk.date)
     for track in sorted(modelObjects, key=fnSort,reverse=True):
-        # on ne s'occupe que des mouvements enregistrés, pas de saisies en cours.
-        if not track.IDmouvement:
-            continue
         article = track.IDarticle
         if not lastArticle:
             # seulement pour le premier item pas de rupture article à faire
@@ -840,6 +822,20 @@ def MakeChoiceActivite(analytique):
     return choice
 
 # Gestion des lignes de l'olv mouvements --------------------------------------------------------------------------
+def MajMouvements(champs=(), llMvts=[[],]):
+    # uddate des champs d'un mouvement, l'ID en première position
+    db = xdb.DB()
+    retour = True
+    for mvt in llMvts:
+        ret = db.ReqMAJ('stMouvements',
+                    nomChampID=champs[0],
+                    ID = mvt[0],
+                    lstChamps=champs[1:],lstValues=mvt[1:],
+                    mess="UTILS_Stocks.MajMouvements"),
+        if ret != 'ok':
+            retour = False
+    db.Close()
+    return retour
 
 def SauveMouvement(db,dlg,track):
     # --- Sauvegarde des différents éléments associés à la ligne de mouvement

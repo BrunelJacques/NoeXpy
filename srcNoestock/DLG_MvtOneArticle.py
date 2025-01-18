@@ -280,6 +280,8 @@ def MAJ_calculs(dlg):
     cumMtt = 0.0
     for track in lstChecked:
         cumQte += track.qte
+        if not track.pxUn:
+            pass
         cumMtt += track.qte * track.pxUn
         track.cumQte = cumQte
         track.cumMtt = cumMtt
@@ -414,6 +416,11 @@ class DLG(dlgMvts.DLG):
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv['lstCodes'] = xformat.GetCodesColonnes(GetOlvColonnes(self))
         self.dicOlv['lstCodesSup'] = dlgMvts.GetOlvCodesSup()
+        self.dicOlv['dictColFooter'] = {
+            "qte": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
+            "mttTTC": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
+            }
+
         lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),""]
         dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
 
@@ -636,123 +643,217 @@ class DLG(dlgMvts.DLG):
 
     def OnBtnAjuste(self,event):
         # recalcule et modifie les prix unitaires en sorties de l'article selon FIFO
-        lstAjuster = []
         cumQte = 0.0
         cumMtt = 0.0
         cumCorr = 0.0
+        lstAjuster = []
         dAchats =  {}
-        lstIDmouvements = []
+        lstIDachats = []
+        dOdIn =  {}
+        lstIDodIn = []
 
-        puLastIn = None
         fnSort = lambda trk: (trk.IDarticle, trk.date, trk.IDmouvement)
-        modelObjects = sorted( [x for x in self.ctrlOlv.GetObjects() if x.IDmouvement], key=fnSort)
+        modelObjects = sorted( [x for x in self.ctrlOlv.GetObjects()], key=fnSort)
+        majorerAchats = 0.0
 
-        # Création d'un récap historique d'achats
+        # Création d'un récap historique d'achats et odIn
         for track in modelObjects:
-            if track.origine not in ('achat', 'inventaire'):
+            if track.origine not in ('achat', 'inventaire','od_in'):
                 continue
-            # cas d'un achat correctif non encore imputé sur les précédents
-            if track.qte <= 0 :
-                # s'impute sur les derniers achats en corrigeant les prix des précédents
+            # pour les od_in on ne garde que les vraies entrées.
+            if track.origine == 'od_in' and track.qte < 0:
+                continue
+
+            # on sépare les origines od_in qui compenseront les sorties od
+            if track.origine == 'od_in':
+                lstIDentrees = lstIDodIn
+                dEntrees = dOdIn
+            else:
+                lstIDentrees = lstIDachats
+                dEntrees = dAchats
+            # cas normal d'une entrée correcte, ajoute cet achat à l'historique
+            if track.qte > 0:
+                lstIDentrees.append(track.IDmouvement)
+                dAch = {
+                    'IDmouvement': track.IDmouvement,
+                    'date': track.date,
+                    'qte': track.qte,
+                    'sortis': 0,
+                    'pxUn': track.pxUn}
+                dEntrees[track.IDmouvement] = dAch
+
+            # cas d'un achat correctif, va déduire les précédents
+            if track.qte < 0:
                 qte = -track.qte
-                mttDiff = 0.0
-                dAch = dAchats[lstIDmouvements[-1]]
-                while qte > 0 and len(lstIDmouvements) > 0:
+                dAch = dEntrees[lstIDentrees[-1]]
+                nbcorr = min(qte, dAch['qte'])
+                # boucle en remontant les achats précédents
+                while qte > 0 and len(lstIDentrees) > 0:
                     # si le retour d'achat a un prix différent de l'original
                     if abs(dAch['pxUn'] - track.pxUn) > 0.01:
-                        # imputera le différentiel
-                        mtEntree = dAch['pxUn'] * dAch['qte']
-                        mtSortie = track.pxUn * track.qte
-                        mttDiff += ( mtEntree - mtSortie) / nbcorr
-                        dAch['qte'] -= nbcorr
-                        qte -= nbcorr
-                        # suppression de l'entrée précédente
-                        if dAch['qte'] == 0 :
-                            del dAchats[lstIDmouvements[-1]]
-                            del lstIDmouvements[-1]
-                            dAch = dAchats[lstIDmouvements[-1]]
-                            nbcorr = min(qte, dAch['qte'])
-                if round(mttDiff,1) != 0:
-                    # différentiel entrées - sorties à imputer
+                        # imputera le différentiel ensuite sur tous les achats
+                        majorerAchats += (dAch['pxUn'] - track.pxUn) * nbcorr
+                    # diminution de la quantité achetée précédement
+                    dAch['qte'] -= nbcorr
+                    qte -= nbcorr
+
+                    # suppression  de l'entrée précédente si vidée
+                    if dAch['qte'] == 0:
+                        del dEntrees[lstIDentrees[-1]]
+                        del lstIDentrees[-1]
+                        # pour le while
+                        dAch = dEntrees[lstIDentrees[-1]]
+                        nbcorr = min(qte, dAch['qte'])
+
+                # Il y avait moins d'achats positifs que de négatifs
+                if qte > 0:
+                    majorerAchats += qte * track.qte
+
+        # synthèse l'info sur le total des achats
+        sumQteAch = 0
+        sumMttAch = 0.0
+        for ID in lstIDachats:
+            sumQteAch += dAchats[ID]['qte']
+            sumMttAch += dAchats[ID]['qte'] * dAchats[ID]['pxUn']
+        if sumQteAch == 0:
+            mess = "Aucun achat trouvé avec qté >0"
+            wx.MessageBox(mess, "anomalie", style=wx.OK)
+            return
+        pxMoyenAch = round(sumMttAch / sumQteAch,2)
+        self.nbPxMoyenSortis = 0
+
+        # lissage du prix des ODin sur le prix moyen achat
+        for key, dOd in dOdIn.items():
+            dOd['pxUn'] = pxMoyenAch
+
+        # Imputation des pertes valeur sur les retours d'achats à prix différent
+        if round(majorerAchats,1) != 0:
+            sumMttAch += majorerAchats
+            # différentiel entrées - sorties à imputer
+            if sumQteAch > 0:
+                corrPu = majorerAchats / sumQteAch
+                for ID in lstIDachats:
+                    dAchats[ID]['pxUn'] += corrPu
+
+        # fonction qui sort du stock en FIFO,
+        def pxUnFirstIn(qteSortie):
+            qteAch = 0
+            mttAch =0.0
+            for id in lstIDachats:
+                dAch = dAchats[id]
+                dispo = dAch['qte'] - dAch['sortis']
+                if dispo < 1:
+                    continue
+                qteSort = min(qteSortie,dispo)
+                dAch['sortis'] += qteSort
+                qteAch += qteSort
+                mttAch += qteSort * dAch['pxUn']
+                qteSortie -= qteSort
+                if qteSortie < 1:
+                    break
+            if qteSortie == 0:
+                return round(mttAch / qteAch, 4)
+            else:
+                self.nbPxMoyenSortis += (qteSortie - qteAch)
+                return pxMoyenAch
+
+        # fonction qui sort une od_in
+        def pxUnOdIn(qteSortie):
+            for id in lstIDodIn:
+                dOd = dOdIn[id]
+                dispo = dOd['qte'] - dOd['sortis']
+                if dispo < 1:
+                    continue
+                qteSort = min(qteSortie,dispo)
+                dOd['sortis'] += qteSort
+                qteSortie -= qteSort
+                if qteSortie < 1:
+                    break
+            if qteSortie == 0:
+                return pxMoyenAch
+            else:
+                return None
+
+        # Fonction qui rentre un retour en sotock
+        def pxUnRetour(qteEntree):
+            mttRet = 0.0
+            qteRet = 0
+            if self.nbPxMoyenSortis > 0:
+                nbcorr = min(qteEntree,self.nbPxMoyenSortis)
+                self.nbPxMoyenSortis -= nbcorr
+                qteEntree -= nbcorr
+            if qteEntree == 0:
+                return pxMoyenAch
+            # on rerentre des stocks sortis
+            for id in  sorted(lstIDachats,reverse=True):
+                nbRet = min(qteEntree, dAchats[id]['sortis'])
+                qteEntree -= nbRet
+                dAchats[id]['sortis'] -= nbRet
+                qteRet += nbRet
+                mttRet += (nbRet * dAchats[id]['pxUn'])
+                if qteEntree == 0:
+                    break
+            if qteRet != 0:
+                pxRet = round(mttRet / qteRet, 4)
+            else:
+                # cas à gérer
+                pxRet = round(mttRet / qteRet, 4)
+            return pxRet
+
+        # traitement des lignes de l'article qui impute les achats sur les sorties
+        repas = (True, False)
+        for isRepas in repas:
+            for track in modelObjects:
+                # ordre de passage
+                if ((track.origine != 'repas') or (track.qte < 0)) == isRepas:
+                    continue
+                if track.origine in ('inventaire','achat'):
+                    continue
+                if track.origine in ('od_in',) and track.qte > 0:
+                    continue
+                if not track.qte or track.qte == 0:
+                    continue
+                # pour test débug
+                if track.date == datetime.date(2024,6,17):
                     pass
 
-            # cas normal ajoute cet achat à l'historique
-            lstIDmouvements.append(track.IDmouvement)
-            dAch = {
-                'IDmouvement': track.IDmouvement,
-                'date': track.date,
-                'qte': track.qte,
-                'pxUn': track.pxUn}
-            dAchats[track.IDmouvement] = dAch
+                if track.origine in ('od_in','od_out'):
+                    isOd = True
+                else: isOd = False
 
-        # fonction qui sort du stock en FIFO, prix à déterminer
-        def pxUnFirstIn(qteSortie):
-            while qteSortie < 0:
-                pass
+                oldPU = track.pxUn
 
-
-
-        # fn qui retourne le prochain prix d'achat suivant la track
-        def getPuNextIn(track):
-            qte = abs(track.qte)
-            qteAffectee = 0
-            pxUn = None
-            for tr in modelObjects[modelObjects.index(track):]:
-                if tr.origine == 'achat':
-                    if qteAffectee >0:
-                        # proratisation nécessaire si plusieurs achats pour justifier la sortie
-                        qtePlus = min(qte-qteAffectee, tr.qte)
-                        pxUn = (pxUn * qteAffectee + tr.pxUn * qtePlus) / (qteAffectee + qtePlus)
-                        qteAffectee += qtePlus
-                    else:
-                        pxUn = tr.pxUn
-                        qteAffectee += min(qte - qteAffectee, tr.qte)
-                    pxUn = round(pxUn,4)
-                    if qteAffectee >= qte:
-                        break
-            return pxUn
-
-        # traitement des lignes de l'article
-        for track in modelObjects:
-            if not track.qte or track.qte == 0:
-                continue
-
-            if track.date == datetime.date(2024,4,12):
-                pass
-
-            oldPU = track.pxUn
-
-            if track.origine in ('inventaire','achat'):
-                puLastIn = round(track.pxUn,4)
-                ajust = False
-            elif track.qte <= 0:
-                # Il s'agit d'une sortie ou odIn on ajuste
-                ajust = True
-                if cumQte > 0:
-                    # on a une référence
-                    track.pxUn = round(cumMtt / cumQte,4)
-                elif puLastIn:
-                    # pas d'antérieur dispo, on applique le dernier prix connu
-                    track.pxUn = puLastIn
-                elif getPuNextIn(track):
-                    # recherche un prochain achat
-                    track.pxUn = getPuNextIn(track)
+                # cas d'une sortie ou od nég, on ajuste selon Fifo ou pxMoyen
+                if track.qte < 0:
+                    track.pxUn = None
+                    if isOd:
+                        track.pxUn = pxUnOdIn(-track.qte)
+                    if not track.pxUn:
+                        track.pxUn = pxUnFirstIn(-track.qte)
+                # cas d'une entrée non achat
                 else:
-                    ajust = False
+                    track.pxUn = pxUnRetour((track.qte))
 
-                if ajust and track.IDmouvement and abs(oldPU - track.pxUn) > 0.01:
+                if track.IDmouvement > 0 and abs(oldPU - track.pxUn) > 0.01:
                     # on ne sauvegardera que les modifs déjà enregisrées
                     lstAjuster.append(track)
+                cumQte += track.qte
+                cumMtt += track.qte * track.pxUn
+                cumCorr += track.qte * (track.pxUn-oldPU)
 
-            cumQte += track.qte
-            cumMtt += track.qte * track.pxUn
-            cumCorr += track.qte * (track.pxUn-oldPU)
-
+        # actualiser l'écran
         MAJ_calculs(self)
         self.Refresh()
+
+        # mise à jour par SQL
         if lstAjuster != []:
+            values = []
+            info = ['ajust %s'%track.ordi,datetime.date.today()]
             for track in lstAjuster:
-                nust.SauveMouvement(self.db, self, track)
+                val = [track.IDmouvement,track.pxUn,] + info
+                values.append(val)
+            champs = ['IDmouvement','prixUnit','ordi','dateSaisie']
+            #nust.MajMouvements(champs, values)
 
 
 #------------------------ Lanceur de test  -------------------------------------------
@@ -760,6 +861,6 @@ class DLG(dlgMvts.DLG):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(article="confiture individuelle")
+    dlg = DLG(article="mache caissette")
     dlg.ShowModal()
     app.MainLoop()

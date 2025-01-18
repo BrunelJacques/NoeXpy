@@ -673,7 +673,7 @@ class DLG(xGTE.DLG_tableau):
             mess += "Pensez à faire un export Excel par un clic Gauche ou une édition."
             ret = wx.MessageBox(mess,'confirmez',style=wx.ICON_INFORMATION|wx.YES_NO)
             if ret == wx.YES:
-                nust.PostInventaire(self)
+                nust.InsertInventaire(self)
 
     def OnFermer(self, event):
         #wx.MessageBox("Traitement de sortie")
