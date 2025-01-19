@@ -195,7 +195,7 @@ def GetOlvColonnes(dlg):
                        stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Cumul Qté", 'right', 70, 'cumQte', isSpaceFilling=False, valueSetter=0.0,
                        stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Cumul PU", 'right', 50, 'cumPu', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("CumPU", 'right', 55, 'cumPu', isSpaceFilling=False, valueSetter=0.0,
                        stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Saisie", 'left', 80, 'dateSaisie', isSpaceFilling=False,
                        stringConverter=xformat.FmtDate, isEditable=False),
@@ -645,50 +645,57 @@ class DLG(dlgMvts.DLG):
         # recalcule et modifie les prix unitaires en sorties de l'article selon FIFO
         cumQte = 0.0
         cumMtt = 0.0
+        cumQteAch = 0.0
+        cumMttAch = 0.0
+        cumQteEnt = 0.0
         cumCorr = 0.0
         lstAjuster = []
         dAchats =  {}
         lstIDachats = []
-        dOdIn =  {}
-        lstIDodIn = []
+        lstIDtracks = []
 
         fnSort = lambda trk: (trk.IDarticle, trk.date, trk.IDmouvement)
-        modelObjects = sorted( [x for x in self.ctrlOlv.GetObjects()], key=fnSort)
+        modelObjects = sorted([x for x in self.ctrlOlv.GetObjects() if x.qte != 0],
+                              key=fnSort)
         majorerAchats = 0.0
 
         # Création d'un récap historique d'achats et odIn
         for track in modelObjects:
+            lstIDtracks.append(track.IDmouvement)
+            cumQte += track.qte
+            cumMtt += track.qte * track.pxUn
             if track.origine not in ('achat', 'inventaire','od_in'):
                 continue
+
             # pour les od_in on ne garde que les vraies entrées.
-            if track.origine == 'od_in' and track.qte < 0:
+            if track.origine in ('od_in') and track.qte < 0:
                 continue
 
-            # on sépare les origines od_in qui compenseront les sorties od
-            if track.origine == 'od_in':
-                lstIDentrees = lstIDodIn
-                dEntrees = dOdIn
+            if track.origine == 'achat':
+                cumQteAch += track.qte
+                cumMttAch += track.qte * track.pxUn
             else:
-                lstIDentrees = lstIDachats
-                dEntrees = dAchats
+                cumQteEnt += track.qte
+
             # cas normal d'une entrée correcte, ajoute cet achat à l'historique
             if track.qte > 0:
-                lstIDentrees.append(track.IDmouvement)
+                lstIDachats.append(track.IDmouvement)
                 dAch = {
                     'IDmouvement': track.IDmouvement,
                     'date': track.date,
+                    'origine': track.origine,
                     'qte': track.qte,
                     'sortis': 0,
                     'pxUn': track.pxUn}
-                dEntrees[track.IDmouvement] = dAch
+                dAchats[track.IDmouvement] = dAch
 
             # cas d'un achat correctif, va déduire les précédents
             if track.qte < 0:
                 qte = -track.qte
-                dAch = dEntrees[lstIDentrees[-1]]
+                dAch = dAchats[lstIDachats[-1]]
                 nbcorr = min(qte, dAch['qte'])
                 # boucle en remontant les achats précédents
-                while qte > 0 and len(lstIDentrees) > 0:
+                while qte > 0 and len(lstIDachats) > 0:
                     # si le retour d'achat a un prix différent de l'original
                     if abs(dAch['pxUn'] - track.pxUn) > 0.01:
                         # imputera le différentiel ensuite sur tous les achats
@@ -699,15 +706,43 @@ class DLG(dlgMvts.DLG):
 
                     # suppression  de l'entrée précédente si vidée
                     if dAch['qte'] == 0:
-                        del dEntrees[lstIDentrees[-1]]
-                        del lstIDentrees[-1]
+                        del dAchats[lstIDachats[-1]]
+                        del lstIDachats[-1]
                         # pour le while
-                        dAch = dEntrees[lstIDentrees[-1]]
+                        dAch = dAchats[lstIDachats[-1]]
                         nbcorr = min(qte, dAch['qte'])
 
                 # Il y avait moins d'achats positifs que de négatifs
                 if qte > 0:
-                    majorerAchats += qte * track.qte
+                    majorerAchats += qte * track.pxUn
+
+        # calcul du prix moyen achat et sortir des achats sortis, les qtes tjrs en stock
+        mttStock = 0.0
+        pxMoyStock = None
+        qteStock = cumQte # le cumQte est le nb en stock final (renommé pour facilité)
+        if cumQte > 0:
+            qte = cumQte
+            while qte > 0:
+                for IDmouvement in sorted(lstIDachats,reverse=True):
+                    dAch = dAchats[IDmouvement]
+                    nbcorr = min(qte, dAch['qte'])
+                    dAch['sortis'] -= nbcorr
+                    mttStock += nbcorr * dAch['pxUn']
+                    qte -= nbcorr
+            pxMoyStock = mttStock / cumQte
+
+        # Détermine le prix moyen des achats sortis pour appliquer aux od
+        if  not pxMoyStock:
+            pxMoyAchSortis = round(cumMttAch / cumQteAch,4)
+        elif (cumQteAch - qteStock) > 0:
+            pxMoyAchSortis = (cumMttAch -  pxMoyStock * qteStock) /(cumQteAch - qteStock)
+        else:
+            mess = "plus de stock à l'arrivée que d'achats ou report!"
+            wx.MessageBox(mess,"calcul impossible")
+            if cumQteAch > 0:
+                pxMoyAchSortis = round(cumMttAch / cumQteAch, 2)
+            else:
+                return
 
         # synthèse l'info sur le total des achats
         sumQteAch = 0
@@ -719,15 +754,20 @@ class DLG(dlgMvts.DLG):
             mess = "Aucun achat trouvé avec qté >0"
             wx.MessageBox(mess, "anomalie", style=wx.OK)
             return
-        pxMoyenAch = round(sumMttAch / sumQteAch,2)
-        self.nbPxMoyenSortis = 0
 
-        # lissage du prix des ODin sur le prix moyen achat
-        for key, dOd in dOdIn.items():
-            dOd['pxUn'] = pxMoyenAch
+        # lissage du prix des ODin par le prix moyen achat
+        for IDmouvement, dAch in dAchats.items():
+            if dAch['origine'] == 'achat':
+                continue
+            if abs(dAch['pxUn'] - pxMoyAchSortis) > 0.01:
+                track = modelObjects[lstIDtracks.index(IDmouvement)]
+                track.pxUn = pxMoyAchSortis
+                lstAjuster.append(track)
+            dAch['pxUn'] = pxMoyAchSortis
+
 
         # Imputation des pertes valeur sur les retours d'achats à prix différent
-        if round(majorerAchats,1) != 0:
+        if round(majorerAchats,1) != 0.0:
             sumMttAch += majorerAchats
             # différentiel entrées - sorties à imputer
             if sumQteAch > 0:
@@ -755,24 +795,7 @@ class DLG(dlgMvts.DLG):
                 return round(mttAch / qteAch, 4)
             else:
                 self.nbPxMoyenSortis += (qteSortie - qteAch)
-                return pxMoyenAch
-
-        # fonction qui sort une od_in
-        def pxUnOdIn(qteSortie):
-            for id in lstIDodIn:
-                dOd = dOdIn[id]
-                dispo = dOd['qte'] - dOd['sortis']
-                if dispo < 1:
-                    continue
-                qteSort = min(qteSortie,dispo)
-                dOd['sortis'] += qteSort
-                qteSortie -= qteSort
-                if qteSortie < 1:
-                    break
-            if qteSortie == 0:
-                return pxMoyenAch
-            else:
-                return None
+                return pxMoyAchSortis
 
         # Fonction qui rentre un retour en sotock
         def pxUnRetour(qteEntree):
@@ -783,7 +806,7 @@ class DLG(dlgMvts.DLG):
                 self.nbPxMoyenSortis -= nbcorr
                 qteEntree -= nbcorr
             if qteEntree == 0:
-                return pxMoyenAch
+                return pxMoyAchSortis
             # on rerentre des stocks sortis
             for id in  sorted(lstIDachats,reverse=True):
                 nbRet = min(qteEntree, dAchats[id]['sortis'])
@@ -814,8 +837,8 @@ class DLG(dlgMvts.DLG):
                 if not track.qte or track.qte == 0:
                     continue
                 # pour test débug
-                if track.date == datetime.date(2024,6,17):
-                    pass
+                #if track.IDmouvement == 21134:
+                #   print()
 
                 if track.origine in ('od_in','od_out'):
                     isOd = True
@@ -827,7 +850,7 @@ class DLG(dlgMvts.DLG):
                 if track.qte < 0:
                     track.pxUn = None
                     if isOd:
-                        track.pxUn = pxUnOdIn(-track.qte)
+                        track.pxUn = pxUnFirstIn(-track.qte)
                     if not track.pxUn:
                         track.pxUn = pxUnFirstIn(-track.qte)
                 # cas d'une entrée non achat
@@ -861,6 +884,6 @@ class DLG(dlgMvts.DLG):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(article="mache caissette")
+    dlg = DLG(article="biscuits portions")
     dlg.ShowModal()
     app.MainLoop()
