@@ -194,14 +194,19 @@ def CalculeLigne(dlg,track):
     track.__pxRation =  round(qte * prixUnit / rations,2)
     modif = False
     if dlg.origine  and dlg.origine != track.origine:
+        track.origine = dlg.origine
         modif = True
     if dlg.date  and dlg.date != track.date:
+        track.date = dlg.date
         modif = True
-    if dlg.fournisseur  and dlg.fournisseur != track.fournisseur:
+    if dlg.fournisseur != None and (dlg.fournisseur != track.fournisseur):
+        track.fournisseur = dlg.fournisseur
         modif = True
-    if dlg.analytique and dlg.analytique != track.IDanalytique:
+    if dlg.analytique != None and dlg.analytique != track.IDanalytique:
+        track.analytique = dlg.analytique
         modif = True
     if dlg.repas  and dlg.repas != track.repas:
+        track.repas = dlg.repas
         modif = True
     track.modif = modif
 
@@ -402,14 +407,15 @@ class DLG(xGTE.DLG_tableau):
             self.ctrlOlv.SetCheckState(track,track.modif)
 
     def Sauve(self,donnees):
-        codesOrigines = ['origine','date','repas','fournisseur','analytique']
-        newValues = [self.origine,self.date,self.repas,self.fournisseur,self.analytique]
+        self.IDmouvement = 0
+        codesOrigines = ['IDmouvement','origine','date','repas','fournisseur','analytique']
+        newValues = [self.IDmouvement,self.origine,self.date,self.repas,self.fournisseur,self.analytique]
         # les values NoChange sont à None donc ignorées
-        ixValues = [newValues.index(x) for x in newValues if x]
+        ixValues = [newValues.index(x) for x in newValues if x != None]
 
         # Voici les deux listes qui seront envoyées à la mise à jour
         lstChamps = [codesOrigines[x] for x in ixValues]
-        lstDonnees=[]
+        llDonnees=[]
         lstIdModifies= []
         mess = "Erreur sur ReqMAJ, DLG_MvtCorrection.Sauve"
         ableChgSens = False
@@ -425,11 +431,14 @@ class DLG(xGTE.DLG_tableau):
 
         # composition des listes pour mise à jour dans db
         for track in donnees:
+            IDmouvement = track.IDmouvement
             values = []
             for ix in range(len(ixValues)):
                 values.append(newValues[ix])
                 #modif de la track pour le retour éventuel
                 exec("track.%s = self.%s "%(lstChamps[ix],lstChamps[ix]))
+            track.IDmouvement = IDmouvement
+            values[0] = IDmouvement
             # Inversion possible des quantités
             if ableChgSens:
                 oldSens = SENS[CODESORIGINES.index(track.origine)]
@@ -438,15 +447,20 @@ class DLG(xGTE.DLG_tableau):
                 exec("track.%s = track.%s * %d"%('qte','qte',chgSens))
             track.ordi = self.ordi
             track.dateSaisie = datetime.date.today()
-            lstDonnees.append(values)
+            values.append(track.ordi)
+            values.append(track.dateSaisie)
+            llDonnees.append(values)
             lstIdModifies.append(track.IDmouvement )
-        # la liste des champs est envoyé une seule fois pour toutes les modifs
+        # Fixe la liste des champs (envoyé une seule fois pour toutes les values)
         if ableChgSens:
             lstChamps.append('qte')
         lstChamps += ['ordi', 'dateSaisie']
 
         # modif des tracks d'origine
-        retReqMAJ = 'ok' #self.db.ReqMAJ(lstDonnees=lstDonnees,lstChamps=lstChamps,mess=mess)
+        for lstValues in llDonnees:
+            retReqMAJ = self.db.ReqMAJ(lstValues=lstValues,lstChamps=lstChamps,mess=mess)
+            if retReqMAJ != 'ok':
+                break
         if retReqMAJ == 'ok':
             # mise à jour des tracks d'origine
             if self.tracksOrigine != []:

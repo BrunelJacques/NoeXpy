@@ -671,7 +671,7 @@ class DLG(dlgMvts.DLG):
             if track.origine in ('od_in') and track.qte < 0:
                 continue
 
-            if track.origine == 'achat':
+            if track.origine in ('achat','inventaire'):
                 cumQteAch += track.qte
                 cumMttAch += track.qte * track.pxUn
             else:
@@ -724,9 +724,11 @@ class DLG(dlgMvts.DLG):
             qte = cumQte
             while qte > 0:
                 for IDmouvement in sorted(lstIDachats,reverse=True):
+                    if dAchats[IDmouvement]['origine'] not in ('achat','inventaire'):
+                        continue
                     dAch = dAchats[IDmouvement]
                     nbcorr = min(qte, dAch['qte'])
-                    dAch['sortis'] -= nbcorr
+                    dAch['sortis'] += nbcorr
                     mttStock += nbcorr * dAch['pxUn']
                     qte -= nbcorr
             pxMoyStock = mttStock / cumQte
@@ -757,14 +759,13 @@ class DLG(dlgMvts.DLG):
 
         # lissage du prix des ODin par le prix moyen achat
         for IDmouvement, dAch in dAchats.items():
-            if dAch['origine'] == 'achat':
+            if dAch['origine'] in ('achat','inventaire'):
                 continue
             if abs(dAch['pxUn'] - pxMoyAchSortis) > 0.01:
                 track = modelObjects[lstIDtracks.index(IDmouvement)]
                 track.pxUn = pxMoyAchSortis
                 lstAjuster.append(track)
             dAch['pxUn'] = pxMoyAchSortis
-
 
         # Imputation des pertes valeur sur les retours d'achats à prix différent
         if round(majorerAchats,1) != 0.0:
@@ -824,45 +825,29 @@ class DLG(dlgMvts.DLG):
             return pxRet
 
         # traitement des lignes de l'article qui impute les achats sur les sorties
-        repas = (True, False)
-        for isRepas in repas:
-            for track in modelObjects:
-                # ordre de passage
-                if ((track.origine != 'repas') or (track.qte < 0)) == isRepas:
-                    continue
-                if track.origine in ('inventaire','achat'):
-                    continue
-                if track.origine in ('od_in',) and track.qte > 0:
-                    continue
-                if not track.qte or track.qte == 0:
-                    continue
-                # pour test débug
-                #if track.IDmouvement == 21134:
-                #   print()
+        for track in modelObjects:
+            if track.origine in ('inventaire','achat'):
+                continue
+            if track.qte > 0:
+                continue
+            if not track.qte or track.qte == 0:
+                continue
 
-                if track.origine in ('od_in','od_out'):
-                    isOd = True
-                else: isOd = False
+            oldPU = track.pxUn
 
-                oldPU = track.pxUn
+            # cas d'une sortie ou od nég, on ajuste selon Fifo ou pxMoyen
+            if track.qte < 0:
+                track.pxUn = pxUnFirstIn(-track.qte)
+            # cas d'une entrée non achat
+            else:
+                track.pxUn = pxUnRetour((track.qte))
 
-                # cas d'une sortie ou od nég, on ajuste selon Fifo ou pxMoyen
-                if track.qte < 0:
-                    track.pxUn = None
-                    if isOd:
-                        track.pxUn = pxUnFirstIn(-track.qte)
-                    if not track.pxUn:
-                        track.pxUn = pxUnFirstIn(-track.qte)
-                # cas d'une entrée non achat
-                else:
-                    track.pxUn = pxUnRetour((track.qte))
-
-                if track.IDmouvement > 0 and abs(oldPU - track.pxUn) > 0.01:
-                    # on ne sauvegardera que les modifs déjà enregisrées
-                    lstAjuster.append(track)
-                cumQte += track.qte
-                cumMtt += track.qte * track.pxUn
-                cumCorr += track.qte * (track.pxUn-oldPU)
+            if track.IDmouvement > 0 and abs(oldPU - track.pxUn) > 0.0001:
+                # on ne sauvegardera que les modifs déjà enregisrées
+                lstAjuster.append(track)
+            cumQte += track.qte
+            cumMtt += track.qte * track.pxUn
+            cumCorr += track.qte * (track.pxUn-oldPU)
 
         # actualiser l'écran
         MAJ_calculs(self)
@@ -871,12 +856,16 @@ class DLG(dlgMvts.DLG):
         # mise à jour par SQL
         if lstAjuster != []:
             values = []
-            info = ['ajust %s'%track.ordi,datetime.date.today()]
+            ordi = track.ordi
+            if ordi[:5] != 'ajust':
+                ordi = 'ajust %s'%ordi
+            ordi = ordi[:16]
+            info = [ordi,datetime.date.today()]
             for track in lstAjuster:
                 val = [track.IDmouvement,track.pxUn,] + info
                 values.append(val)
             champs = ['IDmouvement','prixUnit','ordi','dateSaisie']
-            #nust.MajMouvements(champs, values)
+            nust.MajMouvements(champs, values)
 
 
 #------------------------ Lanceur de test  -------------------------------------------
@@ -884,6 +873,6 @@ class DLG(dlgMvts.DLG):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(article="biscuits portions")
+    dlg = DLG(article="cerneaux de noix kg")
     dlg.ShowModal()
     app.MainLoop()

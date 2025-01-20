@@ -71,19 +71,19 @@ def GetLastInventaire(dteAnalyse=None,lstChamps=None,oneArticle=None):
     # return: lignes de l'inventaire précédant dteAnalyse ou seulement une ligne article
     db = xdb.DB()
     if not lstChamps:
-        lstChamps = ['IDdate','IDarticle','qteStock','prixMoyen']
+        lstChamps = ['IDdate','IDarticle','qteStock','prixMoyen','IDmouvement']
     lstChampsSql = []
-    for ix in range(len(lstChamps)):
-        lchampSplit = lstChamps[ix].split('.')
+    for champ in lstChamps:
+        lchampSplit = champ.split('.')
         if len(lchampSplit) == 1:
-            if lstChamps[ix].lower() == 'idarticle':
+            if champ.lower() == 'idarticle':
                 lstChampsSql.append('stArticles.IDarticle')
+            elif 'IDmouvement' in champ:
+                lstChampsSql.append('0')
             else:
                 lstChampsSql.append('stInventaires.%s'%lchampSplit[-1])
-                lstChamps[ix] = lchampSplit[-1]
         else:
-            lstChampsSql.append(lstChamps[ix])
-            lstChamps[ix] = lchampSplit[-1]
+            lstChampsSql.append(champ)
     condArticle = ""
     if oneArticle:
         condArticle = "AND (stArticles.IDarticle = '%s')" % oneArticle
@@ -120,6 +120,8 @@ def GetLastInventaire(dteAnalyse=None,lstChamps=None,oneArticle=None):
                     else:
                         value = ''
                 mouvement.append(value)
+            # ajout d'un ID mouvement virtuel
+            mouvement.append(0)
             llInventaire.append(mouvement)
     db.Close()
     return llInventaire
@@ -127,10 +129,11 @@ def GetLastInventaire(dteAnalyse=None,lstChamps=None,oneArticle=None):
 def GetLastInventForMvts(dlg, dParams):
     # retourne ld de pseudos mouvements pour enrichir  des lignes 'reprise à Nouveau'
     oneArticle = None
-    lstChampsInvent = ['IDdate','IDarticle','qteStock','prixMoyen','dateSaisie','ordi']
-    champsTransposes = ['date','IDarticle','qte','prixUnit','dateSaisie','ordi']
+    lstChampsInvent = ['IDdate','IDarticle','qteStock','prixMoyen','dateSaisie','ordi','IDmouvement']
+    champsTransposes = ['date','IDarticle','qte','prixUnit','dateSaisie','ordi','IDmouvement']
     if 'lstChamps' in dParams:
         lstChampsMvt = dParams['lstChamps']
+
     else:
         lstChampsMvt = champsTransposes
 
@@ -224,7 +227,7 @@ def PxAchatsStock(modelObjects):
     mttAchatsArt = 0.0
 
     # recherche des prix d'achat sur liste triée dates décroissantes après articles
-    fnSort = lambda trk: (trk.IDarticle,trk.date)
+    fnSort = lambda trk: (trk.IDarticle,trk.date,trk.IDmouvement)
     for track in sorted(modelObjects, key=fnSort,reverse=True):
         article = track.IDarticle
         if not lastArticle:
@@ -271,7 +274,7 @@ def CalculeInventaire(dlg, dParams):
         majArticles = False
 
     # complète les paramètres façon DLG_MvtOneArticle
-    lstChampsMvts = ['IDarticle', 'date', 'qte', 'prixUnit','origine']
+    lstChampsMvts = ['IDarticle', 'date', 'qte', 'prixUnit','origine','IDmouvement']
     # appel des mouvements de la période
     dParams['lstChamps'] = lstChampsMvts
     dParams['article'] = 'tous'
@@ -315,8 +318,8 @@ def CalculeInventaire(dlg, dParams):
 
     # composition des données du tableau OLV --------------------------------------------
     lstCodes = dlg.dicOlv['lstCodes'] + dlg.dicOlv['lstCodesSup']
-    codesDic = ['date','IDarticle','qte','prixUnit','origine']
-    codesTrack = ['date','IDarticle','qte','pxUn','origine']
+    codesDic = ['date','IDarticle','qte','prixUnit','origine','IDmouvement']
+    codesTrack = ['date','IDarticle','qte','pxUn','origine','IDmouvement']
     lstDonnees = []
     ldMajArticles = []
 
@@ -826,11 +829,11 @@ def MajMouvements(champs=(), llMvts=[[],]):
     # uddate des champs d'un mouvement, l'ID en première position
     db = xdb.DB()
     retour = True
-    for mvt in llMvts:
+    for values in llMvts:
         ret = db.ReqMAJ('stMouvements',
                     nomChampID=champs[0],
-                    ID = mvt[0],
-                    lstChamps=champs[1:],lstValues=mvt[1:],
+                    ID = values[0],
+                    lstChamps=champs[1:],lstValues=values[1:],
                     mess="UTILS_Stocks.MajMouvements"),
         if ret != 'ok':
             retour = False
