@@ -62,7 +62,7 @@ MATRICE_PARAMS = {
              'size': (280, 35),
              'ctrlMaxSize': (370, 40),
              'txtSize': 55},
-    {'name': 'lastDate',
+    {'name': 'endDate',
             'genre': 'anyctrl',
             'label': "Jusqu'au",
             'help': "%s\n%s\n%s"%("Saisie JJMMAA ou JJMMAAAA possible.",
@@ -197,6 +197,8 @@ def GetOlvColonnes(dlg):
                        stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("CumPU", 'right', 55, 'cumPu', isSpaceFilling=False, valueSetter=0.0,
                        stringConverter=xformat.FmtDecimal, isEditable=False),
+            ColumnDefn("Fournisseur", 'left', 80, 'fournisseur', valueSetter="",
+                       isEditable=True),
             ColumnDefn("Saisie", 'left', 80, 'dateSaisie', isSpaceFilling=False,
                        stringConverter=xformat.FmtDate, isEditable=False),
             ColumnDefn("Ordi", 'left', 120, 'ordi', valueSetter="",isSpaceFilling=False,
@@ -459,10 +461,10 @@ class DLG(dlgMvts.DLG):
 
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
         self.anteDate = nust.GetDateLastInventaire(self.db,today)
-        self.lastDate = xformat.DateSqlToDatetime(nust.GetDateLastMvt(self.db))
+        self.endDate = xformat.DateSqlToDatetime(nust.GetDateLastMvt(self.db))
         self.pnlParams.SetOneValue('anteDate',valeur=self.anteDate,
                                    codeBox='param2')
-        self.pnlParams.SetOneValue('lastDate',valeur=self.lastDate,
+        self.pnlParams.SetOneValue('endDate',valeur=self.endDate,
                                    codeBox='param2')
         if self.article:
             self.pnlParams.SetOneValue('article',self.article,codeBox='param1')
@@ -512,7 +514,7 @@ class DLG(dlgMvts.DLG):
         dParams = {'article':self.article,
                    'lstOrigines': self.GetOrigines(),
                    'anteDate': self.anteDate,
-                   'lastDate': self.lastDate,}
+                   'endDate': self.endDate,}
         return dParams
 
     def GetDonnees(self,dParams=None):
@@ -602,9 +604,9 @@ class DLG(dlgMvts.DLG):
             return
 
         lastInvent = nust.GetDateLastInventaire(self.db)
-        if self.lastDate > lastInvent:
-            self.lastDate = lastInvent
-            self.pnlParams.SetOneValue('lastDate',self.lastDate,'param2')
+        if self.endDate > lastInvent:
+            self.endDate = lastInvent
+            self.pnlParams.SetOneValue('endDate',self.endDate,'param2')
         if saisie < lastInvent:
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
             mess = "Modifications d'écritures impossible\n\n"
@@ -618,13 +620,13 @@ class DLG(dlgMvts.DLG):
             self.GetDonnees(self.GetParams())
 
     def OnLastDate(self,event):
-        saisie = self.pnlParams.GetOneValue('lastDate',codeBox='param2')
+        saisie = self.pnlParams.GetOneValue('endDate',codeBox='param2')
         saisie = xformat.DateFrToDatetime(xformat.FmtDate(saisie))
         # si non nouvelle valeur saisie, on sort
-        if self.lastDate == saisie:
+        if self.endDate == saisie:
             return
-        if self.lastDate != saisie:
-            self.lastDate = saisie
+        if self.endDate != saisie:
+            self.endDate = saisie
             self.GetDonnees(self.GetParams())
 
     def OnOrigine(self,event):
@@ -653,6 +655,7 @@ class DLG(dlgMvts.DLG):
         dAchats =  {}
         lstIDachats = []
         lstIDtracks = []
+        self.nbPxMoyAchSortis = 0
 
         fnSort = lambda trk: (trk.IDarticle, trk.date, trk.IDmouvement)
         modelObjects = sorted([x for x in self.ctrlOlv.GetObjects() if x.qte != 0],
@@ -795,16 +798,16 @@ class DLG(dlgMvts.DLG):
             if qteSortie == 0:
                 return round(mttAch / qteAch, 4)
             else:
-                self.nbPxMoyenSortis += (qteSortie - qteAch)
+                self.nbPxMoyAchSortis += (qteSortie - qteAch)
                 return pxMoyAchSortis
 
         # Fonction qui rentre un retour en sotock
         def pxUnRetour(qteEntree):
             mttRet = 0.0
             qteRet = 0
-            if self.nbPxMoyenSortis > 0:
-                nbcorr = min(qteEntree,self.nbPxMoyenSortis)
-                self.nbPxMoyenSortis -= nbcorr
+            if self.nbPxMoyAchSortis > 0:
+                nbcorr = min(qteEntree,self.nbPxMoyAchSortis)
+                self.nbPxMoyAchSortis -= nbcorr
                 qteEntree -= nbcorr
             if qteEntree == 0:
                 return pxMoyAchSortis
@@ -840,7 +843,7 @@ class DLG(dlgMvts.DLG):
                 track.pxUn = pxUnFirstIn(-track.qte)
             # cas d'une entrée non achat
             else:
-                track.pxUn = pxUnRetour((track.qte))
+                track.pxUn = pxUnRetour(track.qte)
 
             if track.IDmouvement > 0 and abs(oldPU - track.pxUn) > 0.0001:
                 # on ne sauvegardera que les modifs déjà enregisrées
@@ -873,6 +876,6 @@ class DLG(dlgMvts.DLG):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(article="cerneaux de noix kg")
+    dlg = DLG(article="oeufs l")
     dlg.ShowModal()
     app.MainLoop()

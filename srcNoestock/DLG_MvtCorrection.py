@@ -408,13 +408,13 @@ class DLG(xGTE.DLG_tableau):
 
     def Sauve(self,donnees):
         self.IDmouvement = 0
-        codesOrigines = ['IDmouvement','origine','date','repas','fournisseur','analytique']
+        codesChamps = ['IDmouvement','origine','date','repas','fournisseur','analytique']
         newValues = [self.IDmouvement,self.origine,self.date,self.repas,self.fournisseur,self.analytique]
         # les values NoChange sont à None donc ignorées
         ixValues = [newValues.index(x) for x in newValues if x != None]
 
         # Voici les deux listes qui seront envoyées à la mise à jour
-        lstChamps = [codesOrigines[x] for x in ixValues]
+        lstChamps = [codesChamps[x] for x in ixValues]
         llDonnees=[]
         lstIdModifies= []
         mess = "Erreur sur ReqMAJ, DLG_MvtCorrection.Sauve"
@@ -423,7 +423,7 @@ class DLG(xGTE.DLG_tableau):
             mess ="Vous demandez de changer la nature des mouvements\n\n"
             mess += "Si des entrées deviennent sorties ou inversement des sorties deviennent entrées\n"
             mess += "faut-il inverser le sens des quantités, pour respecter le sens initial?\n\n"
-            mess += "répondez 'NON pour ne rien changer, OUI pour inverser les qtes si le mouvement change de sens"
+            mess += "répondez 'NON pour laisser les qte, OUI pour inverser les qtes si le mouvement change de sens"
             ret = wx.MessageBox(mess,"Confirmez",wx.YES_NO|wx.ICON_WARNING)
             if ret == wx.YES:
                 ableChgSens = True
@@ -433,15 +433,16 @@ class DLG(xGTE.DLG_tableau):
         for track in donnees:
             IDmouvement = track.IDmouvement
             values = []
-            for ix in range(len(ixValues)):
+            for ix in ixValues:
                 values.append(newValues[ix])
                 #modif de la track pour le retour éventuel
-                exec("track.%s = self.%s "%(lstChamps[ix],lstChamps[ix]))
+                exec("track.%s = self.%s "%(codesChamps[ix],codesChamps[ix]))
             track.IDmouvement = IDmouvement
             values[0] = IDmouvement
             # Inversion possible des quantités
             if ableChgSens:
-                oldSens = SENS[CODESORIGINES.index(track.origine)]
+                oldOrigine = track.oldDonnees[codesChamps.index('origine')]
+                oldSens = SENS[CODESORIGINES.index(oldOrigine)]
                 chgSens = newSens * oldSens
                 values.append(track.qte * chgSens)
                 exec("track.%s = track.%s * %d"%('qte','qte',chgSens))
@@ -458,7 +459,13 @@ class DLG(xGTE.DLG_tableau):
 
         # modif des tracks d'origine
         for lstValues in llDonnees:
-            retReqMAJ = self.db.ReqMAJ(lstValues=lstValues,lstChamps=lstChamps,mess=mess)
+            retReqMAJ = self.db.ReqMAJ(
+                nomTable= 'stMouvements',
+                nomChampID=lstChamps[0],
+                ID=lstValues[0],
+                lstValues=lstValues[1:],
+                lstChamps=lstChamps[1:],
+                mess=mess)
             if retReqMAJ != 'ok':
                 break
         if retReqMAJ == 'ok':

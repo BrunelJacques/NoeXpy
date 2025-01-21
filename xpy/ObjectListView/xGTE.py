@@ -10,6 +10,7 @@
 import wx
 import os
 import datetime
+import copy
 import xpy.xUTILS_SaisieParams as xusp
 from xpy.outils import xbandeau, xformat, xboutons,xexport, xchemins
 
@@ -494,7 +495,7 @@ class ListView( FastObjectListView):
 
     def OnCopier(self,event=None):
         # action copier
-        buffertracks = self.GetSelectedObjects()
+        buffertracks = [copy.deepcopy(x) for x in self.GetSelectedObjects()]
         if len(buffertracks) == 0:
             mess = "Pas de sélection faite"
             wx.MessageBox(mess)
@@ -512,27 +513,32 @@ class ListView( FastObjectListView):
 
     def OnCouper(self,event=None):
         # action copier
-        buffertracks = self.GetSelectedObjects()
-        if len(buffertracks) == 0:
+        originaltracks = self.GetSelectedObjects()
+        if len(originaltracks) == 0:
             mess = "Pas de sélection faite"
             wx.MessageBox(mess)
             return
+        buffertracks = [copy.deepcopy(x) for x in self.GetSelectedObjects()]
 
         # Sauvegarde des lignes
         nomFichier = "CutLines.txt"
         self.SpareCouper(nomFichier)
-
         pnlCorps = self.lanceur.pnlOlv
         pnlCorps.buffertracks = [ x for x in buffertracks]
-        for track in pnlCorps.buffertracks:
+
+        for track in buffertracks:
             if hasattr(pnlCorps, 'OnCouperTrack'):
                 pnlCorps.OnCouperTrack(track)
-            elif hasattr(self.parent, 'OnCopierTrack'):
+            elif hasattr(pnlCorps, 'OnCopierTrack'):
                 pnlCorps.OnCopierTrack(track)
-            self.modelObjects.remove(track)
+
+        for track in originaltracks:
             if hasattr(pnlCorps,'OnDeleteTrack'):
                 pnlCorps.OnDeleteTrack(track)
+            self.modelObjects.remove(track)
+
         self.RepopulateList()
+        self.MAJ_footer(None)
         wx.MessageBox(" %d lignes supprimées et mémorisées pour prochain <ctrl V>"%len(buffertracks))
         return
 
@@ -551,6 +557,7 @@ class ListView( FastObjectListView):
                 self.modelObjects.insert(ix,track)
                 ix += 1
             self.RepopulateList()
+            self.MAJ_footer(None)
             self._SelectAndFocus(ix)
             pnlCorps.buffertracks = []
         else:
@@ -597,6 +604,7 @@ class ListView( FastObjectListView):
             if obj in self.lanceur.pnlOlv.buffertracks:
                 self.lanceur.pnlOlv.buffertracks.remove(obj)
         self.RepopulateList()
+        self.MAJ_footer(None)
         self._SelectAndFocus(ix)
         return True
 

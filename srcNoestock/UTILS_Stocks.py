@@ -511,13 +511,19 @@ def GetMvtsByArticles(db, dParams=None):
         condOrigine = "origine in (%s)" % str(lstOrigines)[1:-1]
 
     anteDate = dParams.get('anteDate',None)
+    endDate = dParams.get('endDate',None)
+
     if not anteDate:
         condDate = ''
     else:
         condDate = "(date > '%s')" % anteDate
-        endDate = dParams.get('endDate',None)
-        if endDate:
-            condDate += " AND (date <= '%s')" % endDate
+
+    if not endDate:
+        condDate += ''
+    else:
+        if not condDate == '':
+            condDate += " AND "
+        condDate += "(date <= '%s')" % endDate
 
     where = "WHERE %s" % condDate
     lstCond = [condArticle,condOrigine,]
@@ -775,15 +781,16 @@ def SqlMvtsAnte(**kwd):
         where += """
                 AND (date LIKE '%%%s%%'
                         OR fournisseur LIKE '%%%s%%'
-                        OR IDanalytique LIKE '%%%s%% )'""" % (filtre, filtre, filtre,)
+                        OR IDanalytique LIKE '%%%s%% ')""" % (filtre, filtre,filtre)
 
     lstChamps = dicOlv['lstChamps']
-
+    lstGroupBy  = [ x for x in lstChamps if '(' not in x ]
+    groupBy = ",".join(lstGroupBy)
     req = """   SELECT %s AS IDM
                 FROM stMouvements
                 %s 
-                GROUP BY origine, date, fournisseur, IDanalytique
-                %s;""" % (",".join(lstChamps), where,order)
+                GROUP BY %s
+                ;""" % (",".join(lstChamps), where,groupBy)
     retour = db.ExecuterReq(req, mess='SqlMvtsAnte')
     lstDonnees = []
     if retour == 'ok':
@@ -844,13 +851,28 @@ def SauveMouvement(db,dlg,track):
     # --- Sauvegarde des différents éléments associés à la ligne de mouvement
     if not track.valide:
         return False
-    if not dlg.analytique or len(dlg.analytique.strip()) == 0:
+
+    if hasattr(track,'analytique') and track.analytique:
+        analytique = track.analytique
+    elif not dlg.analytique or len(dlg.analytique.strip()) == 0:
         analytique = '00'
     else: analytique = dlg.analytique
-    repas = None
-    if dlg.sens == 'sorties' and hasattr(track,'repas'):
-        if len(track.repas) > 0:
-            repas = CHOIX_REPAS.index(track.repas)+1
+
+    if hasattr(track,'repas') and track.repas:
+        repas = CHOIX_REPAS.index(track.repas)+1
+    else:
+        repas = None
+
+    if hasattr(track,'date') and track.date:
+        date = track.date
+    else: date = dlg.date
+    if hasattr(track,'origine') and track.origine:
+        origine = track.origine
+    else: origine = dlg.origine
+    if hasattr(track,'fournisseur') and track.fournisseur:
+        fournisseur = track.fournisseur
+    else: fournisseur = dlg.fournisseur
+
     lstDonnees = [
                 ('IDarticle', track.IDarticle),
                 ('repas', repas),
@@ -859,9 +881,9 @@ def SauveMouvement(db,dlg,track):
                 ('ordi', dlg.ordi),
                 ('dateSaisie', dlg.today),
                 ('modifiable', 1),
-                ('origine', dlg.origine),
-                ('date', dlg.date),
-                ('fournisseur', dlg.fournisseur),
+                ('origine', origine),
+                ('date', date),
+                ('fournisseur', fournisseur),
                 ('IDanalytique', analytique),
     ]
 

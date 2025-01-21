@@ -6,6 +6,7 @@
 # Auteur:          Jacques BRUNEL 2021-02
 # Licence:         Licence GNU GPL
 # ------------------------------------------------------------------
+import copy
 
 import wx
 import os
@@ -361,7 +362,8 @@ def GetParamsAnterieur(dlg, db=None):
         dParams['sensNum'] = dlg.sensNum
         dParams['date'] = DateSqlToDatetime(dParams['date'])
     dlgAnte.Destroy()
-    dParams['lstOrigines'] = [dParams['origine'],]
+    if 'origine' in dParams:
+        dParams['lstOrigines'] = [dParams['origine'],]
     return dParams
 
 def GetEnSaisie(dlg,db=None):
@@ -592,9 +594,8 @@ class PNL_corps(xGTE.PNL_corps):
         ret = ValideParams(pnl,dParams)
 
     def OnCopierTrack(self,track):
-        # action copier complémentaire
+        # action copier complémentaire sur prochaines lignes
         for track in self.buffertracks:
-            track.IDmouvement = None
             track.origine = self.lanceur.origine
             track.sens = self.lanceur.sens
 
@@ -604,19 +605,21 @@ class PNL_corps(xGTE.PNL_corps):
             del track.dicMvt # ceci pour créer une différence avec tracK.qte
 
         if self.lanceur.origine == 'achat':
-            if track .origine != 'achat':
+            if track.origine != 'achat':
                 track.nbAch = track.qte
                 track.pxAch = track.pxUn
                 track.parAch = 1
 
-        if track.sens != self.lanceur.sens:
-            track.qte = -track.qte
+        track.IDmouvement = None
+        track.origine = self.lanceur.origine
+        track.sens = self.lanceur.sens
 
         self.ValideLigne(None,track)
         CalculeLigne(self.lanceur,track)
         self.SauveLigne(track)
 
     def OnDeleteTrack(self, track):
+        # action sur anciennes lignes
         nust.DelMouvement(self.parent.db,self.ctrlOlv,track)
         track.IDmouvement = None
         track.donnees[0] = None
@@ -1040,7 +1043,7 @@ class DLG(xGTE.DLG_tableau):
         if event: event.Skip()
 
     def OnBtnCorrections(self,event):
-        donnees = [x for x in self.ctrlOlv.GetSelectedObjects() if x.IDmouvement > 0]
+        donnees = [x for x in self.ctrlOlv.GetSelectedObjects() if x.IDmouvement and x.IDmouvement > 0]
         if len(donnees) == 0:
             donnees = self.ctrlOlv.innerList
         dlgCorr = DLG_MvtCorrection.DLG(self,donnees=donnees)
