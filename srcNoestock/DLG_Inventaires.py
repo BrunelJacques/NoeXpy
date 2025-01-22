@@ -411,7 +411,10 @@ class PNL_corps(xGTE.PNL_corps):
             qteMvts = track.deltaQte
             ret = 'abort'
             if qteMvts != 0.0:
-                lstDonnees += [('origine', 'od_in'),
+                od = 'od_in'
+                if qteMvts < 0:
+                    od = 'od_out'
+                lstDonnees += [('origine', od),
                                ('qte', qteMvts),
                                ('date', self.parent.date),
                                ('IDanalytique', '00'),
