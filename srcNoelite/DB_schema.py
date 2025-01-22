@@ -309,7 +309,7 @@ DB_TABLES = {
                 ('fournisseur', 'VARCHAR(32)', "Fournisseur de l'entrée"),
                 ('origine', 'VARCHAR(8)', "achat; retour; od_in; repas; camp; od_out"),
                 ('IDarticle', 'VARCHAR(32)', "clé dans gstArticles"),
-                ('qte', 'INTEGER', "Quantitée mouvementée signée"),
+                ('qte', 'FLOAT', "Quantitée mouvementée signée"),
                 ('prixUnit', 'FLOAT', "Prix moyen pour sorties et retour, Prix revient pour achats"),
                 ('repas', 'INTEGER', "code repas: 1 matin, 2 midi, 3 soir, 4 tous"),
                 ('IDanalytique', 'VARCHAR(8)', "Section analytique du camp à facturer"),
