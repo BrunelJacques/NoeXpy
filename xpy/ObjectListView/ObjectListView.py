@@ -349,7 +349,6 @@ class ObjectListView(wx.ListCtrl):
         This clears any preexisting CheckStateColumn. The first column that is a check state
         column will be installed as the CheckStateColumn for this listview.
         """
-        sortCol = self.GetSortColumn()
         wx.ListCtrl.ClearAll(self)
         self.checkStateColumn = None
         self.columns = []
@@ -457,7 +456,7 @@ class ObjectListView(wx.ListCtrl):
 
         RepopulateList() or SetObjects() must be called after this.
         """
-        col = ColumnDefn("", fixedWidth=24, isEditable=False)
+        col = ColumnDefn("Check", fixedWidth=24, isEditable=False)
         # Install a value getter so sorting works
         col.valueGetter = col.GetCheckState
         # We don't want any string for the value
@@ -3115,8 +3114,8 @@ class GroupListView(FastObjectListView):
         if self.showGroups and self.useExpansionColumn and len(newColumns) > 0:
             if not isinstance(newColumns[0], ColumnDefn) or not newColumns[0].isInternal:
                 newColumns.insert(0, ColumnDefn("",
-                        fixedWidth=24,
-                        isEditable=False))
+                                                fixedWidth=24,
+                                                isEditable=False))
                 newColumns[0].isInternal = True
 
         FastObjectListView.SetColumns(self, newColumns, repopulate)

@@ -224,6 +224,7 @@ def GetOlvCodesSup():
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
     return {
+        'checkColonne': False,
         'recherche': True,
         'autoAddRow': False,
         'toutCocher':True,

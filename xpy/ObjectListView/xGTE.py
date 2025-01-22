@@ -41,6 +41,10 @@ class TrackGeneral(object):
             donnees = [None,] * (len(codesColonnes)+ len(codesSup))
         self.vierge = None
         self.valide = None
+        check = len(olv.columns) - len(olv.lstColonnes)
+        # cas de données sans la valeur du check fourni, on ajoute un faux
+        if  check == 1 and len(donnees) - len(codesSup)== len(olv.lstColonnes):
+            donnees.insert(0,0)
         # les données suplémentaires au nbre de colonnes, sont présentes dans les tracks et définies par codesSup
         if not (len(donnees)-len(codesSup) == len(codesColonnes) == len(nomsColonnes) == len(setterValues)):
             lst = [str(codesColonnes),str(nomsColonnes),str(setterValues),str(donnees)]
@@ -197,7 +201,6 @@ class ListView( FastObjectListView):
             self.CreateCheckStateColumn(0)
         self.lstCodesColonnes = self.GetLstCodesColonnes()
         self.lstNomsColonnes = self.GetLstNomsColonnes()
-        self.lstSetterValues = self.GetLstSetterValues()
         # On définit le message en cas de tableau vide
         self.SetEmptyListMsg(self.msgIfEmpty)
         self.SetEmptyListMsgFont(wx.FFont(11, wx.FONTFAMILY_DEFAULT))
@@ -280,38 +283,22 @@ class ListView( FastObjectListView):
 
     def GetLstCodesColonnes(self):
         lstCodes = list()
-        for colonne in self.lstColonnes:
-            code = colonne.valueGetter
+        for colonne in self.columns:
+            if isinstance(colonne.valueGetter,str):
+                code = colonne.valueGetter
+            else: code = colonne.title
             lstCodes.append(code)
         return lstCodes
 
     def GetLstNomsColonnes(self):
         nomColonnes = list()
-        for colonne in self.lstColonnes:
+        for colonne in self.columns:
             nom = colonne.title
             nomColonnes.append(nom)
         return nomColonnes
 
     def GetLstSetterValues(self):
-        setterValues = list()
-        for colonne in self.lstColonnes:
-            fmt = colonne.stringConverter
-            tip = None
-            if colonne.valueSetter != None:
-                tip = colonne.valueSetter
-            if tip == None:
-                if fmt:
-                    fmt = colonne.stringConverter.__name__
-                    if fmt[3:] in ('Montant','Solde','Decimal'):
-                        tip = 0.0
-                    elif fmt[3:] == 'Date':
-                        tip = wx.DateTime.FromDMY(1,0,1900)
-                    elif fmt[3:] == 'Entier':
-                        tip = 0
-                elif colonne == self.lstColonnes[0]:
-                    tip = 0
-            setterValues.append(tip)
-        return setterValues
+        return self.lstSetterValues
 
     def Selection(self):
         return self.GetSelectedObjects()
@@ -678,8 +665,6 @@ class PanelListView(wx.Panel):
     def OnEditStarted(self,event):
         row, col = self.ctrlOlv.cellBeingEdited
         code = self.ctrlOlv.lstCodesColonnes[col]
-        if self.ctrlOlv.checkColonne:
-            code = self.ctrlOlv.lstCodesColonnes[col-1]
         track = self.ctrlOlv.GetObjectAt(row)
         # conservation des données de la ligne en cours
         if track.valide:
@@ -706,8 +691,6 @@ class PanelListView(wx.Panel):
         track = self.ctrlOlv.GetObjectAt(row)
         value = self.ctrlOlv.cellEditor.GetValue()
         code = self.ctrlOlv.lstCodesColonnes[col]
-        if self.ctrlOlv.checkColonne:
-            code = self.ctrlOlv.lstCodesColonnes[col-1]
 
         # si pas de saisie on passe
         valueIdem = False
@@ -740,8 +723,6 @@ class PanelListView(wx.Panel):
 
             # appel des éventuels spécifiques
             code = self.ctrlOlv.lstCodesColonnes[col]
-            if self.ctrlOlv.checkColonne:
-                code = self.ctrlOlv.lstCodesColonnes[col-1]
 
             if hasattr(self.parent, 'OnEditFinished'):
                 ret = self.parent.OnEditFinished(code, track, editor=event.editor)
@@ -1050,7 +1031,9 @@ class DLG_tableau(xusp.DLG_vide):
 
     def OnFermer(self, event):
         #wx.MessageBox("Traitement de sortie") à gérer dans l'instance
-        nbl = len(self.pnlOlv.buffertracks)
+        nbl = 0
+        if hasattr(self.pnlOlv,'buffertracks'):
+            nbl = len(self.pnlOlv.buffertracks)
         if  nbl > 0:
             mess = "%d lignes ont été coupées sans être collées\n\n"%nbl
             mess += "La sortie de ce programme en fera disparaître la mémoire,"

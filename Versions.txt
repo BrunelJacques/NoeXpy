@@ -1,5 +1,6 @@
 version 1.1.2.42 (22/01/2025)
     - NoeStock: Ajustement des prix de sortie FIFO
+    - Modif sur gestion de la colonne check xpy
 
 version 1.1.2.41 (09/01/2025)
     - NoeStock: Ajout correction par lot

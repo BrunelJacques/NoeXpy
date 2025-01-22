@@ -248,14 +248,13 @@ def ValideLigne(dlg, track):
     if track.origine in ('achat', 'inventaire'):
         mess = None
         if track.origine == 'inventaire':
-            track.messageRefus = "La modification de l'inventaire est impossible ici\n"
-            mess = track.messageRefus
+            mess = "La modification de l'inventaire est impossible ici\n"
         if track.origine == 'achat':
             mess = "Modif des achats = Distorsion possible avec le montant en compta\n"
             mess += "Notez le montant de cette ligne, mtt = qte * pxUnitaire\n"
         if mess:
             wx.MessageBox(mess,"Non modifiable",style=wx.ICON_STOP)
-
+            track.messageRefus = "Modification non autorisée"
     # envoi de l'erreur
     if track.messageRefus != "Saisie incomplète\n\n":
         track.valide = False
@@ -351,7 +350,10 @@ def CalculeLigne(dlg, track):
         track.pxRation = track.mttTTC / track.nbRations
     else: track.pxRation = 0.0
     for ix in range(len(lstCodesColonnes)):
-        track.donnees[ix] = eval("track.%s"%lstCodesColonnes[ix])
+        codecol = lstCodesColonnes[ix]
+        if len(codecol) > 0:
+            track.donnees[ix] = eval("track.%s"%codecol)
+        else: track.donnees[ix] = None
 
 def ComposeDonnees(db,dlg,ldMouvements):
     # retourne la liste des données de l'OLv
@@ -876,6 +878,6 @@ class DLG(dlgMvts.DLG):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(article="oeufs l")
+    dlg = DLG(article="ail surgele")
     dlg.ShowModal()
     app.MainLoop()
