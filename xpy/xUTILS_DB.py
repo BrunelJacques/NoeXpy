@@ -421,7 +421,7 @@ class DB():
             if mess:
                 self.retourReq = mess +'\n%s\n'%err
             else: self.retourReq = 'Erreur xUTILS_DB\n\n'
-            self.retourReq +=  ("ExecuterReq:\n%s\n\nErreur detectee:\n%s"% (req, str(err)))
+            self.retourReq +=  ("ExecuterReq:\n%s\n\nErreur détectée:\n%s"% (req, str(err)))
             if affichError:
                 wx.MessageBox(self.retourReq,"Erreur accès BD",style=wx.ICON_ERROR)
         return self.retourReq

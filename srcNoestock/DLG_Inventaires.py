@@ -103,7 +103,7 @@ def GetMatriceAnterieurs(dlg):
         'listeCodesColonnes': lstCodesColonnes,
         'getDonnees': nust.SqlTable,
         'dicBandeau': dicBandeau,
-        'sortColumnIndex': 0,
+        'sortColumnIndex': 1,
         'sensTri': False,
         'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
         'size': (650, 400)}
@@ -578,7 +578,14 @@ class DLG(xGTE.DLG_tableau):
                 if lDonnees[ixQte] >= lDonnees[ixMini]:
                     return False
             return True
-        lstDonnees = [x for x in nust.CalculeInventaire(self,dParams) if filtreQte(x)]
+
+        # Appel des données vers SQL
+        isConnected = hasattr(self.db.connexion,'connection_id')
+        if isConnected and self.db.connexion.connection_id != None:
+            # préalable pour éviter une accès db après le db.close() de sortie
+            lstDonnees = [x for x in nust.CalculeInventaire(self,dParams) if filtreQte(x)]
+        else:
+            return
 
         if nust.MouvementsPosterieurs(self):
             messInfos = "Présence de mouvements postérieurs, le stock dans l'article en tient compte\n"

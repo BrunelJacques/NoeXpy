@@ -419,15 +419,15 @@ class DLG(xGTE.DLG_tableau):
         lstIdModifies= []
         mess = "Erreur sur ReqMAJ, DLG_MvtCorrection.Sauve"
         ableChgSens = False
+        chgSens = 1
         if 'origine' in lstChamps:
             mess ="Vous demandez de changer la nature des mouvements\n\n"
-            mess += "Si des entrées deviennent sorties ou inversement des sorties deviennent entrées\n"
-            mess += "faut-il inverser le sens des quantités, pour respecter le sens initial?\n\n"
-            mess += "répondez 'NON pour laisser les qte, OUI pour inverser les qtes si le mouvement change de sens"
+            mess += "faut-il inverser le sens des quantités?\n\n"
+            mess += "répondez 'NON pour laisser idem, OUI pour inverser les qtes"
             ret = wx.MessageBox(mess,"Confirmez",wx.YES_NO|wx.ICON_WARNING)
             if ret == wx.YES:
                 ableChgSens = True
-                newSens = SENS[CODESORIGINES.index(self.origine)]
+                chgSens = -1
 
         # composition des listes pour mise à jour dans db
         for track in donnees:
@@ -441,9 +441,6 @@ class DLG(xGTE.DLG_tableau):
             values[0] = IDmouvement
             # Inversion possible des quantités
             if ableChgSens:
-                oldOrigine = track.oldDonnees[codesChamps.index('origine')]
-                oldSens = SENS[CODESORIGINES.index(oldOrigine)]
-                chgSens = newSens * oldSens
                 values.append(track.qte * chgSens)
                 exec("track.%s = track.%s * %d"%('qte','qte',chgSens))
             track.ordi = self.ordi
@@ -522,7 +519,6 @@ class DLG(xGTE.DLG_tableau):
                 else:
                     mess = ok
                 wx.MessageBox(mess, "Résultat", wx.OK)
-
             else:
                 return
         # sortie normale ok

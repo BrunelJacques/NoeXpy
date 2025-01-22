@@ -928,7 +928,10 @@ class DLG(xGTE.DLG_tableau):
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
         self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
         if event:
-            self.GetDonnees()
+            # ajout pour éviter une accès db après le db.close() de sortie
+            if hasattr(self.db.connexion,
+                       'connection_id') and self.db.connexion.connection_id != None:
+                self.GetDonnees()
 
     def OnDate(self,event):
         saisie = self.GetDate()
@@ -1138,6 +1141,6 @@ class DLG(xGTE.DLG_tableau):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(sens='entrees')
+    dlg = DLG(sens='sorties')
     dlg.ShowModal()
     app.MainLoop()

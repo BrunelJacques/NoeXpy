@@ -1,4 +1,4 @@
-version 1.1.2.42 (20/01/2025)
+version 1.1.2.42 (22/01/2025)
     - NoeStock: Ajustement des prix de sortie FIFO
 
 version 1.1.2.41 (09/01/2025)

@@ -445,6 +445,9 @@ def MouvementsPosterieurs(dlg):
     return False
 
 def GetMvtsByDate(db, dParams=None):
+    if hasattr(db.connexion,'connection_id') and db.connexion.connection_id == None:
+        wx.MessageBox('db closed!!','INFO programmation')
+        return []
     # retourne l'ensemble des mouvements pour une date donnée et d'autres params
     lstChamps = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
     lstChamps.append('stArticles.qteStock')
