@@ -1048,7 +1048,7 @@ class DLG(xGTE.DLG_tableau):
     def OnBtnCorrections(self,event):
         donnees = [x for x in self.ctrlOlv.GetSelectedObjects() if x.IDmouvement and x.IDmouvement > 0]
         if len(donnees) == 0:
-            donnees = self.ctrlOlv.innerList
+            donnees =  [x for x in self.ctrlOlv.innerList if x.IDmouvement and x.IDmouvement > 0]
         dlgCorr = DLG_MvtCorrection.DLG(self,donnees=donnees)
         dlgCorr.ShowModal()
         self.GetDonnees()
@@ -1065,6 +1065,10 @@ class DLG(xGTE.DLG_tableau):
         return idem
 
     def GetDonnees(self,dParams=None):
+        # cas de db.Close() par le super en fin
+        if not self.db.connexion.is_connected():
+            return
+
         if not dParams:
             dParams = GetParams(self.pnlParams)
         if self.ParamsIdem(self.oldParams,dParams):

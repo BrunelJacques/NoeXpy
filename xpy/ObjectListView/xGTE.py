@@ -207,14 +207,14 @@ class ListView( FastObjectListView):
 
     def MAJ(self, ID=None, ):
         self.selectionID = ID
-        self.SetObjects(self.formerTracks(self.dicOlv))
+        self.SetObjects(self.FormerTracks(self.dicOlv))
         if self.pnlFooter:
             self.MAJ_footer(None)
         # Rappel de la sélection d'un item
         if self.selectionID != None and len(self.innerList) > 0:
             self.SelectObject(self.innerList[ID], deselectOthers=True, ensureVisible=True)
 
-    def formerTracks(self,dicOlv=None):
+    def FormerTracks(self, dicOlv=None):
         tracks = list()
         if self.lstDonnees is None and self.getDonnees :
             self.lstDonnees = self.getDonnees(**dicOlv)

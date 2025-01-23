@@ -216,7 +216,7 @@ class ListView(FastObjectListView):
             kwd['db'] = self.parent.db
         elif hasattr(self.lanceur,'db'):
             kwd['db'] = self.lanceur.db
-        lstDonnees = self.formerTracks(**kwd)
+        lstDonnees = self.FormerTracks(**kwd)
         self.SetObjects(lstDonnees)
         if len(self.innerList) >0:
             self.SelectObject(self.innerList[0])
@@ -264,7 +264,7 @@ class ListView(FastObjectListView):
             setterValues.append(tip)
         return setterValues
 
-    def formerTracks(self,**kwd):
+    def FormerTracks(self,**kwd):
         kwd['dicOlv'] = self.parent.dicOlv
         if hasattr(self,'getDonnees') and self.getDonnees :
             self.lstDonnees = self.getDonnees(**kwd)

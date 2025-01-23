@@ -520,6 +520,9 @@ class DLG(dlgMvts.DLG):
         return dParams
 
     def GetDonnees(self,dParams=None):
+        # cas de db.Close() par le super en fin
+        if not self.db.connexion.is_connected():
+            return []
         if not dParams or not dParams['article']:
             return
         # forme la grille, puis création d'un premier modelObjects par init

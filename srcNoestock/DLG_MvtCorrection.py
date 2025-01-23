@@ -185,6 +185,20 @@ def GetDlgOptions(dlg):
 
     #----------------------- Parties de l'écrans -----------------------------------------
 
+def FormerTracks(ctrlOlv,dicOlv=None):
+    tracks = ctrlOlv.modelObjects
+    if len(tracks) == 0:
+        tracks = []
+        for ligneDonnees in ctrlOlv.lstDonnees:
+            tracks.append(xGTE.TrackGeneral(ctrlOlv, ligneDonnees))
+    acalculer = ctrlOlv.GetSelectedObjects()
+    if len(acalculer) == 0:
+        acalculer = tracks
+    for track in acalculer:
+        ctrlOlv.parent.CalculeLigne(ctrlOlv.lanceur,track)
+    ctrlOlv._FormatAllRows()
+    return tracks
+
 def CalculeLigne(dlg,track):
     qte = round(track.qte,4)
     prixUnit = round(track.prixUnit,4)
@@ -192,7 +206,10 @@ def CalculeLigne(dlg,track):
     if rations == 0: rations = 1
     track.__mttTTC = round(qte * prixUnit,2)
     track.__pxRation =  round(qte * prixUnit / rations,2)
-    modif = False
+    if not hasattr(track,'modif'):
+        modif = False
+    else:
+        modif = track.modif
     if dlg.origine  and dlg.origine != track.origine:
         track.origine = dlg.origine
         modif = True
@@ -276,11 +293,14 @@ class DLG(xGTE.DLG_tableau):
         self.origine = None
 
         self.pnlOlv.CalculeLigne = CalculeLigne
+        self.ctrlOlv.FormerTracks = self.FormerTracks
         self.pnlOlv.parent = self
         self.Bind(wx.EVT_CLOSE, self.OnFermer)
         self.InitOlv()
 
     # ------------------- Gestion des actions -----------------------
+    def FormerTracks(self,dicOlv=None):
+        return FormerTracks(self.ctrlOlv,dicOlv)
 
     def InitOlv(self):
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
@@ -297,6 +317,9 @@ class DLG(xGTE.DLG_tableau):
         return code
 
     def GetDonnees(self):
+        # cas de db.Close() par le super en fin
+        if not self.db.connexion.is_connected():
+            return
         # appel des données selon les ID reçus
         lstCodesCol = self.dicOlv['lstCodes']
         lstChamps = []
@@ -339,7 +362,7 @@ class DLG(xGTE.DLG_tableau):
             self.sens = SENS[VALUESORIGINES.index(lblOrigine)]
         self.dicOlv.update({'lstColonnes': GetOlvColonnes(self)})
         ndlgmvts.GriseCtrlsParams(self, self.lstOrigines)
-        self.GetDonnees()
+        self.ctrlOlv.MAJ()
 
     def OnDate(self, event):
         saisie = self.pnlParams.GetOneValue('date',codeBox='param1')
@@ -403,7 +426,7 @@ class DLG(xGTE.DLG_tableau):
         self.ctrlOlv.Apercu(None)
 
     def CocheAnomalies(self):
-        for track in self.ctrlOlv.innerList:
+        for track in self.ctrlOlv.GetSelectedObjects():
             self.ctrlOlv.SetCheckState(track,track.modif)
 
     def Sauve(self,donnees):

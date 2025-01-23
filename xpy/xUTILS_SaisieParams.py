@@ -563,7 +563,6 @@ class PNL_ctrl(wx.Panel):
     def OnCtrlAction(self,event):
         if self.flagSkipEdit: return
         self.flagSkipEdit = True
-        #print("action %s"%event.EventType, self.name) #pour debug event multiples
         event.Skip()
 
         actionCtrl = None
@@ -920,6 +919,7 @@ class BoxPanel(wx.Panel):
 
     # Get de tous les ctrl, mis dans un dictionnaire de données
     def GetValues(self):
+        self.dictDonnees = {}
         for panel in self.lstPanels:
             if isinstance(panel.ctrl,(tuple,list)): continue
             [code, champ] = panel.ctrl.nameCtrl.split('.')
