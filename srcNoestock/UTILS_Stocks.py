@@ -293,11 +293,11 @@ def CalculeInventaire(dlg, dParams):
     # nouveau calcul
     db = dlg.db
     endDate = dParams['date']
-    anteDate = GetDateLastInventaire(db,endDate)
+    anteDate = str(GetDateLastInventaire(db,endDate))
 
     # écritures postérieures à la date d'analyse, pas de maj PU et qte de l'article
     majArticles = True
-    if endDate < GetDateLastMvt(db):
+    if endDate < str(GetDateLastMvt(db)):
         majArticles = False
 
     # complète les paramètres façon DLG_MvtOneArticle
@@ -354,7 +354,7 @@ def CalculeInventaire(dlg, dParams):
     def ComposeLigne(dArt, ldMvts):
         dl = dParams["endDate"]
         # calcul le prix du stock sur derniers achats
-        lstObjects = [SetAttrDicToTrack(codesTrack,codesDic,x) for x in ldMvts if x["date"] <= dl]
+        lstObjects = [SetAttrDicToTrack(codesTrack,codesDic,x) for x in ldMvts if str(x["date"]) <= dl]
         pxAchatsStock = PxAchatsStock(lstObjects)
 
         # choix du prix unitaire retenu pour valoriser le stock, priorité FIFO

@@ -198,8 +198,9 @@ def ValideSaisie(dlgSaisie,**kwd):
 
 class EffectifUnJour(object):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,db=None,date=None,analytique='00'):
+    def __init__(self,db=None,date=None,analytique='00',cuisine=True):
         # Lanceur de l'écran de saisie d'une ligne d'effectif
+        self.cuisine = cuisine
         if db:
             self.db = db
         else: self.db = xdb.DB()

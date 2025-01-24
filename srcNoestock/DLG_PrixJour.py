@@ -227,7 +227,7 @@ class PNL_corps(xGTR.PNL_corps):
 
         if ligne.nbRepas == 0.0:
             # lancement de la gestion effectif
-            DLG_Effectifs.EffectifUnJour(self.db,dte,analytique)
+            DLG_Effectifs.EffectifUnJour(self.db,dte,analytique,cuisine=self.parent.cuisine)
             self.ctrlOlv.MAJ(ixLigne)
         dlg = DLG_PrixJourDetail.DLG(dteJour=ligne.IDdate)
         dlg.ShowModal()
