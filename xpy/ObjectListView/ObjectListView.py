@@ -2353,8 +2353,9 @@ class ObjectListView(wx.ListCtrl):
         value = self.cellEditor.GetValue()
         if hasattr(self.cellEditor,'error') and self.cellEditor.error:
             self.error = wx.ID_ABORT
-            self.columns[subItemIndex].SetValue(rowModel, rowModel.old_data)
-            self.cellEditor.SetValue(rowModel.old_data)
+            if hasattr(rowModel,'old_data'):
+                self.columns[subItemIndex].SetValue(rowModel, rowModel.old_data)
+                self.cellEditor.SetValue(rowModel.old_data)
         evt = OLVEvent.CellEditFinishingEvent(
             self,
             rowIndex,
@@ -2365,7 +2366,7 @@ class ObjectListView(wx.ListCtrl):
             False)
 
         self.GetEventHandler().ProcessEvent(evt)
-        if not evt.IsVetoed() and not (evt.cellValue in(None,'')):
+        if not evt.IsVetoed() and not (evt.cellValue in(None,)):
             self.columns[subItemIndex].SetValue(rowModel, evt.cellValue)
             self.RefreshIndex(rowIndex, rowModel)
         else:

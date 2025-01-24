@@ -173,14 +173,14 @@ def GetOlvColonnes(dlg):
             ColumnDefn("ID", 'centre', 0, 'IDmouvement',
                        isEditable=False),
             ColumnDefn("Date Mvt", 'left', 80, 'date',valueSetter=datetime.date(1900,1,1),
-                       isEditable=False, isSpaceFilling=False,
+                       isEditable=True, isSpaceFilling=False,
                        stringConverter=xformat.FmtDate),
             ColumnDefn("Origine", 'left', 50, 'origine',
-                                cellEditorCreator=ChoiceEditor,isEditable=False),
+                                cellEditorCreator=ChoiceEditor,isEditable=True),
             ColumnDefn("Repas", 'left', 40, 'repas', valueSetter="",
-                                cellEditorCreator=ChoiceEditor,isEditable=False),
+                                cellEditorCreator=ChoiceEditor,isEditable=True),
             ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",
-                       isSpaceFilling=True, isEditable=False),
+                       isSpaceFilling=True, isEditable=True),
             ColumnDefn("Qté", 'right', 50, 'qte', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtQte),
             ColumnDefn(titlePrix, 'right', 60, 'pxUn', isSpaceFilling=False, valueSetter=0.0,
@@ -216,13 +216,15 @@ def ValideLigne(dlg, track):
     track.messageRefus = "Saisie incomplète\n\n"
     CalculeLigne(dlg, track)
 
-    # IDmouvement manquant
-    if track.IDmouvement in (None, 0):
-        track.messageRefus += "L'IDmouvement n'a pas été déterminé\n"
-
     # Repas non renseigné
     if dlg.sens == 'sorties' and track.repas in (None, 0, ''):
         track.messageRefus += "Le repas pour imputer la sortie n'est pas saisi\n"
+
+    # date hors plage
+    if track.date in (None, 0, ''):
+        track.messageRefus += "La date n'est pas saisie\n"
+    elif track.date < dlg.anteDate or track.date > dlg.endDate:
+        track.messageRefus += "La date est hors de la plage de date en cours\n"
 
     # article manquant
     if track.IDarticle in (None, 0, ''):
@@ -249,12 +251,12 @@ def ValideLigne(dlg, track):
         mess = None
         if track.origine == 'inventaire':
             mess = "La modification de l'inventaire est impossible ici\n"
+            track.messageRefus = "Modification inventaire non autorisée"
         if track.origine == 'achat':
-            mess = "Modif des achats = Distorsion possible avec le montant en compta\n"
-            mess += "Notez le montant de cette ligne, mtt = qte * pxUnitaire\n"
+            mess = "Modif des achats = Distorsion possible avec un montant comptable\n"
+            mess += "Vérifiez la nature de cette ligne et son origine\n"
         if mess:
-            wx.MessageBox(mess,"Non modifiable",style=wx.ICON_STOP)
-            track.messageRefus = "Modification non autorisée"
+            wx.MessageBox(mess,"Info",style=wx.ICON_INFORMATION)
     # envoi de l'erreur
     if track.messageRefus != "Saisie incomplète\n\n":
         track.valide = False
@@ -395,7 +397,7 @@ def ComposeDonnees(db,dlg,ldMouvements):
             else:
                 donnees.append(None)
         # codes supplémentaires de track non affichés
-        donnees += [dArticle, dMvt,]
+        donnees += [dArticle, dMvt,dMvt['modifiable']]
         lstDonnees.append(donnees)
     return lstDonnees
 
@@ -650,6 +652,10 @@ class DLG(dlgMvts.DLG):
 
     def OnBtnAjuste(self,event):
         # recalcule et modifie les prix unitaires en sorties de l'article selon FIFO
+        if not self.ctrlOlv.IsCellEditing():
+            mess = "Modifications impossibles\n\n"
+            mess += "Les lignes ne sont pas éditables, cf plage de dates"
+            wx.MessageBox(mess,"Bloquant",wx.ICON_STOP)
         cumQte = 0.0
         cumMtt = 0.0
         cumQteAch = 0.0

@@ -146,8 +146,6 @@ class ListView( FastObjectListView):
         self.lstDonnees = kwds.pop('lstDonnees', None)
         self.getDonnees = kwds.pop('getDonnees', None)
         self.dictColFooter = kwds.pop('dictColFooter', {})
-        self.buffertracks = []
-
 
         # Choix des options du 'tronc commun' du menu contextuel
         self.copier = kwds.pop('copier', True)
@@ -496,6 +494,7 @@ class ListView( FastObjectListView):
                 pnlCorps.OnCopierTrack(track)
         mess = "lignes mémorisées pour prochain coller ou <ctrl> V"
         wx.MessageBox(" %d %s"%(len(buffertracks),mess))
+        pnlCorps.buffercut = False
         return
 
     def OnCouper(self,event=None):
@@ -518,6 +517,7 @@ class ListView( FastObjectListView):
                 pnlCorps.OnCouperTrack(track)
             elif hasattr(pnlCorps, 'OnCopierTrack'):
                 pnlCorps.OnCopierTrack(track)
+            pnlCorps.buffercut = True
 
         for track in originaltracks:
             if hasattr(pnlCorps,'OnDeleteTrack'):
@@ -547,6 +547,7 @@ class ListView( FastObjectListView):
             self.MAJ_footer(None)
             self._SelectAndFocus(ix)
             pnlCorps.buffertracks = []
+            pnlCorps.buffercut = False
         else:
             mess = "Rien en copier ou coller, refaites le <ctrl> C ou <ctrl> X"
             wx.MessageBox(mess)
@@ -590,6 +591,7 @@ class ListView( FastObjectListView):
                 self.modelObjects.remove(obj)
             if obj in self.lanceur.pnlOlv.buffertracks:
                 self.lanceur.pnlOlv.buffertracks.remove(obj)
+
         self.RepopulateList()
         self.MAJ_footer(None)
         self._SelectAndFocus(ix)
@@ -699,8 +701,8 @@ class PanelListView(wx.Panel):
         if (value == None) or valueIdem:
             track.noSaisie = True
             event.Skip()
-            return
-        track.noSaisie = False
+        else:
+            track.noSaisie = False
 
         # appel des éventuels spécifiques
         if hasattr(self.parent, 'OnEditFinishing'):
@@ -992,6 +994,7 @@ class DLG_tableau(xusp.DLG_vide):
                 # fourni par kwds de l'instance via GetDlgOptions()
                 self.pnlOlv = pnl_corps(self, self.dicOlv, **kwds)
                 self.pnlOlv.buffertracks = []
+                self.pnlOlv.buffercut = False
             else:
                 # on prend le basique dans ce module si pas d'autre info
                 self.pnlOlv = PNL_corps(self, self.dicOlv, **kwds)
@@ -1034,7 +1037,7 @@ class DLG_tableau(xusp.DLG_vide):
         nbl = 0
         if hasattr(self.pnlOlv,'buffertracks'):
             nbl = len(self.pnlOlv.buffertracks)
-        if  nbl > 0:
+        if  nbl > 0 and self.pnlOlv.buffercut:
             mess = "%d lignes ont été coupées sans être collées\n\n"%nbl
             mess += "La sortie de ce programme en fera disparaître la mémoire,"
             mess += "confirmez-vous la sortie?"

@@ -447,6 +447,7 @@ class DLG(xGTE.DLG_tableau):
     def __init__(self,date=None,**kwd):
         kwds = GetDlgOptions(self)
         self.skip = False
+        self.infoLue = False
         self.dicParams = GetDicPnlParams(self)
         self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
         self.dicOlv.update({'lstCodesSup': GetOlvCodesSup()})
@@ -524,6 +525,7 @@ class DLG(xGTE.DLG_tableau):
         saisie = xformat.DateFrToDatetime(xformat.FmtDate(saisie))
         if self.date != saisie:
             self.date = saisie
+            self.infoLue = False
             self.GetDonnees()
         if event: event.Skip()
 
@@ -590,16 +592,22 @@ class DLG(xGTE.DLG_tableau):
             lstDonnees = [x for x in nust.CalculeInventaire(self,dParams) if filtreQte(x)]
         else:
             return
+        del attente
 
+        messInfos = ""
         if nust.MouvementsPosterieurs(self):
-            messInfos = "Présence de mouvements postérieurs, le stock dans l'article en tient compte\n"
+            messInfos += "Présence de mouvements postérieurs, le stock dans l'article en tient compte\n"
 
-        dateLastestInvent = nust.GetDateLastInventaire(self.db)
-        if  self.date <= dateLastestInvent:
+        self.lastInvent = nust.GetDateLastInventaire(self.db)
+        if  self.date <= self.lastInvent:
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE  # gestion du retour du choix dépot
-            messInfos = "Présence d'un inventaire archivé au %s, modifs impossibles\n"%dateLastestInvent
+            messInfos += "Présence d'un inventaire archivé au %s, modifs impossibles\n"%self.lastInvent
         else:
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_DOUBLECLICK  # gestion du retour du choix dépot
+        if messInfos != "" and not self.infoLue:
+            wx.MessageBox(messInfos,'Non bloquant',style=wx.ICON_INFORMATION)
+            messInfos = ""
+            self.infoLue = True
 
         # alimente la grille, puis création de modelObejects pr init
         self.ctrlOlv.lstDonnees = lstDonnees
@@ -614,7 +622,6 @@ class DLG(xGTE.DLG_tableau):
         elif nbStNeg == 1:
             messInfos += "un article a des stocks négatifs, veuillez saisir des entrées par Mouvements articles.\n"
         self.oldParams = None
-        del attente
         if len(messInfos) > 0:
             styleInfos = wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER,(16, 16))
         else:
@@ -666,6 +673,11 @@ class DLG(xGTE.DLG_tableau):
         self.ctrlOlv.Apercu(None)
 
     def OnArchiver(self,event):
+        if self.lastInvent == self.date:
+            saisie = nust.GetDateSaisieLastInventaire(self.db,self.lastInvent)
+            mess = "Cet inventaire a déjà été archivé le %s!"%str(saisie)
+            wx.MessageBox(mess,'Impossible',style=wx.ICON_STOP)
+            return
         self.ctrlOlv.SortItems(self.compare_items)
         self.ctrlOlv.MAJ()
         if not self.dictUser or self.dictUser['profil'][:5] != 'admin':

@@ -10,7 +10,7 @@
 import wx, decimal, datetime
 from srcNoelite     import DB_schema
 from xpy.outils     import xformat
-from xpy.outils.xformat import Nz,DateSqlToDatetime
+from xpy.outils.xformat import Nz,DateSqlToDatetime,DateSqlToFr
 from xpy  import xUTILS_DB as xdb
 
 LIMITSQL = 1000
@@ -45,6 +45,10 @@ def InsertInventaire(dlg):
     if ret == 'ok':
         mess = "Archivage terminé avec succés au %s"% llDonnees[0][0]
         wx.MessageBox(mess,"succés")
+        # mouvements rendus non modifiables
+        mess = "UTILS_Stocks.PostInventaire modif = False sur mouvements"
+        condition = "date <= '%s'"%str(dlg.date)
+        dlg.db.ReqMAJ('stMouvements',lstDonnees=(('modifiable',0),),condition=condition,mess=mess)
 
 def GetDateLastInventaire(db,dteAnalyse=None):
     # return: date du dernier inventaire précédant la date d'analyse
@@ -66,6 +70,27 @@ def GetDateLastInventaire(db,dteAnalyse=None):
         if len(recordset) > 0:
             dteLast = recordset[-1][0]
     return DateSqlToDatetime(dteLast)
+
+def GetDateSaisieLastInventaire(db,dteAnalyse=None):
+    # return: date du dernier inventaire précédant la date d'analyse
+    whereDate = ""
+    if dteAnalyse:
+        dteIso = xformat.DatetimeToStr(dteAnalyse, iso=True)
+        whereDate = "WHERE stInventaires.IDdate = '%s' " % dteIso
+    req = """   
+            SELECT MAX(dateSaisie)
+            FROM stInventaires
+            %s
+            GROUP BY IDdate    
+            ;""" % (whereDate)
+
+    retour = db.ExecuterReq(req, mess='UTILS_Stocks.GetDateSaisieLastInventaire')
+    dteSaisie = '2000-01-01'
+    if retour == 'ok':
+        recordset = db.ResultatReq()
+        if len(recordset) > 0:
+            dteSaisie = recordset[-1][0]
+    return DateSqlToFr(dteSaisie)
 
 def GetLastInventaire(dteAnalyse=None,lstChamps=None,oneArticle=None):
     # return: lignes de l'inventaire précédant dteAnalyse ou seulement une ligne article
@@ -209,6 +234,8 @@ def PxAchatsStock(modelObjects):
     dQtesFin = {}
     # calcul des quantités en stock, crée liste articles présents, attribution d'index
     for track in modelObjects:
+        if not track.IDmouvement:
+            track.IDmouvement = 0
         if track.IDarticle not in lstArticles:
             lstArticles.append(track.IDarticle)
             dQtesFin[track.IDarticle] = 0
@@ -854,7 +881,8 @@ def SauveMouvement(db,dlg,track):
     # --- Sauvegarde des différents éléments associés à la ligne de mouvement
     if not track.valide:
         return False
-
+    if not db.connexion.is_connected():
+        return False
     if hasattr(track,'analytique') and track.analytique:
         analytique = track.analytique
     elif not dlg.analytique or len(dlg.analytique.strip()) == 0:
@@ -919,6 +947,7 @@ def DelMouvement(db,olv,track):
 
 def MAJarticle(db,dlg,track):
     # sauve dicArticle bufférisé dans ctrlOlv.bffArticles, pointé par les track.dicArticle)
+    if not db.connexion.is_connected(): return
     if not track.IDarticle or track.IDarticle in ('',0): return
     if hasattr(track,'valide)') and track.valide == False: return
     if track.qte in (None,''): return

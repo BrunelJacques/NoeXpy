@@ -318,7 +318,7 @@ def GetOlvColonnes(dlg):
 
 def GetOlvCodesSup():
     # codes dans les données olv, mais pas dans les colonnes, attributs des tracks non visibles en tableau
-    return ['dicArticle','dicMvt',]
+    return ['dicArticle','dicMvt','modifiable']
 
 def GetOlvOptions(dlg):
     # Options paramètres de l'OLV ds PNLcorps
@@ -460,19 +460,18 @@ def GetMouvements(dlg, dParams):
             if code == 'pxMoy':
                 donnees.append(ConvTva(dArticle['prixMoyen'],dArticle['txTva'],dlg.ht_ttc))
                 continue
-            if code in dMvt:
+            if code =='IDmouvement':
                 donnees.append(dMvt[code])
                 continue
             # ajout de l'article associé
-            if code in dArticle:
-                donnees.append(dArticle)
+            if code == 'IDarticle':
+                donnees.append(dMvt[code])
                 continue
-
             donnees.append(None)
             continue
         # codes supplémentaires de track non affichés('prixTTC','IDmouvement','dicArticle','dicMvt) dlg.dicOlv['lstCodesSup']
         donnees += [dArticle,
-                    dMvt,]
+                    dMvt,dMvt['modifiable']]
         # correctif si présence des colonnes spéciales Achat
 
         if dlg.typeAchat:
@@ -540,6 +539,12 @@ def ValideLigne(dlg,track):
     if not track.valide:
         wx.MessageBox = "les paramètres du haut d'écran ne sont pas valides"
         return
+    if track.IDmouvement in (None,0):
+        track.modifiable = 1
+        track.IDmouvement = 0
+    if not track.modifiable:
+        wx.MessageBox = "l'écriture n'est pas modifiable (inventaire archivé)"
+        return
     track.messageRefus = "Saisie incomplète\n\n"
     CalculeLigne(dlg,track)
 
@@ -549,7 +554,7 @@ def ValideLigne(dlg,track):
 
     # article manquant
     if track.IDarticle in (None,0,'') :
-        track.messageRefus += "L'article n'est pas saisi\n"
+        track.messageRefus = "L'article n'est pas saisi\n"
 
     # qte null
     try:
@@ -570,7 +575,8 @@ def ValideLigne(dlg,track):
     # envoi de l'erreur
     if track.messageRefus != "Saisie incomplète\n\n":
         track.valide = False
-    else: track.messageRefus = ""
+    else:
+        track.messageRefus = ""
     return
 
 class PNL_corps(xGTE.PNL_corps):
@@ -601,7 +607,7 @@ class PNL_corps(xGTE.PNL_corps):
 
     def OnCollerTrack(self, track):
         # avant de coller une track, raz de certains champs et recalcul
-        if hasattr(track,'dicMvt') and track.IDmouvement == None:
+        if hasattr(track,'dicMvt') and track.IDmouvement == 0:
             del track.dicMvt # ceci pour créer une différence avec tracK.qte
 
         if self.lanceur.origine == 'achat':
@@ -610,7 +616,7 @@ class PNL_corps(xGTE.PNL_corps):
                 track.pxAch = track.pxUn
                 track.parAch = 1
 
-        track.IDmouvement = None
+        track.IDmouvement = 0
         track.origine = self.lanceur.origine
         track.sens = self.lanceur.sens
 
@@ -621,10 +627,10 @@ class PNL_corps(xGTE.PNL_corps):
     def OnDeleteTrack(self, track):
         # action sur anciennes lignes
         nust.DelMouvement(self.parent.db,self.ctrlOlv,track)
-        track.IDmouvement = None
-        track.donnees[0] = None
+        track.IDmouvement = 0
+        track.donnees[0] = 0
         track.vierge = True
-        track.oldDonnees = [None, ] * len(track.donnees)
+        track.oldDonnees = [0, ] * len(track.donnees)
 
     def OnEditStarted(self,code,track=None,editor=None):
         # affichage de l'aide
@@ -650,11 +656,10 @@ class PNL_corps(xGTE.PNL_corps):
         if code == 'origine':
             lstChoix = DICORIGINES[self.parent.sens]['codes'][1:]
             editor.Set(lstChoix)
-            if self.parent.sens != 'article':
-                if track.origine:
-                    editor.SetStringSelection(track.origine)
-                else:
-                    editor.SetSelection(0)
+            if track.origine:
+                editor.SetStringSelection(track.origine)
+            else:
+                editor.SetSelection(0)
 
         if code == 'repas':
             editor.Set(nust.CHOIX_REPAS)
@@ -709,10 +714,6 @@ class PNL_corps(xGTE.PNL_corps):
             # stock négatif
             if self.lanceur.sens == "sorties" and (Nz(track.qteStock)- Nz(value)) < 0:
                 wx.MessageBox("Simple remarque!\n\nAvec cette sortie le Stock deviendra négatif", "Problème stock")
-
-        if code in ('qte','pxUn','nbAch','pxAch','parAch'):
-            # force la tentative d'enregistrement et le calcul même en l'absece de saisie
-            track.noSaisie = False
 
         # enlève l'info de bas d'écran
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
@@ -1046,7 +1047,7 @@ class DLG(xGTE.DLG_tableau):
         if event: event.Skip()
 
     def OnBtnCorrections(self,event):
-        donnees = [x for x in self.ctrlOlv.GetSelectedObjects() if x.IDmouvement and x.IDmouvement > 0]
+        donnees = [x for x in self.ctrlOlv.GetCheckedObjects() if x.IDmouvement and x.IDmouvement > 0]
         if len(donnees) == 0:
             donnees =  [x for x in self.ctrlOlv.innerList if x.IDmouvement and x.IDmouvement > 0]
         dlgCorr = DLG_MvtCorrection.DLG(self,donnees=donnees)
@@ -1083,12 +1084,12 @@ class DLG(xGTE.DLG_tableau):
             self.ctrlOlv.lstDonnees = [x for x in GetMouvements(self,dParams)]
         else:
             self.ctrlOlv.lstDonnees = []
-        lstNoModif = [1 for rec in  self.ctrlOlv.lstDonnees if not (rec[-1])]
+        lstNoModif = [rec[-1] for rec in  self.ctrlOlv.lstDonnees if not (rec[-1])]
 
-        # présence de lignes déjà transférées compta
+        # présence de lignes marquées modifiables = False
         if len(lstNoModif) >0:
             self.ctrlOlv.cellEditMode = self.ctrlOlv.CELLEDIT_NONE
-            self.pnlPied.SetItemsInfos("NON MODIFIABLE: enregistrements transféré ",
+            self.pnlPied.SetItemsInfos("NON MODIFIABLE: enregistrements transférés ",
                                        wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16)))
 
         # l'appel des données peut avoir retourné d'autres paramètres, il faut mettre à jour l'écran
@@ -1145,6 +1146,6 @@ class DLG(xGTE.DLG_tableau):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(sens='sorties')
+    dlg = DLG(sens='entrees')
     dlg.ShowModal()
     app.MainLoop()

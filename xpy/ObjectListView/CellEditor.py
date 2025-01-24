@@ -68,7 +68,7 @@ def GetValideLigne(track):
             track.valide = True
         if not track.valide:
             if track.noSaisie == False:
-                wx.MessageBox(track.messageRefus,style=wx.ICON_ERROR)
+                wx.MessageBox(track.messageRefus,"Ligne invalide",style=wx.ICON_ERROR)
             descend = 0
     return descend
 
@@ -386,7 +386,11 @@ class ChoiceEditor(wx.Choice):
 
     def GetValue(self):
         "Get the value from the editor"
-        return self.GetString(self.GetSelection())
+        try:
+            val = self.GetString(self.GetSelection())
+        except:
+            val = None
+        return val
 
     def SetValue(self,value):
         if value in self.GetItems():
