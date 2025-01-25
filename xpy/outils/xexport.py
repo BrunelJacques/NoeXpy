@@ -103,13 +103,15 @@ class DataType(object):
     #fin class DataType
 
 def GetValeursListview(listview=None, format="texte"):
-
     """ Récupère les valeurs affichées sous forme de liste """
     """ format = "texte" ou "original" """
     # Récupère les labels de colonnes
     lstColonnes = []
+    ixID = None
     for colonne in listview.columns:
         lstColonnes.append((colonne.title, colonne.align, colonne.width, colonne.valueGetter))
+        if not ixID and colonne.valueGetter.startswith('ID'):
+            ixID = listview.columns.index(colonne)
 
     # Récupère les valeurs
     listeValeurs = []
@@ -121,6 +123,11 @@ def GetValeursListview(listview=None, format="texte"):
     if len(listeObjects) <= 1:
         listeObjects = listview.innerList  # listview.GetFilteredObjects()
     for object in listeObjects:
+        # élude les lignes sans valeur sur la 1ere colonne ID
+        if ixID:
+            ID = listview.GetStringValueAt(object, ixID)
+            if not ID or ID == 0:
+                continue
         valeursLigne = []
         for indexCol in range(0, listview.GetColumnCount()):
             if format == "texte":
@@ -239,8 +246,8 @@ def ComposeTexte(lstColonnes,lstValeurs):
     for valeurs in lstValeurs:
         for valeur in valeurs:
             if valeur == None:
-                valeur = u""
-            texte += u"%s%s" % (valeur, separateur)
+                valeur = ""
+            texte += "%s%s" % (valeur, separateur)
         texte = texte[:-1] + "\n"
     # Elimination du dernier saut à la ligne
     return texte[:-1]
@@ -534,14 +541,26 @@ def ExportExcel(listview=None, grid=None, titre="Liste", lstColonnes=None, liste
 
     return Confirmation(cheminFichier)
 
-def ExportTemp(lstColonnes,llData,nomFichier="spare.txt"):
+def ExportTemp(ldData,nomFichier="spare.txt"):
     chemin = xchemins.GetRepTemp(nomFichier)
-    texte = ComposeTexte(lstColonnes,llData)
+    texte = ""
+    for data in ldData:
+        texte += "%s\n" % (data)
     # Création du fichier texte
     f = open(chemin, "w")
     f.write(texte)
     f.close()
     return
+
+def ImportTemp(nomFichier="spare.txt"):
+    chemin = xchemins.GetRepTemp(nomFichier)
+    # ouverture du fichier texte
+    f = open(chemin, "r")
+    ldDon = []
+    for line in f:
+        ldDon.append(line)
+    f.close()
+    return ldDon
 
 # ------------------------- POUR LES TESTS ---------------------------------------------
 

@@ -6,10 +6,11 @@
 # Auteur:          Jacques BRUNEL 2022-07
 # Licence:         Licence GNU GPL
 # ------------------------------------------------------------------
+import copy
 
 import wx
 import os
-import datetime
+import datetime, time
 import srcNoestock.DLG_Mouvements      as dlgMvts
 import srcNoestock.DLG_Articles        as dlgArt
 import srcNoestock.UTILS_Stocks        as nust
@@ -93,7 +94,7 @@ HELP_CALCULS = "de tous les mouvements ou seulement des codhés"
 MATRICE_CALCULS = {
 ("param_calcVide", ""): [],
 ("param_calc0", "Prix"): [
-    {'name': 'pxAchatsStock', 'genre': 'anyctrl', 'label': 'PxUnit achats du stock',
+    {'name': 'pxAchatsStock', 'genre': 'anyctrl', 'label': 'Px achats en StockFin',
                      'txtSize': 140,
                      'ctrlMaxSize': (250,35),
                      'help': "Prix moyen des achats, %s" % HELP_CALCULS,
@@ -120,6 +121,8 @@ MATRICE_CALCULS = {
      },
     ],
 }
+
+INFO_OLV = "txtROUGE: Stock négatif, fondVERT: entrée_od, ROSE: sortie_od, JAUNE: achat"
 
 def GetDicPnlParams(*args):
     matrice = xformat.CopyDic(MATRICE_PARAMS)
@@ -191,22 +194,18 @@ def GetOlvColonnes(dlg):
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Mtt TTC", 'right', 70, 'mttTTC', isSpaceFilling=False, valueSetter=0.0,
                                 stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Cumul Mtt", 'right', 70, 'cumMtt', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Stock Mtt", 'right', 70, 'cumMtt', isSpaceFilling=False, valueSetter=0.0,
                        stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Cumul Qté", 'right', 70, 'cumQte', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("Stock Qté", 'right', 70, 'cumQte', isSpaceFilling=False, valueSetter=0.0,
                        stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("CumPU", 'right', 55, 'cumPu', isSpaceFilling=False, valueSetter=0.0,
+            ColumnDefn("MoyPU", 'right', 55, 'cumPu', isSpaceFilling=False, valueSetter=0.0,
                        stringConverter=xformat.FmtDecimal, isEditable=False),
             ColumnDefn("Fournisseur", 'left', 80, 'fournisseur', valueSetter="",
                        isEditable=True),
             ColumnDefn("Saisie", 'left', 80, 'dateSaisie', isSpaceFilling=False,
                        stringConverter=xformat.FmtDate, isEditable=False),
             ColumnDefn("Ordi", 'left', 120, 'ordi', valueSetter="",isSpaceFilling=False,
-                       isEditable=False),
-            ColumnDefn("Prix Stock", 'right', 40, 'pxMoyen', isSpaceFilling=False, valueSetter=0.0,
-                                stringConverter=xformat.FmtDecimal, isEditable=False),
-            ColumnDefn("Qté Stock", 'right', 60, 'qteStock', isSpaceFilling=False, valueSetter=0.0,
-                   stringConverter=xformat.FmtDecimal, isEditable=False),
+                       isEditable=False)
             ]
     return lstCol
 
@@ -267,6 +266,15 @@ def RowFormatter(listItem, track):
     if track.origine in ('inventaire', 'achat'):
         # achats en fond jaune
         listItem.SetBackgroundColour(wx.Colour(255, 245, 160))
+    if track.origine in ('od_in', 'od_out') and track.qte > 0:
+        # entrées autres en fond vert
+        listItem.SetBackgroundColour(wx.Colour(200, 230, 130))
+    if track.origine in ('od_in', 'od_out') and track.qte < 0:
+        # sorties autres en fond rose
+        listItem.SetBackgroundColour(wx.Colour(255, 230, 225))
+    if track.cumQte < 0:
+        # stock négatif sur cette ligne
+        listItem.SetTextColour(wx.RED)
 
 def MAJ_calculs(dlg):
     # calcul des zones totaux en bas d'écran, cumuls progressifs rafraîchis
@@ -293,20 +301,26 @@ def MAJ_calculs(dlg):
         else: track.cumPu = 0.0
         qteMvts += track.qte
         mttMvts += track.qte * track.pxUn
-        mttStock += track.qte * track.pxMoyen
 
     # calcul prix d'achat moyen pour stock
     pxAchatsStock = nust.PxAchatsStock(lstChecked)
+    if not pxAchatsStock:
+        pxAchatsStock = 0
     pxMoyenStock = 0.0
     if qteMvts != 0:
         pxMoyenStock = mttMvts / qteMvts
 
     erreur = (Nz(pxAchatsStock) * Nz(qteMvts)) - Nz(mttMvts)
 
+    mttStock = cumQte * pxAchatsStock
+
     # Inscription dans l'écran
-    dlg.pnlCalculs.GetPnlCtrl('mttStock').SetValue(mttStock)
+    if pxAchatsStock != 0:
+        dlg.pnlCalculs.GetPnlCtrl('mttStock').SetValue(mttStock)
+        dlg.pnlCalculs.GetPnlCtrl('pxAchatsStock').SetValue(pxAchatsStock)
+    else: erreur = 0
+
     dlg.pnlCalculs.GetPnlCtrl('pxMoyenStock').SetValue(pxMoyenStock)
-    dlg.pnlCalculs.GetPnlCtrl('pxAchatsStock').SetValue(pxAchatsStock)
 
     # gestion de la couleur de l'erreur
     if abs(erreur) <= 0.01:
@@ -345,7 +359,7 @@ def CalculeLigne(dlg, track):
     txTva = track.dicArticle['txTva']
     track.mttTTC = dlgMvts.PxUnToTTC(dlg.ht_ttc,txTva) * pxUn * qte
     track.prixTTC = round(dlgMvts.PxUnToTTC(dlg.ht_ttc,txTva) * pxUn,6)
-    track.qteStock = track.dicArticle['qteStock']
+    #track.qteStock = track.dicArticle['qteStock']
     lstCodesColonnes = dlg.ctrlOlv.lstCodesColonnes
     track.nbRations = qte * rations
     if track.nbRations >0:
@@ -388,8 +402,8 @@ def ComposeDonnees(db,dlg,ldMouvements):
             elif code == 'cumQte':
                 cumQte += dMvt['qte']
                 donnees.append(cumQte)
-            elif code == 'pxMoyen':
-                donnees.append(dArticle['prixMoyen'])
+            #elif code == 'pxMoyen':
+            #    donnees.append(dArticle['prixMoyen'])
             elif code in dMvt:
                 donnees.append(dMvt[code])
             elif code in dArticle:
@@ -427,7 +441,7 @@ class DLG(dlgMvts.DLG):
             "mttTTC": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
             }
 
-        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),""]
+        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),INFO_OLV]
         dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
 
         # spécificités structure écran à transmettre au super
@@ -536,9 +550,21 @@ class DLG(dlgMvts.DLG):
         self.InitOlv()
         # appel des données de l'Olv principal à éditer
         dParams['lstChamps'] = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
-        ldMouvements = [x for x in nust.GetLastInventForMvts(self.db, dParams)]
+        ldMouvements = []
+        origines = self.GetOrigines()
+        for origine in dlgMvts.DICORIGINES['entrees']['codes']:
+            if origine in origines:
+                ldMouvements = [x for x in nust.GetLastInventForMvts(self.db, dParams)]
+                break
         ldMouvements += [x for x in nust.GetMvtsByArticles(self.db, dParams)]
-        self.ctrlOlv.lstDonnees = ComposeDonnees(self.db,self,ldMouvements)
+        lstDonnees = ComposeDonnees(self.db,self,ldMouvements)
+        self.oldParams = copy.deepcopy(dParams)
+
+        ixIDarticle = self.ctrlOlv.lstCodesColonnes.index('IDarticle')
+        ixDate = self.ctrlOlv.lstCodesColonnes.index('date')
+        ixQte = self.ctrlOlv.lstCodesColonnes.index('qte')
+        fnSort = lambda don: (don[ixIDarticle], don[ixDate], -don[ixQte])
+        self.ctrlOlv.lstDonnees = sorted(lstDonnees,key=fnSort)
         self.ctrlOlv.MAJ()
         if self.article:
             MAJ_calculs(self)
@@ -637,14 +663,12 @@ class DLG(dlgMvts.DLG):
             self.GetDonnees(self.GetParams())
 
     def OnOrigine(self,event):
-        if event:
-            self.ctrlOlv.lstDonnees = []
-            self.oldParams = {}
         self.lstOrigines = self.GetOrigines()
         self.dicOlv.update({'lstColonnes': GetOlvColonnes(self)})
-        if event: event.Skip()
         if self.article:
             self.GetDonnees(self.GetParams())
+        if event:
+            event.Skip()
 
     def OnSort(self,event):
         event.Skip()
@@ -652,10 +676,11 @@ class DLG(dlgMvts.DLG):
 
     def OnBtnAjuste(self,event):
         # recalcule et modifie les prix unitaires en sorties de l'article selon FIFO
-        if not self.ctrlOlv.IsCellEditing():
+        if self.ctrlOlv.cellEditMode == self.ctrlOlv.CELLEDIT_NONE:
             mess = "Modifications impossibles\n\n"
             mess += "Les lignes ne sont pas éditables, cf plage de dates"
             wx.MessageBox(mess,"Bloquant",wx.ICON_STOP)
+            return
         cumQte = 0.0
         cumMtt = 0.0
         cumQteAch = 0.0
@@ -668,7 +693,7 @@ class DLG(dlgMvts.DLG):
         lstIDtracks = []
         self.nbPxMoyAchSortis = 0
 
-        fnSort = lambda trk: (trk.IDarticle, trk.date, trk.IDmouvement)
+        fnSort = lambda trk: (trk.IDarticle, trk.date, -trk.qte)
         modelObjects = sorted([x for x in self.ctrlOlv.GetObjects() if x.qte != 0],
                               key=fnSort)
         majorerAchats = 0.0

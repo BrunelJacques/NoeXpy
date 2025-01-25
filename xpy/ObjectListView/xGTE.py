@@ -473,10 +473,17 @@ class ListView( FastObjectListView):
     def SupprimerFiltres(self, event=None):
         self.parent.ctrlOutils.SupprimerFiltres()
 
-    def SpareCouper(self,nomFichier="LignesPerdues.txt"):
-        # Sauvegarde avant suppression
-        lstColonnes, llData = xexport.GetValeursListview(self)
-        xexport.ExportTemp(lstColonnes,llData,nomFichier=nomFichier)
+    def SpareTracks(self,tracks,nomFichier='LignesCoupees.txt'):
+        # Sauvegarde avant suppression (utiliser json.dumps() et json.loads()
+        ldTracks = [ x.__dict__ for x in tracks]
+        xexport.ExportTemp(ldTracks,nomFichier=nomFichier)
+        lstChamps = self.lstCodesColonnes + self.lstCodesSup
+        # sur cette base à partir d'une track vierge, recomposer avec les données lues
+
+    def RecupCouper(self,nomFichier="LignesCoupees.txt"):
+        # Récupération d'un précédent couper copier ou delete
+        #data = xexport.ImportTemp(nomFichier=nomFichier)
+        pass
 
     def OnCopier(self,event=None):
         # action copier
@@ -507,8 +514,7 @@ class ListView( FastObjectListView):
         buffertracks = [copy.deepcopy(x) for x in self.GetSelectedObjects()]
 
         # Sauvegarde des lignes
-        nomFichier = "CutLines.txt"
-        self.SpareCouper(nomFichier)
+        self.SpareTracks()
         pnlCorps = self.lanceur.pnlOlv
         pnlCorps.buffertracks = [ x for x in buffertracks]
 
@@ -574,8 +580,7 @@ class ListView( FastObjectListView):
             return True
 
         # Sauvegarde des lignes
-        nomFichier = "DeletedLines.txt"
-        self.SpareCouper(nomFichier)
+        self.SpareTracks()
 
         # suppression proprement dite
         ix = 0

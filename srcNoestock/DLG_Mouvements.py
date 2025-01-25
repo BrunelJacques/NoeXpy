@@ -43,7 +43,7 @@ DICORIGINES = {
                            'label':"Nature  sortie",
                            'values': ['vers cuisine', 'revente ou camp', 'od sortie']},
                 'article': {'codes': [  'tous','achat','retour','od_in',
-                                        'repas', 'camp', 'od_out'
+                                        'repas', 'camp', 'od_out',
                                         'entrees','sorties'],
                             'label': "Nature Mouvements",
                             'values': ['tous...','achat livraison', 'retour camp', 'od entrée',
@@ -654,8 +654,8 @@ class PNL_corps(xGTE.PNL_corps):
             track.repas = nust.CHOIX_REPAS[ch-1]
 
         if code == 'origine':
-            lstChoix = DICORIGINES[self.parent.sens]['codes'][1:]
-            editor.Set(lstChoix)
+            lstChoix = DICORIGINES[self.parent.sens]['codes'][1:-2]
+            editor.SetItems(lstChoix)
             if track.origine:
                 editor.SetStringSelection(track.origine)
             else:
@@ -880,6 +880,8 @@ class DLG(xGTE.DLG_tableau):
         if origine in ('entrees','sorties'):
             # ces deux origines sont des groupes d'origines
             lstOrigines = DICORIGINES[origine]['codes']
+        elif origine == 'tous':
+            lstOrigines = DICORIGINES['entrees']['codes'] + DICORIGINES['sorties']['codes']
         else:
             lstOrigines = [origine,]
         return lstOrigines
@@ -1052,6 +1054,9 @@ class DLG(xGTE.DLG_tableau):
             donnees =  [x for x in self.ctrlOlv.innerList if x.IDmouvement and x.IDmouvement > 0]
         dlgCorr = DLG_MvtCorrection.DLG(self,donnees=donnees)
         dlgCorr.ShowModal()
+        self.oldParams = {}
+        self.db.Close()
+        self.db = xdb.DB()
         self.GetDonnees()
 
     def ParamsIdem(self,oldParams,dParams):
@@ -1059,10 +1064,12 @@ class DLG(xGTE.DLG_tableau):
         if self.oldParams == None :
             idem = False
         else:
-            for key in ('origine','date','analytique','fournisseur','ht_ttx'):
+            for key in dParams.keys():
+                if key in ('lstChamps') : continue
                 if not key in self.oldParams: idem = False
-                elif not key in dParams: idem = False
                 elif self.oldParams[key] != dParams[key]: idem = False
+                else: continue
+                break
         return idem
 
     def GetDonnees(self,dParams=None):

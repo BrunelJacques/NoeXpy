@@ -518,6 +518,7 @@ class DLG(xGTE.DLG_tableau):
             if ret != wx.YES:
                 return
         # Constitution du lot à traiter
+        d = self.ctrlOlv.GetCheckedObjects()
         donnees = [x for x in self.ctrlOlv.GetCheckedObjects()]
         nb = len(donnees)
         if nb == 0:
