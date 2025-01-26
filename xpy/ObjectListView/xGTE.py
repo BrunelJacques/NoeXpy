@@ -995,6 +995,7 @@ class DLG_tableau(xusp.DLG_vide):
         if dicOlv != {}:
             if not hasattr(self, 'dicOlv'):
                 self.dicOlv = xformat.CopyDic(dicOlv)
+
             if pnl_corps:
                 # fourni par kwds de l'instance via GetDlgOptions()
                 self.pnlOlv = pnl_corps(self, self.dicOlv, **kwds)

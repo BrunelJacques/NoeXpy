@@ -44,11 +44,11 @@ DICORIGINES = {
                            'values': ['vers cuisine', 'revente ou camp', 'od sortie']},
                 'article': {'codes': [  'tous','achat','retour','od_in',
                                         'repas', 'camp', 'od_out',
-                                        'entrees','sorties'],
+                                        'entrees','sorties','od'],
                             'label': "Nature Mouvements",
                             'values': ['tous...','achat livraison', 'retour camp', 'od entrée',
                                        'vers cuisine', 'revente ou camp', 'od sortie',
-                                       'Entrées','Sorties']},
+                                       'Entrées','Sorties','Od toutes']},
                 }
 
 DICDATE = {     'entrees':{'label':"Date d' entrée"},
@@ -654,7 +654,7 @@ class PNL_corps(xGTE.PNL_corps):
             track.repas = nust.CHOIX_REPAS[ch-1]
 
         if code == 'origine':
-            lstChoix = DICORIGINES[self.parent.sens]['codes'][1:-2]
+            lstChoix = DICORIGINES[self.parent.sens]['codes'][1:-3]
             editor.SetItems(lstChoix)
             if track.origine:
                 editor.SetStringSelection(track.origine)
@@ -769,9 +769,9 @@ class DLG(xGTE.DLG_tableau):
         listArbo=os.path.abspath(__file__).split("\\")
 
         dicOlv = {'lstColonnes': GetOlvColonnes(self)}
-        dicOlv.update(GetOlvOptions(self))
         dicOlv['lstCodes'] = xformat.GetCodesColonnes(GetOlvColonnes(self))
         dicOlv['lstCodesSup'] = GetOlvCodesSup()
+        dicOlv.update(GetOlvOptions(self))
         dicOlv['db'] = self.db
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
         lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),INFO_OLV]
@@ -882,6 +882,8 @@ class DLG(xGTE.DLG_tableau):
             lstOrigines = DICORIGINES[origine]['codes']
         elif origine == 'tous':
             lstOrigines = DICORIGINES['entrees']['codes'] + DICORIGINES['sorties']['codes']
+        elif origine == 'od':
+            lstOrigines = ['od_in','od_out']
         else:
             lstOrigines = [origine,]
         return lstOrigines
@@ -1153,6 +1155,6 @@ class DLG(xGTE.DLG_tableau):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(sens='entrees')
+    dlg = DLG(sens='sorties')
     dlg.ShowModal()
     app.MainLoop()

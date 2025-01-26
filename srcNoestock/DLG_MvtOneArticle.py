@@ -263,6 +263,8 @@ def ValideLigne(dlg, track):
         track.messageRefus = ""
 
 def RowFormatter(listItem, track):
+    listItem.SetBackgroundColour(wx.Colour(255, 255, 255))
+    listItem.SetTextColour(wx.Colour(0, 0, 0))
     if track.origine in ('inventaire', 'achat'):
         # achats en fond jaune
         listItem.SetBackgroundColour(wx.Colour(255, 245, 160))
@@ -433,13 +435,14 @@ class DLG(dlgMvts.DLG):
         listArbo=os.path.abspath(__file__).split("\\")
         self.GetDicPnlParams = GetDicPnlParams
 
-        self.dicOlv = {'lstColonnes': GetOlvColonnes(self)}
-        self.dicOlv['lstCodes'] = xformat.GetCodesColonnes(GetOlvColonnes(self))
-        self.dicOlv['lstCodesSup'] = dlgMvts.GetOlvCodesSup()
-        self.dicOlv['dictColFooter'] = {
-            "qte": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
-            "mttTTC": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
-            }
+        self.sens = 'article'
+        dicOlv = {}
+        dicOlv.update(dlgMvts.GetOlvOptions(self))
+        dicOlv['lstColonnes'] = GetOlvColonnes(self)
+        dicOlv['lstCodes'] = xformat.GetCodesColonnes(GetOlvColonnes(self))
+        dicOlv['lstCodesSup'] = dlgMvts.GetOlvCodesSup()
+        dicOlv['checkColonne']= True
+
 
         lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),INFO_OLV]
         dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
@@ -451,7 +454,7 @@ class DLG(dlgMvts.DLG):
         kwds['title'] = listArbo[-1] + "/" + self.__class__.__name__
         kwds['autoSizer'] = False
         kwds['dicParams'] = GetDicPnlParams(self)
-        kwds['dicOlv'] = self.dicOlv
+        kwds['dicOlv'] = dicOlv
         kwds['dicPied'] = dicPied
         super().__init__(**kwds)
 
@@ -492,6 +495,7 @@ class DLG(dlgMvts.DLG):
         # le bind check item met à jour les soustotaux puis cherche MAJ_calculs
         self.ctrlOlv.MAJ_calculs = MAJ_calculs
         self.ctrlOlv.Bind(wx.EVT_LIST_COL_CLICK,self.OnSort)
+        self.ctrlOlv.rowFormatter = RowFormatter
 
     def Sizer(self):
         self.SetSize(1230,750)
@@ -513,7 +517,6 @@ class DLG(dlgMvts.DLG):
         self.ctrlOlv.lstColonnes = GetOlvColonnes(self)
         self.ctrlOlv.lstCodesColonnes = self.ctrlOlv.GetLstCodesColonnes()
         self.ctrlOlv.InitObjectListView()
-        self.ctrlOlv.rowFormatter = RowFormatter
         self.Refresh()
 
     def ValideParams(self):
@@ -552,10 +555,12 @@ class DLG(dlgMvts.DLG):
         dParams['lstChamps'] = xformat.GetLstChampsTable('stMouvements',DB_schema.DB_TABLES)
         ldMouvements = []
         origines = self.GetOrigines()
+        nb = 0
         for origine in dlgMvts.DICORIGINES['entrees']['codes']:
             if origine in origines:
-                ldMouvements = [x for x in nust.GetLastInventForMvts(self.db, dParams)]
-                break
+                nb +=1
+        if nb == len(dlgMvts.DICORIGINES['entrees']['codes']):
+            ldMouvements = [x for x in nust.GetLastInventForMvts(self.db, dParams)]
         ldMouvements += [x for x in nust.GetMvtsByArticles(self.db, dParams)]
         lstDonnees = ComposeDonnees(self.db,self,ldMouvements)
         self.oldParams = copy.deepcopy(dParams)
@@ -664,7 +669,14 @@ class DLG(dlgMvts.DLG):
 
     def OnOrigine(self,event):
         self.lstOrigines = self.GetOrigines()
-        self.dicOlv.update({'lstColonnes': GetOlvColonnes(self)})
+
+        lblOrigine = self.pnlParams.GetOneValue('origine')
+        if lblOrigine != dlgMvts.DICORIGINES['article']['values'][0]:
+
+            self.ctrlOlv.rowFormatter = lambda x,y: None
+        else:
+            self.ctrlOlv.rowFormatter = RowFormatter
+
         if self.article:
             self.GetDonnees(self.GetParams())
         if event:
