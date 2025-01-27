@@ -506,7 +506,7 @@ class DLG(xGTE.DLG_tableau):
             if track.modif != True:
                 self.ctrlOlv.SetCheckState(track, False)
             # Les lignes modifiées sont-elles modifiables
-            elif track.modifiable != 1 or track.date <= self.lastInventaire:
+            elif track.modifiable != 1 or track.date <= str(self.lastInventaire):
                     nbNonModifiables +=1
             self.ctrlOlv.RefreshObjects()
         if nbNonModifiables > 0:

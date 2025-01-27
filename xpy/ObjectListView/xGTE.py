@@ -77,7 +77,7 @@ class TrackGeneral(object):
                                     donnee = float(donnee)
                                 elif type(setterValues[ix]) == str:
                                     donnee = str(donnee)
-                                elif isinstance(setterValues[ix],(wx.DateTime,
+                                elif isinstance(setterValues[ix],(wx.datetime,
                                                                       datetime.date,
                                                                       datetime.datetime,
                                                                       datetime.time)):
@@ -473,18 +473,6 @@ class ListView( FastObjectListView):
     def SupprimerFiltres(self, event=None):
         self.parent.ctrlOutils.SupprimerFiltres()
 
-    def SpareTracks(self,tracks,nomFichier='LignesCoupees.txt'):
-        # Sauvegarde avant suppression (utiliser json.dumps() et json.loads()
-        ldTracks = [ x.__dict__ for x in tracks]
-        xexport.ExportTemp(ldTracks,nomFichier=nomFichier)
-        lstChamps = self.lstCodesColonnes + self.lstCodesSup
-        # sur cette base à partir d'une track vierge, recomposer avec les données lues
-
-    def RecupCouper(self,nomFichier="LignesCoupees.txt"):
-        # Récupération d'un précédent couper copier ou delete
-        #data = xexport.ImportTemp(nomFichier=nomFichier)
-        pass
-
     def OnCopier(self,event=None):
         # action copier
         buffertracks = [copy.deepcopy(x) for x in self.GetSelectedObjects()]
@@ -514,7 +502,6 @@ class ListView( FastObjectListView):
         buffertracks = [copy.deepcopy(x) for x in self.GetSelectedObjects()]
 
         # Sauvegarde des lignes
-        self.SpareTracks()
         pnlCorps = self.lanceur.pnlOlv
         pnlCorps.buffertracks = [ x for x in buffertracks]
 
@@ -548,6 +535,7 @@ class ListView( FastObjectListView):
                 if hasattr(pnlCorps,'OnCollerTrack'):
                     pnlCorps.OnCollerTrack(track)
                 self.modelObjects.insert(ix,track)
+                pnlCorps.ValideLigne(self,track)
                 ix += 1
             self.RepopulateList()
             self.MAJ_footer(None)
@@ -578,9 +566,6 @@ class ListView( FastObjectListView):
         dlg.Destroy()
         if ret != wx.ID_YES:
             return True
-
-        # Sauvegarde des lignes
-        self.SpareTracks()
 
         # suppression proprement dite
         ix = 0
@@ -735,7 +720,7 @@ class PanelListView(wx.Panel):
                 ret = self.parent.OnEditFinished(code, track, editor=event.editor)
 
             # lance l'enregistrement de la ligne
-            self.ValideLigne(code,track)
+            self.ValideLigne(self,track)
             if hasattr(track,'valide') and track.valide:
                 self.SauveLigne(track)
 
@@ -749,10 +734,10 @@ class PanelListView(wx.Panel):
             self.parent.OnEditFunctionKeys(event)
             event.Skip()
 
-    def ValideLigne(self,code,track):
+    def ValideLigne(self,parent,track):
         # Cette procédure peut générer deux attributs track.valide track.message interceptés par CellEditor.
         if hasattr(self.parent, 'ValideLigne'):
-            self.parent.ValideLigne(code,track)
+            self.parent.ValideLigne(parent,track)
 
     def SauveLigne(self,track):
         # teste old donnees % en cas de modif lance le sauve ligne du parent
@@ -857,6 +842,12 @@ class PNL_corps(wx.Panel):
         self.ctrlOlv.SetMinSize(minSize)
         self.ctrlOlv.MAJ()
         self.Sizer()
+
+    def CalculeLigne(self,parent,track):
+        pass
+
+    def ValideLigne(self,parent,track):
+        pass
 
     def Sizer(self):
         #composition de l'écran selon les composants
@@ -1074,7 +1065,7 @@ if __name__ == '__main__':
         ColumnDefn("nbre", 'right', -1, 'nombre', isSpaceFilling=True, valueSetter=0.0,
                    stringConverter=xformat.FmtDecimal),
         ColumnDefn("prix", 'left', 80, 'prix', valueSetter=0.0, isSpaceFilling=True,cellEditorCreator = CellEditor.ComboEditor),
-        ColumnDefn("date", 'center', 80, 'date', valueSetter=wx.DateTime.FromDMY(1, 0, 1900), isSpaceFilling=True,
+        ColumnDefn("date", 'center', 80, 'date', valueSetter=datetime.date(1900, 1, 1), isSpaceFilling=True,
                    stringConverter=xformat.FmtDate),
         ColumnDefn("choice", 'center', 40, 'choice', valueSetter='mon item',choices=['CHQ','VRT','ESP'], isSpaceFilling=True,
                    cellEditorCreator = CellEditor.ChoiceEditor,)
@@ -1082,11 +1073,11 @@ if __name__ == '__main__':
     lstDonnees = [[1,False, 'Bonjour', -1230.05939, -1230.05939, None,'deux'],
                      [2,None, 'Bonsoir', 57.5, 208.99,datetime.date.today(),None],
                      [3,'', 'Jonbour', 0, 'remisé', datetime.date(2018, 11, 20), 'mon item'],
-                     [4,29, 'Salut', 57.082, 209, wx.DateTime.FromDMY(28, 1, 2019),"Gérer l'entrée dans la cellule"],
-                     [None,None, 'Salutation', 57.08, 0, wx.DateTime.FromDMY(1, 7, 1997), '2019-10-24'],
-                     [None,2, 'Python', 1557.08, 29, wx.DateTime.FromDMY(7, 1, 1997), '2000-12-25'],
-                     [None,3, 'Java', 57.08, 219, wx.DateTime.FromDMY(1, 0, 1900), None],
-                     [None,98, 'langage C', 10000, 209, wx.DateTime.FromDMY(1, 0, 1900), ''],
+                     [4,29, 'Salut', 57.082, 209, datetime.date(2019,8,2),"Gérer l'entrée dans la cellule"],
+                     [None,None, 'Salutation', 57.08, 0, datetime.date(1997,1,7), '2019-10-24'],
+                     [None,2, 'Python', 1557.08, 29, datetime.date(1997,12,25), '2000-12-25'],
+                     [None,3, 'Java', 57.08, 219, datetime.date(1901,1,1), None],
+                     [None,98, 'langage C', 10000, 209, datetime.date(2000,1,1), ''],
                      ]
     dicOlv = {'lstColonnes': liste_Colonnes,
               'lstDonnees': lstDonnees,

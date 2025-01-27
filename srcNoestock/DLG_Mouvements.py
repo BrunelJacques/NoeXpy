@@ -141,6 +141,7 @@ MATRICE_PARAMS = {
                                      "Les séparateurs ne sont pas obligatoires en saisie.",
                                      "Saisissez la date du mouvement de stock sans séparateurs, "),
              'ctrlAction': 'OnDate',
+             'btnAction': 'OnDate',
              'txtSize': 70},
     ],
     ("param2", "Comptes"): [
@@ -268,7 +269,7 @@ def GetOlvColonnes(dlg):
     lstCol = [
             ColumnDefn("ID", 'centre', 0, 'IDmouvement',
                        isEditable=False),
-            ColumnDefn("Repas", 'left', 60, 'repas',
+            ColumnDefn("Repas", 'left', 60, 'repas',valueSetter="",
                                 cellEditorCreator=CellEditor.ChoiceEditor),
             ColumnDefn("Article", 'left', 200, 'IDarticle', valueSetter="",isSpaceFilling=True),
             ColumnDefn("Nb Unités", 'right', 80, 'nbAch', isSpaceFilling=False,
@@ -460,15 +461,10 @@ def GetMouvements(dlg, dParams):
             if code == 'pxMoy':
                 donnees.append(ConvTva(dArticle['prixMoyen'],dArticle['txTva'],dlg.ht_ttc))
                 continue
-            if code =='IDmouvement':
+            if code in dMvt:
                 donnees.append(dMvt[code])
-                continue
-            # ajout de l'article associé
-            if code == 'IDarticle':
-                donnees.append(dMvt[code])
-                continue
-            donnees.append(None)
-            continue
+            else:
+                donnees.append(None)
         # codes supplémentaires de track non affichés('prixTTC','IDmouvement','dicArticle','dicMvt) dlg.dicOlv['lstCodesSup']
         donnees += [dArticle,
                     dMvt,dMvt['modifiable']]
@@ -549,8 +545,8 @@ def ValideLigne(dlg,track):
     CalculeLigne(dlg,track)
 
     # Repas non renseigné
-    if dlg.sens == 'sorties' and track.repas in (None,0,'') :
-        track.messageRefus += "Le repas pour imputer la sortie n'est pas saisi\n"
+    if dlg.origine == 'repas' and track.repas in (None,'') :
+        track.repas = nust.CHOIX_REPAS[-1]
 
     # article manquant
     if track.IDarticle in (None,0,'') :
@@ -653,6 +649,7 @@ class PNL_corps(xGTE.PNL_corps):
             if h < 17: ch=2
             track.repas = nust.CHOIX_REPAS[ch-1]
 
+        # quand on peut changer l'origine sur la ligne
         if code == 'origine':
             lstChoix = DICORIGINES[self.parent.sens]['codes'][1:-3]
             editor.SetItems(lstChoix)
@@ -671,12 +668,11 @@ class PNL_corps(xGTE.PNL_corps):
         try:
             IDmvt = int(track.IDmouvement)
         except: IDmvt = 0
+
         if code == 'IDarticle' and IDmvt >0:
             # ligne déjà enregistrée saisie de l'article à gérer comme suppression puis recréation
             track.oldIDarticle = track.IDarticle
             track.oldDicArticle = track.dicArticle
-
-        #if code == 'pxUn':
 
     def OnEditFinishing(self,code=None,value=None,event=None):
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
@@ -686,20 +682,30 @@ class PNL_corps(xGTE.PNL_corps):
 
         (row, col) = self.ctrlOlv.cellBeingEdited
         track = self.ctrlOlv.GetObjectAt(row)
+        if not hasattr(track,'date'):
+            track.date = str(self.parent.date)
 
         # Traitement des spécificités selon les zones
         if code == 'IDarticle':
+            # complète la saisie de l'article ou lance un écran de recherche
             value = self.GetOneIDarticle(self.db,value)
             track.IDarticle = value
             if value:
                 ddArticles = nust.SqlDicArticles(self.db, self.ctrlOlv, [value,])
                 track.dicArticle = ddArticles[value]
                 track.nbRations = track.dicArticle['rations']
-                track.qteStock = track.dicArticle['qteStock']
-                track.pxUn = track.dicArticle['prixMoyen'] / PxUnToTTC(self.lanceur.ht_ttc,track.dicArticle['txTva'])
+                facteurTva = PxUnToTTC(self.lanceur.ht_ttc,track.dicArticle['txTva'])
+                (qteStock, pxMoyen) = nust.GetStockArticle(self.lanceur,
+                                                           track.IDarticle,track.date)
+                track.qteStock = qteStock
+                track.pxUn = pxMoyen / facteurTva
                 track.pxMoy = track.pxUn
+                track.dicArticle['qteStock'] = qteStock
+                track.dicArticle['prixMoyen'] = track.pxMoy
+                #track.donnees[13] = qteStock
+
                 # stock négatif
-                if self.lanceur.sens == "sorties" and (Nz(track.qteStock)) < 0:
+                if self.lanceur.sens == "sorties" and (Nz(track.qteStock)) <= 0:
                     ret = wx.MessageBox("Le Stock est vide! Erreur d'article ou Entrée manquante")
                 if event: event.Veto(False)
             else:
@@ -713,18 +719,20 @@ class PNL_corps(xGTE.PNL_corps):
 
             # stock négatif
             if self.lanceur.sens == "sorties" and (Nz(track.qteStock)- Nz(value)) < 0:
-                wx.MessageBox("Simple remarque!\n\nAvec cette sortie le Stock deviendra négatif", "Problème stock")
+                mess = "A faire ensuite!\n\nAvec cette sortie le Stock deviendra négatif\n"
+                mess += "Il faudra saisir un achat ou corriger une od_out antérieure"
+                wx.MessageBox(mess, "Problème stock")
 
         # enlève l'info de bas d'écran
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
         self.flagSkipEdit = False
         return value
 
-    def ValideLigne(self,code,track):
+    def ValideLigne(self,parent,track):
         # Relais de l'appel par cellEditor à chaque colonne
         ValideLigne(self.parent,track)
 
-    def CalculeLigne(self,code,track):
+    def CalculeLigne(self,parent,track):
         # Relais de l'appel par par GetDonnnees
         CalculeLigne(self.parent,track)
 

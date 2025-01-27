@@ -522,12 +522,12 @@ class DLG(dlgMvts.DLG):
     def ValideParams(self):
         ValideParams(None,None)
 
-    def ValideLigne(self,code,track):
+    def ValideLigne(self,parent,track):
         # Relais de l'appel par cellEditor à chaque colonne
         ValideLigne(self,track)
-        self.CalculeLigne(None,track)
+        self.CalculeLigne(self,track)
 
-    def CalculeLigne(self,code,track):
+    def CalculeLigne(self,parent,track):
         # Relais de l'appel par GetDonnnees
         CalculeLigne(self,track)
 
@@ -706,7 +706,7 @@ class DLG(dlgMvts.DLG):
         self.nbPxMoyAchSortis = 0
 
         fnSort = lambda trk: (trk.IDarticle, trk.date, -trk.qte)
-        modelObjects = sorted([x for x in self.ctrlOlv.GetObjects() if x.qte != 0],
+        modelObjects = sorted([x for x in self.ctrlOlv.GetObjects() if x.qte not in (0,None)],
                               key=fnSort)
         majorerAchats = 0.0
 

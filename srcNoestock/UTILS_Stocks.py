@@ -230,64 +230,95 @@ def GetDateLastMvt(db):
 
 def PxAchatsStock(modelObjects):
     # retourne px moyens achetés du stock restant dans modelObjects: méthode FIFO
-    lstArticles = []
-    dQtesFin = {}
+    dQtesFin = 0.0
+    lastAchatDte = datetime.date(2000,1,1)
+    lastAchatPrix = 0.0
     # calcul des quantités en stock, crée liste articles présents, attribution d'index
     for track in modelObjects:
-        if not track.IDmouvement:
-            track.IDmouvement = 0
-        if track.IDarticle not in lstArticles:
-            lstArticles.append(track.IDarticle)
-            dQtesFin[track.IDarticle] = 0
-        dQtesFin[track.IDarticle] += Nz(track.qte)
-
+        dQtesFin += Nz(track.qte)
         if isinstance(track.date,str):
                 track.date = xformat.DateSqlToDatetime(track.date)
         if not track.date:
                 track.date = datetime.date(2000,1,1)
+        if track.date > lastAchatDte and track.origine in ('achat','inventaire'):
+            lastAchatDte = track.date
+            lastAchatPrix = track.pxUn
 
-    lastArticle = None
     qteAchatsTous = 0.0
     mttAchatsTous = 0.0
-    finiPourArticle = False
-    qteAchatsArt = 0.0
-    mttAchatsArt = 0.0
+    fini = False
 
     # recherche des prix d'achat sur liste triée dates décroissantes après articles
-    fnSort = lambda trk: (trk.IDarticle,trk.date,trk.IDmouvement)
-    for track in sorted(modelObjects, key=fnSort,reverse=True):
-        article = track.IDarticle
-        if not lastArticle:
-            # seulement pour le premier item pas de rupture article à faire
-            lastArticle = article
+    fnSort = lambda trk: (trk.IDarticle,trk.date,trk.qte)
+    lstTracks = [x for x in modelObjects if x.qte not in (0,None)]
+    for track in sorted(lstTracks,key=fnSort,reverse=True) :
         if track.origine not in ('achat','inventaire'):
             # on ne s'occupe que des achats pour le prix moyen d'achat du stock fin
             continue
-        # rupture article,
-        if lastArticle != article:
-            finiPourArticle = False
-            qteAchatsArt = 0.0
-            mttAchatsArt = 0.0
         # purge des lignes non nécessaires
-        if finiPourArticle:
-            continue # jusqu'à changement article pour rupture
+        if fini:
+            break
         # progression dans le suivi des achats
         qteAchat = Nz(track.qte)
         prixUnit = Nz(track.pxUn)
-        qteAchat = min(dQtesFin[article],qteAchat)
+        qteAchat = min(dQtesFin,qteAchat)
         qteAchatsTous += qteAchat
         mttAchatsTous += qteAchat * prixUnit
-        qteAchatsArt += qteAchat
-        mttAchatsArt += qteAchat * prixUnit
-        dQtesFin[article] -= qteAchat
-        if dQtesFin[article] < 0.0001:
+        dQtesFin -= qteAchat
+        if dQtesFin < 0.0001:
             # Les achats retenus couvrent le stock restant, on ignore l'antérieur
-            finiPourArticle = True
+            fini = True
 
     if Nz(qteAchatsTous) != 0:
-        prixMoyen = round(mttAchatsTous / qteAchatsTous,4)
-    else: prixMoyen = None
-    return prixMoyen
+        prixAchatStock = round(mttAchatsTous / qteAchatsTous,4)
+    else: prixAchatStock = lastAchatPrix
+    return prixAchatStock
+
+def GetStockArticle(dlg,IDarticle,dateAnalyse):
+    # renvoie la quantité en stock à une date et le prix d'achat de ce qui reste
+    db = dlg.db
+    endDate = str(dateAnalyse)
+    anteDate = str(GetDateLastInventaire(db,endDate))
+
+    codesTrack = ['IDarticle','date','origine','qte','pxUn']
+    lstChamps = {
+        'inv': "IDdate, 'inventaire', qteStock,prixMoyen",
+        'mvt': 'date,origine,qte,prixUnit'}
+    fichiers = {
+        'inv': 'stInventaires',
+        'mvt': 'stMouvements'}
+    dateWhere = {
+        'inv': "IDdate = '%s'"%anteDate,
+        'mvt': "(date > '%s' and date <= '%s')"%(anteDate,endDate)}
+
+    # appel de l'inventaire précédent et ensuite les mouvements
+    cumQte = 0.0
+    tracks = []
+    for fic in ('inv', 'mvt'):
+        req = """
+            SELECT %s
+            FROM %s
+            WHERE IDarticle = '%s'
+            AND %s;
+        """%(lstChamps[fic],fichiers[fic],IDarticle, dateWhere[fic])
+        ret = db.ExecuterReq(req, mess='GetStockArticle',affichError=True)
+        if ret == "ok":
+            # constitution de pseudo Tracks minimalistes
+            recordset = db.ResultatReq()
+            for date,origine,qte,pxUn in recordset:
+                if qte in (None, 0):
+                    continue
+                cumQte += qte
+                dicTrack = {
+                    'IDarticle': IDarticle,
+                    'date': date,
+                    'origine': origine,
+                    'qte': qte,
+                    'pxUn': pxUn,
+                }
+                tracks.append(SetAttrDicToTrack(codesTrack,codesTrack,dicTrack))
+    pxMoyen = round(PxAchatsStock(tracks),4)
+    return (cumQte,pxMoyen)
 
 def CalculeInventaire(dlg, dParams):
     # nouveau calcul

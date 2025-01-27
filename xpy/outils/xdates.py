@@ -818,14 +818,14 @@ class Calendrier(wx.ScrolledWindow):
 class PNL_calendrier(wx.Panel):
     def __init__(self, parent, ID=-1,**kwcal):
         afficheBoutonAnnuel = kwcal.pop('afficheBoutonAnnuel',True)
-        afficheAujourdhui = kwcal.pop('afficheAujourdhui',True)
+        afficheAujourdhui = kwcal.pop('afficheAujourdhui',False)
         multiSelections = kwcal.pop('multiSelections',True)
         selectionInterdite = kwcal.pop('selectionInterdite',False)
         typeCalendrier = kwcal.pop('typeCalendrier',"mensuel")
         bordHaut = kwcal.pop('bordHaut',0)
         bordBas = kwcal.pop('bordBas',0)
         bordLateral = kwcal.pop('bordLateral',20)
-
+        dateJour = kwcal.pop('dateJour',datetime.datetime.today())
         wx.Panel.__init__(self, parent, ID, name="panel_calendrier")
         self.parent = parent
         self.afficheBoutonAnnuel = afficheBoutonAnnuel
@@ -847,33 +847,31 @@ class PNL_calendrier(wx.Panel):
         self.calendrier.couleurVacances = (255, 255, 187)
 
         # Création des autres widgets
-        self.listeMois = LISTE_MOIS
-        if "linux" in sys.platform:
-            self.listeMois = LISTE_MOIS_ABREGE
+
+        self.listeMois = LISTE_MOIS_ABREGE
         self.combo_mois = wx.ComboBox(self, -1, "", (-1, -1), (70, -1), self.listeMois, wx.CB_READONLY)
 
         self.spin = wx.SpinButton(self, -1, size=(17, 20), style=wx.SP_VERTICAL)
         self.spin.SetRange(-1, 1)
 
-        if "linux" in sys.platform:
-            largeurMois = 75
-        else:
-            largeurMois = 55
+        largeurMois = 75
 
         self.combo_annee = wx.SpinCtrl(self, -1, "", size=(largeurMois, -1))
         self.combo_annee.SetRange(1970, 2099)
 
-        dateJour = datetime.datetime.today()
+
         numMois = dateJour.month
         numAnnee = dateJour.year
         self.combo_mois.SetSelection(numMois - 1)
         self.combo_annee.SetValue(numAnnee)
+        # actualisation du combo_annee(spin)
+        self.calendrier.anneeCalendrier = dateJour.year
 
         self.MAJPeriodeCalendrier()
 
         # Sélection de Aujourdh'ui
         if afficheAujourdhui == True and self.selectionInterdite == False:
-            self.calendrier.SelectJours([datetime.date.today(), ])
+            self.calendrier.SelectJours([dateJour, ])
 
         self.bouton_CalendrierAnnuel = wx.BitmapButton(self, -1, wx.Bitmap("xpy/Images/16x16/Calendrier.png",
                                                                            wx.BITMAP_TYPE_PNG), size=(28, 21))
@@ -1128,13 +1126,19 @@ class CTRL_SaisieDate(wx.Panel):
         self.ctrlDate.SetFocus()
 
     def OnBoutonDate(self, event):
+        dateJour = xformat.DateFrToDatetime(self.ctrlDate.GetValue())
+        if not dateJour:
+            dateJour = datetime.date.today()
+
+        self.kwcal['dateJour'] = dateJour
         dlg = DLG_calendrier(self,kwcal=self.kwcal,kwdlg=self.kwdlg)
         if dlg.ShowModal() == wx.ID_OK :
             date = dlg.GetDate()
             self.ctrlDate.SetValue(xformat.DatetimeToStr(date))
+            self.OnDate(event)
             self.ctrlDate.SetFocus()
-            #event.Skip()
         dlg.Destroy()
+
 
     def OnEsc(self,event):
         pass
