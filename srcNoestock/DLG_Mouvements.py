@@ -225,6 +225,9 @@ def GriseCtrlsParams(dlg, lstOrigines):
         codeAnalytique0 = dlg.codesAnalytiques[0]
         valAnalytique0 = dlg.valuesAnalytiques[0]
         valFourn0 = dlg.fournisseurs[0]
+        codFourn0 = valFourn0
+        if 'NoChange' in valFourn0:
+            codFourn0 = None
         if 'achat' in lstOrigines:
             setEnable('fournisseur',True)
             setEnable('analytique',False)
@@ -232,14 +235,13 @@ def GriseCtrlsParams(dlg, lstOrigines):
             dlg.pnlParams.SetOneValue('analytique',valAnalytique0)
         elif ('retour' in lstOrigines) or ('camp' in lstOrigines)  :
             setEnable('fournisseur',False)
-            dlg.fournisseur = valFourn0
             dlg.pnlParams.SetOneValue('fournisseur',valFourn0, codeBox='param2')
             setEnable('analytique',True)
             dlg.pnlParams.SetOneValue('analytique',valAnalytique0, codeBox='param2')
         elif ('od' in lstOrigines) or ('repas' in lstOrigines) :
             dlg.pnlParams.SetOneValue('fournisseur',valFourn0, codeBox='param2')
             setEnable('fournisseur',False)
-            dlg.fournisseur = valFourn0
+            dlg.fournisseur = codFourn0
             dlg.pnlParams.SetOneValue('analytique',valAnalytique0, codeBox='param2')
             setEnable('analytique',False)
             dlg.analytique = codeAnalytique0
@@ -598,8 +600,8 @@ class PNL_corps(xGTE.PNL_corps):
     def OnCopierTrack(self,track):
         # action copier complémentaire sur prochaines lignes
         for track in self.buffertracks:
-            track.origine = self.lanceur.origine
-            track.sens = self.lanceur.sens
+                if not hasattr(track,'origine'):
+                    track.origine = self.lanceur.origine
 
     def OnCollerTrack(self, track):
         # avant de coller une track, raz de certains champs et recalcul
@@ -877,6 +879,8 @@ class DLG(xGTE.DLG_tableau):
         self.Refresh()
 
     # gestion des ctrl choices avec codes différents des items
+    def GetParams(self):
+        return GetParams()
 
     def GetTva(self):
         return self.pnlParams.GetOneValue('ht_ttc', codeBox='param3')
@@ -1067,7 +1071,7 @@ class DLG(xGTE.DLG_tableau):
         self.oldParams = {}
         self.db.Close()
         self.db = xdb.DB()
-        self.GetDonnees()
+        self.GetDonnees(self.GetParams())
 
     def ParamsIdem(self,oldParams,dParams):
         idem = True
@@ -1087,7 +1091,7 @@ class DLG(xGTE.DLG_tableau):
         if not self.db.connexion.is_connected():
             return
 
-        if not dParams:
+        if not dParams or dParams == {}:
             dParams = GetParams(self.pnlParams)
         if self.ParamsIdem(self.oldParams,dParams):
             return

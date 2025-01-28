@@ -542,10 +542,10 @@ class DLG(dlgMvts.DLG):
         # cas de db.Close() par le super en fin
         if not self.db.connexion.is_connected():
             return []
-        if not dParams or not dParams['article']:
+        if not dParams:
             return
         # forme la grille, puis création d'un premier modelObjects par init
-        if not dParams:
+        if dParams == {}:
             dParams = self.GetParams()
         if self.ParamsIdem(self.oldParams,dParams):
             return

@@ -847,11 +847,14 @@ def SqlMvtsAnte(**kwd):
     lstChamps = dicOlv['lstChamps']
     lstGroupBy  = [ x for x in lstChamps if '(' not in x ]
     groupBy = ",".join(lstGroupBy)
+    champs = ",".join(lstChamps)
+    champs = champs.replace('fournisseur',"COALESCE(fournisseur,'') as fourn")
+    groupBy = groupBy.replace('fournisseur',"COALESCE(fournisseur,'')")
     req = """   SELECT %s AS IDM
                 FROM stMouvements
                 %s 
                 GROUP BY %s
-                ;""" % (",".join(lstChamps), where,groupBy)
+                ;""" % (champs, where,groupBy)
     retour = db.ExecuterReq(req, mess='SqlMvtsAnte')
     lstDonnees = []
     if retour == 'ok':
