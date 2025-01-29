@@ -44,7 +44,7 @@ DIC_INFOS = {
         'pxUn': "Prix dans l'inventaire d'une unité sortie",
          }
 
-INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
+INFO_OLV = "ROUGE: Anomalie, VERT: stock vide, BLEU: Nb de rations, JAUNE: Qtés basses"
 
 SAISONS = ['Saison normale', 'Saison haute','Hors saison']
 
@@ -198,9 +198,13 @@ def GetOlvColonnes(dlg):
                        isEditable=False),
             ColumnDefn("Rayon", 'left', 90, 'rayon', valueSetter=" ",isSpaceFilling=False,
                        isEditable=False),
-            ColumnDefn("Qté stock", 'right', 80, 'qteStock',  valueSetter=0.0,isSpaceFilling=False,
+            ColumnDefn("Qté stock", 'right', 68, 'qteStock',  valueSetter=0.0,isSpaceFilling=False,
                                         stringConverter=xformat.FmtDecimal),
-            ColumnDefn("Prix Unit Moy", 'right', 85, 'pxUn',  valueSetter=0.0,isSpaceFilling=False,
+            ColumnDefn("ODentrées", 'right', 55, 'qteOdIn',  valueSetter=0.0,isSpaceFilling=False,
+                        isEditable=False,stringConverter=xformat.FmtInt),
+            ColumnDefn("ODsorties", 'right', 55, 'qteOdOut',  valueSetter=0.0,isSpaceFilling=False,
+                        isEditable=False, stringConverter=xformat.FmtInt),
+            ColumnDefn("Prix Unit", 'right', 85, 'pxUn',  valueSetter=0.0,isSpaceFilling=False,
                                         stringConverter=xformat.FmtDecimal),
             ColumnDefn("Mtt TTC", 'right', 100, 'mttTTC',  valueSetter=0.0,isSpaceFilling=False,
                         isEditable=False, stringConverter=xformat.FmtDecimal, ),
@@ -246,7 +250,7 @@ def GetDlgOptions(dlg):
     # Options du Dlg de lancement
     return {
         'minSize': (700, 450),
-        'size': (1150, 800),
+        'size': (1250, 800),
         'autoSizer': False
         }
 
@@ -320,6 +324,8 @@ def ValideLigne(dlg,track):
     return
 
 def RowFormatter(listItem, track):
+    listItem.SetBackgroundColour(wx.Colour(255, 255, 255))
+    listItem.SetTextColour(wx.Colour(0, 0, 0))
     if track.anomalie:
         # anomalie rouge / fushia
         listItem.SetTextColour(wx.RED)
@@ -333,6 +339,7 @@ def RowFormatter(listItem, track):
     elif track.qteStock == 0:
         # stock à zero: fond vert
         listItem.SetBackgroundColour(wx.Colour(220, 237, 200))
+
 
 class PNL_corps(xGTE.PNL_corps):
     #panel olv avec habillage optionnel pour des boutons actions (à droite) des infos (bas gauche) et boutons sorties
@@ -457,8 +464,7 @@ class DLG(xGTE.DLG_tableau):
         self.dicOlv['db'] = xdb.DB()
         # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
         txtInfo =  "Ici de l'info apparaîtra selon le contexte de la grille de saisie"
-        self.lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION,wx.ART_OTHER,(16, 16)),
-                          txtInfo]
+        self.lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),INFO_OLV]
         dicPied = {'lstBtns': GetBoutons(self), "lstInfos": self.lstInfos}
 
 

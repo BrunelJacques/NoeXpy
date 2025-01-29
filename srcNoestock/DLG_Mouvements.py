@@ -880,7 +880,7 @@ class DLG(xGTE.DLG_tableau):
 
     # gestion des ctrl choices avec codes différents des items
     def GetParams(self):
-        return GetParams()
+        return GetParams(self.pnlParams)
 
     def GetTva(self):
         return self.pnlParams.GetOneValue('ht_ttc', codeBox='param3')
@@ -1061,6 +1061,8 @@ class DLG(xGTE.DLG_tableau):
         self.oldParams = {}
         self.GetDonnees(dParams)
         if event: event.Skip()
+        firstParam = self.pnlParams.GetPnlCtrl('date')
+        firstParam.SetFocus()
 
     def OnBtnCorrections(self,event):
         donnees = [x for x in self.ctrlOlv.GetCheckedObjects() if x.IDmouvement and x.IDmouvement > 0]

@@ -127,6 +127,10 @@ def GetDictUtilisateur(afficheMessage=True):
         pass
     if dictUtilisateur:
         # Si la frame 'General' est chargée, on y récupère le dict de config
+        if not 'userdomain' in dictUtilisateur.keys():
+            import socket
+            dictUtilisateur['userdomain'] = socket.gethostname()
+            dictUtilisateur['config'] = '_'
         return dictUtilisateur
     else:
         if afficheMessage == True:

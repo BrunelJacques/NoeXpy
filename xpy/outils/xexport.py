@@ -110,7 +110,7 @@ def GetValeursListview(listview=None, format="texte"):
     ixID = None
     for colonne in listview.columns:
         lstColonnes.append((colonne.title, colonne.align, colonne.width, colonne.valueGetter))
-        if not ixID and colonne.valueGetter.startswith('ID'):
+        if not ixID and isinstance(colonne.valueGetter,str) and colonne.valueGetter.startswith('ID'):
             ixID = listview.columns.index(colonne)
 
     # Récupère les valeurs
@@ -541,11 +541,9 @@ def ExportExcel(listview=None, grid=None, titre="Liste", lstColonnes=None, liste
 
     return Confirmation(cheminFichier)
 
-def ExportTemp(ldData,nomFichier="spare.txt"):
+def ExportTemp(lstColonnes,llData,nomFichier="spare.txt"):
     chemin = xchemins.GetRepTemp(nomFichier)
-    texte = ""
-    for data in ldData:
-        texte += "%s\n" % (data)
+    texte = ComposeTexte(lstColonnes,llData)
     # Création du fichier texte
     f = open(chemin, "w")
     f.write(texte)

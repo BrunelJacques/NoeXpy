@@ -1089,7 +1089,6 @@ class CTRL_SaisieDate(wx.Panel):
         self.labelDate = wx.StaticText(self, -1, label)
         self.ctrlDate = wx.TextCtrl(self, -1, "", style=wx.TE_PROCESS_ENTER|wx.TE_CENTRE)
         self.ctrlDate.Bind(wx.EVT_KILL_FOCUS, self.OnChoixDate)
-        #self.ctrlDate.Bind(wx.EVT_TEXT_ENTER, self.OnChoixDate)
 
         self.btnDate = wx.BitmapButton(self, -1, wx.Bitmap("xpy/Images/16x16/Calendrier.png", wx.BITMAP_TYPE_ANY))
 

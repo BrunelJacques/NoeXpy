@@ -789,13 +789,13 @@ class DLG(dlgMvts.DLG):
             pxMoyAchSortis = round(cumMttAch / cumQteAch,4)
         elif (cumQteAch - qteStock) > 0:
             pxMoyAchSortis = (cumMttAch -  pxMoyStock * qteStock) /(cumQteAch - qteStock)
+        elif cumQteAch > 0:
+            pxMoyAchSortis = round(cumMttAch / cumQteAch, 2)
         else:
-            mess = "plus de stock à l'arrivée que d'achats ou report!"
+            mess = "%d en stock à l'arrivée, %d achaté ou report!\n\n"%(qteStock,cumQteAch)
+            mess +="Habituellement ce sont les pains et les poissons qui se multiplient..."
             wx.MessageBox(mess,"calcul impossible")
-            if cumQteAch > 0:
-                pxMoyAchSortis = round(cumMttAch / cumQteAch, 2)
-            else:
-                return
+            return
 
         # synthèse l'info sur le total des achats
         sumQteAch = 0

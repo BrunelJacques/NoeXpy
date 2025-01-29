@@ -332,7 +332,8 @@ def CalculeInventaire(dlg, dParams):
         majArticles = False
 
     # complète les paramètres façon DLG_MvtOneArticle
-    lstChampsMvts = ['IDarticle', 'date', 'qte', 'prixUnit','origine','IDmouvement']
+    champOd = "(origine in ('od_in','od_out')) as qteOd"
+    lstChampsMvts = ['IDarticle','date','qte',champOd,'prixUnit','origine','IDmouvement']
     # appel des mouvements de la période
     dParams['lstChamps'] = lstChampsMvts
     dParams['article'] = 'tous'
@@ -343,6 +344,19 @@ def CalculeInventaire(dlg, dParams):
     # appel de l'inventaire précédent et des mouvements
     ldMouvements = [x for x in GetLastInventForMvts(db, dParams)]
     ldMouvements += [x for x in GetMvtsByArticles(db, dParams)]
+
+    # calcul du champ qteOdIn
+    for dMvt in ldMouvements:
+        if dMvt[champOd] == 1 and dMvt['qte'] > 0.0:
+            dMvt['qteOdIn'] = dMvt['qte']
+            dMvt['qteOdOut'] = 0.0
+        elif dMvt[champOd] == 1 and dMvt['qte'] < 0.0:
+            dMvt['qteOdIn'] = 0.0
+            dMvt['qteOdOut'] = dMvt['qte']
+        else:
+            dMvt['qteOdIn'] = 0.0
+            dMvt['qteOdOut'] = 0.0
+        del dMvt[champOd]
 
     # fractionnement en dictionnaire par article de listes des mouvements
     dldArtMouvements = {}
@@ -376,8 +390,8 @@ def CalculeInventaire(dlg, dParams):
 
     # composition des données du tableau OLV --------------------------------------------
     lstCodes = dlg.dicOlv['lstCodes'] + dlg.dicOlv['lstCodesSup']
-    codesDic = ['date','IDarticle','qte','prixUnit','origine','IDmouvement']
-    codesTrack = ['date','IDarticle','qte','pxUn','origine','IDmouvement']
+    codesDic = ['date','IDarticle','qte','qteOdIn','qteOdOut','prixUnit','origine','IDmouvement']
+    codesTrack = ['date','IDarticle','qte','qteOdIn','qteOdOut','pxUn','origine','IDmouvement']
     lstDonnees = []
     ldMajArticles = []
 
@@ -400,10 +414,14 @@ def CalculeInventaire(dlg, dParams):
         # regroupe les mouvements en une seule ligne
         qteMvts = 0.0
         mttMvts = 0.0
+        qteOdIn = 0.0
+        qteOdOut = 0.0
         lastBuy = datetime.date(2000,1,1)
         for track in lstObjects:
             qteMvts += track.qte
             mttMvts += (track.qte * track.pxUn)
+            qteOdIn += track.qteOdIn
+            qteOdOut += track.qteOdOut
             if track.date > lastBuy and track.origine == "achat":
                 lastBuy = track.date
         deltaValoAchats= abs(mttMvts - (pxUn * qteMvts))
@@ -441,6 +459,8 @@ def CalculeInventaire(dlg, dParams):
         donnees[lstCodes.index('mttTTC')] = round(qteMvts * pxUn,2)
         donnees[lstCodes.index('qteStock')] = qteMvts # peut faire l'objet de corrections
         donnees[lstCodes.index('qteMvts')] = qteMvts # reste fixe
+        donnees[lstCodes.index('qteOdIn')] = qteOdIn
+        donnees[lstCodes.index('qteOdOut')] = qteOdOut
         donnees[lstCodes.index('rations')] = qteMvts * Nz(dArt['rations'])
         donnees[lstCodes.index('artRations')] = Nz(dArt['rations'])
         donnees[lstCodes.index('deltaValo')] = deltaValoAchats
@@ -477,7 +497,7 @@ def CalculeInventaire(dlg, dParams):
         del db.cursor
         db.cursor = db.connexion.cursor(buffered=False)
 
-        req = """FLUSH  TABLES individus;"""
+        req = """FLUSH  TABLES 'stArticles';"""
         ret = db.ExecuterReq(req, mess='SqlInventaires flush',affichError=True)
         if retour != "ok":
             return []
@@ -960,11 +980,13 @@ def SauveMouvement(db,dlg,track):
         ret = db.ReqMAJ("stMouvements", lstDonnees, "IDmouvement", IDmouvement,mess="UTILS_Stocks.SauveLigne Modif: %d"%IDmouvement)
     else:
         ret = db.ReqInsert("stMouvements",lstDonnees= lstDonnees, mess="UTILS_Stocks.SauveLigne Insert")
-        if ret == 'ok': IDmouvement = db.newID
+        if ret == 'ok':
+            IDmouvement = db.newID
     if ret == 'ok':
         track.IDmouvement = IDmouvement
         dicMvt = xformat.ListTuplesToDict(lstDonnees)
         track.dicMvt.update(dicMvt)
+    else: wx.MessageBox(ret,'Echec ecriture',style= wx.ICON_ERROR)
 
 def DelMouvement(db,olv,track):
     # --- Supprime les différents éléments associés à la ligne --

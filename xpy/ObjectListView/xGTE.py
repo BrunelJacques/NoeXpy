@@ -473,6 +473,11 @@ class ListView( FastObjectListView):
     def SupprimerFiltres(self, event=None):
         self.parent.ctrlOutils.SupprimerFiltres()
 
+    def SpareCouper(self,nomFichier="LinesCut.txt"):
+        # Sauvegarde avant suppression
+        lstColonnes, llData = xexport.GetValeursListview(self)
+        xexport.ExportTemp(lstColonnes,llData,nomFichier=nomFichier)
+
     def OnCopier(self,event=None):
         # action copier
         buffertracks = [copy.deepcopy(x) for x in self.GetSelectedObjects()]
@@ -490,6 +495,8 @@ class ListView( FastObjectListView):
         mess = "lignes mémorisées pour prochain coller ou <ctrl> V"
         wx.MessageBox(" %d %s"%(len(buffertracks),mess))
         pnlCorps.buffercut = False
+        firstParam = self.lanceur.pnlParams.lstBoxes[0].lstPanels[0]
+        firstParam.SetFocus()
         return
 
     def OnCouper(self,event=None):
@@ -502,6 +509,7 @@ class ListView( FastObjectListView):
         buffertracks = [copy.deepcopy(x) for x in self.GetSelectedObjects()]
 
         # Sauvegarde des lignes
+        self.SpareCouper()
         pnlCorps = self.lanceur.pnlOlv
         pnlCorps.buffertracks = [ x for x in buffertracks]
 
@@ -520,6 +528,7 @@ class ListView( FastObjectListView):
         self.RepopulateList()
         self.MAJ_footer(None)
         wx.MessageBox(" %d lignes supprimées et mémorisées pour prochain <ctrl V>"%len(buffertracks))
+
         return
 
     def OnColler(self,event=None):
@@ -566,6 +575,9 @@ class ListView( FastObjectListView):
         dlg.Destroy()
         if ret != wx.ID_YES:
             return True
+
+        # Sauvegarde des lignes
+        self.SpareCouper("linesDeleted")
 
         # suppression proprement dite
         ix = 0
