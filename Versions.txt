@@ -1,5 +1,5 @@
-version 1.1.2.43 (24/01/2025)
-    - NoeXpy: controles de saisie modifiés
+version 1.1.2.44 (29/01/2025)
+    - NoeXpy: Amélioration suite aux tests
 
 version 1.1.2.42 (22/01/2025)
     - NoeStock: Ajustement des prix de sortie FIFO
