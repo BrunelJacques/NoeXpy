@@ -23,7 +23,7 @@ class SetAttrDicToTrack:
         for ix in range(len(codesTrack)):
             self.__setattr__(codesTrack[ix],dicDon[codesDic[ix]])
 
-# Nouvelle Gestion des inventaires --------------------------------------------
+# Gestion des inventaires --------------------------------------------
 
 def InsertInventaire(dlg):
     lstTracks = dlg.ctrlOlv.GetObjects()

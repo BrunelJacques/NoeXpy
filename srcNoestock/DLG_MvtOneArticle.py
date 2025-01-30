@@ -88,7 +88,6 @@ MATRICE_PARAMS = {
     ],
 }
 
-
 HELP_CALCULS = "de tous les mouvements ou seulement des codhés"
 
 MATRICE_CALCULS = {
@@ -917,7 +916,6 @@ class DLG(dlgMvts.DLG):
                 values.append(val)
             champs = ['IDmouvement','prixUnit','ordi','dateSaisie']
             nust.MajMouvements(champs, values)
-
 
 #------------------------ Lanceur de test  -------------------------------------------
 

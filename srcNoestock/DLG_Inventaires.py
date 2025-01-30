@@ -108,7 +108,6 @@ def GetMatriceAnterieurs(dlg):
         'size': (650, 400)}
 
 # Description des paramètres de la gestion des inventaires
-
 MATRICE_PARAMS = {
 ("param1", "Période"): [
     {'name': 'saison', 'genre': 'Choice', 'label': "Couleur saison",

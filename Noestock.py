@@ -10,7 +10,6 @@ import srcNoestock.menu as menu
 from xpy.outils import xaccueil
 from xpy.outils import xchemins
 
-
 # Variables incontournables pour xpy
 dictAPPLI = {
             'NOM_APPLICATION'       : "Noestock",

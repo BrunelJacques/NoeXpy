@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 #------------------------------------------------------------------------
 # Application :    xPY, Gestion des bases de données
 # Auteur:          Jacques Brunel, d'après Yvan LUCAS Noethys
