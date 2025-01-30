@@ -375,6 +375,7 @@ class DB():
             self.erreur = err
 
     def ExecuterReq(self, req, mess=None, affichError=True):
+        # Gestion de l'absence de connexion
         if not hasattr(self, 'cursor') or self.echec >= 1:
             if not mess:
                 origine = "xUTILS_DB.ExecuterReq"
@@ -384,47 +385,51 @@ class DB():
                 wx.MessageBox(mess,"Ouverture DB",style = wx.ICON_ERROR)
             self.erreur = "ErreurPubliee"
             return mess
-        try:
-            if self.typeDB == 'access':
-                self.recordset = []
-                # methode Access ADO
-                self.cursor.Open(req, self.connexion)
-                if not self.cursor.BOF:
-                    self.cursor.MoveFirst()
-                    while not self.cursor.EOF:
-                        record = []
-                        go = True
-                        i=0
-                        while go:
-                            try:
-                                record.append(self.cursor(i).value)
-                                i += 1
-                            except Exception:
-                                go = False
-                        self.recordset.append(record)
-                        self.cursor.MoveNext()
-                    self.retourReq = "ok"
-                else:
-                    self.retourReq = "Aucun enregistrement"
-                self.cursor.Close()
+        if self.typeDB == 'access':
+            self.recordset = []
+            # methode Access ADO
+            self.cursor.Open(req, self.connexion)
+            if not self.cursor.BOF:
+                self.cursor.MoveFirst()
+                while not self.cursor.EOF:
+                    record = []
+                    go = True
+                    i=0
+                    while go:
+                        try:
+                            record.append(self.cursor(i).value)
+                            i += 1
+                        except Exception:
+                            go = False
+                    self.recordset.append(record)
+                    self.cursor.MoveNext()
+                self.retourReq = "ok"
             else:
-                # autres types de connecteurs
-                if hasattr(self.cursor,'with_rows') and self.cursor.with_rows:
-                    # purge d'existant non lu
+                self.retourReq = "Aucun enregistrement"
+            self.cursor.Close()
+        # autres types de connecteurs que access
+        else:
+            # purge d'existant non lu
+            if hasattr(self.cursor,'with_rows') and self.cursor.with_rows:
+                try:
                     rows = self.cursor.fetchall()
                     if len(rows) > 0:
                         print(len(rows),"lignes non lues")
+                except:
+                    pass
+            # Exécute la requête
+            try:
                 self.cursor.execute(req)
                 self.retourReq = 'ok'
-        except Exception as err:
-            self.echec = 1
-            if mess:
-                self.retourReq = mess +'\n%s\n'%err
-            else: self.retourReq = 'Erreur xUTILS_DB\n\n'
-            self.retourReq +=  ("ExecuterReq:\n%s\n\nErreur détectée:\n%s"% (req, str(err)))
-            if affichError:
-                wx.MessageBox(self.retourReq,"Erreur accès BD",style=wx.ICON_ERROR)
-        return self.retourReq
+            except Exception as err:
+                self.echec = 1
+                if mess:
+                    self.retourReq = mess +'\n%s\n'%err
+                else: self.retourReq = 'Erreur xUTILS_DB\n\n'
+                self.retourReq +=  ("%s\n\n\nErreur ExecuterReq:\n%s"% (req, str(err)))
+                if affichError:
+                    wx.MessageBox(self.retourReq,"Erreur accès BD",style=wx.ICON_ERROR)
+            return self.retourReq
 
     def Executermany(self, req="", lstDonnees=[], commit=True):
         """ Executemany pour local ou réseau """

@@ -568,7 +568,7 @@ class DLG(dlgMvts.DLG):
         ixIDarticle = self.ctrlOlv.lstCodesColonnes.index('IDarticle')
         ixDate = self.ctrlOlv.lstCodesColonnes.index('date')
         ixQte = self.ctrlOlv.lstCodesColonnes.index('qte')
-        fnSort = lambda don: (don[ixIDarticle], don[ixDate], -don[ixQte])
+        fnSort = lambda don: (don[ixIDarticle], str(don[ixDate]), -don[ixQte])
         self.ctrlOlv.lstDonnees = sorted(lstDonnees,key=fnSort)
         self.ctrlOlv.MAJ()
         if self.article:

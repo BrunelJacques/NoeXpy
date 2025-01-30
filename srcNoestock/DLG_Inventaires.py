@@ -99,12 +99,11 @@ def GetMatriceAnterieurs(dlg):
         'lstColonnes': lstColonnes,
         'lstChamps': lstChamps,
         'groupby': 'IDdate',
+        'orderby': 'IDdate DESC',
         'listeNomsColonnes': lstNomsColonnes,
         'listeCodesColonnes': lstCodesColonnes,
         'getDonnees': nust.SqlTable,
         'dicBandeau': dicBandeau,
-        'sortColumnIndex': 1,
-        'sensTri': False,
         'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
         'size': (650, 400)}
 

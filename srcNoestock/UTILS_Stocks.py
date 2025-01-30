@@ -889,15 +889,19 @@ def SqlTable(**kwd):
     db = kwd.get('db',None)
     table = dicOlv.get('table',None)
     groupby = dicOlv.get('groupby',"")
-    where = dicOlv.get('where',"LIMIT 100")
+    where = dicOlv.get('where',"")
+    orderby = dicOlv.get('orderby',"")
     lstChamps = dicOlv['lstChamps']
     if where != "": where = "WHERE %s"%where
     if groupby != "": groupby = "GROUP BY %s"%groupby
+    if orderby != "": orderby = "ORDER BY %s"%orderby
     req = """   SELECT %s
                 FROM %s
                     %s
                     %s
-                ;""" % (",".join(lstChamps),table,where,groupby)
+                    %s
+                    LIMIT 1000
+                ;""" % (",".join(lstChamps),table,where,groupby,orderby)
     retour = db.ExecuterReq(req, mess='UTILS_Stocks.SqlTable')
     lstDonnees = []
     if retour == 'ok':
