@@ -721,12 +721,21 @@ class DB():
 
     def ModifTypeChamp(self, nomTable="", nomChamp="", typeChamp=""):
         """ Pour convertir le type d'un champ """
-        ret = """ Ne fonctionne qu'avec MySQL """
-        if self.isNetwork == True :
-            req = "ALTER TABLE %s CHANGE %s %s %s;" % (nomTable, nomChamp, nomChamp, typeChamp)
-            ret = self.ExecuterReq(req)
-            if ret == 'ok': self.Commit()
+        ret = """ALTER TABLE Ne fonctionne qu'avec des bases SQL"""
+        if self.isNetwork != True :
             return ret
+
+        # normalisation des values avant transformation des dates
+        if typeChamp == 'DATE':
+            lstDonnees = [(nomChamp,"2000-01-01"),]
+            condition = "%s is null OR %s = ''"%(nomChamp, nomChamp)
+            mess = "db.ModifTypeChamp"
+            self.ReqMAJ(nomTable,lstDonnees,condition=condition,mess=mess)
+
+        req = "ALTER TABLE %s CHANGE %s %s %s;" % (nomTable, nomChamp, nomChamp, typeChamp)
+        ret = self.ExecuterReq(req)
+        if ret == 'ok': self.Commit()
+        return ret
 
     def IsTableExists(self, nomTable=""):
         """ Vérifie si une table donnée existe dans la base """
@@ -752,11 +761,13 @@ class DB():
         # création de table ou ajout|modif des champs selon description fournie
         if not tables:
             tables = dicTables.keys()
-        for nomTable in tables[2:]:
+        mess = None
+        for nomTable in tables:
+            if nomTable in ('utilisateurs','droits'):
+                continue
             # les possibles vues sont préfixées v_ donc ignorées
             if nomTable[:2] == "v_":
                 continue
-            mess = None
             if not self.IsTableExists(nomTable):
                 ret = self.CreationUneTable(dicTables=dicTables,nomTable=nomTable)
                 mess = "Création de la table de données %s: %s" %(nomTable,ret)
@@ -791,8 +802,12 @@ class DB():
                 if parent and mess:
                     parent.mess += "%s %s, "%(nomTable,ret)
                     parent.SetStatusText(parent.mess[-200:])
-        parent.mess += "- CtrlTables Terminé"
-        parent.SetStatusText(parent.mess[-200:])
+        if parent:
+            parent.mess += "- CtrlTables Terminé"
+            parent.SetStatusText(parent.mess[-200:])
+        else:
+            print(mess)
+
 
     def DropUneTable(self,nomTable=None):
         if nomTable == None : return "Absence de nom de table!!!"
@@ -1046,9 +1061,13 @@ if __name__ == "__main__":
     os.chdir("..")
     db = DB()
     db.AfficheTestOuverture()
+    from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
+
+    Init_tables(mode="ctrl",
+                tables=['stMouvements'],
+                db_tables=DB_TABLES)
     #db.MaFonctionTest()
     #db.DropUneTable('cpta_journaux')
-    #from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
     #db.CreationUneTable(DB_TABLES,'stEffectifs')
     #db.CreationTables(None,dicTables=DB_TABLES,tables=['stArticles','stEffectifs','stMouvements','stInventaires','cpta_analytiques'])
     #db.CreationTousIndex(None,DB_PK,['stEffectifs',])

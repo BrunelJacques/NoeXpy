@@ -496,11 +496,6 @@ def CalculeInventaire(dlg, dParams):
         # Force la mise à jour dans la base avant nouveau select évitant le cache
         del db.cursor
         db.cursor = db.connexion.cursor(buffered=False)
-
-        req = """FLUSH  TABLES 'stArticles';"""
-        ret = db.ExecuterReq(req, mess='SqlInventaires flush',affichError=True)
-        if retour != "ok":
-            return []
     return lstDonnees
 
 # Select de données  ----------------------------------------------------------
@@ -1056,7 +1051,7 @@ def MAJarticle(db,dlg,track):
         if 'achat' in dlg.origine and Nz(track.qte) != 0:
             dicArt['prixActuel'] = track.prixTTC
             lstDonnees += [
-                ('dernierAchat', xformat.DateFrToSql(dlg.date)),
+                ('dernierAchat', xformat.DateFrToSql(track.date)),
                 ('prixActuel', dicArt['prixActuel']), ]
 
         # enregistre l' article dans la bd

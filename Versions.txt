@@ -1,4 +1,4 @@
-version 1.1.2.44 (30/01/2025)
+version 1.1.2.44 (31/01/2025)
     - NoeXpy: Amélioration suite des tests
 
 version 1.1.2.42 (22/01/2025)
