@@ -5,7 +5,7 @@ Pour Windows, vous devez aller sur les sites des auteurs pour
 rechercher et installer les bibliothèques suivantes.
 - Python 3+ avec pip (http://www.python.org/)
 - wxPython 3+ - version unicode (http://www.wxpython.org/)
-- git https://git-scm.com/download/win
+- git (https://git-scm.com/download/win)
 
 # Cloner les sources via git qui céera le répertoire NoeXpy (shell en mode administrateur)
 git clone https://github.com/BrunelJacques/NoeXpy 

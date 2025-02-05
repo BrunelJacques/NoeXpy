@@ -11,6 +11,7 @@ import git
 import os
 
 # exemple donné par copilot
+# ATTENTION le client GIT doit être en place par http://Git-scm.com
 # Définir l'URL du dépôt et le chemin local
 repo_url = 'https://github.com/votre-utilisateur/votre-repo.git'
 local_path = 'chemin/vers/votre/dossier'
@@ -33,11 +34,16 @@ import importlib.util
 
 # imports préalables aux connexions git
 mess = "lancement gitPython"
-messRaise = "Installer git par commande windows 'pip install GitPython'\n"
+MessRaise = """Necessaire pour git:\n\n
+    - client git à installer (https://git-scm.com/download/win)\n
+    - variable Path contient 'c:\Program Files\Git\cmd'
+    - git config --global --add safe.directory '*'
+    - pip install GitPython"""
+
 try:
     SEP = "\\"
     if "linux" in sys.platform:
-        messRaise = "Installer git sous linux: 'sudo apt install git'"
+        MessRaise = "Installer git sous linux: 'sudo apt install git'"
         SEP = "/"
 
     # tentative d'installation du package github si non présent
@@ -49,29 +55,32 @@ try:
         subprocess.call(commande)
     import git
 except Exception as err:
-    print("Echec %s: %s\n%s"% (mess, err, messRaise))
+    print("Echec %s: %s\n%s" % (mess, err, MessRaise))
 
-mess = "lancement wxPython"
-messRaise = "Installer wxPython par commande 'pip install wxPython'"
+
 try:
     if "linux" in sys.platform:
-        messRaise = ("Installer wxPython sous Linux:\n" +
+        MessRaise = ("Installer wxPython sous Linux:\n" +
                      "pip3 install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04 wxPython")
     import wx
 except Exception as err:
-    raise Exception("Echec %s: %s\n%s" % (mess, err, messRaise))
-
+    raise Exception("Echec %s: %s\n%s" % (mess, err, MessRaise))
 
 
 def IsPullNeeded(repo_path, mute=False):
     try:
+        messError = MessRaise
         repo = git.Repo(repo_path)
+        messError = "git est ok\n\n"
         origin = repo.remotes.origin
+        messError += "orifin est ok\n"
         # Fetch changes from remote repository
         origin.fetch()
+        messError += "fetch est ok\n"
         # Get the commit IDs of the local and remote branches
         local_branch = repo.head.commit
         remote_branch = origin.refs.master.commit
+        messError += "remote_branch est ok est ok\n"
         # Check if local branch is behind remote branch
         needed = local_branch != remote_branch
         if needed and mute == False:
@@ -92,6 +101,8 @@ def IsPullNeeded(repo_path, mute=False):
 
     except git.exc.GitCommandError as e:
         wx.MessageBox(f"Error: {e}", "Accès GITHUB échoué", wx.ICON_ERROR)
+        print("Erreur Git: {e}")
+        wx.MessageBox(messError,"Git A vérifier",wx.ICON_INFORMATION)
         return False
 
 def PullGithub(appli_path, stash_changes=False, reset_hard=False):
@@ -277,7 +288,7 @@ class DLG(wx.Dialog):
                     ok = ok and self.checkForce.GetValue()
 
         # vérif si la mise à jour est nécessaire
-        if isPull and ok and not IsPullNeeded(dir, mute=True):
+        if isPull and ok and not IsPullNeeded(dir, mute=False):
             mess = "Pas de mise à jour nécessaire\n\nforcer est possible"
             wx.MessageBox(mess, "Versions identiques")
             ok = ok and self.checkForce.GetValue()
