@@ -42,6 +42,10 @@ class MainFrame(wx.Frame):
         if not self.pathXpy in sys.path:
             sys.path = [self.pathXpy] + sys.path
         ret = xGithub.IsPullNeeded(os.getcwd())
+        if ret == None:
+            print("Echec du test mises à jour GitHub")
+        else:
+            print("Mise à jour nécessaire: %s"%str(ret))
         # le dictionnaire config contiendra  toutes les configurations de l'utilisateur,
         #       enregistrées dans des fichiers  soit dans profilUser ou dans Data selon xUTILS_Shelve
         self.config = None
@@ -283,6 +287,7 @@ class MainFrame(wx.Frame):
 #************************   Pour Test    *******************************
 if __name__ == "__main__":
     # Lancement de l'application
+    os.chdir("..")
     app = wx.App()
     frm = MainFrame(None, title='xPY morceaux choisis')
     frm.dictAppli = {

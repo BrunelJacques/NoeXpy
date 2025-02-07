@@ -1,3 +1,6 @@
+version 1.1.2.48 (07/02/2025)
+    - Realease automatiques gestions des erreurs
+
 version 1.1.2.47 (05/02/2025)
     - Documentation GitHub
 

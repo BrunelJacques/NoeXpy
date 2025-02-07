@@ -6,11 +6,11 @@
 # Licence:         Licence GNU GPL
 # --------------------------------------------------------------------------
 
+# exemple git donné par copilot
 """
 import git
 import os
 
-# exemple donné par copilot
 # ATTENTION le client GIT doit être en place par http://Git-scm.com
 # Définir l'URL du dépôt et le chemin local
 repo_url = 'https://github.com/votre-utilisateur/votre-repo.git'
@@ -29,12 +29,11 @@ else:
     print(f"Le dépôt a été cloné dans {local_path}")
 """
 
-import os, sys
-import importlib.util
+import os, sys, wx
 
 # imports préalables aux connexions git
 mess = "lancement gitPython"
-MessRaise = """Necessaire pour git:\n\n
+MessError = """Necessaire pour git:\n\n
     - client git à installer (https://git-scm.com/download/win)\n
     - variable Path contient 'c:\Program Files\Git\cmd'
     - git config --global --add safe.directory '*'
@@ -43,40 +42,30 @@ MessRaise = """Necessaire pour git:\n\n
 try:
     SEP = "\\"
     if "linux" in sys.platform:
-        MessRaise = "Installer git sous linux: 'sudo apt install git'"
         SEP = "/"
-
+        MessError = "Installer git sous linux\n\n'sudo apt install git'\n"
     # tentative d'installation du package github si non présent
+    import importlib.util
     if not importlib.util.find_spec('git'):
         mess = "test de présence de package github"
         import subprocess
-
         commande = ['pip', 'install', 'GitPython']
         subprocess.call(commande)
     import git
+    MessError = "'import git'  ok\n"
 except Exception as err:
-    print("Echec %s: %s\n%s" % (mess, err, MessRaise))
-
-
-try:
-    if "linux" in sys.platform:
-        MessRaise = ("Installer wxPython sous Linux:\n" +
-                     "pip3 install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04 wxPython")
-    import wx
-except Exception as err:
-    raise Exception("Echec %s: %s\n%s" % (mess, err, MessRaise))
-
+    print("\nEchec %s: %s\n%s\n" % (mess, err, MessError))
 
 def IsPullNeeded(repo_path, mute=False):
     try:
-        messError = MessRaise
+        messError = MessError
         repo = git.Repo(repo_path)
-        messError = "git est ok\n\n"
+        messError += "git.Repo(%s) est ok\n"%repo_path
         origin = repo.remotes.origin
-        messError += "orifin est ok\n"
+        messError += "repo.remotes.origin est ok\n"
         # Fetch changes from remote repository
         origin.fetch()
-        messError += "fetch est ok\n"
+        messError += "origin.fetch est ok\n"
         # Get the commit IDs of the local and remote branches
         local_branch = repo.head.commit
         remote_branch = origin.refs.master.commit
@@ -95,15 +84,14 @@ def IsPullNeeded(repo_path, mute=False):
                 if needed:  # détail de l'erreur retourné dans le message
                     style = wx.ICON_ERROR
                 wx.MessageBox(mess, "Retour Github", style=style)
-            else:
-                needed = False
         return needed
 
     except git.exc.GitCommandError as e:
-        wx.MessageBox(f"Error: {e}", "Accès GITHUB échoué", wx.ICON_ERROR)
-        print("Erreur Git: {e}")
+        messError += f"\nErreur: {e}\n"
+        print(f"Erreur Git: {e}")
         wx.MessageBox(messError,"Git A vérifier",wx.ICON_INFORMATION)
-        return False
+    except Exception as e:
+        print(f"\nErreur Exception: {e}\n")
 
 def PullGithub(appli_path, stash_changes=False, reset_hard=False):
     mess = "Lancement Update\n"
@@ -143,7 +131,6 @@ def CloneGithub(repo_url, appli_path):
         mess = f"Erreur lors du clonage :\n\n {e}"
         err = True
     return err, mess
-
 
 class DLG(wx.Dialog):
     def __init__(self, lanceur=""):
