@@ -6,30 +6,8 @@
 # Licence:         Licence GNU GPL
 # --------------------------------------------------------------------------
 
-# exemple git donné par copilot
-"""
-import git
-import os
-
-# ATTENTION le client GIT doit être en place par http://Git-scm.com
-# Définir l'URL du dépôt et le chemin local
-repo_url = 'https://github.com/votre-utilisateur/votre-repo.git'
-local_path = 'chemin/vers/votre/dossier'
-
-# Vérifier si le dossier existe déjà
-if os.path.exists(local_path):
-    # Si le dossier existe, mettre à jour le dépôt
-    repo = git.Repo(local_path)
-    origin = repo.remotes.origin
-    origin.pull()
-    print(f"Le dépôt a été mis à jour dans {local_path}")
-else:
-    # Si le dossier n'existe pas, cloner le dépôt
-    repo = git.Repo.clone_from(repo_url, local_path)
-    print(f"Le dépôt a été cloné dans {local_path}")
-"""
-
 import os, sys, wx
+import traceback
 
 # imports préalables aux connexions git
 mess = "lancement gitPython"
@@ -56,7 +34,8 @@ try:
 except Exception as err:
     print("\nEchec %s: %s\n%s\n" % (mess, err, MessError))
 
-def IsPullNeeded(repo_path, mute=False):
+def IsPullNeeded(repo_path, withPull=True, mute=False):
+    # Teste la nécessité et fait une release depuis GitHub
     try:
         messError = MessError
         repo = git.Repo(repo_path)
@@ -72,26 +51,37 @@ def IsPullNeeded(repo_path, mute=False):
         messError += "remote_branch est ok est ok\n"
         # Check if local branch is behind remote branch
         needed = local_branch != remote_branch
-        if needed and mute == False:
-            mess = "Une mise à jour des programmes NOESTOCK-NOELITE est nécessaire\n\n"
-            mess += "Voulez-vous faire cette mise à jour maintenant?"
-            ret = wx.MessageBox(mess, "Nouvelle version",
+        if needed and withPull == True:
+            if not mute:
+                mess = "Une mise à jour des programmes NOESTOCK-NOELITE est nécessaire\n\n"
+                mess += "Voulez-vous faire cette mise à jour maintenant?"
+                ret = wx.MessageBox(mess, "Nouvelle version",
                                 style=wx.YES_NO | wx.ICON_INFORMATION)
+            else:
+                print("Lancement de PullGitHub")
+                ret = wx.YES
             if ret == wx.YES:
                 path = os.getcwd()
                 needed, mess = PullGithub(path)
                 style = wx.ICON_INFORMATION
                 if needed:  # détail de l'erreur retourné dans le message
                     style = wx.ICON_ERROR
-                wx.MessageBox(mess, "Retour Github", style=style)
+                if not mute:
+                    wx.MessageBox(mess, "Retour Github", style=style)
+                else:
+                    print(f"Retour GitHub: {mess}")
         return needed
-
     except git.exc.GitCommandError as e:
         messError += f"\nErreur: {e}\n"
         print(f"Erreur Git: {e}")
-        wx.MessageBox(messError,"Git A vérifier",wx.ICON_INFORMATION)
+        if not mute:
+            wx.MessageBox(messError,"Git A vérifier",wx.ICON_INFORMATION)
     except Exception as e:
-        print(f"\nErreur Exception: {e}\n")
+        tb = traceback.format_exc()
+        print(f"\n{messError}\n{tb}\nErreur Exception: {e}\n")
+        if not mute:
+            messError += f"{tb}\n{e}\n"
+            wx.MessageBox(messError,"Git A vérifier",wx.ICON_ERROR)
 
 def PullGithub(appli_path, stash_changes=False, reset_hard=False):
     mess = "Lancement Update\n"
