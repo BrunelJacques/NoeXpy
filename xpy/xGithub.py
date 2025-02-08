@@ -103,7 +103,7 @@ def PullGithub(appli_path, stash_changes=False, reset_hard=False):
         # Effectuer git pull depuis la branche actuelle
         origin = repo.remote(name='origin')
         origin.pull()
-        mess = "Mise à jour réussie.\n\n-"
+        mess = "Mise à jour réussie.\n\nRedémarrez le programme pour bénéficier des nouveautés"
 
     except git.exc.GitCommandError as e:
         mess += f"\nErreur lors de la mise à jour : {e}"
