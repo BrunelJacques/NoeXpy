@@ -1120,6 +1120,7 @@ class CTRL_SaisieDate(wx.Panel):
             self.SetValue(xformat.DatetimeToStr(dtDate))
             if hasattr(self,'OnDate'):
                 self.OnDate(event)
+                print()
 
     def SetFocus(self):
         self.ctrlDate.SetFocus()
@@ -1173,7 +1174,6 @@ class CTRL_SaisieDateAnnuel(CTRL_SaisieDate):
             return
         event.Skip()
 
-
 # saisie de deux dates définissant une période
 class CTRL_Periode(wx.Panel):
     def __init__(self, parent, **kwds):
@@ -1211,9 +1211,12 @@ class CTRL_Periode(wx.Panel):
             if fin < debut:
                 wx.MessageBox("La date début était postérieure à celle de fin!!")
                 self.ctrlSaisieDu.SetValue(fin)
-        elif origine == 'date_du' and fin < debut:
-            wx.MessageBox("La date fin était antérieure à celle de début!!")
-            self.ctrlSaisieAu.SetValue(debut)
+        elif origine == 'date_du':
+            if fin < debut or ():
+                wx.MessageBox("La date fin était antérieure à celle de début!!")
+                self.ctrlSaisieAu.SetValue(debut)
+            elif (fin - debut) > datetime.timedelta(31):
+                self.ctrlSaisieAu.SetValue(debut)
         event.Skip()
         if event.EventType == wx.EVT_KILL_FOCUS.typeId:
             if hasattr(self,'actionCtrl'):

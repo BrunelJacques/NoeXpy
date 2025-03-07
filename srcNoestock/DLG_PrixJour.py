@@ -321,8 +321,10 @@ class DLG(xGTR.DLG_tableau):
         self.Refresh()
 
     def OnPeriode(self,event):
-        self.periode = self.pnlParams.GetOneValue('periode','param1')
-        self.ctrlOlv.MAJ()
+        deb, fin = self.pnlParams.GetOneValue('periode','param1')
+        if fin - deb <= datetime.timedelta(31) or fin != self.periode[-1]:
+            self.periode = (deb, fin)
+            self.ctrlOlv.MAJ()
         if event: event.Skip()
 
     def OnCuisine(self,event):

@@ -164,7 +164,7 @@ def GetLastInventForMvts(dlg, dParams):
 
     if dParams['article'] and len(dParams['article']) > 0:
         oneArticle = dParams['article']
-    if oneArticle.lower() == "tous":
+    if  (not oneArticle) or  oneArticle.lower() == "tous":
         oneArticle = None
     kwd = {'dteAnalyse': dParams['anteDate'],
            'lstChamps': lstChampsInvent,
@@ -1461,7 +1461,7 @@ def GetPrixJourLignes(dlg, grouper='date', **kwd):
             # calcul du nombre de clients repas à retenir pour la journée
             effMidi, effSoir = QuelsEffectifs(dlg)
             key = str(keyLigne)
-            dicEff = dicEffectifs[key]
+            dicEff = dicEffectifs[keyLigne]
             nbRepasLigne = xformat.Nz(dicEff['midiRepas']) + xformat.Nz(
                 dicEff['soirRepas'])
             # nombre de clients
