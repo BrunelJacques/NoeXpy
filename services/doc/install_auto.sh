@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# installation sous linux
 # lancer:$ sudo bash install_auto.sh
 cd /home
 if [ ! -d noegest ]; then

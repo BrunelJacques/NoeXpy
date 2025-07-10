@@ -3,8 +3,8 @@ Installer Noexpy sur Windows
 
 Pour Windows, vous devez aller sur les sites des auteurs pour 
 rechercher et installer les bibliothèques suivantes.
-- Python 3+ avec pip (http://www.python.org/)
-- wxPython 3+ - version unicode (http://www.wxpython.org/)
+- Python 311 avec pip (http://www.python.org/)
+- dans un terminal shell lancez 'pip install -U wxPython'
 - git (https://git-scm.com/download/win)
 
 # vérification git pour un user non administrateur qui n'a pas fait l'installation de git
@@ -30,10 +30,13 @@ rechercher et installer les bibliothèques suivantes.
 # Tester GitHub à partir de répertoire NoeXpy
 > git fetch -v origin 
 
-# Créer un raccouri sur le bureau
-avec image D:\Projets\NoeXpy\xpy\Images\Noestock.ico
+# Créer un raccouri sur le bureau pour Noestock
+cible: "C:\Program Files\Python311\python.exe" Noestock.py 
+démarrer: C:\Program Files\NoeXpy\
+avec image C:\Program\NoeXpy\xpy\Images\Noestock.ico
 
 
+# compléments
 #! pour créer un lien git sur un répertoire existant, se placer dans le répertoire, puis
 > git init
 > git add .
