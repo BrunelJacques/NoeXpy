@@ -31,9 +31,9 @@ rechercher et installer les bibliothèques suivantes.
 - git fetch -v origin 
 
 # Créer un raccouri sur le bureau pour Noestock
-cible: "C:\Program Files\Python311\python.exe" Noestock.py 
-démarrer: C:\Program Files\NoeXpy\
-avec image C:\Program\NoeXpy\xpy\Images\Noestock.ico
+- cible: "C:\Program Files\Python311\python.exe" Noestock.py" 
+- démarrer: "C:\Program Files\NoeXpy\"
+- avec image "C:\Program Files\NoeXpy\xpy\Images\Noestock.ico"
 
 
 # compléments
