@@ -378,27 +378,49 @@ class Compta(object):
         if cfgCompta:
             return xdb.DB(config=cfgCompta,mute=True)
 
-    # Appel d'une liste extraite de la base de donnée pour table préalablement renseignée
-    def GetDonnees(self,**kwds):
-        filtre = kwds.pop('filtre','')
-        table = kwds.pop('table','')
-        if table == '': table = self.table
-        if not table:
-            wx.MessageBox("UTILS_Compta: Manque l'info de la table à interroger...")
-            return []
-        donnees = []
-        dicTable = self.dicTables[table]
+    def ComposeReq(self,table,where='',filtre=''):
+        # Création d'une requête avec variables personnalisant les params par défaut
         req = ''
-        for segment in ('select','from','where'):
+        dicTable = self.dicTables[table]
+        for segment in ('select','from'):
             if segment in dicTable.keys():
                 req += segment.upper() + " %s"%dicTable[segment] +"\n"
-        if len(filtre) > 0 and 'filtre' in dicTable.keys():
-            txtfiltre = dicTable['filtre'].replace("xxx","%s"%filtre)
+
+        # clause WHERE
+        if len(where) == 0:
+            # dérogation possible au paramètre par défaut pour where dans filtre
+            where = dicTable['where']
+        if len(where) > 0:
+            req += "WHERE %s"%where
+
+        # filtre: complement de clause where pour filtrer par variable
+        txtfiltre = ''
+        # pour personnaliser txtfiltre, enrichir where et laisser filtre à blanc
+        if len(filtre) > 0:
+            # le filtre reçu n'est qu'un mot injecté dans le param txtfiltre
+            if 'filtre' in dicTable.keys():
+                txtfiltre = dicTable['filtre']
+            txtfiltre = txtfiltre.replace("xxx","%s"%filtre)
             # ajout du filtre dans la requête
             req += "%s\n"%txtfiltre
+
         if 'group by' in dicTable.keys():
             req += "GROUP BY %s" % dicTable['group by'] + "\n"
+        return req
 
+    # Appel d'une liste extraite de la base de donnée pour table préalablement renseignée
+    def GetDonnees(self,**kwds):
+        table = kwds.pop('table','')
+        where = kwds.pop('where','')
+        filtre = kwds.pop('filtre','')
+
+        if table == '': table = self.table
+        if not table or table == '':
+            wx.MessageBox("UTILS_Compta: Manque l'info de la table à interroger...")
+            return []
+        # Appel des données, le select et group by sera par défaut non personnalisable
+        donnees = []
+        req = self.ComposeReq(table,where,filtre)
         ret = self.db.ExecuterReq(req,mess="UTILS_Compta.GetDonnees %s"%table)
         if ret == "ok":
             donnees = self.db.ResultatReq()
@@ -478,7 +500,71 @@ class Compta(object):
         dlg.Destroy()
         return item
 
-    # Recherche automatique d'un item
+    # Recherche automatique d'un mot alpha dans une table, retour d'un seul item
+    def GetOneByMots(self,table='clients',text=None):
+        self.table = table
+        self.filtreTest = ""
+        # formatage du text
+        text = xformat.NoPunctuation(text)
+        text = xformat.NoChiffres(text)
+        lstMots = text.split(' ')
+        lstTplMots = [(len(x),x) for x in lstMots if len(x) >= 3]
+        lstTplMots.sort(reverse=True)
+        lstMots = [y for (x,y) in lstTplMots]
+
+        # fonction recherche un seul items contenant un mot limité à lg caractères puis décroisant
+        def testMatch(mot,lg=10,mini=3):
+            lstItem = []
+            match = False
+            lgrad = 0
+            # recherche des items contenant le début du mot en diminuant sa longueur
+            for lgrad in range(lg,mini-1,-1):
+                lstItem = self.GetDonnees(table=table,filtre=mot[:lgrad])
+                if len(lstItem) == 0 : continue
+                elif len(lstItem) == 1 :
+                    match = True
+                    break
+                else:
+                    # plusieurs items donc non pertinent
+                    break
+            # validation par vérif présence du mot[:7] dans un des champs
+            if match:
+                match = False
+                for champ in lstItem[0]:
+                    # test la presence du mot dans un champ
+                    if len(mot) >= 7 and mot[:7] in champ:
+                        # le mot long et entier est présent
+                        match = True
+                        print("match1",mot,champ)
+                        break
+                    elif len(mot) == lgrad and mot + " " in champ:
+                        # mot plus court présent en entier dans le champ
+                        match = True
+                        print("match2",mot,champ)
+                        break
+                    elif mot == " "+champ[-len(mot)-1:]:
+                        # le mot entier termine le champ
+                        print("match3"," "+mot,champ)
+                        match = True
+                        break
+            if not match:
+                lstItem = []
+            return match, lstItem,lgrad
+
+        # appel par mot de longeur décroissante
+        match = False
+        item = None
+        for mot in lstMots:
+            match, lstItems, lgtest2 = testMatch(mot,lg=min(10,len(mot)))
+            if len(lstItems)>0 and lgtest2 + 1 > len(mot):
+                motTest = mot[:(lgtest2 +1)]
+                self.filtreTest = motTest
+            if match:
+                item = lstItems[0]
+                break
+        return item
+
+    # Recherche automatique d'un item dans une table
     def GetOneAuto(self,table='clients',filtre='',lib=None):
         self.table = table
         # la recherche peut se faire sur un filtre qui est un libellé complet
@@ -490,7 +576,7 @@ class Compta(object):
         filtre = filtre.replace(',','')
         lstMots = filtre.split(' ')
 
-        # fonction recherche un seul items contenant un mot limité à lg caractères puis décroisant
+        # fonction recherche un seul item contenant un mot sur différents champs
         def testMatch(mot,lg=10,mini=3):
             lstTemp = []
             match = False
@@ -519,7 +605,8 @@ class Compta(object):
         # appel avec 10 caractères du filtre puis réduit jusqu'a trouver au moins un item (cible clé d'apppel)
         lgMotUn = len(lstMots[0])
         match,lstItems,lgtest = testMatch(filtre.replace(' ',''),lg=10,mini=min(4,lgMotUn))
-        if not match: lgtest = lgMotUn
+        if not match:
+            lgtest = lgMotUn
         motTest = filtre.replace(' ','')[:lgtest+1]
         # deuxième tentative avec chaque mot du filtre de + de 3 car (cible libellé)
         if not match:

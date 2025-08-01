@@ -40,8 +40,6 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     noPiece = dicParams['p_export']['noPiece']
     champsIn = FORMATS_IMPORT[formatIn]['champs']
     nblent = FORMATS_IMPORT[formatIn]['lignesentete']
-    # longeur du préfixe ajouté lors du traitement de l'import
-    lgPrefixe = 6
     # teste la cohérence de la première ligne importée
     if nblent>0:
         if len(champsIn) != len(donnees[nblent]):
@@ -55,9 +53,12 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     ixLibCpt = champsOut.index('libcpt')
 
     def enrichiLigne(ligne):
+        # recherche d'un compte à partir des mots du libellé
         if len(ligne) != len(champsOut): return
         # composition des champs en liens avec la compta
-        record = compta.GetOneAuto(table,lib=ligne[ixLibelle][lgPrefixe:])
+        if ligne[ixLibelle]:
+            record = compta.GetOneByMots(table,text=ligne[ixLibelle])
+        else: record = None
         # la recherche de compte a matché
         if record:
             ligne[ixCompte] = record[0]
@@ -65,6 +66,35 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
             ligne[ixLibCpt] = record[2]
         else:
             ligne[ixAppel] = compta.filtreTest
+
+    def hasDate(ligne):
+        # vérifie la présence d'un montant dans au moins un champ attendu en numérique
+        lstIxChamps = []
+        ixDte = None
+        for champ in champsIn:
+            if 'date' in champ.lower():
+                ixDte = champsIn.index(champ)
+                break
+        ok = False
+        if ixDte != None and "datetime" in str(type(ligne[ixDte])):
+            ok = True
+        return ok
+
+    def hasLibelle(ligne):
+        # vérifie la présence d'un montant dans au moins un champ attendu en numérique
+        lstIxChamps = []
+        for champ in champsIn:
+            if champ in ('libelle','designation'):
+                lstIxChamps.append(champsIn.index(champ))
+        ok = False
+        for ix in lstIxChamps:
+            try:
+                if len(ligne[ix]) > 0:
+                    ok = True
+                    break
+            except:
+                pass
+        return ok
 
     def hasMontant(ligne):
         # vérifie la présence d'un montant dans au moins un champ attendu en numérique
@@ -77,6 +107,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
             try:
                 xformat.ToFloat(ligne[ix])
                 ok = True
+                break
             except:
                 pass
         return ok
@@ -91,7 +122,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     image = wx.ArtProvider.GetBitmap(wx.ART_TIP, wx.ART_OTHER, (16, 16))
     parent.pnlPied.SetItemsInfos(txtInfo, image)
     for ligne in donnees[nblent:]:
-        if not hasMontant(ligne):
+        if not hasMontant(ligne) or not hasLibelle((ligne)):
             continue
         if ko: break
         if len(champsIn) > len(ligne):
@@ -107,6 +138,8 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
                         valeur = xformat.FinDeMois(ligne[champsIn.index(champ)])
                     else:
                         valeur = ligne[champsIn.index(champ)]
+                        if isinstance(valeur, datetime.datetime):
+                            valeur = valeur.date()
             elif champ == 'noPiece':
                     valeur = noPiece
             elif champ == 'montant':
@@ -127,7 +160,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
                             if isinstance(dte,(datetime.date,datetime.datetime)):
                                 prefixe = "%02d/%02d"%(dte.day,dte.month)
                             else:
-                                prefixe = dte.strip()[:lgPrefixe-1]+' '
+                                prefixe = dte.strip()+' '
                             if ligne[champsIn.index('libelle')]:
                                 valeur = prefixe + ligne[champsIn.index('libelle')]
                             else:
@@ -161,6 +194,11 @@ FORMATS_IMPORT = {"LCL carte":{ 'champs':['date','montant','mode',None,'libelle'
                       'table': 'fournisseurs'},
                   "Date,Lib,-Débit,Crédit": {
                       'champs': ['date', 'libelle', '-debit','credit'],
+                      'lignesentete': 0,
+                      'fonction': ComposeFuncImp,
+                      'table': 'fournisseurs'},
+                  "Date,DteValeur,Libellé,Débit,Crédit": {
+                      'champs': ['date','valeur', 'libelle', 'debit','credit'],
                       'lignesentete': 0,
                       'fonction': ComposeFuncImp,
                       'table': 'fournisseurs'}
@@ -225,7 +263,7 @@ def GetBoutons(dlg):
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal
     return [
-            ColumnDefn("Date", 'center', 85, 'date', valueSetter=wx.DateTime.Today(),isSpaceFilling=False,
+            ColumnDefn("Date", 'center', 85, 'date', valueSetter="",isSpaceFilling=False,
                             stringConverter=xformat.FmtDate),
             ColumnDefn("Cpt No", 'left', 90, 'compte',valueSetter='',isSpaceFilling=False,
                             isEditable=True),
@@ -496,7 +534,11 @@ class Dialog(xusp.DLG_vide):
         dic = self.pnlParams.GetValues()
         nomCompta = dic['p_compta']['compta'].lower()
         compta = UTILS_Compta.Compta(self, nomCompta=nomCompta)
-        if not compta.db or compta.db.erreur: compta = None
+        if not compta.db:
+            compta = None
+        elif type(compta.db.erreur) == int  and compta.db.erreur > 0:
+            test2 = compta.db.erreur
+            compta = None
         if not compta:
             txtInfo = "Echec d'accès à la compta associée à %s!!!"%nomCompta
             image = wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_OTHER, (16, 16))
@@ -569,7 +611,7 @@ class Dialog(xusp.DLG_vide):
         totDebits, totCredits = 0.0, 0.0
         nonValides = 0
         # constitution de la liste des données à exporter
-        lstTracks = [x for x in self.ctrlOlv.innerList]
+        lstTracks = [x for x in self.ctrlOlv.innerList if x.date!="" ]
         for track in lstTracks:
             if not track.compte or len(track.compte)==0:
                 track.comte = '471'

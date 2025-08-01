@@ -652,6 +652,16 @@ def NoPunctuation(txt= '',punct= "'!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'"):
     regex = re.compile('[%s]' % re.escape(punct))
     return regex.sub(' ', txt)
 
+def NoChiffres(txt=''):
+    newtxt = ""
+    if isinstance(txt,str):
+        chiffres = "0123456789.,-+"
+        newtxt = ''
+        for a in txt:
+            if not (a in chiffres):
+                newtxt += a
+    return newtxt
+
 def NoLettre(txt=''):
     if isinstance(txt,str):
         chiffres = "0123456789.,-+"

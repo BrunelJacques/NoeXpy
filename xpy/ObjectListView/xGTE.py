@@ -792,6 +792,7 @@ class PNL_corps(wx.Panel):
         self.parent = parent
         self.lanceur = kwds.get('lanceur',parent)
         self.flagSkipEdit = False
+        self.buffertracks = []
         if hasattr(parent,'lanceur'): self.lanceur = parent.lanceur
         # récupére les éventuels boutons d'actions
         if getBtnActions:
