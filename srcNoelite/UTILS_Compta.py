@@ -500,10 +500,10 @@ class Compta(object):
         dlg.Destroy()
         return item
 
-    def FiltreSurCle(self, text, lstItem):
-        # on recherche un text entier dans des parties d'items, pour discriminer un
+    def FiltreSurCle(self, text, lstItems):
+        # on recherche un text entier dans des parties d'items, pour discriminer
         lstRetour = []
-        for item in lstItem:
+        for item in lstItems:
             for champvalue in item:
                 # un de ces champs sera la clé, les autres peuvent matcher aussi
                 txttest = text
@@ -515,7 +515,6 @@ class Compta(object):
                     if not item in lstRetour:
                         lstRetour.append(item)
                     break
-
         return lstRetour
 
     # Recherche automatique d'un mot alpha dans une table, retour d'un seul item
@@ -531,29 +530,29 @@ class Compta(object):
         lstTplMots.sort(reverse=True)
         lstMots = [y for (x,y) in lstTplMots]
 
-        # fonction recherche un seul items contenant un mot limité à lg caractères puis décroisant
+        # fonction recherche un seul item contenant un mot limité à nb de caractères puis décroisant
         def testMatch(mot,lg=10,mini=3):
-            lstItem = []
+            lstItems = []
             match = False
             lgrad = 0
             # recherche des items contenant le début du mot en diminuant sa longueur
             for lgrad in range(lg,mini-1,-1):
-                lstItem = self.GetDonnees(table=table,filtre=mot[:lgrad])
-                if len(lstItem) == 0 : continue
-                elif len(lstItem) == 1 :
-                    match = True
-                    break
+                lstItems = self.GetDonnees(table=table,filtre=mot[:lgrad])
+                if len(lstItems) == 0 : continue
                 else:
-                    # plusieurs items: discriminer par clé ou libellé dans le texte
-                    lstItem = self.FiltreSurCle(text, lstItem)
-                    if len(lstItem) == 1:
+                    nb = len(lstItems)
+                    # discriminer par clé ou libellé dans le texte
+                    lstItems = self.FiltreSurCle(text, lstItems)
+
+                    if len(lstItems) == 0: continue
+                    if len(lstItems) == 1:
                         match = True
                         break
 
             # validation par vérif présence du mot[:7] dans un des champs
             if match:
                 match = False
-                for champ in lstItem[0]:
+                for champ in lstItems[0]:
                     # test la presence du mot dans un champ
                     if len(mot) >= 7 and mot[:7] in champ:
                         # le mot long et entier est présent
@@ -572,8 +571,8 @@ class Compta(object):
                         match = True
                         break
             if not match:
-                lstItem = []
-            return match, lstItem,lgrad
+                lstItems = []
+            return match, lstItems,lgrad
 
         # appel par mot de longeur décroissante
         item = None

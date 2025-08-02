@@ -1,3 +1,6 @@
+version 1.1.2.51 (02/08/2025)
+    - Transposition de fichier reécriture partielle
+
 version 1.1.2.50 (07/03/2025)
     - Gestion des dates
 
@@ -8,7 +11,7 @@ version 1.1.2.48 (07/02/2025)
     - Realease automatiques gestions des erreurs
 
 version 1.1.2.47 (05/02/2025)
-    - Documentation GitHub
+    - Documentation GitHu
 
 version 1.1.2.46 (01/02/2025)
     - Modifs concernant les releases via GitHub

@@ -643,9 +643,9 @@ class Dialog(xusp.DLG_vide):
 
         # affichage résultat
         solde = xformat.FmtMontant(totDebits - totCredits,lg=12)
-        wx.MessageBox("Fin de transfert\n\nDébits: %s\nCrédits:%s"%(xformat.FmtMontant(totDebits,lg=12),
+        wx.MessageBox("Fin de transfert\n\nDébits  du relevé: %s\nCrédits du relevé:%s"%(xformat.FmtMontant(totDebits,lg=12),
                                                                      xformat.FmtMontant(totCredits,lg=12))+
-                      "\nSolde:   %s"%solde)
+                      "\nMouvements période:   %s"%solde)
 
         # sauvegarde des params
         self.pnlParams.SauveParams(close=True)
