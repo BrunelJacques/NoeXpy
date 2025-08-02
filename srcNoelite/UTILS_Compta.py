@@ -500,6 +500,24 @@ class Compta(object):
         dlg.Destroy()
         return item
 
+    def FiltreSurCle(self, text, lstItem):
+        # on recherche un text entier dans des parties d'items, pour discriminer un
+        lstRetour = []
+        for item in lstItem:
+            for champvalue in item:
+                # un de ces champs sera la clé, les autres peuvent matcher aussi
+                txttest = text
+                if not " " in champvalue:
+                    # une clé d'appel n'a pas d'espace
+                    txttest = xformat.Supprespaces(text,camelCase=False)
+                # recherche du champ dans le text
+                if champvalue.upper() in txttest:
+                    if not item in lstRetour:
+                        lstRetour.append(item)
+                    break
+
+        return lstRetour
+
     # Recherche automatique d'un mot alpha dans une table, retour d'un seul item
     def GetOneByMots(self,table='clients',text=None):
         self.table = table
@@ -507,6 +525,7 @@ class Compta(object):
         # formatage du text
         text = xformat.NoPunctuation(text)
         text = xformat.NoChiffres(text)
+        text = text.upper()
         lstMots = text.split(' ')
         lstTplMots = [(len(x),x) for x in lstMots if len(x) >= 3]
         lstTplMots.sort(reverse=True)
@@ -525,8 +544,12 @@ class Compta(object):
                     match = True
                     break
                 else:
-                    # plusieurs items donc non pertinent
-                    break
+                    # plusieurs items: discriminer par clé ou libellé dans le texte
+                    lstItem = self.FiltreSurCle(text, lstItem)
+                    if len(lstItem) == 1:
+                        match = True
+                        break
+
             # validation par vérif présence du mot[:7] dans un des champs
             if match:
                 match = False
@@ -535,16 +558,17 @@ class Compta(object):
                     if len(mot) >= 7 and mot[:7] in champ:
                         # le mot long et entier est présent
                         match = True
-                        print("match1",mot,champ)
                         break
                     elif len(mot) == lgrad and mot + " " in champ:
                         # mot plus court présent en entier dans le champ
                         match = True
-                        print("match2",mot,champ)
                         break
-                    elif mot == " "+champ[-len(mot)-1:]:
+                    elif " " + mot == " "+champ[-len(mot):]:
                         # le mot entier termine le champ
-                        print("match3"," "+mot,champ)
+                        match = True
+                        break
+                    elif mot == champ:
+                        # le mot occupe tout le champ
                         match = True
                         break
             if not match:
@@ -552,7 +576,6 @@ class Compta(object):
             return match, lstItem,lgrad
 
         # appel par mot de longeur décroissante
-        match = False
         item = None
         for mot in lstMots:
             match, lstItems, lgtest2 = testMatch(mot,lg=min(10,len(mot)))
