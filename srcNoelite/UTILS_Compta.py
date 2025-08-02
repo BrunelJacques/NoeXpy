@@ -19,6 +19,10 @@ MATRICE_COMPTAS = {
     # noegest pointe une table 'cptComptes' directement importée de quadra compta dans la base noethys,
     # en attendant de se greffer sur une autre 'compta_comptes_comptables' est l'officiel noethys pour les seuls comptes généraux
     'noegest': {
+        'comptes': {'select': 'IDcompte,cle,libelle',
+                         'from': 'cptaComptes',
+                         'where': "TRUE",
+                         'filtre': "AND (IDcompte like \"%xxx%\" OR cle like \"%xxx%\" OR libelle like \"%xxx%\")"},
         'fournisseurs': {'select': 'IDcompte,cle,libelle',
                          'from': 'cptaComptes',
                          'where': "Type = 'F'",
@@ -384,14 +388,14 @@ class Compta(object):
         dicTable = self.dicTables[table]
         for segment in ('select','from'):
             if segment in dicTable.keys():
-                req += segment.upper() + " %s"%dicTable[segment] +"\n"
+                req += segment.upper() + " %s\n"%dicTable[segment]
 
         # clause WHERE
         if len(where) == 0:
             # dérogation possible au paramètre par défaut pour where dans filtre
             where = dicTable['where']
         if len(where) > 0:
-            req += "WHERE %s"%where
+            req += "WHERE %s\n"%where
 
         # filtre: complement de clause where pour filtrer par variable
         txtfiltre = ''
@@ -402,10 +406,11 @@ class Compta(object):
                 txtfiltre = dicTable['filtre']
             txtfiltre = txtfiltre.replace("xxx","%s"%filtre)
             # ajout du filtre dans la requête
-            req += "%s\n"%txtfiltre
+            req += "%s \n"%txtfiltre
 
         if 'group by' in dicTable.keys():
-            req += "GROUP BY %s" % dicTable['group by'] + "\n"
+            req += "GROUP BY %s \n" % dicTable['group by'] + "\n"
+        req += ";"
         return req
 
     # Appel d'une liste extraite de la base de donnée pour table préalablement renseignée
@@ -453,9 +458,7 @@ class Compta(object):
 
     # Composition du dic de tous les paramètres à fournir pour l'OLV
     def GetDicOlv(self,table):
-        nature = None
-        matrice = None
-        if table in ('fournisseurs','clients','generaux','cpt3car'):
+        if table in ('comptes','fournisseurs','clients','generaux','cpt3car'):
             nature = 'compte'
             matrice = MATRICE_COMPTES
         elif table in ('journaux','journOD'):
@@ -490,7 +493,7 @@ class Compta(object):
         dicOlv = self.GetDicOlv(table)
         dlg = xGTR.DLG_tableau(None, dicOlv=dicOlv)
         if len(filtre)>0:
-            dlg.ctrlOlv.Parent.barreRecherche.SetValue(filtre)
+            dlg.ctrlOlv.Parent.ctrlOutils.barreRecherche.SetValue(filtre)
             dlg.ctrlOlv.Filtrer(filtre)
         ret = dlg.ShowModal()
         if ret == wx.OK:
@@ -587,7 +590,7 @@ class Compta(object):
         return item
 
     # Recherche automatique d'un item dans une table
-    def GetOneAuto(self,table='clients',filtre='',lib=None):
+    def GetOneAuto(self,table='journaux',filtre='',lib=None):
         self.table = table
         # la recherche peut se faire sur un filtre qui est un libellé complet
         if lib:
@@ -613,15 +616,14 @@ class Compta(object):
                     match = True
                     lgrad = lgtest
                     break
-                elif len(lstTemp) == 2:
-                    # teste l'identité des libellés pos(2) pour comptes en double
-                    if lstTemp[0][2] == lstTemp[1][2]:
-                        lstTemp = lstTemp[1:2]
-                        match = True
-                        lgrad = lgtest
-                        break
                 else:
-                    break
+                    # plusieurs items à discriminer par clé ou libellé dans le texte
+                    lstTemp = self.FiltreSurCle(filtre, lstTemp)
+                    if len(lstTemp) == 1:
+                        match = True
+                        lgrad = 0
+                        break
+
             return match, lstTemp,lgrad
 
         # appel avec 10 caractères du filtre puis réduit jusqu'a trouver au moins un item (cible clé d'apppel)

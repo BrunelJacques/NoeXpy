@@ -346,66 +346,50 @@ class PNL_corps(xGTE.PNL_corps):
         if self.flagSkipEdit : return
         self.flagSkipEdit = True
         track = self.ctrlOlv.GetObjectAt(row)
+        ret = None
 
         # si pas de saisie on passe
         if (not value) or track.oldValue == value:
             self.flagSkipEdit = False
             return
 
-        # l'enregistrement de la ligne se fait à chaque saisie pour gérer les montées et descentes
-        okSauve = False
-
         # Traitement des spécificités selon les zones
         if code == 'compte':
-            table = self.parent.table
-            record = self.parent.compta.GetOneAuto(table,value)
-            """# deuxième essai dans les comptes généraux
-            if not record:
-                record = self.parent.compta.GetOneAuto('generaux', value)
+            record = self.parent.compta.GetOneAuto('comptes',value)
             # tentative de recherche mannuelle
             newfiltre = self.parent.compta.filtreTest
             if not record:
-                record = self.parent.compta.ChoisirItem('fournisseurs',newfiltre)
-            """
+                record = self.parent.compta.ChoisirItem('comptes',newfiltre)
             # alimente les champs ('compte','appel','libelle'), puis répand l'info
             if record:
+                ret = record[0].upper()
                 track.compte = record[0].upper()
                 track.exappel = track.appel
                 track.appel = record[1].upper()
                 track.libcpt = record[2]
                 # la valeur d'origine va être strockée par parent  pour cellEditor
                 if parent:
-                    #parent n'est pas self.parent!!!
                     parent.valeur = track.compte
-                # RepandreCompte sur les autres lignes similaires
-                self.RepandreCompte(track)
                 self.ctrlOlv.Refresh()
             else:
                 track.appel = ''
                 track.libcpt = ''
-
-
         # enlève l'info de bas d'écran
         self.parent.pnlPied.SetItemsInfos( INFO_OLV,wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)))
         self.flagSkipEdit = False
+        return ret
 
     def OnEditFunctionKeys(self,event):
         row, col = self.ctrlOlv.cellBeingEdited
         code = self.ctrlOlv.lstCodesColonnes[col]
         if event.GetKeyCode() == wx.WXK_F4 and code == 'compte':
             # F4 Choix compte
-            item = self.parent.compta.ChoisirItem(table=self.parent.table,filtre='')
+            track = self.ctrlOlv.GetObjectAt(row)
+            value = track.compte
+            item = self.parent.compta.ChoisirItem(table='comptes',filtre=value)
             if item:
-                self.OnEditFinishing('compte',item[0])
-                track = self.ctrlOlv.GetObjectAt(row)
                 track.compte = item[0]
-
-    def RepandreCompte(self,track=None):
-        for object in self.ctrlOlv.innerList:
-            if object.appel == track.exappel:
-                object.compte = track.compte
-                object.appel  = track.appel
-                object.libcpt = track.libcpt
+                self.OnEditFinishing('compte',item[0])
 
     def SauveLigne(self,*args,**kwds):
         return True
@@ -473,14 +457,15 @@ class Dialog(xusp.DLG_vide):
 
     def OnCtrlJournal(self,evt):
         # tronque pour ne garder que le code journal sur trois caractères maxi
-        valeur = self.pnlParams.GetOneValue('journal')
-        code = valeur[:3].strip()
+        valeur = self.pnlParams.GetOneValue('journal').upper()
         if self.compta:
             item = self.compta.GetOneAuto(table='journaux',filtre=valeur)
             if item:
                 self.pnlParams.SetOneValue('journal',valeur)
                 self.pnlParams.SetOneValue('contrepartie',item[2])
                 self.pnlParams.Refresh()
+            else:
+                self.pnlParams.SetOneValue('journal',"")
 
     def OnBtnJournal(self,evt):
         if self.compta:
@@ -549,14 +534,14 @@ class Dialog(xusp.DLG_vide):
         # appel des journaux
         if compta:
             lstJournaux = compta.GetJournaux()
-            lstLibJournaux = [(x[0]+"  "+x[1]) for x in lstJournaux]
             lstCodesJournaux = [x[0] for x in lstJournaux]
             box = self.pnlParams.GetBox('p_compta')
             valeur = self.pnlParams.lstBoxes[1].GetOneValue('journal')
             box.SetOneSet('journal',lstCodesJournaux)
             if len(valeur)>0 and len(lstCodesJournaux) > 0 and not valeur in lstCodesJournaux:
                 possibles = [x for x in lstCodesJournaux if valeur[0] == x[0]]
-                box.SetOneValue('journal',possibles[0])
+                if len(possibles) > 0:
+                    box.SetOneValue('journal',possibles[0])
         pnlJournal = self.pnlParams.GetPnlCtrl('journal', 'p_compta')
         x = False
         if compta : x = True
@@ -564,6 +549,7 @@ class Dialog(xusp.DLG_vide):
         return compta
 
     def GetTable(self):
+        # récupère la table par défaut du format import choisi
         dicParams = self.pnlParams.GetValues()
         formatIn = dicParams['fichiers']['formatin']
         return FORMATS_IMPORT[formatIn]['table']
