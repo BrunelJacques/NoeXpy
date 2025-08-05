@@ -508,6 +508,7 @@ class Compta(object):
         lstRetour = []
         for item in lstItems:
             for champvalue in item:
+                if not champvalue: continue
                 # un de ces champs sera la clé, les autres peuvent matcher aussi
                 txttest = text
                 if not " " in champvalue:

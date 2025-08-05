@@ -505,7 +505,7 @@ class PNL_ctrl(wx.Panel):
             if lgenre in ['date','time','datetime']:
                 lvalue = DDwxdate2strdate(lvalue,iso=False)
             self.ctrl.SetValue(lvalue)
-        if help:
+        if help and hasattr(self.ctrl,"SetToolTip"):
             self.ctrl.SetToolTip(help)
             self.txt.SetToolTip(help)
         commande = "création Boutons"

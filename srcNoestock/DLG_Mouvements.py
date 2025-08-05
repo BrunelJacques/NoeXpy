@@ -1163,7 +1163,6 @@ class DLG(xGTE.DLG_tableau):
     def OnImprimer(self,event):
         self.ctrlOlv.Apercu(None)
 
-
 #------------------------ Lanceur de test  -------------------------------------------
 
 if __name__ == '__main__':

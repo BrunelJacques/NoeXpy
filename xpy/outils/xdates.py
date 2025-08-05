@@ -1235,6 +1235,36 @@ class CTRL_Periode(wx.Panel):
         dteAu = xformat.DateSqlToDatetime(self.ctrlSaisieAu.GetValue())
         return  (dteDu,dteAu)
 
+# affiche une date
+class CTRL_AfficheDate(wx.Panel):
+    def __init__(self, parent, **kwds):
+        name = kwds.pop("name","CTRL_AfficheDate")
+        label = kwds.pop("label","Date: ")
+        minSize = kwds.pop("minSize",(80 + len(label)*5, 25))
+        wx.Panel.__init__(self, parent, id=-1, name=name)
+        self.parent = parent
+
+        self.labelDate = wx.StaticText(self, -1, label)
+        self.ctrlDate = wx.TextCtrl(self, -1, "", style=wx.TE_PROCESS_ENTER|wx.TE_CENTRE)
+        self.SetValue(datetime.date.today())
+        self.SetMinSize(minSize)
+
+        # Sizer
+        grid_sizer_dates = wx.FlexGridSizer(rows=1, cols=2, vgap=5, hgap=5)
+        grid_sizer_dates.Add(self.labelDate, 0, wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 0)
+        grid_sizer_dates.Add(self.ctrlDate, 0, wx.ALIGN_CENTER_VERTICAL, 0)
+        self.SetSizer(grid_sizer_dates)
+        grid_sizer_dates.Fit(self)
+
+
+    def SetValue(self,date):
+        # affichée en format fr
+        value = xformat.DateToFr(date)
+        if len(value) == 0:
+            value =str(date)
+        self.ctrlDate.SetValue(value)
+
+
 # -Pour test--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 class TestFrame(wx.Frame):

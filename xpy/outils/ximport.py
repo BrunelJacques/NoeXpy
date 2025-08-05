@@ -37,6 +37,7 @@ def GetFichierXls(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):
     myCell.xf_index : renvoie l'index de formattage, voir ci-dessous.
     """
     wk = xlrd.open_workbook(nomFichier)
+    sheet_names = wk.sheet_names()
     ws = wk.sheet_by_index(0) # renvoie la première feuille.
     lstDonnees = []
     for row in range(minrow,maxrow):
@@ -55,11 +56,55 @@ def GetFichierXls(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):
             lstDonnees.append(ligne)
     return lstDonnees
 
+def GetSheetNames(nomFichier):
+    # pour fichiers xlsx
+    with load_workbook(nomFichier) as wk:
+        return wk.sheetnames
+
+def GetOneSheet(wk,sheetname):
+    # récupére ws pour GetDonnées fichier.xlsx
+    return wk['sheetname']
+
+def GetNomsCols(ws,nbcol=10):
+    values = [ws[f"A{row}"].value for row in range(1, 11)]
+    return values
+
+def GetNbRows(ws):
+    return ws.max_row
+
+def GetDonneesExcel(ws,minrow=1,maxrow=1000,mincol=1,maxcol=10):
+    #get handle on existing file (xlsx only)
+    lstDonnees = []
+    # ajustement zone de cellules non vides, choix entête
+    for values in ws.iter_rows(min_row=minrow,max_row=maxrow,min_col=mincol,max_col=maxcol,values_only=True,):
+        sansNull = [x for x in values if x]
+        # balaye jusqu'à trouver une ligne non vide
+        if len(sansNull)>0:
+            for cell in values:
+                if cell:
+                    break
+                else:
+                    # une colonne ignorée
+                    mincol += 1
+                    maxcol += 1
+            break
+        else:
+            # une ligne ignorée
+            minrow +=1
+
+    #loop through range values
+    for values in ws.iter_rows(min_row=minrow,max_row=maxrow,min_col=mincol,max_col=maxcol,values_only=True,):
+        sansNull = [x for x in values if x]
+        if len(sansNull)>0:
+            lstDonnees.append(values)
+    return lstDonnees
+
 def GetFichierXlsx(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):
     if not IsFile(nomFichier):
         return []
     #get handle on existing file
     wk = load_workbook(filename=nomFichier)
+
     #get active worksheet or wk['some_worksheet']
     ws = wk.active
 

@@ -943,7 +943,7 @@ class DLG_tableau(xusp.DLG_vide):
         pnl_corps = kwds.pop('pnl_corps',None)
         pnl_pied = kwds.pop('pnl_pied',None)
         self.db = kwds.pop('db',None)
-        autoSizer =     kwds.pop('autoSizer', True)
+        autoSizer = kwds.pop('autoSizer', True)
         size = kwds.get('size',None)
         if not 'style' in kwds.keys():
             kwds['style'] = wx.DEFAULT_FRAME_STYLE

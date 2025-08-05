@@ -10,7 +10,7 @@ import wx
 from xpy.outils import xformat
 
 def GetAddManyBtns(pnl,lstBtns,**kwds):
-    # Trois possibles: déjàBouton, listeParams, dicParams.  Tous produisent une liste pour Sizer.AddMany
+    # Trois possibles: déjàBouton avec parent pnl, listeParams, dicParams.  Tous produisent une liste pour Sizer.AddMany
     marge = kwds.pop('marge',5)
     lstWxBtns = []
     
@@ -142,7 +142,6 @@ class Bouton(wx.Button):
                     prorata = min(1,size[0] / lglabel)
                 else: prorata = 1
                 sizeFont = int(sizeFont * prorata)
-                
         elif sizeFont:
             lg = 5
             ht = sizeFont * 2

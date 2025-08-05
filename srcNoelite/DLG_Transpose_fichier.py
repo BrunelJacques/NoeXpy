@@ -182,7 +182,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     return lstOut
 
 # formats possibles des fichiers en entrées, utiliser les mêmes codes des champs pour les 'UtilCompta.ComposeFuncExp'
-FORMATS_IMPORT = {"LCL carte":{ 'champs':['date','montant','mode',None,'libelle',None,None,
+FORMATS_IMPORT = {"LCL Credit Lyonnais":{ 'champs':['date','montant','mode',None,'libelle',None,None,
                                           'codenat','nature',],
                                 'lignesentete':0,
                                 'fonction':ComposeFuncImp,
@@ -192,7 +192,7 @@ FORMATS_IMPORT = {"LCL carte":{ 'champs':['date','montant','mode',None,'libelle'
                       'lignesentete': 0,
                       'fonction': ComposeFuncImp,
                       'table': 'fournisseurs'},
-                  "Date,Lib,-Débit,Crédit": {
+                  "Crédit Mutuel": {
                       'champs': ['date', 'libelle', '-debit','credit'],
                       'lignesentete': 0,
                       'fonction': ComposeFuncImp,
@@ -207,10 +207,10 @@ FORMATS_IMPORT = {"LCL carte":{ 'champs':['date','montant','mode',None,'libelle'
 # Description des paramètres à choisir en haut d'écran
 MATRICE_PARAMS = {
 ("fichiers","Fichier à Importer"): [
-    {'genre': 'dirfile', 'name': 'path', 'label': "Fichier d'origine",'value': "*.csv",
+    {'name': 'path', 'genre': 'dirfile', 'label': "Fichier d'origine",'value': "*.xlsx",
                      'help': "Pointez le fichier contenant les valeurs à transposer",'size':(450,30)},
-    {'name': 'formatin', 'genre': 'Enum', 'label': 'Format import',
-                    'help': "Le choix est limité par la programmation", 'value':0,
+    {'name': 'formatin', 'genre': 'Enum', 'label': 'Banque importée',
+                    'help': "La banque détermine le format d'import", 'value':0,
                     'values':[x for x in FORMATS_IMPORT.keys()],
                     'size':(350,30)},
     ],
@@ -252,32 +252,29 @@ def GetBoutons(dlg):
         {'name': 'btnImp', 'label': "Importer\nCB fin mois",
                     'help': "Cliquez ici pour lancer l'importation du fichier date = fin de mois",
                     'size': (120, 35), 'image': wx.ART_UNDO,'onBtn':dlg.OnImporterCB},
-                {'name': 'btnExp', 'label': "Exporter\nfichier",
-                    'help': "Cliquez ici pour lancer l'exportation du fichier selon les paramètres que vous avez défini",
-                    'size': (120, 35), 'image': wx.ART_REDO,'onBtn':dlg.OnExporter},
-                {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour fermer la fenêtre",
-                    'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnFermer}
-            ]
+        {'name': 'btnExp', 'label': "Exporter\nfichier",
+            'help': "Cliquez ici pour lancer l'exportation du fichier selon les paramètres que vous avez défini",
+            'size': (120, 35), 'image': wx.ART_REDO,'onBtn':dlg.OnExporter},
+        {'name':'btnOK','ID':wx.ID_ANY,'label':"Quitter",'help':"Cliquez ici pour fermer la fenêtre",
+            'size':(120,35),'image':"xpy/Images/32x32/Quitter.png",'onBtn':dlg.OnFermer}
+    ]
 
 # description des colonnes de l'OLV (données affichées)
 def GetOlvColonnes(dlg):
     # retourne la liste des colonnes de l'écran principal
     return [
             ColumnDefn("Date", 'center', 85, 'date', valueSetter="",isSpaceFilling=False,
-                            stringConverter=xformat.FmtDate),
+                            isEditable=True, stringConverter=xformat.FmtDate),
             ColumnDefn("Cpt No", 'left', 90, 'compte',valueSetter='',isSpaceFilling=False,
                             isEditable=True),
             ColumnDefn("Cpt Appel", 'left', 90, 'appel',valueSetter='',isSpaceFilling=False,
                             isEditable=False),
             ColumnDefn("Cpt Libellé ", 'left', 150, 'libcpt',valueSetter='',isSpaceFilling=False,
                             isEditable=False),
-            ColumnDefn("Mode", 'centre', 70, 'mode', valueSetter='', isSpaceFilling=False,),
             ColumnDefn("NoPièce", 'left', 80, 'noPiece', isSpaceFilling=False),
             ColumnDefn("Libelle", 'left', 200, 'libelle', valueSetter='', isSpaceFilling=True),
             ColumnDefn("Montant", 'right',90, "montant", isSpaceFilling=False, valueSetter=0.0,
                             stringConverter=xformat.FmtDecimal),
-            ColumnDefn("Nature", 'left', 200, 'nature', valueSetter='', isSpaceFilling=True,
-                            isEditable=False)
             ]
 
 # paramètre les options de l'OLV
@@ -361,11 +358,15 @@ class PNL_corps(xGTE.PNL_corps):
             if not record:
                 record = self.parent.compta.ChoisirItem('comptes',newfiltre)
             # alimente les champs ('compte','appel','libelle'), puis répand l'info
+            def majuscule(value):
+                if not value: value = ""
+                return value.upper()
+
             if record:
-                ret = record[0].upper()
-                track.compte = record[0].upper()
+                ret = majuscule(record[0])
+                track.compte = majuscule(record[0])
                 track.exappel = track.appel
-                track.appel = record[1].upper()
+                track.appel = majuscule(record[1])
                 track.libcpt = record[2]
                 # la valeur d'origine va être strockée par parent  pour cellEditor
                 if parent:
@@ -552,6 +553,8 @@ class Dialog(xusp.DLG_vide):
         # récupère la table par défaut du format import choisi
         dicParams = self.pnlParams.GetValues()
         formatIn = dicParams['fichiers']['formatin']
+        if not formatIn in FORMATS_IMPORT:
+            return
         return FORMATS_IMPORT[formatIn]['table']
 
     def OnImporter(self,event):
