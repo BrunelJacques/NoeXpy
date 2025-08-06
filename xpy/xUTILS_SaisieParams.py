@@ -653,6 +653,7 @@ class PNL_ctrl(wx.Panel):
         return value
 
     def SetValue(self,value):
+        test = value
         if self.genre in ('int','float'):
             if not value: value = 0
             if isinstance(value,float):
@@ -971,7 +972,8 @@ class BoxPanel(wx.Panel):
             for panel in self.lstPanels:
                 [code, champ] = panel.ctrl.nameCtrl.split('.')
                 if champ == name or panel.ctrl.nameCtrl == name:
-                    if panel.ctrl.genreCtrl.lower() in ['enum', 'combo','multichoice','choice']:
+                    if panel.ctrl.genreCtrl.lower() in ['enum', 'combo','multichoice',
+                                                        'anyctrl','choice']:
                         panel.Set(values)
         return
 
