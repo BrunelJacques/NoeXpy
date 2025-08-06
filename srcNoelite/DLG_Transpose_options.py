@@ -191,7 +191,8 @@ class PNL_corps(wx.Panel):
         self.radiosheets = CTRL_RadioBox(self,label=label,choices=choices)
         self.labelChecklistColFichier = wx.StaticText(self,-1,"Colonnes Présentes")
         self.checklistColFichier = wx.CheckListBox(self, -1, )
-        self.dateDebut = xdates.CTRL_AfficheDate(self)
+        self.labelPeriode = wx.StaticText(self, -1, "Période trouvée")
+        self.periode = xdates.CTRL_AffichePeriode(self,withStaticBox=False)
         self.testok = wx.StaticText(self,-1,"Colonnes manquantes")
 
 
@@ -223,7 +224,8 @@ class PNL_corps(wx.Panel):
         grid_sizer_col_presentes.Add(self.checklistColFichier, 1, wx.LEFT | wx.EXPAND, 0)
 
         grid_sizer_gauche.Add(grid_sizer_col_presentes, 1, wx.LEFT | wx.EXPAND, 25)
-        grid_sizer_gauche.Add(self.dateDebut, 1, wx.LEFT | wx.EXPAND, 25)
+        grid_sizer_gauche.Add(self.labelPeriode, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT, 0)
+        grid_sizer_gauche.Add(self.periode, 0, wx.ALIGN_LEFT, 0)
 
         sttbox_gauche_sizer.Add(grid_sizer_gauche, 1, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
 
@@ -231,14 +233,15 @@ class PNL_corps(wx.Panel):
         grid_sizer_droite = wx.FlexGridSizer(rows=3, cols=1, vgap=3, hgap=3)
         sttbox_droite_sizer = wx.StaticBoxSizer(self.staticbox_droite, wx.VERTICAL)
         sttbox_droite_sizer.Add(self.testok, 1, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-        sttbox_droite_sizer.Add((200,200))
+        sttbox_droite_sizer.Add((20,150),1,wx.EXPAND,0)
         grid_sizer_droite.Add(sttbox_droite_sizer, 1, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
 
         grid_sizer_base.Add(sttbox_gauche_sizer,1,wx.ALL | wx.EXPAND,5)
         grid_sizer_base.Add(grid_sizer_droite,1,wx.ALL | wx.EXPAND,5)
 
         grid_sizer_gauche.AddGrowableRow(0)
-        grid_sizer_base.AddGrowableCol(0)
+        #grid_sizer_base.AddGrowableCol(0)
+        grid_sizer_base.AddGrowableCol(1)
         grid_sizer_base.AddGrowableRow(0)
 
         self.SetSizer(grid_sizer_base)

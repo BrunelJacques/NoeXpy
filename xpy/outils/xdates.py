@@ -1240,21 +1240,21 @@ class CTRL_AfficheDate(wx.Panel):
     def __init__(self, parent, **kwds):
         name = kwds.pop("name","CTRL_AfficheDate")
         label = kwds.pop("label","Date: ")
-        minSize = kwds.pop("minSize",(80 + len(label)*5, 25))
+        minSize = kwds.pop("minSize",(100 + len(label)*5, 25))
         wx.Panel.__init__(self, parent, id=-1, name=name)
         self.parent = parent
 
         self.labelDate = wx.StaticText(self, -1, label)
-        self.ctrlDate = wx.TextCtrl(self, -1, "", style=wx.TE_PROCESS_ENTER|wx.TE_CENTRE)
+        self.ctrlDate = wx.TextCtrl(self, -1, "", style=wx.TE_READONLY|wx.TE_CENTRE)
         self.SetValue(datetime.date.today())
         self.SetMinSize(minSize)
+        self.ctrlDate.Enable(False)
 
         # Sizer
         grid_sizer_dates = wx.FlexGridSizer(rows=1, cols=2, vgap=5, hgap=5)
         grid_sizer_dates.Add(self.labelDate, 0, wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_dates.Add(self.ctrlDate, 0, wx.ALIGN_CENTER_VERTICAL, 0)
         self.SetSizer(grid_sizer_dates)
-        grid_sizer_dates.Fit(self)
 
 
     def SetValue(self,date):
@@ -1263,6 +1263,40 @@ class CTRL_AfficheDate(wx.Panel):
         if len(value) == 0:
             value =str(date)
         self.ctrlDate.SetValue(value)
+
+# affiche deux dates définissant une période
+class CTRL_AffichePeriode(wx.Panel):
+    def __init__(self, parent, **kwds):
+        name = kwds.pop("name","CTRL_AffichePeriode")
+        orientation = kwds.pop("orientation",wx.VERTICAL)
+        withStaticBox = kwds.pop("withStaticBox",True)
+        minSize = kwds.pop('minSize',(140,23))
+        kwDate = {'minSize': minSize}
+        wx.Panel.__init__(self, parent, id=-1, name=name, style=wx.TAB_TRAVERSAL)
+        self.parent = parent
+
+        if withStaticBox:
+            self.stboxPeriode = wx.StaticBox(self, wx.ID_ANY, "Période")
+        self.ctrlDu = CTRL_AfficheDate(self,name="date_du",label="du : ",**kwDate)
+        self.ctrlAu = CTRL_AfficheDate(self,name="date_au",label="au : ",**kwDate)
+
+        # Sizert
+        if withStaticBox:
+            static_sizer_periode = wx.StaticBoxSizer(self.stboxPeriode,orientation)
+            static_sizer_periode.Add((1,1), 1, wx.EXPAND, 0)
+            static_sizer_periode.Add(self.ctrlDu, 10, wx.LEFT|wx.EXPAND, 15)
+            static_sizer_periode.Add(self.ctrlAu, 10, wx.LEFT|wx.EXPAND, 15)
+            self.SetSizer(static_sizer_periode)
+        else:
+            grid_sizer = wx.FlexGridSizer(rows=2, cols=1, vgap=5, hgap=5)
+            grid_sizer.Add(self.ctrlDu, 1, wx.LEFT|wx.EXPAND, 15)
+            grid_sizer.Add(self.ctrlAu, 1, wx.LEFT|wx.EXPAND, 15)
+            self.SetSizer(grid_sizer)
+
+    def SetValue(self,tplDates):
+        # le tuple correspond aux deux dates
+        self.ctrlDu.SetValue(tplDates[0])
+        self.ctrlAu.SetValue(tplDates[1])
 
 
 # -Pour test--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1295,8 +1329,8 @@ if __name__ == '__main__':
     frame_3.ctrl = CTRL_Periode(frame_3)
     frame_3.Show()"""
 
-    frame_1 = TestFrame(title='CTRL_SaisieDate', pos=(400,300),size=(230,120))
-    frame_1.ctrl = CTRL_SaisieDateAnnuel(frame_1,label="Ma date:")
+    frame_1 = TestFrame(title='CTRL_SaisieDate', pos=(400,300),size=(250,120))
+    frame_1.ctrl = CTRL_AffichePeriode(frame_1,label="Ma date:",withStaticBox=False)
     frame_1.Show()
 
 
