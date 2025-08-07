@@ -12,6 +12,124 @@ def IsFile(nomFichier):
         wx.MessageBox("Fichier%s : non présent!"%(nomFichier))
         return False
 
+def GetOneColCellsProp(ws,cell,typ=datetime.datetime):
+    # retourne le nombre de cells non vide sous cell, la min et max
+    nbCells = 0
+    minVal = None
+    maxVal = None
+    if cell:
+        row = cell.row + 1  # start below the target cell
+        col = cell.column
+        values = []
+
+        for r in range(row, ws.max_row + 1):
+            wcell = ws.cell(row=r, column=col)
+            if wcell.value:
+                nbCells += 1
+                # Try to parse as right type
+                if isinstance(wcell.value, typ):
+                    values.append(wcell.value)
+
+        # Step 3: Compute min and max dates
+        minVal = min(values) if values else None
+        maxVal = max(values) if values else None
+    else:
+        mess = f"Found {nbCells} cells {str(typ)} below {cell.coordinate}"
+        wx.MessageBox(mess,"Echec lecture")
+        return None
+    return nbCells, minVal, maxVal
+
+def GetFirstCell(ws,text=None,nblig=10,nbcol=15):
+    if text: text = text.lower()
+    cell = None
+    # Search within the defined range
+    for row in ws.iter_rows(min_row=1,max_row=nblig,min_col=1,max_col=nbcol):
+        for cell in row:
+            if cell.value and (not text or text in str(cell.value).lower()):
+                break
+        else:
+            continue
+        break
+    if not cell:
+        mess = "Aucune cellule trouvée en haut d'écran contenant %s" % text
+        mess += "\n recheche faite sur %d lignes et %d colonnes"%(nblig,nbcol)
+        wx.MessageBox(mess, "ECHEC EXCEL")
+    #print(text, f"Found in cell {cell.coordinate} with value: {cell.value}")
+    return cell
+        
+def GetSheetNames(wk):
+    # pour fichiers xlsx, lecture de la propriété
+    return wk.sheetnames
+
+def GetOneSheet(wk,sheetname):
+    # récupére ws pour GetDonnées fichier.xlsx
+    return wk[sheetname]
+
+def GetNomsCols(ws,nbcol=10):
+    cell = GetFirstCell(ws,'date')
+    ridx = cell.row
+    cidx = cell.column
+    values = [ ws.cell(row=ridx,column=cidx + i).value for i in range(0, nbcol) ]
+    return values
+
+def GetNbRows(ws):
+    return ws.max_row
+
+def GetDonneesExcel(ws,minrow=1,maxrow=1000,mincol=1,maxcol=10):
+    #get handle on existing file (xlsx only)
+    lstDonnees = []
+    # ajustement zone de cellules non vides, choix entête
+    for values in ws.iter_rows(min_row=minrow,max_row=maxrow,min_col=mincol,max_col=maxcol,values_only=True,):
+        sansNull = [x for x in values if x]
+        # balaye jusqu'à trouver une ligne non vide
+        if len(sansNull)>0:
+            for cell in values:
+                if cell:
+                    break
+                else:
+                    # une colonne ignorée
+                    mincol += 1
+                    maxcol += 1
+            break
+        else:
+            # une ligne ignorée
+            minrow +=1
+
+    #loop through range values
+    for values in ws.iter_rows(min_row=minrow,max_row=maxrow,min_col=mincol,max_col=maxcol,values_only=True,):
+        sansNull = [x for x in values if x]
+        if len(sansNull)>0:
+            lstDonnees.append(values)
+    return lstDonnees
+
+def OpenFile(nomFichier):
+    # Teste l'ouverture fichier et retourne son type et son pointeur (si xlsx)
+    if platform.system() == "Windows":
+        nomFichier = nomFichier.replace("/", "\\")
+    if not IsFile(nomFichier):
+        return None, None
+    typeFile, file = None, None
+    lstNom = nomFichier.split('.')
+    if lstNom[-1] in ('csv','txt'):
+        typeFile = 'csv'
+        try:
+            file = open(nomFichier, "rt", encoding='utf8')
+            file.close()
+        except Exception as err:
+            wx.MessageBox("Erreur d'accès au fichier\n\nAppel: %s\nErreur: %d, %s" % (
+            nomFichier, err.args[0], err.args[1]))
+        file = None
+    elif lstNom[-1] == 'xlsx':
+        typeFile = 'xlsx'
+        file = load_workbook(filename=nomFichier)
+    elif lstNom[-1] == 'xls':
+        mess = "Ce fichier xls doit être transformé en xlsx"
+        wx.MessageBox(mess,"IMPOSSIBLE")
+    else:
+        mess = "Le fichier n'est pas csv ou xlsx"
+        wx.MessageBox(mess,"IMPOSSIBLE")
+    return typeFile, file
+
 def GetFichierXls(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):
     if not IsFile(nomFichier):
         return []
@@ -54,49 +172,6 @@ def GetFichierXls(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):
             if value: sansNull.append(value)
         if len(sansNull)>0:
             lstDonnees.append(ligne)
-    return lstDonnees
-
-def GetSheetNames(nomFichier):
-    # pour fichiers xlsx
-    with load_workbook(nomFichier) as wk:
-        return wk.sheetnames
-
-def GetOneSheet(wk,sheetname):
-    # récupére ws pour GetDonnées fichier.xlsx
-    return wk['sheetname']
-
-def GetNomsCols(ws,nbcol=10):
-    values = [ws[f"A{row}"].value for row in range(1, 11)]
-    return values
-
-def GetNbRows(ws):
-    return ws.max_row
-
-def GetDonneesExcel(ws,minrow=1,maxrow=1000,mincol=1,maxcol=10):
-    #get handle on existing file (xlsx only)
-    lstDonnees = []
-    # ajustement zone de cellules non vides, choix entête
-    for values in ws.iter_rows(min_row=minrow,max_row=maxrow,min_col=mincol,max_col=maxcol,values_only=True,):
-        sansNull = [x for x in values if x]
-        # balaye jusqu'à trouver une ligne non vide
-        if len(sansNull)>0:
-            for cell in values:
-                if cell:
-                    break
-                else:
-                    # une colonne ignorée
-                    mincol += 1
-                    maxcol += 1
-            break
-        else:
-            # une ligne ignorée
-            minrow +=1
-
-    #loop through range values
-    for values in ws.iter_rows(min_row=minrow,max_row=maxrow,min_col=mincol,max_col=maxcol,values_only=True,):
-        sansNull = [x for x in values if x]
-        if len(sansNull)>0:
-            lstDonnees.append(values)
     return lstDonnees
 
 def GetFichierXlsx(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):

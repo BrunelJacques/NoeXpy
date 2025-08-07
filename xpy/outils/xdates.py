@@ -1293,7 +1293,7 @@ class CTRL_AffichePeriode(wx.Panel):
             grid_sizer.Add(self.ctrlAu, 1, wx.LEFT|wx.EXPAND, 15)
             self.SetSizer(grid_sizer)
 
-    def SetValue(self,tplDates):
+    def SetValues(self,tplDates):
         # le tuple correspond aux deux dates
         self.ctrlDu.SetValue(tplDates[0])
         self.ctrlAu.SetValue(tplDates[1])

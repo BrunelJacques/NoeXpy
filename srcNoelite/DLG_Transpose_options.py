@@ -9,37 +9,42 @@
 
 import wx
 import datetime
-import xpy.xGestionConfig               as xgc
-import xpy.xUTILS_SaisieParams          as xusp
-from xpy.outils                 import xformat,xbandeau,xdates,xboutons
+import xpy.xGestionConfig as xgc
+import xpy.xUTILS_SaisieParams as xusp
+from xpy.outils import xformat, xbandeau, xdates, ximport
 from xpy.ObjectListView import xGTE
-from xpy.ObjectListView.ObjectListView  import ColumnDefn
+from xpy.ObjectListView.ObjectListView import ColumnDefn
 from DLG_Transpose_fichier import FORMATS_IMPORT
 
 
-#---------------------- Paramètres du programme -------------------------------------
-GRISBLEU =wx.Colour(215, 225, 250)
-GRISVERT =wx.Colour(200, 240, 200)
-GRISVERTCLAIR =wx.Colour(215, 255, 215)
-GRISROSE =wx.Colour(240, 200, 200)
-GRISJAUNE =wx.Colour(255, 255, 220)
+# --------------------- Paramètres du programme -------------------------------------
+GRISBLEU = wx.Colour(215, 225, 250)
+GRISVERT = wx.Colour(200, 240, 200)
+GRISVERTCLAIR = wx.Colour(215, 255, 215)
+GRISROSE = wx.Colour(240, 200, 200)
+GRISJAUNE = wx.Colour(255, 255, 220)
 
 TITRE = "Validation des options d'importation"
-INTRO = "Avant l'importation, vérifiez ici les champs à importer, les options possibiles avant de l'ancer l'import dans l'écran précédent"
+INTRO = "Avant l'importation, vérifiez ici les champs à importer,"
+INTRO += "les options possibiles avant de l'ancer l'import dans l'écran précédent"
 
 # Info par défaut en bas de l'écran
 INFO_OLV = "Les options ne sont pas valides"
 
 
 class CTRL_RadioBox(wx.Panel):
+
     def __init__(self, parent, **kwds):
         name = kwds.pop('name', "CTRL_RadioBox")
+        size = kwds.pop('size', (60,80))
         label = kwds.pop('label',"choisir une option")
         choices = kwds.pop('choices',[' Option 1', ' Option 2',' Option autre'])
+        self.choices = choices
 
         wx.Panel.__init__(self, parent, id=-1, name=name)
         self.rbox = wx.RadioBox(self,id=wx.ID_ANY,
                                 label = label,
+                                size = size,
                                 choices=choices,
                                 majorDimension=1,
                                 style=wx.RA_SPECIFY_COLS)
@@ -47,13 +52,29 @@ class CTRL_RadioBox(wx.Panel):
         grid_sizer = wx.FlexGridSizer(rows=1, cols=1, vgap=5, hgap=5)
         grid_sizer.Add(self.rbox, 0, 0, 0)
         self.SetSizer(grid_sizer)
-        #grid_sizer.Fit(self)
 
     def GetValue(self):
         return self.rbox.GetStringSelection()
 
     def SetValue(self):
         self.rbox.SetString()
+
+    def SetValues(self,choices):
+        # synonyme de Set pour analogies avec d'autres types
+        nb = self.rbox.GetRowCount()
+        label = ""
+        for ix in range(nb):
+            if ix > len(self.choices):
+                break
+            elif ix <= len(choices)-1:
+                label = choices[ix]
+                self.rbox.ShowItem(ix,True)
+            else:
+                label = ""
+                self.rbox.ShowItem(ix,False)
+            self.rbox.SetString(ix,label)
+            self.choices[ix] = label
+
 
 class CTRL_RadioGroup(wx.Panel):
     def __init__(self, parent, **kwds):
@@ -134,26 +155,28 @@ MATRICE_PARAMS = {
                              "Cette date sera appliquée à l'ensemble des écritures",
                              "Saisissez sans séparateurs, "),
      'ctrlAction': 'OnForcerdte',
-     'ctrlSize':(250,40),
-     'txtSize':55,
-     'boxMinSize':(250,60)
+     'ctrlSize': (250,40),
+     'txtSize': 55,
+     'boxMinSize': (250,60)
 
     },
     ],
 ("vide", ""): []
 }
 
-def GetDicPnlParams(*args):
-    return {    'name':"PNL_params (DLG_Transpose_options)",
-                'matrice': MATRICE_PARAMS,
-                'lblBox': "Paramètres à saisir",
-                'boxesSizes': [(450,80), (150, 80), (230, 40),(50,50)],
-                'pathdata':"srcNoelite/Data",
-                'nomfichier':"stparams",
-                'nomgroupe':"transposeoptions",
-                }
 
-def GetDicDialogParams(parent,*args):
+def GetDicPnlParams():
+    return {'name':"PNL_params (DLG_Transpose_options)",
+            'matrice': MATRICE_PARAMS,
+            'lblBox': "Paramètres à saisir",
+            'boxesSizes': [(450,80), (150, 80), (230, 40),(50,50)],
+            'pathdata':"srcNoelite/Data",
+            'nomfichier':"stparams",
+            'nomgroupe':"transposeoptions",
+            }
+
+# retourne les paramètres de l'écran de départ
+def GetDicDialogParams(parent):
     listArbo = os.path.abspath(__file__).split("\\")
     kwds = {}
     kwds['name'] = 'DLG_Transpose_options.Dialog'
@@ -203,7 +226,7 @@ def GetOlvOptions(dlg):
                               "montant": {"mode": "total"}, }
     }
 
-#----------------------- Parties de l'écrans -----------------------------------------
+#----------------------- Parties de l'écran -----------------------------------------
 
 class PNL_params(xgc.PNL_paramsLocaux):
     #panel de paramètres de l'application
@@ -227,65 +250,94 @@ class PNL_corps(wx.Panel):
         self.staticbox_droite = wx.StaticBox(self, -1,"Colonnes attendues")
         choices =  ['Première feuille Non trouvée', '-', '-','-','-',]
         label = " Choisir une feuille "
-        self.radiosheets = CTRL_RadioBox(self,label=label,choices=choices)
-        self.labelChklstColonnesIn = wx.StaticText(self,-1,"Colonnes Présentes")
-        self.chklstColonnesIn = wx.CheckListBox(self, -1,choices=["-",])
-        self.labelPeriode = wx.StaticText(self, -1, "Période trouvée")
+        self.radioSheets = CTRL_RadioBox(self,label=label,choices=choices,size=(150,180))
+        self.labelChklstColonnesLues = wx.StaticText(self,-1,"Colonnes Présentes")
+        self.chklstColonnesLues = wx.CheckListBox(self, -1,choices=["-",])
+        self.chklstColonnesOlv = wx.CheckListBox(self, -1, choices=["-"])
+        self.txtInfoPeriode = wx.StaticText(self, -1, "Période trouvée")
         self.periode = xdates.CTRL_AffichePeriode(self,withStaticBox=False)
-        self.testok = wx.StaticText(self,-1,"Colonnes manquantes")
+        self.txtValide = wx.StaticText(self,-1,"-------------")
 
     def __set_properties(self):
         self.SetBackgroundColour(GRISVERT)
         self.staticbox_droite.SetBackgroundColour(GRISROSE)
-        self.radiosheets.SetBackgroundColour(GRISJAUNE)
-        self.chklstColonnesIn.SetBackgroundColour(GRISVERTCLAIR)
-        self.testok.SetBackgroundColour(GRISROSE)
-        font = self.testok.GetFont()
-        font.SetWeight(wx.FONTWEIGHT_BOLD)
-        self.testok.SetFont(font)
-        self.testok.SetForegroundColour(wx.Colour(255, 0, 0))
+        self.radioSheets.SetBackgroundColour(GRISJAUNE)
+        self.chklstColonnesLues.Bind(wx.EVT_CHECKLISTBOX, self.OnDisabledChklstColonnes)
+        self.chklstColonnesLues.SetBackgroundColour(GRISVERTCLAIR)
+        self.chklstColonnesOlv.Bind(wx.EVT_CHECKLISTBOX, self.OnDisabledChklstColonnes)
+        self.chklstColonnesOlv.SetBackgroundColour(GRISROSE)
+        self.SetValide(False)
 
     def __do_layout(self):
         grid_sizer_base = wx.FlexGridSizer(rows=1, cols=2, vgap=3, hgap=3)
 
         # gauche
         sttbox_gauche_sizer = wx.StaticBoxSizer(self.staticbox_gauche, wx.VERTICAL)
-        grid_sizer_gauche = wx.FlexGridSizer(rows=2, cols=2, vgap=3, hgap=3)
+        grid_sizer_gauche = wx.FlexGridSizer(rows=2, cols=2, vgap=15, hgap=18)
+        grid_sizer_gauche.Add(self.radioSheets,1,wx.LEFT | wx.TOP | wx.EXPAND, 14)
 
+        grid_sizer_col_presentes = wx.FlexGridSizer(rows=2, cols=1, vgap=15, hgap=3)
+        grid_sizer_col_presentes.Add(self.labelChklstColonnesLues, 1, wx.LEFT | wx.EXPAND, 0)
+        grid_sizer_col_presentes.Add(self.chklstColonnesLues, 1, wx.LEFT | wx.EXPAND, 0)
 
-        grid_sizer_gauche.Add(self.radiosheets,1,wx.LEFT | wx.EXPAND, 25)
-
-        grid_sizer_col_presentes = wx.FlexGridSizer(rows=2, cols=1, vgap=3, hgap=3)
-        grid_sizer_col_presentes.Add(self.labelChklstColonnesIn, 1, wx.LEFT | wx.EXPAND, 0)
-        grid_sizer_col_presentes.Add(self.chklstColonnesIn, 1, wx.LEFT | wx.EXPAND, 0)
-
-        grid_sizer_gauche.Add(grid_sizer_col_presentes, 1, wx.LEFT | wx.EXPAND, 25)
-        grid_sizer_gauche.Add(self.labelPeriode, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT, 0)
+        grid_sizer_gauche.Add(grid_sizer_col_presentes, 1, wx.LEFT | wx.TOP | wx.EXPAND, 14)
+        grid_sizer_gauche.Add(self.txtInfoPeriode, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT, 0)
         grid_sizer_gauche.Add(self.periode, 0, wx.ALIGN_LEFT, 0)
 
         sttbox_gauche_sizer.Add(grid_sizer_gauche, 1, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
 
         # droite
-        grid_sizer_droite = wx.FlexGridSizer(rows=3, cols=1, vgap=3, hgap=3)
+        grid_sizer_droite = wx.FlexGridSizer(rows=1, cols=1, vgap=20, hgap=25)
         sttbox_droite_sizer = wx.StaticBoxSizer(self.staticbox_droite, wx.VERTICAL)
-        sttbox_droite_sizer.Add(self.testok, 1, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-        sttbox_droite_sizer.Add((20,150),1,wx.EXPAND,0)
-        grid_sizer_droite.Add(sttbox_droite_sizer, 1, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-
+        sttbox_droite_sizer.Add((220,10),0,0,0)
+        sttbox_droite_sizer.Add(self.chklstColonnesOlv, 1, wx.LEFT | wx.EXPAND, 0)
+        sttbox_droite_sizer.Add((220,20),0,0,0)
+        sttbox_droite_sizer.Add(self.txtValide, 1, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        sttbox_droite_sizer.Add((20,20),1,wx.EXPAND,0)
+        grid_sizer_droite.Add(sttbox_droite_sizer, 1, wx.LEFT | wx.TOP | wx.EXPAND, 25)
         grid_sizer_base.Add(sttbox_gauche_sizer,1,wx.ALL | wx.EXPAND,5)
         grid_sizer_base.Add(grid_sizer_droite,1,wx.ALL | wx.EXPAND,5)
 
         grid_sizer_gauche.AddGrowableRow(0)
-        #grid_sizer_base.AddGrowableCol(0)
+        grid_sizer_droite.AddGrowableRow(0)
         grid_sizer_base.AddGrowableCol(1)
         grid_sizer_base.AddGrowableRow(0)
 
         self.SetSizer(grid_sizer_base)
 
-    def SetValuesChklst(self,ctrl,choices=[]):
+    def SetValide(self,ok = False):
+        self.txtValide.SetBackgroundColour(GRISROSE)
+        font = self.txtValide.GetFont()
+        font.SetWeight(wx.FONTWEIGHT_BOLD)
+        if ok:
+            self.txtValide.SetLabel("Options correctes")
+            self.txtValide.SetForegroundColour(wx.Colour(0,200, 100))
+            self.txtValide.SetBackgroundColour(GRISVERTCLAIR)
+        else:
+            self.txtValide.SetLabel("Colonnes manquantes")
+            self.txtValide.SetBackgroundColour(GRISROSE)
+            self.txtValide.SetForegroundColour(wx.Colour(255, 0, 0))
+        self.txtValide.SetFont(font)
+
+    def SetValuesChklst(self,ctrl,choices):
         ctrl.Clear()
         for item in choices:
-            ctrl.Append(item)
+            if item:
+                ctrl.Append(item)
+
+    def ChkValuesChklst(self,ctrl,items):
+        # coche les noms de colonne dans ctrl si présence dans la liste des items d'un autre
+        nbl = ctrl.GetCount()
+        allItems = [ctrl.GetString(ix) for ix in range(nbl)]
+        for ix in range(nbl):
+            ok = allItems[ix] in items
+            ctrl.Check(ix,ok)
+
+    def OnDisabledChklstColonnes(self,event):
+        # Immediately revert the change, disable whithout graying
+        index = event.GetInt()
+        obj = event.GetEventObject()
+        obj.Check(index, not obj.IsChecked(index))
 
 class PNL_pied(xGTE.PNL_pied):
     #panel infos (gauche) et boutons sorties(droite)
@@ -294,16 +346,16 @@ class PNL_pied(xGTE.PNL_pied):
 
 class Dialog(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,nomFichier='', nomBanque='',ixSheet=0,isCB=False):
+    def __init__(self,parent,nomFichier='', nomBanque='',ixSheet=0,isCB=False):
+        self.parent = parent
         self.txtInfo = INFO_OLV
         self.ctrlOlv = None
         self.nomFichier = nomFichier
         self.nomBanque = nomBanque
         self.ixSheet = ixSheet
         self.isCB = isCB
-
         kwds = GetDicDialogParams(self)
-        super().__init__(self,**kwds)
+        super().__init__(self.parent,**kwds)  # self supprimé
         self.Init()
         self.SetBackgroundColour(GRISBLEU)
         self.Sizer()
@@ -313,7 +365,7 @@ class Dialog(xusp.DLG_vide):
     # Initialisation des panels
     def Init(self):
         dicParams = GetDicPnlParams()
-        # boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
+        # Boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
         lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),self.txtInfo]
         dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
 
@@ -324,7 +376,7 @@ class Dialog(xusp.DLG_vide):
         self.pnlPied = PNL_pied(self, dicPied)
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
 
-    def Sizer(self):
+    def Sizer(self,pnl=None):
         sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
         sizer_base.Add(self.pnlBandeau, 1, wx.TOP | wx.EXPAND, 3)
         sizer_base.Add(self.pnlParams, 1, wx.TOP | wx.EXPAND, 3)
@@ -337,13 +389,12 @@ class Dialog(xusp.DLG_vide):
     def DeclareVariables(self):
         # Déclaration de toutes les variables découlant de la gestion de l'écran
         self.fichierIn = None
+        self.isXlsx = False
         self.paramsBanque = None
         self.dateCpta = None
-        self.lstNomsSheets = []
-        self.lstColonnesLues = []
+        self.dicMatchColonnes = { 'olv':{}, 'lues':{} }
         self.lstColonnesOlv = []
-        self.periodeDeb = []
-        self.periodeFin = []
+        self.lstColonnesLues = []
         self.valide = False
         self.dicCtrls = {}
 
@@ -353,33 +404,51 @@ class Dialog(xusp.DLG_vide):
             for dicCtrl in MATRICE_PARAMS[box]:
                 name = dicCtrl['name']
                 self.dicCtrls[name] = self.pnlParams.GetPnlCtrl(name,box[0])
-        self.dicCtrls['chklstColonnesIn'] = self.pnlCorps.chklstColonnesIn
-        #self.dicCtrls['chklstColonnesOlv'] = self.pnlCorps.chklstColonnesOlv
+        self.dicCtrls['chklstColonnesLues'] = self.pnlCorps.chklstColonnesLues
+        self.dicCtrls['chklstColonnesOlv'] = self.pnlCorps.chklstColonnesOlv
+        self.dicCtrls['radioSheets'] = self.pnlCorps.radioSheets
+        self.dicCtrls['periode'] = self.pnlCorps.periode
+        self.dicCtrls['txtInfoPeriode'] = self.pnlCorps.txtInfoPeriode
+        self.dicCtrls['txtValide'] = self.pnlCorps.txtValide
+
+        # Binds renvoyant en local
+        self.dicCtrls['typeCarte'].Bind(wx.EVT_RADIOBUTTON, self.OnTypeCarte)
+        self.dicCtrls['radioSheets'].Bind(wx.EVT_RADIOBUTTON,self.OnSheets)
 
         # récupère les values d'un anyctrl pour le Set qui n'est pas automatique
         ctrlTypeCarte = self.dicCtrls['typeCarte']
         ctrlTypeCarte.SetValues(ctrlTypeCarte.values)
-        ctrlTypeCarte.Bind(wx.EVT_RADIOBUTTON, self.OnTypeCarte)
         ctrlTypeCarte.SetValue(ctrlTypeCarte.values[self.isCB])
 
         # autres controles à initialiser
         self.pnlParams.SetOneValue('nomFichier',self.nomFichier)
         self.pnlParams.SetOneValue('nomBanque',self.nomBanque)
-        self.OnFichier(None)
+        self.dicCtrls['radioSheets'].rbox.SetSelection(self.ixSheet)
+        self.dicCtrls['btnOk'] = self.pnlPied.itemsBtns[1][0]
         self.OnBanque(None)
+        self.OnFichier(None)
         self.OnTypeCarte(None)
 
-        #self.dicCtrls['sheets'].SetSelection(self.ixSheet)
-
-
     # ------------------- Gestion des actions -----------------------
+
     def OnFichier(self,event):
+        self.isXlsx = False
         self.nomFichier = self.pnlParams.GetOneValue('nomFichier')
+        (self.typeFichier, self.fichierIn) = ximport.OpenFile(self.nomFichier)
+
+        if self.typeFichier == 'xlsx':
+            self.isXlsx = True
+            choices = ximport.GetSheetNames(self.fichierIn)
+            self.dicCtrls['radioSheets'].SetValues(choices)
+            self.OnSheets(None)
+            #ctrl = self.dicCtrls['chklstColonnesLues']
+            #self.pnlCorps.SetValuesChklst(ctrl,choices)
 
     def OnBanque(self, event):
         self.nomBanque = self.dicCtrls['nomBanque'].GetValue()
         self.lstColonnesOlv = FORMATS_IMPORT[self.nomBanque]['champs']
-        #self.dicCtrls['chklstColonnesOlv'].SetValues(self.lstColonnesOlv)
+        self.pnlCorps.SetValuesChklst(self.dicCtrls['chklstColonnesOlv'],self.lstColonnesOlv)
+        self.MatchColonnes(self.lstColonnesLues,self.lstColonnesOlv)
 
     def OnTypeCarte(self,event):
         typeCarte = self.dicCtrls['typeCarte'].GetValue()
@@ -390,17 +459,71 @@ class Dialog(xusp.DLG_vide):
             self.dicCtrls['dateCpta'].Enable(True)
             self.isCB = True
             if self.dateCpta:
-                self.dicCtrls['dateCpta'].setValue(self.dateCpta)
+                self.dicCtrls['dateCpta'].SetValue(self.dateCpta)
 
     def OnForcerdte(self,event):
-        print()
         pass
 
     def OnRadioBoxType(self,event):
         pass
 
+    def OnSheets(self,event):
+        if not self.isXlsx:
+            return
+        nomSheet = self.dicCtrls['radioSheets'].GetValue()
+        if len(nomSheet) > 1:
+            sheet = ximport.GetOneSheet(self.fichierIn,nomSheet)
+            lstCol = ximport.GetNomsCols(sheet,11)
+            self.pnlCorps.SetValuesChklst(self.dicCtrls['chklstColonnesLues'],lstCol)
+            self.lstColonnesLues = lstCol
+            self.MatchColonnes(self.lstColonnesLues,self.lstColonnesOlv)
+            cellDate = ximport.GetFirstCell(sheet,'date')
+            if cellDate:
+                self.GetDataProperties(sheet,cellDate)
+
+    def MatchColonnes(self,lstLues,lstOlv):
+        dic = { 'olv':{}, 'lues':{} }
+        echec = False
+        for colOlv in lstOlv:
+            if not colOlv: continue
+            codeOlv = xformat.NoAccents(colOlv).lower()
+            codeOlv = xformat.NoChiffres(codeOlv)
+            testCol = False
+            for colLue in lstLues:
+                if not colLue: continue
+                codeLu = xformat.NoAccents(colLue).lower()
+                if codeOlv in codeLu:
+                    dic['olv'][colOlv] = colLue
+                    dic['lues'][colLue] = colOlv
+                    testCol = True
+                    break
+            if testCol == False:
+                echec = True
+        self.valide = not echec
+        self.pnlCorps.SetValide(self.valide)
+        self.dicCtrls['btnOk'].Enable(self.valide)
+        self.dicMatchColonnes = dic
+        ctrlLues = self.dicCtrls['chklstColonnesLues']
+        ctrlOlv =  self.dicCtrls['chklstColonnesOlv']
+        self.pnlCorps.ChkValuesChklst(ctrlLues,list(dic['lues'].keys()))
+        self.pnlCorps.ChkValuesChklst(ctrlOlv,list(dic['olv'].keys()))
+
+    def GetDataProperties(self,sheet,cell):
+        typ = datetime.datetime
+        nbCells,dteMin,dteMax =ximport.GetOneColCellsProp(sheet,cell,typ=typ)
+        if nbCells:
+            self.dicCtrls['txtInfoPeriode'].SetLabel(f"{nbCells} lignes trouvées, période")
+        if dteMin and dteMax:
+            dteMin = dteMin.date()
+            dteMax = dteMax.date()
+            self.dicCtrls['periode'].SetValues((dteMin,dteMax))
+            self.dicCtrls['dateCpta'].SetValue(f"{dteMax}")
+            self.dateCpta = dteMax
+
+
     def ValideSaisie(self,event):
-        pass
+        return self.valide
+
 
 #------------------------ Lanceur de test  -------------------------------------------
 if __name__ == '__main__':
@@ -408,6 +531,6 @@ if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
     fichier = "C:\\Users\\jbrun\\Desktop\\bribes\CREDIT MUT RELEVE.xlsx"
-    dlg = Dialog(nomFichier=fichier, nomBanque='Crédit Mutuel',ixSheet=0,isCB=True)
+    dlg = Dialog(None,nomFichier=fichier, nomBanque='Crédit Mutuel',ixSheet=0,isCB=True)
     dlg.ShowModal()
     app.MainLoop()

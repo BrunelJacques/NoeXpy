@@ -208,7 +208,8 @@ FORMATS_IMPORT = {"LCL Credit Lyonnais":{ 'champs':['date','montant','mode',None
 MATRICE_PARAMS = {
 ("fichiers","Fichier à Importer"): [
     {'name': 'path', 'genre': 'dirfile', 'label': "Fichier d'origine",'value': "*.xlsx",
-                     'help': "Pointez le fichier contenant les valeurs à transposer",'size':(450,30)},
+            'help': "Pointez le fichier contenant les valeurs à transposer",
+            'size':(450,30)},
     {'name': 'formatin', 'genre': 'Enum', 'label': 'Banque importée',
                     'help': "La banque détermine le format d'import", 'value':0,
                     'values':[x for x in FORMATS_IMPORT.keys()],
