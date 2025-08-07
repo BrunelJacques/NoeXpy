@@ -544,11 +544,14 @@ class PNL_ctrl(wx.Panel):
             self.ctrl.Enable(False)
             self.txt.Enable(False)
 
-        if self.avecBouton and ligne['genre'].lower()[:3] != 'dir':
+        if self.avecBouton:
             self.btn.nameBtn = self.codename
             self.btn.labelBtn = ligne['btnLabel']
             self.btn.actionBtn = ligne['btnAction']
-            self.btn.Bind(wx.EVT_BUTTON, self.OnBtnAction)
+            if ligne['genre'].lower()[:3] != 'dir':
+                self.btn.Bind(wx.EVT_BUTTON, self.OnBtnAction)
+            else:
+                self.btn.Bind(wx.EVT_KILL_FOCUS, self.OnBtnAction)
 
         if self.ctrl.actionCtrl:
             self.ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnCtrlAction)
@@ -706,9 +709,16 @@ class PNL_ctrl(wx.Panel):
         """ Open a file"""
         self.dirname = ''
         dlg = wx.FileDialog(self, "Choisissez un fichier", self.dirname)
+        # simulation d'une saisie du ctrl à la main
         if dlg.ShowModal() == wx.ID_OK:
             self.ctrl.SetValue(dlg.GetPath())
+            # Create and post the event
+            evt = wx.CommandEvent(wx.wxEVT_TEXT_ENTER, self.ctrl.GetId())
+            evt.SetEventObject(self.ctrl)
+            evt.SetString(self.ctrl.GetValue())
+            wx.PostEvent(self.ctrl, evt)
         dlg.Destroy()
+
 
 #*****************  GESTION des COMPOSITIONS DE CONTROLES **********************************
 

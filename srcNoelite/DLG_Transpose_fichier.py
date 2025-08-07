@@ -39,7 +39,9 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     formatIn = dicParams['fichiers']['formatin']
     noPiece = dicParams['p_export']['noPiece']
     champsIn = FORMATS_IMPORT[formatIn]['champs']
-    nblent = FORMATS_IMPORT[formatIn]['lignesentete']
+    if 'lignesentet' in FORMATS_IMPORT[formatIn].keys():
+        nblent = FORMATS_IMPORT[formatIn]['lignesentete']
+    else: nblent = 0
     # teste la cohérence de la première ligne importée
     if nblent>0:
         if len(champsIn) != len(donnees[nblent]):
@@ -182,24 +184,24 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     return lstOut
 
 # formats possibles des fichiers en entrées, utiliser les mêmes codes des champs pour les 'UtilCompta.ComposeFuncExp'
-FORMATS_IMPORT = {"LCL Credit Lyonnais":{ 'champs':['date','montant','mode',None,'libelle',None,None,
+FORMATS_IMPORT = {"LCL Credit Lyonnais":{
+                        'champs':['date','montant','mode',None,'libelle',None,None,
                                           'codenat','nature',],
-                                'lignesentete':0,
-                                'fonction':ComposeFuncImp,
-                                'table':'fournisseurs'},
-                  "Date,Lib,Montant": {
+                        'lignesentete':0,
+                        'fonction':ComposeFuncImp,
+                        'table':'fournisseurs'},
+                  "LBP Banque Postale": {
                       'champs': ['date','libelle','montant'],
-                      'lignesentete': 0,
                       'fonction': ComposeFuncImp,
                       'table': 'fournisseurs'},
-                  "Crédit Mutuel": {
-                      'champs': ['date', 'libelle', '-debit','credit'],
-                      'lignesentete': 0,
+                  "Crédit Mutuel importé d'internet": {
+                      'champs': ['date', 'valeur', 'libelle', '-debit','credit'],
+                      'champsCB':['date','libelle','montant'],
                       'fonction': ComposeFuncImp,
                       'table': 'fournisseurs'},
-                  "Date,DteValeur,Libellé,Débit,Crédit": {
-                      'champs': ['date','valeur', 'libelle', 'debit','credit'],
-                      'lignesentete': 0,
+                  "Crédit Mutuel relevé papier": {
+                      'champs': ['date','valeur','operation', 'debit','credit'],
+                      'champsCB': ['date','commerce','ville', 'montant'],
                       'fonction': ComposeFuncImp,
                       'table': 'fournisseurs'}
                   }

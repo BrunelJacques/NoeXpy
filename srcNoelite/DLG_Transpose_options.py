@@ -130,7 +130,8 @@ MATRICE_PARAMS = {
 ("fichier","Fichier à Importer"): [
     {'name': 'nomFichier','genre': 'dirfile',  'label': "Fichier d'origine",'value': "*.xlsx",
                      'help': "Pointez le fichier contenant les valeurs à transposer",
-                    'ctrlAction':'OnFichier',
+                    'ctrlAction':'OnDirfile',
+                    'btnAction': 'OnDirFile',
                     'size':(600,30),},
     {'name': 'nomBanque', 'genre': 'enum', 'label': 'Banque importée',
                     'help': "La banque détermine le format d'import", 'value':0,
@@ -321,9 +322,12 @@ class PNL_corps(wx.Panel):
 
     def SetValuesChklst(self,ctrl,choices):
         ctrl.Clear()
-        for item in choices:
-            if item:
-                ctrl.Append(item)
+        try:
+            for item in choices:
+                if item:
+                    ctrl.Append(item)
+        except Exception as err:
+            print(err)
 
     def ChkValuesChklst(self,ctrl,items):
         # coche les noms de colonne dans ctrl si présence dans la liste des items d'un autre
@@ -426,12 +430,12 @@ class Dialog(xusp.DLG_vide):
         self.dicCtrls['radioSheets'].rbox.SetSelection(self.ixSheet)
         self.dicCtrls['btnOk'] = self.pnlPied.itemsBtns[1][0]
         self.OnBanque(None)
-        self.OnFichier(None)
+        self.OnDirfile(None)
         self.OnTypeCarte(None)
 
     # ------------------- Gestion des actions -----------------------
 
-    def OnFichier(self,event):
+    def OnDirfile(self,event):
         self.isXlsx = False
         self.nomFichier = self.pnlParams.GetOneValue('nomFichier')
         (self.typeFichier, self.fichierIn) = ximport.OpenFile(self.nomFichier)
@@ -441,14 +445,13 @@ class Dialog(xusp.DLG_vide):
             choices = ximport.GetSheetNames(self.fichierIn)
             self.dicCtrls['radioSheets'].SetValues(choices)
             self.OnSheets(None)
-            #ctrl = self.dicCtrls['chklstColonnesLues']
-            #self.pnlCorps.SetValuesChklst(ctrl,choices)
 
     def OnBanque(self, event):
         self.nomBanque = self.dicCtrls['nomBanque'].GetValue()
-        self.lstColonnesOlv = FORMATS_IMPORT[self.nomBanque]['champs']
-        self.pnlCorps.SetValuesChklst(self.dicCtrls['chklstColonnesOlv'],self.lstColonnesOlv)
-        self.MatchColonnes(self.lstColonnesLues,self.lstColonnesOlv)
+        if not self.nomBanque in self.dicCtrls['nomBanque'].values:
+            self.nomBanque = self.dicCtrls['nomBanque'].values[0]
+            self.pnlParams.SetOneValue('nomBanque', self.nomBanque)
+        self.MatchColonnes()
 
     def OnTypeCarte(self,event):
         typeCarte = self.dicCtrls['typeCarte'].GetValue()
@@ -460,11 +463,9 @@ class Dialog(xusp.DLG_vide):
             self.isCB = True
             if self.dateCpta:
                 self.dicCtrls['dateCpta'].SetValue(self.dateCpta)
+        self.OnBanque(None)
 
     def OnForcerdte(self,event):
-        pass
-
-    def OnRadioBoxType(self,event):
         pass
 
     def OnSheets(self,event):
@@ -476,21 +477,37 @@ class Dialog(xusp.DLG_vide):
             lstCol = ximport.GetNomsCols(sheet,11)
             self.pnlCorps.SetValuesChklst(self.dicCtrls['chklstColonnesLues'],lstCol)
             self.lstColonnesLues = lstCol
-            self.MatchColonnes(self.lstColonnesLues,self.lstColonnesOlv)
+            self.MatchColonnes()
             cellDate = ximport.GetFirstCell(sheet,'date')
             if cellDate:
                 self.GetDataProperties(sheet,cellDate)
+        self.MatchColonnes()
 
-    def MatchColonnes(self,lstLues,lstOlv):
+    def GetFormats(self):
+        try:
+            self.lstColonnesOlv = FORMATS_IMPORT[self.nomBanque]['champs']
+        except Exception as err:
+            print(err)
+            return
+        if self.isCB and 'champsCB' in FORMATS_IMPORT[self.nomBanque]:
+            self.lstColonnesOlv = FORMATS_IMPORT[self.nomBanque]['champsCB']
+        self.pnlCorps.SetValuesChklst(self.dicCtrls['chklstColonnesOlv'],
+                                      self.lstColonnesOlv)
+
+    def MatchColonnes(self):
+        self.GetFormats()
+        lstLues = self.lstColonnesLues
+        lstOlv = self.lstColonnesOlv
         dic = { 'olv':{}, 'lues':{} }
         echec = False
+        if len(lstOlv) == 0: echec = True
         for colOlv in lstOlv:
             if not colOlv: continue
             codeOlv = xformat.NoAccents(colOlv).lower()
             codeOlv = xformat.NoChiffres(codeOlv)
             testCol = False
             for colLue in lstLues:
-                if not colLue: continue
+                if not colLue or not isinstance(colLue, str): continue
                 codeLu = xformat.NoAccents(colLue).lower()
                 if codeOlv in codeLu:
                     dic['olv'][colOlv] = colLue
@@ -519,7 +536,6 @@ class Dialog(xusp.DLG_vide):
             self.dicCtrls['periode'].SetValues((dteMin,dteMax))
             self.dicCtrls['dateCpta'].SetValue(f"{dteMax}")
             self.dateCpta = dteMax
-
 
     def ValideSaisie(self,event):
         return self.valide
