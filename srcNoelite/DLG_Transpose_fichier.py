@@ -11,6 +11,8 @@ import wx
 import datetime
 import xpy.xGestionConfig               as xgc
 import xpy.xUTILS_SaisieParams          as xusp
+from DLG_Transpose_options import Dialog as dlgOptions
+import GLOBAL
 from xpy.outils                 import xformat,xbandeau,ximport
 from srcNoelite                 import UTILS_Compta
 from xpy.ObjectListView import xGTE
@@ -184,35 +186,39 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     return lstOut
 
 # formats possibles des fichiers en entrées, utiliser les mêmes codes des champs pour les 'UtilCompta.ComposeFuncExp'
-FORMATS_IMPORT = {"LCL Credit Lyonnais":{
-                        'champs':['date','montant','mode',None,'libelle',None,None,
-                                          'codenat','nature',],
-                        'lignesentete':0,
-                        'fonction':ComposeFuncImp,
-                        'table':'fournisseurs'},
-                  "LBP Banque Postale": {
-                      'champs': ['date','libelle','montant'],
-                      'fonction': ComposeFuncImp,
-                      'table': 'fournisseurs'},
-                  "Crédit Mutuel importé d'internet": {
-                      'champs': ['date', 'valeur', 'libelle', '-debit','credit'],
-                      'champsCB':['date','libelle','montant'],
-                      'fonction': ComposeFuncImp,
-                      'table': 'fournisseurs'},
-                  "Crédit Mutuel relevé papier": {
-                      'champs': ['date','valeur','operation', 'debit','credit'],
-                      'champsCB': ['date','commerce','ville', 'montant'],
-                      'fonction': ComposeFuncImp,
-                      'table': 'fournisseurs'}
-                  }
+FORMATS_IMPORT = GLOBAL.GetFormatsImport(ComposeFuncImp)
+"""{"LCL Credit Lyonnais":{
+                    'champs':['date','montant','mode',None,'libelle',None,None,
+                                      'codenat','nature',],
+                    'lignesentete':0,
+                    'fonction':ComposeFuncImp,
+                    'table':'fournisseurs'},
+              "LBP Banque Postale": {
+                  'champs': ['date','libelle','montant'],
+                  'fonction': ComposeFuncImp,
+                  'table': 'fournisseurs'},
+              "Crédit Mutuel importé d'internet": {
+                  'champs': ['date', 'valeur', 'libelle', '-debit','credit'],
+                  'champsCB':['date','libelle','montant'],
+                  'fonction': ComposeFuncImp,
+                  'table': 'fournisseurs'},
+              "Crédit Mutuel relevé papier": {
+                  'champs': ['date','valeur','operation', 'debit','credit'],
+                  'champsCB': ['date','commerce','ville', 'montant'],
+                  'fonction': ComposeFuncImp,
+                  'table': 'fournisseurs'}
+              }
+"""
 
 # Description des paramètres à choisir en haut d'écran
 MATRICE_PARAMS = {
 ("fichiers","Fichier à Importer"): [
-    {'name': 'path', 'genre': 'dirfile', 'label': "Fichier d'origine",'value': "*.xlsx",
-            'help': "Pointez le fichier contenant les valeurs à transposer",
-            'size':(450,30)},
-    {'name': 'formatin', 'genre': 'Enum', 'label': 'Banque importée',
+    {'name': 'nomFichier', 'genre': 'dirfile', 'label': "Fichier d'origine",'value': "*.xlsx",
+         'help': "Pointez le fichier contenant les valeurs à transposer",
+         'ctrlAction': 'OnFichier',
+         #'btnAction': 'inutile', # redirigé vers ctrlAction (car genre dirfile)
+         'size':(450,30)},
+    {'name': 'nomBanque', 'genre': 'Enum', 'label': 'Banque importée',
                     'help': "La banque détermine le format d'import", 'value':0,
                     'values':[x for x in FORMATS_IMPORT.keys()],
                     'size':(350,30)},
@@ -251,10 +257,7 @@ def GetBoutons(dlg):
     return  [
         {'name': 'btnImp', 'label': "Importer\nRelevé",
          'help': "Cliquez ici pour lancer l'importation du fichier date = date comptable",
-         'size': (120, 35), 'image': wx.ART_UNDO, 'onBtn': dlg.OnImporterNoCB},
-        {'name': 'btnImp', 'label': "Importer\nCB fin mois",
-                    'help': "Cliquez ici pour lancer l'importation du fichier date = fin de mois",
-                    'size': (120, 35), 'image': wx.ART_UNDO,'onBtn':dlg.OnImporterCB},
+         'size': (120, 35), 'image': wx.ART_UNDO, 'onBtn': dlg.OnImporter},
         {'name': 'btnExp', 'label': "Exporter\nfichier",
             'help': "Cliquez ici pour lancer l'exportation du fichier selon les paramètres que vous avez défini",
             'size': (120, 35), 'image': wx.ART_REDO,'onBtn':dlg.OnExporter},
@@ -407,12 +410,13 @@ class Dialog(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,*args):
         super().__init__(self,name='DLG_Transposition_fichier',size=(1200,700))
-        self.typeCB = False
+        self.dicOptions = {}
         self.ctrlOlv = None
         self.txtInfo =  "Non connecté à une compta"
         self.dicOlv = self.GetParamsOlv()
         self.Init()
         self.Sizer()
+
 
     # Récup des paramètrages pour composer l'écran
     def GetParamsOlv(self):
@@ -436,8 +440,8 @@ class Dialog(xusp.DLG_vide):
         # connextion compta et affichage bas d'écran
         self.compta = self.GetCompta()
         self.table = self.GetTable()
-
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
+        #self.OnFichier(None)
 
     def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
@@ -451,6 +455,17 @@ class Dialog(xusp.DLG_vide):
         self.CenterOnScreen()
 
     # ------------------- Gestion des actions -----------------------
+    def OnFichier(self,evt):
+        for param in ['nomFichier', 'nomBanque']:
+            self.dicOptions[param] = self.pnlParams.GetOneValue(param) 
+        dlg = dlgOptions(None,**self.dicOptions)
+        ret = dlg.ShowModal()
+        if ret == wx.OK:
+            # Récupère les options choisies
+            dlg.UpdateDicOptions(self.dicOptions)
+            for param in ['nomFichier', 'nomBanque']:
+                self.pnlParams.SetOneValue(param,self.dicOptions[param])
+        dlg.Destroy()
 
     def OnPiece(self,evt):
         # la modif du numéro de pièce s'applique à toutes les lignes visibles
@@ -486,6 +501,7 @@ class Dialog(xusp.DLG_vide):
         self.table = self.GetTable()
 
     def OnNameDB(self,evt):
+        # appelé par DLG_listeConfigs (save params)
         return
 
     def InitOlv(self):
@@ -499,7 +515,7 @@ class Dialog(xusp.DLG_vide):
     def GetDonneesIn(self):
         # importation des donnéees du fichier entrée
         dic = self.pnlParams.GetValues()
-        nomFichier = dic['fichiers']['path']
+        nomFichier = dic['fichiers']['nomFichier']
         lstNom = nomFichier.split('.')
         if lstNom[-1] in ('csv','txt'):
             entrees = ximport.GetFichierCsv(nomFichier)
@@ -555,15 +571,15 @@ class Dialog(xusp.DLG_vide):
     def GetTable(self):
         # récupère la table par défaut du format import choisi
         dicParams = self.pnlParams.GetValues()
-        formatIn = dicParams['fichiers']['formatin']
+        formatIn = dicParams['fichiers']['nomBanque']
         if not formatIn in FORMATS_IMPORT:
             return
         return FORMATS_IMPORT[formatIn]['table']
 
     def OnImporter(self,event):
         dicParams = self.pnlParams.GetValues()
-        dicParams['typeCB'] = self.typeCB
-        formatIn = dicParams['fichiers']['formatin']
+        dicParams['typeCB'] = self.dicOptions['typeCB']
+        formatIn = dicParams['fichiers']['nomBanque']
         self.table = FORMATS_IMPORT[formatIn]['table']
         entrees = self.GetDonneesIn()
         if not entrees:
@@ -571,14 +587,6 @@ class Dialog(xusp.DLG_vide):
         self.ctrlOlv.lstDonnees = FORMATS_IMPORT[formatIn]['fonction'](dicParams,entrees,
                                 self.ctrlOlv.lstCodesColonnes,self.compta,self.table,parent=self)
         self.InitOlv()
-
-    def OnImporterCB(self, event):
-        self.typeCB = True
-        self.OnImporter(event)
-
-    def OnImporterNoCB(self, event):
-        self.typeCB = False
-        self.OnImporter(event)
 
     def OnExporter(self,event):
         nbl = len(self.ctrlOlv.innerList)

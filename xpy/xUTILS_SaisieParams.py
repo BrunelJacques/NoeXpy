@@ -618,7 +618,7 @@ class PNL_ctrl(wx.Panel):
             if hasattr(self.lanceur,actionBtn):
                 action = "self.lanceur.%s(event)"%(actionBtn)
                 eval(action)
-        else:
+        elif actionBtn:
             actionBtn(event)
         event.Skip()
 
@@ -705,18 +705,21 @@ class PNL_ctrl(wx.Panel):
             self.ctrl.SetValue(dlg.GetPath())
         dlg.Destroy()
 
+    def PostEvent(self,ctrl,event):
+        # Create and post the event wx.EVT_xxxx sur le control
+        evt = wx.CommandEvent(event, ctrl.GetId())
+        evt.SetEventObject(ctrl)
+        evt.SetString(ctrl.GetValue())
+        wx.PostEvent(ctrl, evt)
+
     def OnDirfile(self,event):
         """ Open a file"""
         self.dirname = ''
         dlg = wx.FileDialog(self, "Choisissez un fichier", self.dirname)
-        # simulation d'une saisie du ctrl à la main
         if dlg.ShowModal() == wx.ID_OK:
             self.ctrl.SetValue(dlg.GetPath())
-            # Create and post the event
-            evt = wx.CommandEvent(wx.wxEVT_TEXT_ENTER, self.ctrl.GetId())
-            evt.SetEventObject(self.ctrl)
-            evt.SetString(self.ctrl.GetValue())
-            wx.PostEvent(self.ctrl, evt)
+            # simulation d'une saisie du ctrl à la main sur le txtCtrl devnt dirFile
+            self.PostEvent(self.ctrl,wx.wxEVT_TEXT_ENTER)
         dlg.Destroy()
 
 

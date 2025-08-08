@@ -636,7 +636,7 @@ class PNL_corps(xGTE.PNL_corps):
             self.parent.pnlPied.SetItemsInfos( DIC_INFOS[code],
                                                wx.ArtProvider.GetBitmap(wx.ART_FIND,
                                                                         wx.ART_OTHER,
-                                                                        (16, 16)))
+                                                                 (16, 16)))
         else:
             self.parent.pnlPied.SetItemsInfos(INFO_OLV,
                                               wx.ArtProvider.GetBitmap(wx.ART_INFORMATION,

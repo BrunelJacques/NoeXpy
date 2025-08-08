@@ -7,15 +7,16 @@
 # Licence:         Licence GNU GPL
 # --------------------------------------------------------------------
 
-import wx
+import wx, os
 import datetime
 import xpy.xGestionConfig as xgc
 import xpy.xUTILS_SaisieParams as xusp
 from xpy.outils import xformat, xbandeau, xdates, ximport
 from xpy.ObjectListView import xGTE
 from xpy.ObjectListView.ObjectListView import ColumnDefn
-from DLG_Transpose_fichier import FORMATS_IMPORT
+import GLOBAL
 
+FORMATS_IMPORT = GLOBAL.GetFormatsImport()
 
 # --------------------- Paramètres du programme -------------------------------------
 GRISBLEU = wx.Colour(215, 225, 250)
@@ -128,10 +129,10 @@ class CTRL_RadioGroup(wx.Panel):
 # Description des paramètres à choisir en haut d'écran
 MATRICE_PARAMS = {
 ("fichier","Fichier à Importer"): [
-    {'name': 'nomFichier','genre': 'dirfile',  'label': "Fichier d'origine",'value': "*.xlsx",
+    {'name': 'nomFichier','genre': 'dirfile','label': "Fichier d'origine",'value': "*.xlsx",
                      'help': "Pointez le fichier contenant les valeurs à transposer",
-                    'ctrlAction':'OnDirfile',
-                    'btnAction': 'OnDirFile',
+                    'ctrlAction':'OnFichier',
+                    'btnAction': 'inutile',# redirigé vers ctrlAction (car genre dirfile)
                     'size':(600,30),},
     {'name': 'nomBanque', 'genre': 'enum', 'label': 'Banque importée',
                     'help': "La banque détermine le format d'import", 'value':0,
@@ -182,7 +183,7 @@ def GetDicDialogParams(parent):
     kwds = {}
     kwds['name'] = 'DLG_Transpose_options.Dialog'
     kwds['title'] = listArbo[-1] + "/" + parent.__class__.__name__
-    kwds['size'] = (900, 600)
+    kwds['minSize'] = (900, 550)
     return kwds
 
 # description des boutons en pied d'écran et de leurs actions
@@ -218,7 +219,7 @@ def GetOlvColonnes(dlg):
 # paramètre les options de l'OLV
 def GetOlvOptions(dlg):
     return {
-            'minSize': (500,150),
+            'minSize': (500,50),
             'checkColonne': False,
             'recherche': True,
             'autoAddRow':False,
@@ -292,9 +293,7 @@ class PNL_corps(wx.Panel):
         sttbox_droite_sizer = wx.StaticBoxSizer(self.staticbox_droite, wx.VERTICAL)
         sttbox_droite_sizer.Add((220,10),0,0,0)
         sttbox_droite_sizer.Add(self.chklstColonnesOlv, 1, wx.LEFT | wx.EXPAND, 0)
-        sttbox_droite_sizer.Add((220,20),0,0,0)
         sttbox_droite_sizer.Add(self.txtValide, 1, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-        sttbox_droite_sizer.Add((20,20),1,wx.EXPAND,0)
         grid_sizer_droite.Add(sttbox_droite_sizer, 1, wx.LEFT | wx.TOP | wx.EXPAND, 25)
         grid_sizer_base.Add(sttbox_gauche_sizer,1,wx.ALL | wx.EXPAND,5)
         grid_sizer_base.Add(grid_sizer_droite,1,wx.ALL | wx.EXPAND,5)
@@ -350,14 +349,14 @@ class PNL_pied(xGTE.PNL_pied):
 
 class Dialog(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
-    def __init__(self,parent,nomFichier='', nomBanque='',ixSheet=0,isCB=False):
+    def __init__(self,parent,nomFichier='', nomBanque='',ixSheet=0,typeCB=False,**kwd):
         self.parent = parent
         self.txtInfo = INFO_OLV
         self.ctrlOlv = None
         self.nomFichier = nomFichier
         self.nomBanque = nomBanque
         self.ixSheet = ixSheet
-        self.isCB = isCB
+        self.typeCB = typeCB
         kwds = GetDicDialogParams(self)
         super().__init__(self.parent,**kwds)  # self supprimé
         self.Init()
@@ -370,7 +369,8 @@ class Dialog(xusp.DLG_vide):
     def Init(self):
         dicParams = GetDicPnlParams()
         # Boutons de bas d'écran - infos: texte ou objet window.  Les infos sont  placées en bas à gauche
-        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, (16, 16)),self.txtInfo]
+        lstInfos = [ wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER,
+                                              (16, 16)),self.txtInfo]
         dicPied = {'lstBtns': GetBoutons(self), "lstInfos": lstInfos}
 
         # lancement de l'écran en blocs principaux
@@ -385,7 +385,7 @@ class Dialog(xusp.DLG_vide):
         sizer_base.Add(self.pnlBandeau, 1, wx.TOP | wx.EXPAND, 3)
         sizer_base.Add(self.pnlParams, 1, wx.TOP | wx.EXPAND, 3)
         sizer_base.Add(self.pnlCorps, 1,  wx.EXPAND, 3)
-        sizer_base.Add(self.pnlPied, 0, wx.ALL | wx.EXPAND, 3)
+        sizer_base.Add(self.pnlPied, 1, wx.ALL | wx.EXPAND, 3)
         sizer_base.AddGrowableCol(0)
         sizer_base.AddGrowableRow(2)
         self.SetSizer(sizer_base)
@@ -422,7 +422,7 @@ class Dialog(xusp.DLG_vide):
         # récupère les values d'un anyctrl pour le Set qui n'est pas automatique
         ctrlTypeCarte = self.dicCtrls['typeCarte']
         ctrlTypeCarte.SetValues(ctrlTypeCarte.values)
-        ctrlTypeCarte.SetValue(ctrlTypeCarte.values[self.isCB])
+        ctrlTypeCarte.SetValue(ctrlTypeCarte.values[self.typeCB])
 
         # autres controles à initialiser
         self.pnlParams.SetOneValue('nomFichier',self.nomFichier)
@@ -430,47 +430,60 @@ class Dialog(xusp.DLG_vide):
         self.dicCtrls['radioSheets'].rbox.SetSelection(self.ixSheet)
         self.dicCtrls['btnOk'] = self.pnlPied.itemsBtns[1][0]
         self.OnBanque(None)
-        self.OnDirfile(None)
+        self.OnFichier(None)
         self.OnTypeCarte(None)
 
     # ------------------- Gestion des actions -----------------------
 
-    def OnDirfile(self,event):
+    def OnFichier(self,event):
+        # Nouveau nom de fichier, on ouvre le fichier et lit les feuilles présentes
         self.isXlsx = False
         self.nomFichier = self.pnlParams.GetOneValue('nomFichier')
-        (self.typeFichier, self.fichierIn) = ximport.OpenFile(self.nomFichier)
+        (typeFichier, self.fichierIn) = ximport.OpenFile(self.nomFichier)
 
-        if self.typeFichier == 'xlsx':
+        if typeFichier == 'xlsx':
             self.isXlsx = True
             choices = ximport.GetSheetNames(self.fichierIn)
             self.dicCtrls['radioSheets'].SetValues(choices)
             self.OnSheets(None)
+        else:
+            # Les autres types de fichier seront gérés en aveugle lors de l'import
+            self.isXlsx = False
+            lstCol = ["-", ]
+            self.pnlCorps.SetValuesChklst(self.dicCtrls['chklstColonnesLues'], lstCol)
+            self.lstColonnesLues = []
+            self.valide = True
+            self.MatchColonnes()
 
     def OnBanque(self, event):
+        # remet la première banque si banque saisie inconnue
         self.nomBanque = self.dicCtrls['nomBanque'].GetValue()
         if not self.nomBanque in self.dicCtrls['nomBanque'].values:
             self.nomBanque = self.dicCtrls['nomBanque'].values[0]
             self.pnlParams.SetOneValue('nomBanque', self.nomBanque)
-        self.MatchColonnes()
+        self.OnSheets(None)
 
     def OnTypeCarte(self,event):
+        # gère les propriétées liées au type de carte
         typeCarte = self.dicCtrls['typeCarte'].GetValue()
         if typeCarte == self.dicCtrls['typeCarte'].values[0]:
             self.dicCtrls['dateCpta'].Enable(False)
-            self.isCB = False
+            self.typeCB = False
         else:
             self.dicCtrls['dateCpta'].Enable(True)
-            self.isCB = True
+            self.typeCB = True
             if self.dateCpta:
                 self.dicCtrls['dateCpta'].SetValue(self.dateCpta)
-        self.OnBanque(None)
+        self.OnSheets(None)
 
     def OnForcerdte(self,event):
-        pass
+        self.dateCpta = self.dicCtrls['dateCpta'].SetValue(self.dateCpta)
 
     def OnSheets(self,event):
         if not self.isXlsx:
+            self.AfficheInfos()
             return
+        # lit la feuille excel choisie
         nomSheet = self.dicCtrls['radioSheets'].GetValue()
         if len(nomSheet) > 1:
             sheet = ximport.GetOneSheet(self.fichierIn,nomSheet)
@@ -479,8 +492,7 @@ class Dialog(xusp.DLG_vide):
             self.lstColonnesLues = lstCol
             self.MatchColonnes()
             cellDate = ximport.GetFirstCell(sheet,'date')
-            if cellDate:
-                self.GetDataProperties(sheet,cellDate)
+            self.GetDataProperties(sheet,cellDate)
         self.MatchColonnes()
 
     def GetFormats(self):
@@ -489,7 +501,7 @@ class Dialog(xusp.DLG_vide):
         except Exception as err:
             print(err)
             return
-        if self.isCB and 'champsCB' in FORMATS_IMPORT[self.nomBanque]:
+        if self.typeCB and 'champsCB' in FORMATS_IMPORT[self.nomBanque]:
             self.lstColonnesOlv = FORMATS_IMPORT[self.nomBanque]['champsCB']
         self.pnlCorps.SetValuesChklst(self.dicCtrls['chklstColonnesOlv'],
                                       self.lstColonnesOlv)
@@ -524,8 +536,10 @@ class Dialog(xusp.DLG_vide):
         ctrlOlv =  self.dicCtrls['chklstColonnesOlv']
         self.pnlCorps.ChkValuesChklst(ctrlLues,list(dic['lues'].keys()))
         self.pnlCorps.ChkValuesChklst(ctrlOlv,list(dic['olv'].keys()))
+        self.AfficheInfos()
 
     def GetDataProperties(self,sheet,cell):
+        # Ajuste les infos concernant le fichier lu
         typ = datetime.datetime
         nbCells,dteMin,dteMax =ximport.GetOneColCellsProp(sheet,cell,typ=typ)
         if nbCells:
@@ -537,16 +551,30 @@ class Dialog(xusp.DLG_vide):
             self.dicCtrls['dateCpta'].SetValue(f"{dteMax}")
             self.dateCpta = dteMax
 
-    def ValideSaisie(self,event):
+    def AfficheInfos(self):
+        if self.valide:
+            txtInfo = "Vous pouvez valider pour retourner à l'écran précédent"
+        elif not self.isXlsx:
+            txtInfo = "Vous pouvez abandonner pour retourner à l'écran précédent"
+        else:
+            txtInfo = INFO_OLV
+        self.pnlPied.SetItemsInfos(txtInfo)
         return self.valide
 
+    def UpdateDicOptions(self,dicOptions):
+        # Appellé par externe pour retourner les params
+        dicOptions['nomFichier'] = self.nomFichier
+        dicOptions['isXlsx'] = self.isXlsx
+        dicOptions['ixSheet'] = self.ixSheet
+        dicOptions['nomBanque'] = self.nomBanque
+        dicOptions['typeCB'] = self.typeCB
 
 #------------------------ Lanceur de test  -------------------------------------------
 if __name__ == '__main__':
-    import os
     app = wx.App(0)
     os.chdir("..")
-    fichier = "C:\\Users\\jbrun\\Desktop\\bribes\CREDIT MUT RELEVE.xlsx"
-    dlg = Dialog(None,nomFichier=fichier, nomBanque='Crédit Mutuel',ixSheet=0,isCB=True)
+    fichier = "C:\\temp\\RELEVE.xlsx"
+    dlg = Dialog(None,nomFichier=fichier, nomBanque='Crédit Mutuel',
+                 ixSheet=0,typeCB=True)
     dlg.ShowModal()
     app.MainLoop()
