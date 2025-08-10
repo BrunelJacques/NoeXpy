@@ -3,6 +3,7 @@ import platform
 import csv
 import xlrd
 import datetime
+from xpy.outils import xformat
 from openpyxl import load_workbook
 
 def IsFile(nomFichier):
@@ -174,35 +175,42 @@ def GetFichierXls(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):
             lstDonnees.append(ligne)
     return lstDonnees
 
-def GetFichierXlsx(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):
-    if not IsFile(nomFichier):
-        return []
-    #get handle on existing file
-    wk = load_workbook(filename=nomFichier)
+def GetFichierXlsx(**dicOptions):
+    nomFichier = dicOptions.pop('nomFichier',None)
+    maxcol = dicOptions.pop('maxcol',10)
+    ixSheet = dicOptions.pop('ixSheet',0)
 
-    #get active worksheet or wk['some_worksheet']
-    ws = wk.active
+    # Ouverture du fichier
+    try:
+        (typeFichier, wk) = OpenFile(nomFichier)
+        sheetNames = GetSheetNames(wk)
+        sheetName = sheetNames[ixSheet]
+        # activation de la feuille
+        ws = GetOneSheet(wk,sheetName)
+    except Exception as err:
+        mess = "Le fichier %s n'a pas pu être ouvert correctement "% nomFichier
+        mess += "\nerreur: %s"%err
+        wx.MessageBox(mess, "ECHEC OUVERTURE")
+        return
+
+    lstCol = GetNomsCols(ws,maxcol)
+    xformat.NormaliseNomChamps(lstCol)
+
+    cellDate = GetFirstCell(ws,'date')
+    if cellDate:
+        minrow = cellDate.row + 1  # start below the target cell
+        mincol = cellDate.column
+        maxrow = ws.max_row
+    else:
+        mess = "Le fichier %s n'a pas cellule 'date'"% nomFichier
+        wx.MessageBox(mess, "ECHEC OUVERTURE")
+        return
 
     lstDonnees = []
-    # ajustement zone de cellules non vides, choix entête
-    for values in ws.iter_rows(min_row=minrow,max_row=maxrow,min_col=mincol,max_col=maxcol,values_only=True,):
-        sansNull = [x for x in values if x]
-        # balaye jusqu'à trouver une ligne non vide
-        if len(sansNull)>0:
-            for cell in values:
-                if cell:
-                    break
-                else:
-                    # une colonne ignorée
-                    mincol += 1
-                    maxcol += 1
-            break
-        else:
-            # une ligne ignorée
-            minrow +=1
 
     #loop through range values
-    for values in ws.iter_rows(min_row=minrow,max_row=maxrow,min_col=mincol,max_col=maxcol,values_only=True,):
+    for values in ws.iter_rows(min_row=minrow,max_row=maxrow,min_col=mincol,
+                               max_col=maxcol,values_only=True,):
         sansNull = [x for x in values if x]
         if len(sansNull)>0:
             lstDonnees.append(values)
@@ -230,9 +238,11 @@ def GetFichierCsv(nomFichier,delimiter="\t",detect=True):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    donnees = GetFichierCsv("../Versions.txt")
+    #donnees = GetFichierCsv("../Versions.txt")
     #donnees = GetFichierXls("c:/temp/FichierTest.xls")
-
+    dicOptions = {'nomFichier':"C:\\Users\\jbrun\\Desktop\\bribes\CREDIT MUT RELEVE.xlsx",
+                  'ixsheet':0}
+    donnees = GetFichierXlsx(**dicOptions)
     print(donnees[0])
     app.MainLoop()
 

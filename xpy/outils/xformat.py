@@ -673,7 +673,17 @@ def NoLettre(txt=''):
         txt = txt.replace(',','.')
     return txt
 
+def NormaliseNomChamps(lstCol=[]):
+    # Normalise ascii le contenu d'une liste de chaines
+    for ix in range(len(lstCol)):
+        if not isinstance(lstCol[ix],str):
+            continue
+        lstCol[ix] = NoAccents(lstCol[ix]).lower()
+        lstCol[ix] = NoChiffres(lstCol[ix]).lower()
+
 def NoAccents(texte,lower=True):
+    if not texte:
+        return
     # met en minuscule sans accents et sans caractères spéciaux
     code = ''.join(c for c in unicodedata.normalize('NFD', texte) if unicodedata.category(c) != 'Mn')
     #("é", "e"), ("è", "e"), ("ê", "e"), ("ë", "e"), ("à", "a"), ("û", ""), ("ô", "o"), ("ç", "c"), ("î", "i"), ("ï", "i")

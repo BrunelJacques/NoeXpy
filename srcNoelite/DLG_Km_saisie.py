@@ -536,7 +536,8 @@ class Dialog(xusp.DLG_vide):
         # importation des donnéees du fichier entrée
         entrees = None
         if nomFichier[-4:].lower() == 'xlsx':
-            entrees = ximport.GetFichierXlsx(nomFichier,maxcol=7)
+            dicOptions = {'nomFichier': nomFichier, 'maxcol': 7}
+            entrees = ximport.GetFichierXlsx(**dicOptions)
         elif nomFichier[-3:].lower() == 'xls':
             entrees = ximport.GetFichierXls(nomFichier,maxcol=7)
         else: wx.MessageBox("Il faut choisir un fichier .xls ou .xlsx",'NomFichier non reconnu')

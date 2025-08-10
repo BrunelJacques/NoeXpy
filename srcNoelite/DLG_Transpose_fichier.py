@@ -35,15 +35,25 @@ INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
 
 # Fonctions de transposition entrée à gérer pour chaque item FORMAT_xxxx pour les spécificités
 def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
-    # accès aux comptes
-    # 'in' est le fichier entrée, 'out' est l'OLV
+    # 'in' est le fichier entrée colonnes lues, 'out' est l'OLV
     lstOut = []
-    formatIn = dicParams['fichiers']['formatin']
+    nomBanque = dicParams['fichiers']['nomBanque']
     noPiece = dicParams['p_export']['noPiece']
-    champsIn = FORMATS_IMPORT[formatIn]['champs']
-    if 'lignesentet' in FORMATS_IMPORT[formatIn].keys():
-        nblent = FORMATS_IMPORT[formatIn]['lignesentete']
+    champsAttendus = FORMATS_IMPORT[nomBanque]['champs']
+    champsIn = dicParams.get("lstColonnesLues", None)
+    # pour les fichiers non xlsx on n'a pas lu de nom de colonne
+    if not champsIn:
+        champsIn = [x for x in champsAttendus]
+
+    if 'lignesentet' in FORMATS_IMPORT[nomBanque].keys():
+        nblent = FORMATS_IMPORT[nomBanque]['lignesentete']
     else: nblent = 0
+    xformat.NormaliseNomChamps(champsIn)
+    for ix in range(len(champsIn)):
+        if champsAttendus[ix].replace("-","") in champsIn[ix]:
+            champsIn
+
+
     # teste la cohérence de la première ligne importée
     if nblent>0:
         if len(champsIn) != len(donnees[nblent]):
@@ -57,8 +67,6 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     ixLibCpt = champsOut.index('libcpt')
 
     def enrichiLigne(ligne):
-        # recherche d'un compte à partir des mots du libellé
-        if len(ligne) != len(champsOut): return
         # composition des champs en liens avec la compta
         if ligne[ixLibelle]:
             record = compta.GetOneByMots(table,text=ligne[ixLibelle])
@@ -70,19 +78,6 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
             ligne[ixLibCpt] = record[2]
         else:
             ligne[ixAppel] = compta.filtreTest
-
-    def hasDate(ligne):
-        # vérifie la présence d'un montant dans au moins un champ attendu en numérique
-        lstIxChamps = []
-        ixDte = None
-        for champ in champsIn:
-            if 'date' in champ.lower():
-                ixDte = champsIn.index(champ)
-                break
-        ok = False
-        if ixDte != None and "datetime" in str(type(ligne[ixDte])):
-            ok = True
-        return ok
 
     def hasLibelle(ligne):
         # vérifie la présence d'un montant dans au moins un champ attendu en numérique
@@ -104,7 +99,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
         # vérifie la présence d'un montant dans au moins un champ attendu en numérique
         lstIxChamps = []
         for champ in champsIn:
-            if champ in ('montant','debit','-debit','credit'):
+            if champ in ('montant','debit','credit'):
                 lstIxChamps.append(champsIn.index(champ))
         ok = False
         for ix in lstIxChamps:
@@ -129,9 +124,6 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
         if not hasMontant(ligne) or not hasLibelle((ligne)):
             continue
         if ko: break
-        if len(champsIn) > len(ligne):
-            # ligne batarde ignorée
-            continue
         ligneOut = []
         for champ in champsOut:
             valeur = None
@@ -187,28 +179,6 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
 
 # formats possibles des fichiers en entrées, utiliser les mêmes codes des champs pour les 'UtilCompta.ComposeFuncExp'
 FORMATS_IMPORT = GLOBAL.GetFormatsImport(ComposeFuncImp)
-"""{"LCL Credit Lyonnais":{
-                    'champs':['date','montant','mode',None,'libelle',None,None,
-                                      'codenat','nature',],
-                    'lignesentete':0,
-                    'fonction':ComposeFuncImp,
-                    'table':'fournisseurs'},
-              "LBP Banque Postale": {
-                  'champs': ['date','libelle','montant'],
-                  'fonction': ComposeFuncImp,
-                  'table': 'fournisseurs'},
-              "Crédit Mutuel importé d'internet": {
-                  'champs': ['date', 'valeur', 'libelle', '-debit','credit'],
-                  'champsCB':['date','libelle','montant'],
-                  'fonction': ComposeFuncImp,
-                  'table': 'fournisseurs'},
-              "Crédit Mutuel relevé papier": {
-                  'champs': ['date','valeur','operation', 'debit','credit'],
-                  'champsCB': ['date','commerce','ville', 'montant'],
-                  'fonction': ComposeFuncImp,
-                  'table': 'fournisseurs'}
-              }
-"""
 
 # Description des paramètres à choisir en haut d'écran
 MATRICE_PARAMS = {
@@ -410,7 +380,7 @@ class Dialog(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,*args):
         super().__init__(self,name='DLG_Transposition_fichier',size=(1200,700))
-        self.dicOptions = {}
+        self.dicOptions = GLOBAL.DIC_OPTIONS
         self.ctrlOlv = None
         self.txtInfo =  "Non connecté à une compta"
         self.dicOlv = self.GetParamsOlv()
@@ -520,7 +490,7 @@ class Dialog(xusp.DLG_vide):
         if lstNom[-1] in ('csv','txt'):
             entrees = ximport.GetFichierCsv(nomFichier)
         elif lstNom[-1] == 'xlsx':
-            entrees = ximport.GetFichierXlsx(nomFichier)
+            entrees = ximport.GetFichierXlsx(**self.dicOptions)
         elif lstNom[-1] == 'xls':
             try:
                 entrees = ximport.GetFichierXls(nomFichier)
@@ -578,6 +548,7 @@ class Dialog(xusp.DLG_vide):
 
     def OnImporter(self,event):
         dicParams = self.pnlParams.GetValues()
+        dicParams['lstColonnesLues'] = self.dicOptions['lstColonnesLues']
         dicParams['typeCB'] = self.dicOptions['typeCB']
         formatIn = dicParams['fichiers']['nomBanque']
         self.table = FORMATS_IMPORT[formatIn]['table']
@@ -585,7 +556,8 @@ class Dialog(xusp.DLG_vide):
         if not entrees:
             return
         self.ctrlOlv.lstDonnees = FORMATS_IMPORT[formatIn]['fonction'](dicParams,entrees,
-                                self.ctrlOlv.lstCodesColonnes,self.compta,self.table,parent=self)
+                                self.ctrlOlv.lstCodesColonnes,
+                                self.compta,self.table, parent=self)
         self.InitOlv()
 
     def OnExporter(self,event):

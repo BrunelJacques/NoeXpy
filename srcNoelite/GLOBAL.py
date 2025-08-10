@@ -3,7 +3,6 @@
 # ----------- Variables globales à appeler
 
 # Trame des formats d'imports pour transpose
-
 def GetFormatsImport(ComposeFuncImp = None):
     # utiliser les mêmes codes des champs pour les 'UtilCompta.ComposeFuncExp'
     return {"LCL Credit Lyonnais":{
@@ -27,3 +26,10 @@ def GetFormatsImport(ComposeFuncImp = None):
                           'fonction': ComposeFuncImp,
                           'table': 'fournisseurs'}
                       }
+
+DIC_OPTIONS = { 'nomFichier': "",
+                'isXlsx': False,
+                'ixSheet': 0,
+                'nomBanque':"",
+                'typeCB': True,
+                'lstColonnesLues': []}

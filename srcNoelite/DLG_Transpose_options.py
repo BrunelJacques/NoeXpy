@@ -280,8 +280,8 @@ class PNL_corps(wx.Panel):
 
         grid_sizer_col_presentes = wx.FlexGridSizer(rows=2, cols=1, vgap=15, hgap=3)
         grid_sizer_col_presentes.Add(self.labelChklstColonnesLues, 1, wx.LEFT | wx.EXPAND, 0)
-        grid_sizer_col_presentes.Add(self.chklstColonnesLues, 1, wx.LEFT | wx.EXPAND, 0)
-
+        grid_sizer_col_presentes.Add(self.chklstColonnesLues, 1,
+                                     wx.LEFT | wx.EXPAND, 0)
         grid_sizer_gauche.Add(grid_sizer_col_presentes, 1, wx.LEFT | wx.TOP | wx.EXPAND, 14)
         grid_sizer_gauche.Add(self.txtInfoPeriode, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT, 0)
         grid_sizer_gauche.Add(self.periode, 0, wx.ALIGN_LEFT, 0)
@@ -294,10 +294,11 @@ class PNL_corps(wx.Panel):
         sttbox_droite_sizer.Add((220,10),0,0,0)
         sttbox_droite_sizer.Add(self.chklstColonnesOlv, 1, wx.LEFT | wx.EXPAND, 0)
         sttbox_droite_sizer.Add(self.txtValide, 1, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-        grid_sizer_droite.Add(sttbox_droite_sizer, 1, wx.LEFT | wx.TOP | wx.EXPAND, 25)
+        grid_sizer_droite.Add(sttbox_droite_sizer, 1, wx.LEFT | wx.TOP | wx.EXPAND, 30)
         grid_sizer_base.Add(sttbox_gauche_sizer,1,wx.ALL | wx.EXPAND,5)
         grid_sizer_base.Add(grid_sizer_droite,1,wx.ALL | wx.EXPAND,5)
 
+        grid_sizer_col_presentes.AddGrowableRow(1)
         grid_sizer_gauche.AddGrowableRow(0)
         grid_sizer_droite.AddGrowableRow(0)
         grid_sizer_base.AddGrowableCol(1)
@@ -480,6 +481,7 @@ class Dialog(xusp.DLG_vide):
         self.dateCpta = self.dicCtrls['dateCpta'].SetValue(self.dateCpta)
 
     def OnSheets(self,event):
+        # Ouverture de la feuille excel choisie, cherche les noms de colonnes à importer
         if not self.isXlsx:
             self.AfficheInfos()
             return
@@ -491,6 +493,7 @@ class Dialog(xusp.DLG_vide):
             self.pnlCorps.SetValuesChklst(self.dicCtrls['chklstColonnesLues'],lstCol)
             self.lstColonnesLues = lstCol
             self.MatchColonnes()
+
             cellDate = ximport.GetFirstCell(sheet,'date')
             self.GetDataProperties(sheet,cellDate)
         self.MatchColonnes()
@@ -510,18 +513,17 @@ class Dialog(xusp.DLG_vide):
         self.GetFormats()
         lstLues = self.lstColonnesLues
         lstOlv = self.lstColonnesOlv
+        xformat.NormaliseNomChamps(lstLues)
+        xformat.NormaliseNomChamps(lstOlv)
         dic = { 'olv':{}, 'lues':{} }
         echec = False
         if len(lstOlv) == 0: echec = True
         for colOlv in lstOlv:
             if not colOlv: continue
-            codeOlv = xformat.NoAccents(colOlv).lower()
-            codeOlv = xformat.NoChiffres(codeOlv)
             testCol = False
             for colLue in lstLues:
                 if not colLue or not isinstance(colLue, str): continue
-                codeLu = xformat.NoAccents(colLue).lower()
-                if codeOlv in codeLu:
+                if colOlv in colLue:
                     dic['olv'][colOlv] = colLue
                     dic['lues'][colLue] = colOlv
                     testCol = True
@@ -568,6 +570,7 @@ class Dialog(xusp.DLG_vide):
         dicOptions['ixSheet'] = self.ixSheet
         dicOptions['nomBanque'] = self.nomBanque
         dicOptions['typeCB'] = self.typeCB
+        dicOptions['lstColonnesLues'] = self.lstColonnesLues
 
 #------------------------ Lanceur de test  -------------------------------------------
 if __name__ == '__main__':
