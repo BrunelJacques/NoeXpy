@@ -357,6 +357,9 @@ class Dialog(xusp.DLG_vide):
         self.nomFichier = nomFichier
         self.nomBanque = nomBanque
         self.ixSheet = ixSheet
+        self.lstNomsSheets = []
+        self.dateMax = None
+        self.nbLignes = 0
         self.typeCB = typeCB
         kwds = GetDicDialogParams(self)
         super().__init__(self.parent,**kwds)  # self supprimé
@@ -396,7 +399,6 @@ class Dialog(xusp.DLG_vide):
         self.fichierIn = None
         self.isXlsx = False
         self.paramsBanque = None
-        self.dateCpta = None
         self.dicMatchColonnes = { 'olv':{}, 'lues':{} }
         self.lstColonnesOlv = []
         self.lstColonnesLues = []
@@ -418,7 +420,7 @@ class Dialog(xusp.DLG_vide):
 
         # Binds renvoyant en local
         self.dicCtrls['typeCarte'].Bind(wx.EVT_RADIOBUTTON, self.OnTypeCarte)
-        self.dicCtrls['radioSheets'].Bind(wx.EVT_RADIOBUTTON,self.OnSheets)
+        self.dicCtrls['radioSheets'].rbox.Bind(wx.EVT_RADIOBOX,self.OnSheets)
 
         # récupère les values d'un anyctrl pour le Set qui n'est pas automatique
         ctrlTypeCarte = self.dicCtrls['typeCarte']
@@ -446,6 +448,7 @@ class Dialog(xusp.DLG_vide):
             self.isXlsx = True
             choices = ximport.GetSheetNames(self.fichierIn)
             self.dicCtrls['radioSheets'].SetValues(choices)
+            self.lstNomsSheets = [x for x in choices]
             self.OnSheets(None)
         else:
             # Les autres types de fichier seront gérés en aveugle lors de l'import
@@ -473,12 +476,12 @@ class Dialog(xusp.DLG_vide):
         else:
             self.dicCtrls['dateCpta'].Enable(True)
             self.typeCB = True
-            if self.dateCpta:
-                self.dicCtrls['dateCpta'].SetValue(self.dateCpta)
+            if self.dateMax:
+                self.dicCtrls['dateCpta'].SetValue(self.dateMax)
         self.OnSheets(None)
 
     def OnForcerdte(self,event):
-        self.dateCpta = self.dicCtrls['dateCpta'].SetValue(self.dateCpta)
+        self.dateMax = self.dicCtrls['dateCpta'].SetValue(self.dateMax)
 
     def OnSheets(self,event):
         # Ouverture de la feuille excel choisie, cherche les noms de colonnes à importer
@@ -490,6 +493,7 @@ class Dialog(xusp.DLG_vide):
         if len(nomSheet) > 1:
             sheet = ximport.GetOneSheet(self.fichierIn,nomSheet)
             lstCol = ximport.GetNomsCols(sheet,11)
+            self.ixSheet = self.lstNomsSheets.index(nomSheet)
             self.pnlCorps.SetValuesChklst(self.dicCtrls['chklstColonnesLues'],lstCol)
             self.lstColonnesLues = lstCol
             self.MatchColonnes()
@@ -511,10 +515,9 @@ class Dialog(xusp.DLG_vide):
 
     def MatchColonnes(self):
         self.GetFormats()
-        lstLues = self.lstColonnesLues
+        lstLues = [x for x in self.lstColonnesLues]
         lstOlv = self.lstColonnesOlv
         xformat.NormaliseNomChamps(lstLues)
-        xformat.NormaliseNomChamps(lstOlv)
         dic = { 'olv':{}, 'lues':{} }
         echec = False
         if len(lstOlv) == 0: echec = True
@@ -523,9 +526,9 @@ class Dialog(xusp.DLG_vide):
             testCol = False
             for colLue in lstLues:
                 if not colLue or not isinstance(colLue, str): continue
-                if colOlv in colLue:
+                if xformat.Supprespaces(colOlv.replace("-","")).lower() in colLue:
                     dic['olv'][colOlv] = colLue
-                    dic['lues'][colLue] = colOlv
+                    dic['lues'][self.lstColonnesLues[lstLues.index(colLue)]] = colLue
                     testCol = True
                     break
             if testCol == False:
@@ -546,12 +549,13 @@ class Dialog(xusp.DLG_vide):
         nbCells,dteMin,dteMax =ximport.GetOneColCellsProp(sheet,cell,typ=typ)
         if nbCells:
             self.dicCtrls['txtInfoPeriode'].SetLabel(f"{nbCells} lignes trouvées, période")
+            self.nbLignes = nbCells
         if dteMin and dteMax:
             dteMin = dteMin.date()
             dteMax = dteMax.date()
             self.dicCtrls['periode'].SetValues((dteMin,dteMax))
             self.dicCtrls['dateCpta'].SetValue(f"{dteMax}")
-            self.dateCpta = dteMax
+            self.dateMax = dteMax
 
     def AfficheInfos(self):
         if self.valide:
@@ -571,6 +575,8 @@ class Dialog(xusp.DLG_vide):
         dicOptions['nomBanque'] = self.nomBanque
         dicOptions['typeCB'] = self.typeCB
         dicOptions['lstColonnesLues'] = self.lstColonnesLues
+        dicOptions['dateMax'] = self.dateMax
+        dicOptions['nbLignes'] = self.nbLignes
 
 #------------------------ Lanceur de test  -------------------------------------------
 if __name__ == '__main__':

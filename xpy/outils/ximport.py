@@ -16,8 +16,6 @@ def IsFile(nomFichier):
 def GetOneColCellsProp(ws,cell,typ=datetime.datetime):
     # retourne le nombre de cells non vide sous cell, la min et max
     nbCells = 0
-    minVal = None
-    maxVal = None
     if cell:
         row = cell.row + 1  # start below the target cell
         col = cell.column
@@ -37,7 +35,7 @@ def GetOneColCellsProp(ws,cell,typ=datetime.datetime):
     else:
         mess = f"Found {nbCells} cells {str(typ)} below {cell.coordinate}"
         wx.MessageBox(mess,"Echec lecture")
-        return None
+        return None, None, None
     return nbCells, minVal, maxVal
 
 def GetFirstCell(ws,text=None,nblig=10,nbcol=15):
@@ -175,7 +173,7 @@ def GetFichierXls(nomFichier,minrow=1,maxrow=1000,mincol=1,maxcol=10):
             lstDonnees.append(ligne)
     return lstDonnees
 
-def GetFichierXlsx(**dicOptions):
+def GetFichierXlsx(dicOptions):
     nomFichier = dicOptions.pop('nomFichier',None)
     maxcol = dicOptions.pop('maxcol',10)
     ixSheet = dicOptions.pop('ixSheet',0)

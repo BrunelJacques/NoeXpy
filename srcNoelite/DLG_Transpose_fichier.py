@@ -39,27 +39,67 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     lstOut = []
     nomBanque = dicParams['fichiers']['nomBanque']
     noPiece = dicParams['p_export']['noPiece']
-    champsAttendus = FORMATS_IMPORT[nomBanque]['champs']
+    typeCB = dicParams['typeCB']
+    dateMax = dicParams['dateMax']
+    if typeCB:
+        champsAttendus = FORMATS_IMPORT[nomBanque]['champsCB']
+    else:
+        champsAttendus = FORMATS_IMPORT[nomBanque]['champs']
+
+    xformat.NormaliseNomChamps(champsAttendus)
+
     champsIn = dicParams.get("lstColonnesLues", None)
     # pour les fichiers non xlsx on n'a pas lu de nom de colonne
     if not champsIn:
         champsIn = [x for x in champsAttendus]
 
-    if 'lignesentet' in FORMATS_IMPORT[nomBanque].keys():
-        nblent = FORMATS_IMPORT[nomBanque]['lignesentete']
-    else: nblent = 0
     xformat.NormaliseNomChamps(champsIn)
-    for ix in range(len(champsIn)):
-        if champsAttendus[ix].replace("-","") in champsIn[ix]:
-            champsIn
+
+    # Ce dic contiendra l'index à lire sur la ligne de donnéesIn % index sur Olv
+    dicChampsAttendus = {}
+    for champAtt in champsAttendus:
+        champAtt = xformat.Supprespaces(champAtt)
+        if champAtt:
+            champAtt = champAtt.lower()
+        if not champAtt: continue
+        dicChampsAttendus[champAtt] = {}
+        radical = xformat.NoChiffres(champAtt)
+        found = False
+        # première recherche du champsOut dans le radical du champ attendu
+        for champOut in champsOut:
+            if champOut in radical:
+                # recherche du radical champs attendu dans les champs lus
+                for champIn in champsIn:
+                    if not champIn: continue
+                    if radical in champIn:
+                        dicChampsAttendus[champAtt]['ixIn'] = champsIn.index(champIn)
+                        #dicChampsAttendus[champAtt]['ixOut'] = champsOut.index(champOut)
+                        found = True
+                        break
+        if found: continue
+
+        # 2eme recherche par synonymes, possiblement plusieurs in sur un seul out
+        if dicChampsAttendus[champAtt] == {} and champAtt in ['debit','credit',
+                                                              '-debit','-credit']:
+            dicChampsAttendus[champAtt]['ixIn'] = champsIn.index(champAtt.replace("-",""))
+            #dicChampsAttendus[champAtt]['ixOut'] = champsOut.index('montant')
+
+        if dicChampsAttendus[champAtt] == {} and champAtt in ['commerce','ville']:
+            dicChampsAttendus[champAtt]['ixIn'] = champsIn.index(champAtt)
+            #dicChampsAttendus[champAtt]['ixOut'] = champsOut.index('libelle')
+
+        if dicChampsAttendus[champAtt] == {} and champAtt in ['carte']:
+            dicChampsAttendus[champAtt]['ixIn'] = champsIn.index(champAtt)
+            #dicChampsAttendus[champAtt]['ixOut'] = champsOut.index('noPiece')
 
 
-    # teste la cohérence de la première ligne importée
-    if nblent>0:
-        if len(champsIn) != len(donnees[nblent]):
-            wx.MessageBox("Problème de fichier d'origine\n\nLe paramétrage attend les colonnes suivantes:\n\t%s"%str(champsIn) \
-                            + "\mais la ligne %d comporte %d champs :\n%s"%(nblent,len(donnees[nblent]),donnees[nblent]))
-            return []
+        # ajout du sens, utile pour les seuls montants
+        if champAtt.startswith("-"):
+            sens = -1
+        else: sens = 1
+        if 'debit' in champAtt:
+            sens *= -1
+        dicChampsAttendus[champAtt]['sens'] = sens
 
     ixLibelle = champsOut.index('libelle')
     ixCompte = champsOut.index('compte')
@@ -83,7 +123,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
         # vérifie la présence d'un montant dans au moins un champ attendu en numérique
         lstIxChamps = []
         for champ in champsIn:
-            if champ in ('libelle','designation'):
+            if champ in ('libelle','designation','commerce'):
                 lstIxChamps.append(champsIn.index(champ))
         ok = False
         for ix in lstIxChamps:
@@ -99,7 +139,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
         # vérifie la présence d'un montant dans au moins un champ attendu en numérique
         lstIxChamps = []
         for champ in champsIn:
-            if champ in ('montant','debit','credit'):
+            if champ in ('montant','debit','credit','montanteuro'):
                 lstIxChamps.append(champsIn.index(champ))
         ok = False
         for ix in lstIxChamps:
@@ -111,68 +151,73 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
                 pass
         return ok
 
-    def addMontant(old,ajout,sens=+1,typeRetour=float):
-        new = xformat.ToFloat(old) + (xformat.ToFloat(ajout) * sens)
-        return typeRetour(new)
-
     # déroulé du fichier entrée
     ko = None
-    txtInfo = "Traitement %d lignes..."%len(donnees[nblent:])
+    txtInfo = "Traitement %d lignes..."%len(donnees[0:])
     image = wx.ArtProvider.GetBitmap(wx.ART_TIP, wx.ART_OTHER, (16, 16))
     parent.pnlPied.SetItemsInfos(txtInfo, image)
-    for ligne in donnees[nblent:]:
-        if not hasMontant(ligne) or not hasLibelle((ligne)):
+    for ligne in donnees:
+        if (not hasMontant(ligne)) and (not hasLibelle((ligne))):
             continue
         if ko: break
-        ligneOut = []
-        for champ in champsOut:
+        ligneOut = [None,] * len(champsOut)
+        for champOut in champsOut:
+            if champOut in ['compte','appel','libcpt']:
+                continue
+            for champAtt in champsAttendus:
+                # le champOut est dans le nom d'un champ attendu : correspondance simple
+                if champAtt and (champOut in champAtt):
+                    valeur = ligne[dicChampsAttendus[champAtt]['ixIn']]
+                    break
+
+            # traitements spécifiques selon destination, m^me si correspondance simple
+            if champOut == 'date' and valeur:
+                if dicParams['typeCB']:
+                    valeur = xformat.FinDeMois(dateMax)
+                if isinstance(valeur, datetime.datetime):
+                    valeur = valeur.date()
+
+            elif champOut == 'noPiece':
+                valeur = noPiece
+                if 'carte' in champsAttendus:
+                    valeur = ligne[dicChampsAttendus['carte']['ixIn']]
+
+            elif champOut == 'libelle':
+                valeur = ""
+                for champAtt in ['libelle','designation','commerce','ville']:
+                    if champAtt in dicChampsAttendus :
+                        if dicChampsAttendus[champAtt]['ixIn']:
+                                valeur += str(ligne[dicChampsAttendus[champAtt]['ixIn']]) + " "
+                if dicParams['typeCB']:
+                    # ajout du début de date dans le libellé
+                    dicDate = dicChampsAttendus['date']
+                    dte = ligne[dicDate['ixIn']]
+                    if dte:
+                        if isinstance(dte,(datetime.date,datetime.datetime)):
+                            prefixe = "%02d/%02d"%(dte.day,dte.month)
+                        else:
+                            prefixe = dte.strip()+' '
+                        valeur = prefixe + valeur
+
+            elif champOut == 'montant':
+                if not valeur:
+                    valeur = 0.0
+                    for item in ('debit','credit','-debit','-credit'):
+                        if item in dicChampsAttendus:
+                            dicItem =  dicChampsAttendus[item]
+                            valItem = ligne[dicItem['ixIn']]
+                            valItem = xformat.ToFloat(valItem)
+                            valeur += valItem * dicItem['sens']
+
+            # place la valeur dans la ligne out
+            ligneOut[champsOut.index(champOut)] = valeur
             valeur = None
-            # traitements spécifiques selon destination
-            if champ == 'date':
-                if 'date' in champsIn:
-                    if dicParams['typeCB']:
-                        valeur = xformat.FinDeMois(ligne[champsIn.index(champ)])
-                    else:
-                        valeur = ligne[champsIn.index(champ)]
-                        if isinstance(valeur, datetime.datetime):
-                            valeur = valeur.date()
-            elif champ == 'noPiece':
-                    valeur = noPiece
-            elif champ == 'montant':
-                if 'montant' in champsIn:
-                    valeur = xformat.NoLettre(ligne[champsIn.index(champ)])
-                if '-debit' in champsIn:
-                    valeur = addMontant(valeur,ligne[champsIn.index('-debit')],+1)
-                if 'debit' in champsIn:
-                    valeur = addMontant(valeur,ligne[champsIn.index('debit')],-1)
-                if 'credit' in champsIn:
-                    valeur = addMontant(valeur,ligne[champsIn.index('credit')],+1)
-            elif champ  == 'libelle':
-                if 'date' in champsIn and 'libelle' in champsIn:
-                    if dicParams['typeCB']:
-                        # ajout du début de date dans le libellé
-                        dte = ligne[champsIn.index('date')]
-                        if dte:
-                            if isinstance(dte,(datetime.date,datetime.datetime)):
-                                prefixe = "%02d/%02d"%(dte.day,dte.month)
-                            else:
-                                prefixe = dte.strip()+' '
-                            if ligne[champsIn.index('libelle')]:
-                                valeur = prefixe + ligne[champsIn.index('libelle')]
-                            else:
-                                ko = True
-                                break
-                    else:
-                        valeur = ligne[champsIn.index('libelle')]
-            # récupération des champs homonymes
-            elif champ in champsIn:
-                valeur = ligne[champsIn.index(champ)]
-            ligneOut.append(valeur)
+
         if not ko:
             if compta:
                 enrichiLigne(ligneOut)
             lstOut.append(ligneOut)
-            txtInfo = " %d lignes traitées sur %d" %( len(lstOut),len(donnees[nblent:]))
+            txtInfo = " %d lignes traitées sur %d" %( len(lstOut),len(donnees[0:]))
             parent.pnlPied.SetItemsInfos(txtInfo, image)
 
     return lstOut
@@ -490,7 +535,7 @@ class Dialog(xusp.DLG_vide):
         if lstNom[-1] in ('csv','txt'):
             entrees = ximport.GetFichierCsv(nomFichier)
         elif lstNom[-1] == 'xlsx':
-            entrees = ximport.GetFichierXlsx(**self.dicOptions)
+            entrees = ximport.GetFichierXlsx(self.dicOptions)
         elif lstNom[-1] == 'xls':
             try:
                 entrees = ximport.GetFichierXls(nomFichier)
@@ -550,11 +595,14 @@ class Dialog(xusp.DLG_vide):
         dicParams = self.pnlParams.GetValues()
         dicParams['lstColonnesLues'] = self.dicOptions['lstColonnesLues']
         dicParams['typeCB'] = self.dicOptions['typeCB']
+        dicParams.update(self.dicOptions)
         formatIn = dicParams['fichiers']['nomBanque']
         self.table = FORMATS_IMPORT[formatIn]['table']
         entrees = self.GetDonneesIn()
         if not entrees:
             return
+
+        # Exécute la fonction ComposeFuncImp() définie dans les formats
         self.ctrlOlv.lstDonnees = FORMATS_IMPORT[formatIn]['fonction'](dicParams,entrees,
                                 self.ctrlOlv.lstCodesColonnes,
                                 self.compta,self.table, parent=self)

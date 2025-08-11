@@ -8,7 +8,6 @@ def GetFormatsImport(ComposeFuncImp = None):
     return {"LCL Credit Lyonnais":{
                             'champs':['date','montant','mode',None,'libelle',None,None,
                                               'codenat','nature',],
-                            'lignesentete':0,
                             'fonction':ComposeFuncImp,
                             'table':'fournisseurs'},
                       "LBP Banque Postale": {
@@ -16,8 +15,8 @@ def GetFormatsImport(ComposeFuncImp = None):
                           'fonction': ComposeFuncImp,
                           'table': 'fournisseurs'},
                       "Crédit Mutuel importé d'internet": {
-                          'champs': ['date', None, 'libelle', '-debit','credit'],
-                          'champsCB':['date','libelle','montant'],
+                          'champs': ['Date', None, 'Libelle', '-debit','credit'],
+                          'champsCB': ['Date','Commerce','Ville', 'MontantEuro','Carte'],
                           'fonction': ComposeFuncImp,
                           'table': 'fournisseurs'},
                       "Crédit Mutuel relevé papier": {

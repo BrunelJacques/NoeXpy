@@ -637,6 +637,7 @@ def FmtSolde(montant):
 
 # Formatage de textes
 def Supprespaces(txt='',camelCase=True):
+    if not txt: return
     txt = txt.strip()
     if camelCase:
         lstTxt = txt.split(' ')
