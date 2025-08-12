@@ -263,8 +263,7 @@ MATRICE_PARAMS = {
          'ctrlAction':'OnChoixExport',
          'size':(300,30)}
     ],
-("vide", ""): [
-    ]
+#("vide", ""): []
 }
 
 # description des boutons en pied d'écran et de leurs actions
@@ -424,7 +423,7 @@ class PNL_pied(xGTE.PNL_pied):
 class Dialog(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,*args):
-        super().__init__(self,name='DLG_Transposition_fichier',size=(1000,700))
+        super().__init__(self,name='DLG_Transposition_fichier',size=(900,700))
         self.dicOptions = GLOBAL.DIC_OPTIONS
         self.ctrlOlv = None
         self.txtInfo =  "Non connecté à une compta"
@@ -461,7 +460,7 @@ class Dialog(xusp.DLG_vide):
         sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
         sizer_base.Add(self.pnlBandeau, 1, wx.TOP | wx.EXPAND, 3)
         sizer_base.Add(self.pnlParams, 1, wx.TOP | wx.EXPAND, 3)
-        sizer_base.Add(self.pnlOlv, 1, wx.TOP | wx.EXPAND, 3)
+        sizer_base.Add(self.pnlOlv, 1, wx.TOP | wx.RIGHT | wx.EXPAND, 3)
         sizer_base.Add(self.pnlPied, 0, wx.ALL | wx.EXPAND, 3)
         sizer_base.AddGrowableCol(0)
         sizer_base.AddGrowableRow(2)

@@ -715,15 +715,19 @@ class PNL_ctrl(wx.Panel):
     def OnDirfile(self,event):
         """ Open a file"""
         try:
-            self.nomFichier = self.GrandParent.GetOneValue('nomFichier')
-            if os.path.isfile(nomFichier):
-                lstNomFichier = self.nomFichier.split("\\")
-                self.dirname = self.nomFichier[:-len(lstNomFichier[-1])]
-            self.dirname = ''
+            nomPath = self.GrandParent.GetOneValue('nomFichier')
+            if os.path.isfile(nomPath):
+                lstNomFichier = nomPath.split("\\")
+                self.dirname = nomPath[:-len(lstNomFichier[-1])]
+                nomFichier = lstNomFichier[-1]
+            else:
+                nomFichier =nomPath
+                nomPath = ""
+                self.dirname = ''
         except Exception as err:
             self.dirname = ''
             print("OnDirfile recherche nomDir: ",err)
-        dlg = wx.FileDialog(self, "Choisissez un fichier", self.dirname)
+        dlg = wx.FileDialog(self, "Choisissez un fichier", self.dirname,nomFichier)
         if dlg.ShowModal() == wx.ID_OK:
             self.ctrl.SetValue(dlg.GetPath())
             # simulation d'une saisie du ctrl à la main sur le txtCtrl devnt dirFile
