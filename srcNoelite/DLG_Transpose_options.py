@@ -421,6 +421,7 @@ class Dialog(xusp.DLG_vide):
         # Binds renvoyant en local
         self.dicCtrls['typeCarte'].Bind(wx.EVT_RADIOBUTTON, self.OnTypeCarte)
         self.dicCtrls['radioSheets'].rbox.Bind(wx.EVT_RADIOBOX,self.OnSheets)
+        test = self.dicCtrls['nomFichier']
 
         # récupère les values d'un anyctrl pour le Set qui n'est pas automatique
         ctrlTypeCarte = self.dicCtrls['typeCarte']
@@ -473,8 +474,9 @@ class Dialog(xusp.DLG_vide):
         if typeCarte == self.dicCtrls['typeCarte'].values[0]:
             self.dicCtrls['dateCpta'].Enable(False)
             self.typeCB = False
+            self.dicCtrls['dateCpta'].SetValue(None)
         else:
-            self.dicCtrls['dateCpta'].Enable(True)
+            self.dicCtrls['dateCpta'].Enable(False)
             self.typeCB = True
             if self.dateMax:
                 self.dicCtrls['dateCpta'].SetValue(self.dateMax)
@@ -554,7 +556,11 @@ class Dialog(xusp.DLG_vide):
             dteMin = dteMin.date()
             dteMax = dteMax.date()
             self.dicCtrls['periode'].SetValues((dteMin,dteMax))
-            self.dicCtrls['dateCpta'].SetValue(f"{dteMax}")
+            if self.typeCB:
+                self.dicCtrls['dateCpta'].SetValue(f"{dteMax}")
+            else:
+                self.dicCtrls['dateCpta'].SetValue(None)
+
             self.dateMax = dteMax
 
     def AfficheInfos(self):

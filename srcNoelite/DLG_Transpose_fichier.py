@@ -11,7 +11,7 @@ import wx
 import datetime
 import xpy.xGestionConfig               as xgc
 import xpy.xUTILS_SaisieParams          as xusp
-from DLG_Transpose_options import Dialog as dlgOptions
+from DLG_Transpose_options import Dialog as DlgOptions
 import GLOBAL
 from xpy.outils                 import xformat,xbandeau,ximport
 from srcNoelite                 import UTILS_Compta
@@ -424,7 +424,7 @@ class PNL_pied(xGTE.PNL_pied):
 class Dialog(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,*args):
-        super().__init__(self,name='DLG_Transposition_fichier',size=(1200,700))
+        super().__init__(self,name='DLG_Transposition_fichier',size=(1000,700))
         self.dicOptions = GLOBAL.DIC_OPTIONS
         self.ctrlOlv = None
         self.txtInfo =  "Non connecté à une compta"
@@ -456,7 +456,6 @@ class Dialog(xusp.DLG_vide):
         self.compta = self.GetCompta()
         self.table = self.GetTable()
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
-        #self.OnFichier(None)
 
     def Sizer(self):
         sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
@@ -473,7 +472,7 @@ class Dialog(xusp.DLG_vide):
     def OnFichier(self,evt):
         for param in ['nomFichier', 'nomBanque']:
             self.dicOptions[param] = self.pnlParams.GetOneValue(param) 
-        dlg = dlgOptions(None,**self.dicOptions)
+        dlg = DlgOptions(None,**self.dicOptions)#DLG_Transpose_options.Dialog
         ret = dlg.ShowModal()
         if ret == wx.OK:
             # Récupère les options choisies
@@ -606,6 +605,7 @@ class Dialog(xusp.DLG_vide):
         self.ctrlOlv.lstDonnees = FORMATS_IMPORT[formatIn]['fonction'](dicParams,entrees,
                                 self.ctrlOlv.lstCodesColonnes,
                                 self.compta,self.table, parent=self)
+        # affiche le retour des entrées dans ctelOlv.lstDonnees
         self.InitOlv()
 
     def OnExporter(self,event):
@@ -654,18 +654,27 @@ class Dialog(xusp.DLG_vide):
                 return wx.CANCEL
 
         dicParams = self.pnlParams.GetValues()
+        if self.dicOptions['typeCB']:
+            dicParams['p_export']['typepiece'] = "B"
+        else:
+            dicParams['p_export']['typepiece'] = ""
         exp = UTILS_Compta.Export(self,self.compta)
         ret = exp.Exporte(dicParams,
                           donnees,
                           champsIn)
-        if not ret == wx.OK:
-            return ret
+        if ret == wx.OK:
+            # Raz des données
+            self.ctrlOlv.lstDonnees = []
+            self.ctrlOlv.MAJ()
+        else:
+            return print(ret)
 
         # affichage résultat
         solde = xformat.FmtMontant(totDebits - totCredits,lg=12)
         wx.MessageBox("Fin de transfert\n\nDébits  du relevé: %s\nCrédits du relevé:%s"%(xformat.FmtMontant(totDebits,lg=12),
                                                                      xformat.FmtMontant(totCredits,lg=12))+
                       "\nMouvements période:   %s"%solde)
+
 
         # sauvegarde des params
         self.pnlParams.SauveParams(close=True)

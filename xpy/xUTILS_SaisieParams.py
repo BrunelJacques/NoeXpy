@@ -714,7 +714,15 @@ class PNL_ctrl(wx.Panel):
 
     def OnDirfile(self,event):
         """ Open a file"""
-        self.dirname = ''
+        try:
+            self.nomFichier = self.GrandParent.GetOneValue('nomFichier')
+            if os.path.isfile(nomFichier):
+                lstNomFichier = self.nomFichier.split("\\")
+                self.dirname = self.nomFichier[:-len(lstNomFichier[-1])]
+            self.dirname = ''
+        except Exception as err:
+            self.dirname = ''
+            print("OnDirfile recherche nomDir: ",err)
         dlg = wx.FileDialog(self, "Choisissez un fichier", self.dirname)
         if dlg.ShowModal() == wx.ID_OK:
             self.ctrl.SetValue(dlg.GetPath())
