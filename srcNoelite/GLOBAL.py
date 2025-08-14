@@ -20,7 +20,7 @@ def GetFormatsImport(ComposeFuncImp = None):
                 'table': 'fournisseurs'},
             "Crédit Mutuel relevé papier": {
                 'champs': ['date',None,'operation', 'debit','credit'],
-                'champsCB': ['date','commerce','ville', '-MontantEuro'],
+                'champsCB': ['date','commerce','ville', '-MontantEuro','carte'],
                 'fonction': ComposeFuncImp,
                 'table': 'fournisseurs'}
             }

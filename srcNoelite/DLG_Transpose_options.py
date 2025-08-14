@@ -498,6 +498,8 @@ class Dialog(xusp.DLG_vide):
         if len(nomSheet) > 1:
             sheet = ximport.GetOneSheet(self.fichierIn,nomSheet)
             lstCol = ximport.GetNomsCols(sheet,11)
+            self.lstColonnesLues = [str(x) for x in lstCol]
+            lstCol = [x for x in lstCol if isinstance(x,str)]
             self.ixSheet = self.lstNomsSheets.index(nomSheet)
             self.pnlCorps.SetValuesChklst(self.dicCtrls['chklstColonnesLues'],lstCol)
             self.lstColonnesLues = lstCol

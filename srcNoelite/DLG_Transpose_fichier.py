@@ -59,13 +59,16 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
 
     # Ce dic contiendra l'index à lire sur la ligne de donnéesIn % index sur Olv
     dicChampsAttendus = {}
-    for ixIn in range(len(champsAttendus)):
-        champAtt = champsAttendus[ixIn]
-        champAttBrut = champsAttendusBrut[ixIn]
+    for ixAtt in range(len(champsAttendus)):
+        champAtt = champsAttendus[ixAtt]
+        champAttBrut = champsAttendusBrut[ixAtt]
         if not champAtt: continue
         dicChampsAttendus[champAtt] = {}
         radical = xformat.NoChiffres(champAtt)
-        found = False
+        if champAtt in champsIn:
+            ixIn = champsIn.index(champAtt)
+        else:
+            ixIn = None
 
         # ajout du sens, utile pour les seuls montants
         if champAttBrut.startswith("-"):
@@ -77,15 +80,15 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
 
         # recherche du champsOut dans le radical du champ attendu
         for champOut in champsOut:
+            if not champOut: continue
             if champOut in radical:
                 # recherche du radical champs attendu dans les champs lus
                 for champIn in champsIn:
                     if not champIn: continue
                     if radical in champIn:
-                        found = True
+                        ixIn = champsIn.index(champIn)
                         break
         dicChampsAttendus[champAtt]['ixIn'] = ixIn
-        if found: continue
 
     ixLibelle = champsOut.index('libelle')
     ixCompte = champsOut.index('compte')
@@ -167,8 +170,9 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
                     valeur = valeur.date()
 
             elif champOut == 'noPiece':
-                valeur = noPiece
-                if 'carte' in champsAttendus:
+                valeur = noPiece # prend la valeur par défaut si présente
+                if 'carte' in champsAttendus: # sauf si présence d'un champ carte
+                    TEST = dicChampsAttendus['carte']['ixIn']
                     valeur = ligne[dicChampsAttendus['carte']['ixIn']]
 
             elif champOut == 'libelle':
@@ -211,7 +215,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
             if compta:
                 enrichiLigne(ligneOut)
             lstOut.append(ligneOut)
-            txtInfo = " %d lignes traitées sur %d  CTRL C POUR INTERROMPRE" %( len(lstOut),len(donnees[0:]))
+            txtInfo = " %d lignes traitées sur %d" %( len(lstOut),len(donnees[0:]))
             parent.pnlPied.SetItemsInfos(txtInfo, image)
 
     return lstOut
