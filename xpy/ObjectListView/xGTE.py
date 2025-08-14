@@ -278,6 +278,7 @@ class ListView( FastObjectListView):
         for ligneDonnees in lstDonnees:
             tracks.append(TrackGeneral( self,ligneDonnees))
         self.AddObjects(tracks)
+        self.lstDonnees += lstDonnees
 
     def GetLstCodesColonnes(self):
         lstCodes = list()

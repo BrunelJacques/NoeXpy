@@ -33,7 +33,7 @@ DIC_INFOS = {'date':"Flèche droite pour le mois et l'année, Entrée pour valid
 # Info par défaut
 INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
 
-# Fonctions de transposition entrée à gérer pour chaque item FORMAT_xxxx pour les spécificités
+# Composition des entrées gérées selon chaque FORMAT_xxxx avec leur spécificité
 def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     # 'in' est le fichier entrée colonnes lues, 'out' est l'OLV
     lstOut = []
@@ -42,11 +42,13 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     typeCB = dicParams['typeCB']
     dateMax = dicParams['dateMax']
     if typeCB:
-        champsAttendus = FORMATS_IMPORT[nomBanque]['champsCB']
+        champsAttendusBrut = FORMATS_IMPORT[nomBanque]['champsCB']
     else:
-        champsAttendus = FORMATS_IMPORT[nomBanque]['champs']
+        champsAttendusBrut = FORMATS_IMPORT[nomBanque]['champs']
 
+    champsAttendus = [x for x in champsAttendusBrut]
     xformat.NormaliseNomChamps(champsAttendus)
+
 
     champsIn = dicParams.get("lstColonnesLues", None)
     # pour les fichiers non xlsx on n'a pas lu de nom de colonne
@@ -57,49 +59,33 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
 
     # Ce dic contiendra l'index à lire sur la ligne de donnéesIn % index sur Olv
     dicChampsAttendus = {}
-    for champAtt in champsAttendus:
-        champAtt = xformat.Supprespaces(champAtt)
-        if champAtt:
-            champAtt = champAtt.lower()
+    for ixIn in range(len(champsAttendus)):
+        champAtt = champsAttendus[ixIn]
+        champAttBrut = champsAttendusBrut[ixIn]
         if not champAtt: continue
         dicChampsAttendus[champAtt] = {}
         radical = xformat.NoChiffres(champAtt)
         found = False
-        # première recherche du champsOut dans le radical du champ attendu
+
+        # ajout du sens, utile pour les seuls montants
+        if champAttBrut.startswith("-"):
+            sens = -1
+        else: sens = 1
+        if 'debit' in champAtt:
+            sens *= -1
+        dicChampsAttendus[champAtt]['sens'] = sens
+
+        # recherche du champsOut dans le radical du champ attendu
         for champOut in champsOut:
             if champOut in radical:
                 # recherche du radical champs attendu dans les champs lus
                 for champIn in champsIn:
                     if not champIn: continue
                     if radical in champIn:
-                        dicChampsAttendus[champAtt]['ixIn'] = champsIn.index(champIn)
-                        #dicChampsAttendus[champAtt]['ixOut'] = champsOut.index(champOut)
                         found = True
                         break
+        dicChampsAttendus[champAtt]['ixIn'] = ixIn
         if found: continue
-
-        # 2eme recherche par synonymes, possiblement plusieurs in sur un seul out
-        if dicChampsAttendus[champAtt] == {} and champAtt in ['debit','credit',
-                                                              '-debit','-credit']:
-            dicChampsAttendus[champAtt]['ixIn'] = champsIn.index(champAtt.replace("-",""))
-            #dicChampsAttendus[champAtt]['ixOut'] = champsOut.index('montant')
-
-        if dicChampsAttendus[champAtt] == {} and champAtt in ['commerce','ville']:
-            dicChampsAttendus[champAtt]['ixIn'] = champsIn.index(champAtt)
-            #dicChampsAttendus[champAtt]['ixOut'] = champsOut.index('libelle')
-
-        if dicChampsAttendus[champAtt] == {} and champAtt in ['carte']:
-            dicChampsAttendus[champAtt]['ixIn'] = champsIn.index(champAtt)
-            #dicChampsAttendus[champAtt]['ixOut'] = champsOut.index('noPiece')
-
-
-        # ajout du sens, utile pour les seuls montants
-        if champAtt.startswith("-"):
-            sens = -1
-        else: sens = 1
-        if 'debit' in champAtt:
-            sens *= -1
-        dicChampsAttendus[champAtt]['sens'] = sens
 
     ixLibelle = champsOut.index('libelle')
     ixCompte = champsOut.index('compte')
@@ -107,7 +93,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     ixLibCpt = champsOut.index('libcpt')
 
     def enrichiLigne(ligne):
-        # composition des champs en liens avec la compta
+        # composition des champs en liens aec la compta
         if ligne[ixLibelle]:
             record = compta.GetOneByMots(table,text=ligne[ixLibelle])
         else: record = None
@@ -156,6 +142,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     txtInfo = "Traitement %d lignes..."%len(donnees[0:])
     image = wx.ArtProvider.GetBitmap(wx.ART_TIP, wx.ART_OTHER, (16, 16))
     parent.pnlPied.SetItemsInfos(txtInfo, image)
+
     for ligne in donnees:
         if (not hasMontant(ligne)) and (not hasLibelle((ligne))):
             continue
@@ -164,10 +151,12 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
         for champOut in champsOut:
             if champOut in ['compte','appel','libcpt']:
                 continue
+            dicChampAtt = None
             for champAtt in champsAttendus:
                 # le champOut est dans le nom d'un champ attendu : correspondance simple
                 if champAtt and (champOut in champAtt):
-                    valeur = ligne[dicChampsAttendus[champAtt]['ixIn']]
+                    dicChampAtt = dicChampsAttendus[champAtt]
+                    valeur = ligne[dicChampAtt['ixIn']]
                     break
 
             # traitements spécifiques selon destination, m^me si correspondance simple
@@ -206,8 +195,13 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
                         if item in dicChampsAttendus:
                             dicItem =  dicChampsAttendus[item]
                             valItem = ligne[dicItem['ixIn']]
-                            valItem = xformat.ToFloat(valItem)
+                            try:
+                                valItem = xformat.ToFloat(valItem)
+                            except Exception as err:
+                                print(err)
                             valeur += valItem * dicItem['sens']
+                else:
+                    valeur *= dicChampAtt['sens']
 
             # place la valeur dans la ligne out
             ligneOut[champsOut.index(champOut)] = valeur
@@ -217,7 +211,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
             if compta:
                 enrichiLigne(ligneOut)
             lstOut.append(ligneOut)
-            txtInfo = " %d lignes traitées sur %d" %( len(lstOut),len(donnees[0:]))
+            txtInfo = " %d lignes traitées sur %d  CTRL C POUR INTERROMPRE" %( len(lstOut),len(donnees[0:]))
             parent.pnlPied.SetItemsInfos(txtInfo, image)
 
     return lstOut
@@ -228,11 +222,12 @@ FORMATS_IMPORT = GLOBAL.GetFormatsImport(ComposeFuncImp)
 # Description des paramètres à choisir en haut d'écran
 MATRICE_PARAMS = {
 ("fichiers","Fichier à Importer"): [
-    {'name': 'nomFichier', 'genre': 'dirfile', 'label': "Fichier d'origine",'value': "*.xlsx",
-         'help': "Pointez le fichier contenant les valeurs à transposer",
-         'ctrlAction': 'OnFichier',
-         #'btnAction': 'inutile', # redirigé vers ctrlAction (car genre dirfile)
-         'size':(450,30)},
+    {'name': 'nomFichier', 'genre': 'texte', 'label': "Fichier d'origine",'value': "*.xlsx",
+        'help': "Pointez le fichier contenant les valeurs à transposer",
+        'ctrlAction': 'OnFichier',
+        'btnLabel': "...", 'btnHelp': "Cliquez pour changer de fichier",
+        'btnAction': 'OnFichier', # comportement de modif du nom
+        'size':(450,30)},
     {'name': 'nomBanque', 'genre': 'Enum', 'label': 'Banque importée',
                     'help': "La banque détermine le format d'import", 'value':0,
                     'values':[x for x in FORMATS_IMPORT.keys()],
@@ -430,7 +425,8 @@ class Dialog(xusp.DLG_vide):
         self.dicOlv = self.GetParamsOlv()
         self.Init()
         self.Sizer()
-
+        self.ctrlOlv.lstDonnees = []
+        self.OnFichier(None)
 
     # Récup des paramètrages pour composer l'écran
     def GetParamsOlv(self):
@@ -525,15 +521,16 @@ class Dialog(xusp.DLG_vide):
         self.ctrlOlv.MAJ()
         self.Refresh()
 
-    def GetDonneesIn(self):
+    def GetDonneesIn(self,dicParams):
         # importation des donnéees du fichier entrée
-        dic = self.pnlParams.GetValues()
-        nomFichier = dic['fichiers']['nomFichier']
+        nomFichier = dicParams['nomFichier']
         lstNom = nomFichier.split('.')
         if lstNom[-1] in ('csv','txt'):
             entrees = ximport.GetFichierCsv(nomFichier)
         elif lstNom[-1] == 'xlsx':
-            entrees = ximport.GetFichierXlsx(self.dicOptions)
+            entrees = []
+            if dicParams['isXlsx']:
+                entrees = ximport.GetFichierXlsx(dicParams)
         elif lstNom[-1] == 'xls':
             try:
                 entrees = ximport.GetFichierXls(nomFichier)
@@ -591,21 +588,43 @@ class Dialog(xusp.DLG_vide):
 
     def OnImporter(self,event):
         dicParams = self.pnlParams.GetValues()
-        dicParams['lstColonnesLues'] = self.dicOptions['lstColonnesLues']
-        dicParams['typeCB'] = self.dicOptions['typeCB']
         dicParams.update(self.dicOptions)
+
         formatIn = dicParams['fichiers']['nomBanque']
+
         self.table = FORMATS_IMPORT[formatIn]['table']
-        entrees = self.GetDonneesIn()
-        if not entrees:
+
+        nblPresentes = len(self.ctrlOlv.modelObjects)
+        if nblPresentes > 0:
+            mess = "Ajouter aux lignes présentes ?\n\n Oui pour ajouter, Non remplacer"
+            ret = wx.MessageBox(mess,"PRESENCE DE LIGNES", style= wx.YES_NO | wx.CANCEL)
+            if ret == wx.YES:
+                ajout = True
+            elif ret == wx.NO:
+                ajout = False
+            else:
+                return
+        else: # Pas de lignes présentes
+            ajout = False
+
+        entrees = self.GetDonneesIn(dicParams)
+        # Test échec GetDonnees: pas de nouvelles lignes
+        if len(entrees) == 0:
+            self.OnFichier(None) # Pour choix d'un autre fichier
             return
 
         # Exécute la fonction ComposeFuncImp() définie dans les formats
-        self.ctrlOlv.lstDonnees = FORMATS_IMPORT[formatIn]['fonction'](dicParams,entrees,
-                                self.ctrlOlv.lstCodesColonnes,
-                                self.compta,self.table, parent=self)
-        # affiche le retour des entrées dans ctelOlv.lstDonnees
-        self.InitOlv()
+        fn = FORMATS_IMPORT[formatIn]['fonction']
+        if ajout:
+            lst = fn(dicParams, entrees, self.ctrlOlv.lstCodesColonnes, self.compta,
+                     self.table, parent=self)
+            self.ctrlOlv.AddTracks(lst)
+        else:
+            self.ctrlOlv.lstDonnees =  fn(dicParams, entrees,
+                                          self.ctrlOlv.lstCodesColonnes,
+                                          self.compta, self.table, parent=self)            # affiche le retour des entrées dans ctelOlv.lstDonnees
+            self.InitOlv()
+        if event: event.Skip()
 
     def OnExporter(self,event):
         nbl = len(self.ctrlOlv.innerList)

@@ -362,7 +362,7 @@ class Dialog(xusp.DLG_vide):
         self.nbLignes = 0
         self.typeCB = typeCB
         kwds = GetDicDialogParams(self)
-        super().__init__(self.parent,**kwds)  # self supprimé
+        super().__init__(self.parent,**kwds)
         self.Init()
         self.SetBackgroundColour(GRISBLEU)
         self.Sizer()
@@ -444,6 +444,9 @@ class Dialog(xusp.DLG_vide):
         self.isXlsx = False
         self.nomFichier = self.pnlParams.GetOneValue('nomFichier')
         (typeFichier, self.fichierIn) = ximport.OpenFile(self.nomFichier)
+        if self.fichierIn == None:
+            self.dicCtrls['nomFichier'].SetValue("")
+            return
 
         if typeFichier == 'xlsx':
             self.isXlsx = True

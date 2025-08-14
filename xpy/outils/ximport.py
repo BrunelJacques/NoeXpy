@@ -6,11 +6,13 @@ import datetime
 from xpy.outils import xformat
 from openpyxl import load_workbook
 
-def IsFile(nomFichier):
+def IsFile(nomFichier, mute=False):
+    nomFichier = nomFichier.replace("/", "\\")
     if os.path.isfile(nomFichier):
         return True
     else:
-        wx.MessageBox("Fichier%s : non présent!"%(nomFichier))
+        if not mute:
+            wx.MessageBox("Fichier%s : non présent!"%(nomFichier))
         return False
 
 def GetOneColCellsProp(ws,cell,typ=datetime.datetime):
