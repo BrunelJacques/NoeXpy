@@ -1,3 +1,6 @@
+version 1.1.2.53 (13/09/2025)
+    - Implémentation de nouvelles pratiques
+
 version 1.1.2.52 (04/08/2025)
     - TransposeFichier gestion des options
 

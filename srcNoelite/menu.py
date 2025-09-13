@@ -9,7 +9,7 @@
 #------------------------------------------------------------------------
 
 import wx
-from srcNoelite import DLG_Km_saisie, DLG_Transposition_fichier, DLG_Reglements_gestion, DLG_Adresses_gestion
+from srcNoelite import DLG_Km_saisie, DLG_Transpose_fichier, DLG_Reglements_gestion, DLG_Adresses_gestion
 from srcNoelite import DB_schema
 from xpy        import xUTILS_Identification, xGestionConfig, xUTILS_DB
 
@@ -128,7 +128,7 @@ class MENU():
         ret = xUTILS_Identification.AfficheUsers(self.parent)
 
     def On_transpose(self,event):
-        dlg = DLG_Transposition_fichier.Dialog()
+        dlg = DLG_Transpose_fichier.Dialog()
         dlg.ShowModal()
 
     def On_kmSaisie(self,event):

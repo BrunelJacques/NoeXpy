@@ -147,7 +147,7 @@ class MainFrame(wx.Frame):
                 self.menuClass = menu.MENU(self)
                 self.dictMenu = menu.MENU.ParamMenu(self)
             except:
-                wx.MessageBox("Echec de l'ouverture de l'objet : 'MENU.ParamMenu'\ndans %s"%self.pathSrcAppli+"\menu.py", 'Lancement impossible', wx.OK | wx.ICON_STOP)
+                wx.MessageBox("Echec de l'ouverture de l'objet : 'MENU.ParamMenu'\ndans %s"%self.pathSrcAppli+r"\menu.py", 'Lancement impossible', wx.OK | wx.ICON_STOP)
 
         # Création du menu dernière branche
         def CreationItem(menuParent, item):

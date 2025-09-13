@@ -13,7 +13,7 @@ import traceback
 mess = "lancement gitPython"
 MessError = """Necessaire pour git:\n\n
     - client git à installer (https://git-scm.com/download/win)\n
-    - variable Path contient 'c:\Program Files\Git\cmd'
+    - variable Path contient 'c:\\Program Files\\Git\\cmd'
     - git config --global --add safe.directory '*'
     - pip install GitPython"""
 

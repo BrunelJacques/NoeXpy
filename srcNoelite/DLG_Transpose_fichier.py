@@ -11,8 +11,8 @@ import wx
 import datetime
 import xpy.xGestionConfig               as xgc
 import xpy.xUTILS_SaisieParams          as xusp
-from DLG_Transpose_options import Dialog as DlgOptions
-import GLOBAL
+from srcNoelite.DLG_Transpose_options import Dialog as DlgOptions
+import srcNoelite.GLOBAL as GLOBAL
 from xpy.outils                 import xformat,xbandeau,ximport
 from srcNoelite                 import UTILS_Compta
 from xpy.ObjectListView import xGTE
@@ -422,7 +422,7 @@ class PNL_pied(xGTE.PNL_pied):
 class Dialog(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,*args):
-        super().__init__(self,name='DLG_Transposition_fichier',size=(900,700))
+        super().__init__(self,name='DLG_Transpose_fichier',size=(900,700))
         self.dicOptions = GLOBAL.DIC_OPTIONS
         self.ctrlOlv = None
         self.txtInfo =  "Non connecté à une compta"

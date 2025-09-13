@@ -14,7 +14,7 @@ import xpy.xUTILS_SaisieParams as xusp
 from xpy.outils import xformat, xbandeau, xdates, ximport
 from xpy.ObjectListView import xGTE
 from xpy.ObjectListView.ObjectListView import ColumnDefn
-import GLOBAL
+import srcNoelite.GLOBAL as GLOBAL
 
 FORMATS_IMPORT = GLOBAL.GetFormatsImport()
 

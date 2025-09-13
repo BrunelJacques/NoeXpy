@@ -426,7 +426,7 @@ class Compta(object):
         # Appel des données, le select et group by sera par défaut non personnalisable
         donnees = []
         req = self.ComposeReq(table,where,filtre)
-        ret = self.db.ExecuterReq(req,mess="UTILS_Compta.GetDonnees %s"%table)
+        ret = self.db.ExecuterReq(req,mess="UTILS_Compta.GetDonnees table: %s"%table)
         if ret == "ok":
             donnees = self.db.ResultatReq()
         return donnees

@@ -715,7 +715,7 @@ class PNL_ctrl(wx.Panel):
     def OnDirfile(self,event):
         """ Open a file"""
         try:
-            nomPath = self.GrandParent.GetOneValue('nomFichier')
+            nomPath = event.EventObject.Parent.GetValue()
             if os.path.isfile(nomPath):
                 lstNomFichier = nomPath.split("\\")
                 self.dirname = nomPath[:-len(lstNomFichier[-1])]
@@ -1663,11 +1663,11 @@ if __name__ == '__main__':
     dlg_3.Sizer(pnl)
     app.SetTopWindow(dlg_3)
     dlg_3.Show()
-    """
+
     frame_2 = FramePanels(None, )
     frame_2.Position = (500,300)
     frame_2.Show()
-    """
+
     """
     frame_1 = xFrame(None, matrice=dictMatrice, donnees=dictDonnees)
     app.SetTopWindow(frame_1)

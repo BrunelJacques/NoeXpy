@@ -240,7 +240,7 @@ if __name__ == '__main__':
     os.chdir("..")
     #donnees = GetFichierCsv("../Versions.txt")
     #donnees = GetFichierXls("c:/temp/FichierTest.xls")
-    dicOptions = {'nomFichier':"C:\\Users\\jbrun\\Desktop\\bribes\CREDIT MUT RELEVE.xlsx",
+    dicOptions = {'nomFichier':r"C:\Users\jbrun\Desktop\bribes\CREDIT MUT RELEVE.xlsx",
                   'ixsheet':0}
     donnees = GetFichierXlsx(**dicOptions)
     print(donnees[0])

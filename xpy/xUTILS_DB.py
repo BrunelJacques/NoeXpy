@@ -11,7 +11,7 @@ import os
 import wx
 import sys
 import subprocess
-import mysql.connector
+import mysql
 import mysql.connector.errorcode as errorcode
 import sqlite3
 import copy
@@ -19,9 +19,6 @@ import datetime
 import xpy.outils.xshelve as xucfg
 
 DICT_CONNEXIONS = {}
-
-def DateEngEnDateDD(dateEng):
-    return datetime.date(int(dateEng[:4]), int(dateEng[5:7]), int(dateEng[8:10]))
 
 def DateDDEnDateEng(datedd):
     if not isinstance(datedd, datetime.date):
@@ -110,6 +107,7 @@ class DB():
                     elif isinstance(config,dict):
                         nomConfig = None
                         self.cfgParams = copy.deepcopy(config)
+                    else: nomConfig = 'lastConfig'
                 else: nomConfig = 'lastConfig'
 
                 if nomConfig:
@@ -146,7 +144,7 @@ class DB():
                 self.erreur = mess
                 if not mute:
                     wx.MessageBox(mess)
-                return mess
+                return
 
             if self.connexion:
                 # Mémorisation de l'ouverture de la connexion et des requêtes
@@ -264,13 +262,12 @@ class DB():
                                                 passwd=passwd, port=int(port),
                                                 connect_timeout=5)
             connexion.close()
-            connexion = mysql.connector.connect(host=host, user=userdb, passwd=passwd, port=int(port))
+            connexion = mysql.connector.connect(host=host, user=userdb,
+                                                passwd=passwd, port=int(port))
         except mysql.connector.Error as err:
             mess = "Echec connexion MYSQL\nEtape: %s\n" %(etape)
             if err.errno == errorcode.CR_CONN_HOST_ERROR:
                 mess += "Connection error: {}".format(err)
-            elif err.errno == errorcode.CR_CONNECTION_TIMEOUT:
-                mess += "Connection timeout: {}".format(err)
             else:
                 mess += "Error: {}".format(err)
 
@@ -314,19 +311,19 @@ class DB():
         if config['serveur'][-1] != "\\":
             config['serveur'] += "\\"
         self.nomBase = config['serveur'] + config['nameDB']
+        etape = 'Création du connecteur'
         try:
-            etape = 'Création du connecteur'
             if self.typeDB == 'sqlite':
                 self.ConnectSQLite()
-            elif self.typeDB == 'mySqlLocal':
-                self.ConnectMySqlLocal()
+            elif self.typeDB.lower() == 'access':
+                self.ConnectAccessOdbc()
             else:
                 wx.MessageBox('xDB: Accès DB non développé pour %s' %self.typeDB)
         except Exception as err:
             wx.MessageBox("xDB: La connexion base de donnée a echoué à l'étape: %s, sur l'erreur :\n\n%s" %(etape,err))
             self.erreur = "%s\n\n: %s"%(err,etape)
 
-    def ConnectAcessOdbc(self):
+    def ConnectAccessOdbc(self):
         # permet un acces aux bases access sans office
         if os.path.isfile(self.nomBase) == False:
             wx.MessageBox("xDB:Le fichier %s demandé n'est pas present sur le disque dur."% self.nomBase, style = wx.ICON_WARNING)
@@ -334,22 +331,26 @@ class DB():
         # Initialisation de la connexion
         try:
             import pyodbc
-            DRIVER='{Microsoft Access Driver (*.mdb, *.accdb)}'
-            DBQ='c:/temp/qcompta.mdb'
+            """
+            conn_str = (
+                r'DRIVER={Microsoft Access Driver (*.mdb)};'
+                'DBQ=D:\\Quadra\\Database\\cpta\\DC\\MATTH\\qcompta.mdb'
+            )
+            conn = pyodbc.connect(conn_str)
+            """
+            DRIVER = r'{Microsoft Access Driver (*.mdb)}'
+            DBQ = self.nomBase
             PWD = '' # passWord
-            self.connexion = pyodbc.connect('DRIVER={};DBQ={};PWD={}'.format(DRIVER,DBQ,PWD))
-            cursor = self.connexion.cursor()
-            allTables = cursor.tables()
-            if len(allTables) == 0:
-                wx.MessageBox("xDB:La base de donnees %s est présente mais vide " % self.nomBase)
-                return
+            self.connexion = pyodbc.connect('DRIVER={};DBQ={}'.format(DRIVER,DBQ,))
+            self.cursor = self.connexion.cursor()
+            allTables = self.cursor.tables()
             # Exemple code
             """
-            cursor.execute("select * from Journaux;")
-            for row in cursor.fetchall():
+            self.cursor.execute("select * from Journaux;")
+            for row in self.cursor.fetchall():
                 print(row)
-            cursor.close()
-            del cursor
+            self.cursor.close()
+            del self.cursor
             self.connexion.close()"""
             self.echec = 0
         except Exception as err:
@@ -375,7 +376,7 @@ class DB():
 
     def ExecuterReq(self, req, mess=None, affichError=True):
         # Gestion de l'absence de connexion
-        if not hasattr(self, 'cursor') or self.echec >= 1:
+        if self.echec >= 1:
             if not mess:
                 origine = "xUTILS_DB.ExecuterReq"
             else: origine = mess
@@ -387,7 +388,7 @@ class DB():
         if self.typeDB == 'access':
             self.recordset = []
             # methode Access ADO
-            self.cursor.Open(req, self.connexion)
+            #self.cursor.Open(req, self.connexion)
             if not self.cursor.BOF:
                 self.cursor.MoveFirst()
                 while not self.cursor.EOF:
@@ -405,7 +406,7 @@ class DB():
                 self.retourReq = "ok"
             else:
                 self.retourReq = "Aucun enregistrement"
-            self.cursor.Close()
+            #self.cursor.Close()
         # autres types de connecteurs que access
         else:
             # purge d'existant non lu
@@ -1061,6 +1062,7 @@ if __name__ == "__main__":
     os.chdir("..")
     db = DB()
     db.AfficheTestOuverture()
+
     from srcNoelite.DB_schema import DB_TABLES, DB_IX, DB_PK
 
     Init_tables(mode="ctrl",
