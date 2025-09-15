@@ -199,20 +199,25 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
                         valeur = prefixe + valeur
 
             elif champOut == 'montant':
+                if isinstance(valeur,str) and valeur.lower().startswith('avoir'):
+                    valeur = valeur.lower()
+                    if '-' in valeur:
+                        valeur = valeur.replace('-','')
+                        valeur = valeur.replace('avoir', '')
+                    else:
+                        valeur = valeur.replace('avoir', '-')
                 if not valeur:
                     valeur = 0.0
-                    for item in ('debit','credit','-debit','-credit'):
-                        if item in dicChampsAttendus:
-                            dicItem =  dicChampsAttendus[item]
-                            valItem = ligne[dicItem['ixIn']]
-                            try:
-                                valItem = xformat.ToFloat(valItem)
-                            except Exception as err:
-                                print(err)
-                            valeur += valItem * dicItem['sens']
-                else:
-                    valeur *= dicChampAtt['sens']
-
+                for item in ('debit','credit','-debit','-credit'):
+                    if item in dicChampsAttendus:
+                        dicItem =  dicChampsAttendus[item]
+                        valItem = ligne[dicItem['ixIn']]
+                        try:
+                            valItem = xformat.ToFloat(valItem)
+                        except Exception as err:
+                            print(err)
+                        valeur += valItem * dicItem['sens']
+                    #valeur *= dicChampAtt['sens']
             # place la valeur dans la ligne out
             ligneOut[champsOut.index(champOut)] = valeur
             valeur = None
