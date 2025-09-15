@@ -146,11 +146,18 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     image = wx.ArtProvider.GetBitmap(wx.ART_TIP, wx.ART_OTHER, (16, 16))
     parent.pnlPied.SetItemsInfos(txtInfo, image)
 
+    nb = 0
     for ligne in donnees:
+        nb += 1
+        if str(nb)[-1] == "0": # info toutes les dix écritures
+            txtInfo = " %d lignes retenues sur %d lues >> %d" % (len(lstOut),nb,len(donnees[0:]))
+            parent.pnlPied.SetItemsInfos(txtInfo, image)
+
         if (not hasMontant(ligne)) and (not hasLibelle((ligne))):
             continue
         if ko: break
         ligneOut = [None,] * len(champsOut)
+        valeur = None
         for champOut in champsOut:
             if champOut in ['compte','appel','libcpt']:
                 continue
@@ -172,7 +179,6 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
             elif champOut == 'noPiece':
                 valeur = noPiece # prend la valeur par défaut si présente
                 if 'carte' in champsAttendus: # sauf si présence d'un champ carte
-                    TEST = dicChampsAttendus['carte']['ixIn']
                     valeur = ligne[dicChampsAttendus['carte']['ixIn']]
 
             elif champOut == 'libelle':
@@ -210,13 +216,10 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
             # place la valeur dans la ligne out
             ligneOut[champsOut.index(champOut)] = valeur
             valeur = None
-
         if not ko:
             if compta:
                 enrichiLigne(ligneOut)
             lstOut.append(ligneOut)
-            txtInfo = " %d lignes traitées sur %d" %( len(lstOut),len(donnees[0:]))
-            parent.pnlPied.SetItemsInfos(txtInfo, image)
 
     return lstOut
 
@@ -297,7 +300,7 @@ def GetOlvColonnes(dlg):
             ]
 
 # paramètre les options de l'OLV
-def GetOlvOptions(dlg):
+def GetOlvOptions():
     return {
             'minSize': (500,150),
             'checkColonne': False,
@@ -435,8 +438,8 @@ class Dialog(xusp.DLG_vide):
     # Récup des paramètrages pour composer l'écran
     def GetParamsOlv(self):
         # définition de l'OLV
-        dicOlv = {'lstColonnes': GetOlvColonnes(self)}
-        dicOlv.update(GetOlvOptions(self))
+        dicOlv =  GetOlvOptions()
+        dicOlv['lstColonnes'] = GetOlvColonnes(self)
         return dicOlv
 
     # Initialisation des panels
@@ -456,7 +459,7 @@ class Dialog(xusp.DLG_vide):
         self.table = self.GetTable()
         self.Bind(wx.EVT_CLOSE,self.OnFermer)
 
-    def Sizer(self):
+    def Sizer(self,pnl=None):
         sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
         sizer_base.Add(self.pnlBandeau, 1, wx.TOP | wx.EXPAND, 3)
         sizer_base.Add(self.pnlParams, 1, wx.TOP | wx.EXPAND, 3)

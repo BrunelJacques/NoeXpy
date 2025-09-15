@@ -502,7 +502,7 @@ class Dialog(xusp.DLG_vide):
             lstCol = [x for x in lstCol if isinstance(x,str)]
             self.ixSheet = self.lstNomsSheets.index(nomSheet)
             self.pnlCorps.SetValuesChklst(self.dicCtrls['chklstColonnesLues'],lstCol)
-            self.lstColonnesLues = lstCol
+            #self.lstColonnesLues = lstCol
             self.MatchColonnes()
 
             cellDate = ximport.GetFirstCell(sheet,'date')

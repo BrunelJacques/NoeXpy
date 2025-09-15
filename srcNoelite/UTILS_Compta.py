@@ -507,21 +507,23 @@ class Compta(object):
         # on recherche un text entier dans des parties d'items, pour discriminer
         lstRetour = []
         for item in lstItems:
-            for champvalue in item:
-                if not champvalue: continue
-                # un de ces champs sera la clé, les autres peuvent matcher aussi
-                txttest = text
-                if not " " in champvalue:
-                    # une clé d'appel n'a pas d'espace
-                    txttest = xformat.Supprespaces(text,camelCase=False)
-                # recherche du champ dans le text
-                if champvalue.upper() in txttest:
-                    if not item in lstRetour:
-                        lstRetour.append(item)
-                    break
+            for champ in item:
+                lstMotsChamp = champ.split(" ")
+                # pour chaque ligne venant de SQL à matcher
+                for champvalue in lstMotsChamp:
+                    # un de ces mots sera la clé, les autres peuvent matcher aussi
+                    txttest = text
+                    if not " " in champvalue:
+                        # une clé d'appel n'a pas d'espace
+                        txttest = xformat.Supprespaces(text,camelCase=False)
+                    # recherche du mot dans le text
+                    if champvalue.upper() in txttest.upper():
+                        if not item in lstRetour:
+                            lstRetour.append(item)
+                        break # enchaine sur l'item suivant
         return lstRetour
 
-    # Recherche automatique d'un mot alpha dans une table, retour d'un seul item
+    # Recherche automatique d'un mot alpha dans une table, retour d'un seul item compte
     def GetOneByMots(self,table='clients',text=None):
         self.table = table
         self.filtreTest = ""
@@ -530,8 +532,11 @@ class Compta(object):
         text = xformat.NoChiffres(text)
         text = text.upper()
         lstMots = text.split(' ')
+        lstMots = list(set(lstMots))# for no duplicate values
+        # liste triée sur longueurs décroissante des mots
         lstTplMots = [(len(x),x) for x in lstMots if len(x) >= 3]
         lstTplMots.sort(reverse=True)
+        # ici les mots de la ligne à associer à un compte
         lstMots = [y for (x,y) in lstTplMots]
 
         # fonction recherche un seul item contenant un mot limité à nb de caractères puis décroisant
@@ -539,15 +544,15 @@ class Compta(object):
             lstItems = []
             match = False
             lgrad = 0
-            # recherche des items contenant le début du mot en diminuant sa longueur
+            # recherche d'items contenant un radical extrait du mot, diminution de sa longueur
             for lgrad in range(lg,mini-1,-1):
+                # recherche dans la table
                 lstItems = self.GetDonnees(table=table,filtre=mot[:lgrad])
-                if len(lstItems) == 0 : continue
+                if len(lstItems) == 0:
+                    continue # pour diminuer la longueur du radical recherché
                 else:
-                    nb = len(lstItems)
-                    # discriminer par clé ou libellé dans le texte
+                    # discriminer jusqu'à obtenir un seul compte qui matche
                     lstItems = self.FiltreSurCle(text, lstItems)
-
                     if len(lstItems) == 0: continue
                     if len(lstItems) == 1:
                         match = True
