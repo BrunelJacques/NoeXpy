@@ -635,6 +635,8 @@ if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
     os.chdir("..")
+    ret = ChoixDestination('','Excel files (*.xls;*.xlsx)|*.xls;*.xlsx')
+
     # wx.InitAllImageHandlers()
     frame_1 = MyFrame(None, -1, "OL Test Export")
     app.SetTopWindow(frame_1)

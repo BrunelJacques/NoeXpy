@@ -11,6 +11,7 @@
 import wx
 import wx.html as html
 from xpy.outils import xformat
+
 class MyHtml(html.HtmlWindow):
     def __init__(self, parent, texte="", hauteur=25, fontsize = -1):
         html.HtmlWindow.__init__(self, parent, -1,
@@ -42,7 +43,6 @@ class Bandeau(wx.Panel):
         self.SetBackgroundColour(wx.Colour(220, 230, 240))
         self.ctrlTitre.SetFont(wx.Font(int(self.hauteur*0.6), wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
         self.ctrlIntro.SetFont(wx.Font(int(self.hauteur*0.5), wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, ""))
-        #Font(pixelSize, family, style, weight, underline=False, faceName="", encoding=FONTENCODING_DEFAULT)
 
     def __do_layout(self):
         grid_sizer_vertical = wx.FlexGridSizer(rows=2, cols=1, vgap=4, hgap=4)
@@ -63,7 +63,6 @@ class Bandeau(wx.Panel):
         grid_sizer_vertical.AddGrowableRow(0)
         grid_sizer_vertical.AddGrowableCol(0)
 
-
 class MyFrame(wx.Frame):
     def __init__(self, *args, **kwds):
         wx.Frame.__init__(self, *args, **kwds)
@@ -71,7 +70,7 @@ class MyFrame(wx.Frame):
         sizer_1 = wx.BoxSizer(wx.VERTICAL)
         sizer_1.Add(panel, 1, wx.ALL | wx.EXPAND)
         self.SetSizer(sizer_1)
-        self.ctrl = Bandeau(panel, "COUCOU", "coincoin<BR />...et la suite", nomImage="xpy/Images/32x32/Python.png")
+        self.ctrl = Bandeau(panel, "COUCOU", "Ceci est un exemple<BR />...et la deuxième ligne ensuite", nomImage="xpy/Images/32x32/Python.png")
         sizer_2 = wx.BoxSizer(wx.VERTICAL)
         sizer_2.Add(self.ctrl, 1, wx.ALL | wx.EXPAND, 0)
         panel.SetSizer(sizer_2)

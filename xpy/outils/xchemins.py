@@ -18,16 +18,9 @@ if sys.platform == 'win32':
 else:
     SEP = "/"
 
-frozen = getattr(sys, 'frozen', '')
-if not frozen:
-    rep = os.path.abspath(__file__)
-    # la racine va s'arrête au niveau 'xpy'
-    REP_RACINE = rep.split('%sxpy%s'%(SEP,SEP))[0]
-else :
-    REP_RACINE = os.path.dirname(sys.executable)
-
-if REP_RACINE not in sys.path :
-    sys.path.insert(1, REP_RACINE)
+rep = os.path.abspath(__file__)
+# la racine va s'arrête au niveau 'xpy'
+REP_RACINE = rep.split('%sxpy%s'%(SEP,SEP))[0]
 
 def GetRepRacine(ajout=""):
     """ Retourne le chemin du répertoire principal """
