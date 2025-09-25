@@ -516,9 +516,11 @@ def SetBgColour(self,montant):
         self.SetBackgroundColour(wx.Colour(200, 255, 180))  # Vert
 
 def FmtDecimal(montant):
-    if isinstance(montant,str): montant = montant.replace(',','.')
-    if isinstance(montant,str): montant = montant.replace(' ','')
-    if montant == None or montant == '' or float(montant) == 0:
+    if isinstance(montant,str):
+        montant = montant.replace(',','.')
+        montant = montant.replace('€', '')
+        montant = montant.replace(' ','')
+    if not montant or float(montant) == 0:
         return ""
     strMtt = '{:,.2f} '.format(float(montant))
     strMtt = strMtt.replace(',',' ')

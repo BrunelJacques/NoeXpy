@@ -212,7 +212,7 @@ class Noelite(object):
             'getDonnees': getDonnees,
             'dicBandeau': dicBandeau,
             'sortColumnIndex': 1,
-            'sensTri': False,
+            'sortAscending': False,
             'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
         }
 

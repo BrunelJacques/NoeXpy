@@ -337,7 +337,7 @@ class ObjectListView(wx.ListCtrl):
 
     # Setup OLV
 
-    def SetColumns(self, columns, repopulate=True):
+    def SetColumns(self, columns,repopulate=True):
         """
         Set the list of columns that will be displayed.
 
@@ -1315,7 +1315,7 @@ class ObjectListView(wx.ListCtrl):
         """
         self.filter = filter
 
-    def SetSortColumn(self, column, resortNow=False,ascending=True):
+    def SetSortColumn(self, column, resortNow=False, ascending=True):
         """
         Set the column by which the rows should be sorted.
 

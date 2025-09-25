@@ -144,7 +144,7 @@ def GetMatriceDepots():
                 'getDonnees': GetDepots,
                 'dicBandeau': dicBandeau,
                 'sortColumnIndex': 2,
-                'sensTri' : False,
+                'sortAscending' : False,
                 'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
                 'size':(900, 400)                }
 

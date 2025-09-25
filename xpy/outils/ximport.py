@@ -103,11 +103,11 @@ def GetDonneesExcel(ws,minrow=1,maxrow=1000,mincol=1,maxcol=10):
             lstDonnees.append(values)
     return lstDonnees
 
-def OpenFile(nomFichier):
+def OpenFile(nomFichier, mute=False):
     # Teste l'ouverture fichier et retourne son type et son pointeur (si xlsx)
     if platform.system() == "Windows":
         nomFichier = nomFichier.replace("/", "\\")
-    if not IsFile(nomFichier):
+    if not IsFile(nomFichier,mute):
         return None, None
     typeFile, file = None, None
     lstNom = nomFichier.split('.')

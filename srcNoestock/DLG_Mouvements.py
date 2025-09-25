@@ -119,7 +119,7 @@ def GetMatriceAnterieurs(dlg):
         'getDonnees': nust.SqlMvtsAnte,
         'dicBandeau': dicBandeau,
         'sortColumnIndex': 1,
-        'sensTri': False,
+        'sortAscending': False,
         'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
         'size': (650, 400),
         'dateEnCours':dlg.date}

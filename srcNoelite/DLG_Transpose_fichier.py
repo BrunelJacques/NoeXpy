@@ -22,6 +22,23 @@ from xpy.ObjectListView.ObjectListView  import ColumnDefn
 
 TITRE = "Transposition de ficher avec intervention possible"
 INTRO = "Importez un fichier, puis complétez l'information dans le tableau avant de l'exporter dans un autre format"
+ABREGE = (  #ici réduction de mots par un abrégé, pour des libellés plus denses
+    ('CHEQUE','Chq'),
+    ('VIREMENT','Vrt'),
+    ('INSTANTANE','Inst'),
+    ('M.',''),
+    ('M.OU',''),
+    ('M',''),
+    ('MR',''),
+    ('MME',''),
+    ('MLE', ''),
+    ('DE',''),
+    ('OU', '|'),
+    ('PRELEVEMENT', 'Prl'),
+    ('PAIEMENT', 'Pmt'),
+    ('FRAIS', 'Fr'),
+    ('REMBOURSEMENT', 'Rbt'),
+    ('DEPARTEMENT', 'Dprt'))
 
 # Infos d'aide en pied d'écran
 DIC_INFOS = {'date':"Flèche droite pour le mois et l'année, Entrée pour valider.\nC'est la date de réception du règlement, qui sera la date comptable",
@@ -32,6 +49,23 @@ DIC_INFOS = {'date':"Flèche droite pour le mois et l'année, Entrée pour valid
 
 # Info par défaut
 INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
+
+def Abrege(txt):
+    # remplacement de mots identifiés par leur abrégé
+    if not txt: return txt
+    lstMots = txt.split(' ')
+    lstOut = []
+    for mot in lstMots:
+        done = False
+        for (ent, out) in ABREGE:
+            if mot.upper() == ent:
+                if out:
+                    lstOut.append(out)
+                done = True
+                break
+        if not done:
+            lstOut.append(mot)
+    return ' '.join(lstOut)
 
 # Composition des entrées gérées selon chaque FORMAT_xxxx avec leur spécificité
 def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
@@ -161,7 +195,6 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
         for champOut in champsOut:
             if champOut in ['compte','appel','libcpt']:
                 continue
-            dicChampAtt = None
             for champAtt in champsAttendus:
                 # le champOut est dans le nom d'un champ attendu : correspondance simple
                 if champAtt and (champOut in champAtt):
@@ -197,6 +230,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
                         else:
                             prefixe = dte.strip()+' '
                         valeur = prefixe + valeur
+                valeur = Abrege(valeur)
 
             elif champOut == 'montant':
                 if isinstance(valeur,str) and valeur.lower().startswith('avoir'):
@@ -206,6 +240,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
                         valeur = valeur.replace('avoir', '')
                     else:
                         valeur = valeur.replace('avoir', '-')
+                valeur = xformat.NoLettre(valeur)
                 if not valeur:
                     valeur = 0.0
                 for item in ('debit','credit','-debit','-credit'):
@@ -222,7 +257,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
             ligneOut[champsOut.index(champOut)] = valeur
             valeur = None
         if not ko:
-            if compta:
+            if compta and sens == -1:
                 enrichiLigne(ligneOut)
             lstOut.append(ligneOut)
 
@@ -309,6 +344,7 @@ def GetOlvOptions():
     return {
             'minSize': (500,150),
             'checkColonne': False,
+            'sortColumnIndex': 0,
             'recherche': True,
             'autoAddRow':False,
             'msgIfEmpty':"Fichier non encore importé!",

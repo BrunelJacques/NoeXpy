@@ -178,11 +178,11 @@ def GetDicPnlParams():
             }
 
 # retourne les paramètres de l'écran de départ
-def GetDicDialogParams(parent):
+def GetDicDialogParams():
     listArbo = os.path.abspath(__file__).split("\\")
     kwds = {}
     kwds['name'] = 'DLG_Transpose_options.Dialog'
-    kwds['title'] = listArbo[-1] + "/" + parent.__class__.__name__
+    kwds['title'] = listArbo[-1]
     kwds['minSize'] = (900, 550)
     return kwds
 
@@ -361,7 +361,7 @@ class Dialog(xusp.DLG_vide):
         self.dateMax = None
         self.nbLignes = 0
         self.typeCB = typeCB
-        kwds = GetDicDialogParams(self)
+        kwds = GetDicDialogParams()
         super().__init__(self.parent,**kwds)
         self.Init()
         self.SetBackgroundColour(GRISBLEU)
@@ -421,7 +421,7 @@ class Dialog(xusp.DLG_vide):
         # Binds renvoyant en local
         self.dicCtrls['typeCarte'].Bind(wx.EVT_RADIOBUTTON, self.OnTypeCarte)
         self.dicCtrls['radioSheets'].rbox.Bind(wx.EVT_RADIOBOX,self.OnSheets)
-        test = self.dicCtrls['nomFichier']
+        #test = self.dicCtrls['nomFichier']
 
         # récupère les values d'un anyctrl pour le Set qui n'est pas automatique
         ctrlTypeCarte = self.dicCtrls['typeCarte']
@@ -443,7 +443,7 @@ class Dialog(xusp.DLG_vide):
         # Nouveau nom de fichier, on ouvre le fichier et lit les feuilles présentes
         self.isXlsx = False
         self.nomFichier = self.pnlParams.GetOneValue('nomFichier')
-        (typeFichier, self.fichierIn) = ximport.OpenFile(self.nomFichier)
+        (typeFichier, self.fichierIn) = ximport.OpenFile(self.nomFichier, mute=True)
         if self.fichierIn == None:
             self.dicCtrls['nomFichier'].SetValue("")
             return

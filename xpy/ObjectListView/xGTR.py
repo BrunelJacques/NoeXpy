@@ -98,7 +98,7 @@ class ListView(FastObjectListView):
     msgIfEmpty : une chaine de caractères à envoyer si le tableau est vide
 
     sortColumnIndex : Permet d'indiquer le numéro de la colonne selon laquelle on veut trier
-    sensTri : True ou False indique le sens de tri
+    sortAscending : True ou False indique le sens de tri
 
     exportExcel : True par défaut, False permet d'enlever l'option 'Exporter au format Excel'
     exportTexte : idem
@@ -139,7 +139,7 @@ class ListView(FastObjectListView):
         self.lstCodesSup = kwds.pop('lstCodesSup', [])
         self.msgIfEmpty = kwds.pop('msgIfEmpty', 'Tableau vide')
         self.sortColumnIndex = kwds.pop('sortColumnIndex', None)
-        self.sensTri = kwds.pop('sensTri', True)
+        self.sortAscending = kwds.pop('sortAscending', True)
         self.menuPersonnel = kwds.pop('menuPersonnel', False)
         self.getDonnees = kwds.pop('getDonnees', None)
         if isinstance(self.getDonnees,str):
@@ -204,9 +204,9 @@ class ListView(FastObjectListView):
         # Si la colonne à trier n'est pas précisée on trie selon la première par défaut
         if self.ColumnCount > 1:
             if self.sortColumnIndex == None:
-                self.SortBy(1, self.sensTri)
+                self.SortBy(1, self.sortAscending)
             else:
-                self.SortBy(self.sortColumnIndex, self.sensTri)
+                self.SortBy(self.sortColumnIndex, self.sortAscending)
 
     def InitModel(self,**kwd):
         #kwd peut contenir  filtretxt et lstfiltres
@@ -527,7 +527,7 @@ class PNL_corps(wx.Panel):
                         'useAlternateBackColors',
                         'menuPersonnel',
                         'msgIfEmpty',
-                        'sensTri',
+                        'sortAscending',
                         'exportExcel',
                         'exportTexte',
                         'checkColonne',

@@ -110,7 +110,7 @@ class ListView( FastObjectListView):
     msgIfEmpty : une chaine de caractères à envoyer si le tableau est vide
 
     sortColumnIndex : Permet d'indiquer le numéro de la colonne selon laquelle on veut trier
-    sensTri : True ou False indique le sens de tri
+    sortAscending : True ou False indique le sens de tri
 
     exportExcel : True par défaut, False permet d'enlever l'option 'Exporter au format Excel'
     exportTexte : idem
@@ -140,12 +140,13 @@ class ListView( FastObjectListView):
         self.lstCodesSup = kwds.pop('lstCodesSup', [])
         self.editMode = kwds.pop('editMode', True)
         self.msgIfEmpty = kwds.pop('msgIfEmpty', 'Tableau vide')
-        self.sortColumnIndex = kwds.pop('sortColumnIndex', None)
-        self.sensTri = kwds.pop('sensTri', True)
         self.menuPersonnel = kwds.pop('menuPersonnel', False)
         self.lstDonnees = kwds.pop('lstDonnees', None)
         self.getDonnees = kwds.pop('getDonnees', None)
         self.dictColFooter = kwds.pop('dictColFooter', {})
+        # pour suivi
+        #self.sortColumnIndex = kwds.get('sortColumnIndex', None)
+        #self.sortAscending = kwds.get('sortAscending', True)
 
         # Choix des options du 'tronc commun' du menu contextuel
         self.copier = kwds.pop('copier', True)
@@ -194,9 +195,12 @@ class ListView( FastObjectListView):
         # Couleur en alternance des lignes
         self.useExpansionColumn = True
         # On définit les colonnes
+        sortCol = self.sortColumnIndex
+        sortAsc = self.sortAscending
         self.SetColumns(self.lstColonnes)
         if self.checkColonne:
             self.CreateCheckStateColumn(0)
+        self.SetSortColumn(sortCol,resortNow=True,ascending=sortAsc)
         self.lstCodesColonnes = self.GetLstCodesColonnes()
         self.lstNomsColonnes = self.GetLstNomsColonnes()
         # On définit le message en cas de tableau vide
@@ -304,11 +308,10 @@ class ListView( FastObjectListView):
 
     def OnContextMenu(self, event):
        # Création du menu contextuel
-        if self.menuPersonnel:
-            if hasattr(self.Parent,'GetMenuPersonnel'):
+        if self.menuPersonnel and hasattr(self.Parent,'GetMenuPersonnel'):
                 menuPop = self.Parent.GetMenuPersonnel()
                 # On ajoute un séparateur ici ou dans la classe parent ?
-            menuPop.AppendSeparator()
+                menuPop.AppendSeparator()
         else:
             menuPop = wx.Menu()
 
@@ -443,7 +446,6 @@ class ListView( FastObjectListView):
         if hasattr(self.lanceur,"ValideImpress"):
             if not self.lanceur.ValideImpress():
                 return
-                print("Impress non valide")
         import xpy.ObjectListView.Printer as printer
         prt = printer.ObjectListViewPrinter(self, titre=self.GetTitreImpression(),
                                                         orientation=self.GetOrientationImpression())
@@ -811,7 +813,7 @@ class PNL_corps(wx.Panel):
                         'lstDonnees',
                         'getDonnees',
                         'msgIfEmpty',
-                        'sensTri',
+                        'sortAscending',
                         'exportExcel',
                         'exportTexte',
                         'checkColonne',
@@ -936,7 +938,7 @@ class PNL_pied(wx.Panel):
 # ------------- Lancement ------------------------------------------------------------------
 class DLG_tableau(xusp.DLG_vide):
     # minimum fonctionnel dans dialog tout est dans les trois pnl
-    def __init__(self,parent,dicParams={},dicOlv={},dicPied={}, **kwds):
+    def __init__(self,parent,dicParams=None,dicOlv=None,dicPied=None, **kwds):
         lDics = [dicParams, dicOlv, dicPied]
         lScreenParts = [x != {} for x in lDics]
         #purge d'éventuels arguments db à ne pas envoyer à super()
@@ -1085,7 +1087,7 @@ if __name__ == '__main__':
                    cellEditorCreator = CellEditor.ChoiceEditor,)
     ]
     lstDonnees = [[1,False, 'Bonjour', -1230.05939, -1230.05939, None,'deux'],
-                     [2,None, 'Bonsoir', 57.5, 208.99,datetime.date.today(),None],
+                     [5,None, 'Bonsoir', 57.5, 208.99,datetime.date.today(),None],
                      [3,'', 'Jonbour', 0, 'remisé', datetime.date(2018, 11, 20), 'mon item'],
                      [4,29, 'Salut', 57.082, 209, datetime.date(2019,8,2),"Gérer l'entrée dans la cellule"],
                      [None,None, 'Salutation', 57.08, 0, datetime.date(1997,1,7), '2019-10-24'],
@@ -1096,6 +1098,8 @@ if __name__ == '__main__':
     dicOlv = {'lstColonnes': liste_Colonnes,
               'lstDonnees': lstDonnees,
               'checkColonne': True,
+              'sortColumnIndex': 3,
+              'sortAscending':False,
               'recherche': True,
               'msgIfEmpty': "Aucune donnée ne correspond à votre recherche",
               'dictColFooter': {"nombre": {"mode": "total", "alignement": wx.ALIGN_RIGHT},
