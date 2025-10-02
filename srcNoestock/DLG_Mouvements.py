@@ -515,6 +515,7 @@ def CalculeLigne(dlg,track):
     try: rations = track.dicArticle['rations']
     except:
         rations = 1
+
     txTva = track.dicArticle['txTva']
     track.mttHT = PxUnToHT(dlg.ht_ttc,txTva) * pxUn * qte
     track.mttTTC = PxUnToTTC(dlg.ht_ttc,txTva) * pxUn * qte

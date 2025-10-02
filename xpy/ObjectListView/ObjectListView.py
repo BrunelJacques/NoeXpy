@@ -700,8 +700,11 @@ class ObjectListView(wx.ListCtrl):
         The html will be written in accordance with strange "HTML Format" as specified
         in http://msdn.microsoft.com/library/en-us/winui/winui/windowsuserinterface/dataexchange/clipboard/htmlclipboardformat.asp
         """
-        import win32clipboard
-
+        try:
+            import win32clipboard
+        except:
+            mess = "Le module win32clipboard n'est pas installé"
+            wx.MessageBox(mess, "Installation incomplète")
         MARKER_BLOCK_OUTPUT = \
             "Version:1.3\r\n" \
             "StartHTML:%09d\r\n" \
@@ -1016,6 +1019,7 @@ class ObjectListView(wx.ListCtrl):
         """
         Set the list of modelObjects to be displayed by the control.
         """
+        selection = None
         self.original = True
         if preserveSelection:
             selection = self.GetSelectedObjects()
@@ -1028,7 +1032,7 @@ class ObjectListView(wx.ListCtrl):
             self.AutoAddRow()
         self.RepopulateList()
 
-        if preserveSelection:
+        if preserveSelection and selection:
             self.SelectObjects(selection)
 
     # Synonym as per many wxWindows widgets
@@ -1537,47 +1541,6 @@ class ObjectListView(wx.ListCtrl):
             return self.OnInsert(evt)
 
         return False
-
-
-        # On which column are we going to compare values? If we should search on the
-        # sorted column, and there is a sorted column and it is searchable, we use that
-        # one, otherwise we fallback to the primary column
-        if self.typingSearchesSortColumn and self.GetSortColumn(
-        ) and self.GetSortColumn().isSearchable:
-            searchColumn = self.GetSortColumn()
-        else:
-            searchColumn = self.GetPrimaryColumn()
-
-        # On Linux, GetUnicodeKey() always returns 0 -- on my 2.8.7.1
-        # (gtk2-unicode)
-        uniKey = evt.UnicodeKey
-        if uniKey == 0:
-            uniChar = chr(evt.KeyCode)
-        else:
-            # on some versions of wxPython UnicodeKey returns the character
-            # on others it is an integer
-            if isinstance(uniKey, int):
-                uniChar = chr(uniKey)
-            else:
-                uniChar = uniKey
-        if not self._IsPrintable(uniChar):
-            return False
-
-        # On Linux, evt.GetTimestamp() isn't reliable so use time.time()
-        # instead
-        timeNow = time.time()
-        if (timeNow - self.whenLastTypingEvent) > self.SEARCH_KEYSTROKE_DELAY:
-            self.searchPrefix = uniChar
-        else:
-            self.searchPrefix += uniChar
-        self.whenLastTypingEvent = timeNow
-
-        #self.__rows = 0
-        self._FindByTyping(searchColumn, self.searchPrefix)
-        # print "Considered %d rows in %2f secs" % (self.__rows, time.time() -
-        # timeNow)
-
-        return True
 
     def _FindByTyping(self, searchColumn, prefix):
         """
