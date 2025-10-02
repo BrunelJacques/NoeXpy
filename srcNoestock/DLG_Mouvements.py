@@ -493,6 +493,9 @@ def PxUnToHT(ht_ttc, txTva):
         return 1 / (1+ (txTva / 100))
 
 def CalculeLigne(dlg,track):
+    for var in (track.nbAch,track.pxAch, track.parAch,track.qte,track.pxUn,track.pxRation,
+            track.nbRations,track.qteStock):
+        if not var: var = 0.0
     if not hasattr(track,'dicArticle') or not track.dicArticle: return
     if dlg.typeAchat:
         if not hasattr(track,'parAch') or track.parAch == 0.0:

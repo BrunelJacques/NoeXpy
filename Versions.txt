@@ -1,3 +1,6 @@
+version 1.1.2.55 (02/10/2025)
+    - Correction division par null
+
 version 1.1.2.54 (25/09/2025)
     - Transpose fichier, mise en place d'abrégés
     - Evolution des tris dans Olv
