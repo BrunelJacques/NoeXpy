@@ -493,10 +493,12 @@ def PxUnToHT(ht_ttc, txTva):
         return 1 / (1+ (txTva / 100))
 
 def CalculeLigne(dlg,track):
-    for var in (track.nbAch,track.pxAch, track.parAch,track.qte,track.pxUn,track.pxRation,
-            track.nbRations,track.qteStock):
-        if not var: var = Nz(var)
-    if not hasattr(track,'dicArticle') or not track.dicArticle: return
+    for attr in ['nbAch','pxAch','parAch','qte','pxUn','pxRation','nbRations','qteStock']:
+        value = getattr(track, attr)
+        if not value:
+            setattr(track, attr, Nz(value))
+    if not hasattr(track,'dicArticle') or not track.dicArticle:
+        return
     if dlg.typeAchat:
         if track.parAch == 0.0:
             # l'origine de la ligne vierge n'était pas un achat

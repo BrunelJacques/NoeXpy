@@ -1050,9 +1050,11 @@ def MAJarticle(db,dlg,track):
         # prix actuel changé uniquement sur nouvelles entrées
         if 'achat' in dlg.origine and Nz(track.qte) != 0:
             dicArt['prixActuel'] = track.prixTTC
-            lstDonnees += [
-                ('dernierAchat', xformat.DateFrToSql(track.date)),
-                ('prixActuel', dicArt['prixActuel']), ]
+            date = dlg.date
+            if dicArt['dernierAchat'] < date:
+                lstDonnees += [
+                    ('dernierAchat', date,),
+                    ('prixActuel', dicArt['prixActuel']), ]
 
         # enregistre l' article dans la bd
         ret = db.ReqMAJ("stArticles", lstDonnees, "IDarticle", dicArt['IDarticle'],
