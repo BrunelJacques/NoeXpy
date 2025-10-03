@@ -275,7 +275,7 @@ def DefColonnes(lstNoms,lstCodes,lstValDef,lstLargeur,columnDefn=None):
 
 def GetLstColonnes(**kwd):
     # Compose ColumnsDefn selon schéma table, format dates et masquer ou pas ID
-    table = kwd.pop('table',None)
+    table = kwd.pop('table',[])
     IDcache = kwd.pop('IDcache',True)
     wxDates = kwd.pop('wxDates',True)
     # si les listes sont fournies, les param précédents sont inutiles
@@ -339,6 +339,7 @@ def DateSqlToIso(date):
     if isinstance(date,(tuple,list,dict)): return ""
     if not isinstance(date, str) : date = str(date)
     date = date.strip()
+    an, mois, jour = "","",""
     if date == "" : return ""
     if len(date) == 8:
         an,mois,jour = date[:4],date[4:6],date[6:8]
@@ -350,8 +351,9 @@ def DateSqlToIso(date):
     if len(lsplit) == 3 :
         jour,mois,an = lsplit[0],lsplit[1],lsplit[2]
     if len(an) == 2:
+        an = int(an)
         mil = 20
-        if int(an)>50: mil = 19
+        if an>50: mil = 19
         an = mil + an
     return '%s-%s-%s'%(an,mois,jour)
 

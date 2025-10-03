@@ -495,18 +495,19 @@ def PxUnToHT(ht_ttc, txTva):
 def CalculeLigne(dlg,track):
     for var in (track.nbAch,track.pxAch, track.parAch,track.qte,track.pxUn,track.pxRation,
             track.nbRations,track.qteStock):
-        if not var: var = 0.0
+        if not var: var = Nz(var)
     if not hasattr(track,'dicArticle') or not track.dicArticle: return
     if dlg.typeAchat:
-        if not hasattr(track,'parAch') or track.parAch == 0.0:
+        if track.parAch == 0.0:
             # l'origine de la ligne vierge n'était pas un achat
             track.parAch = 1
             track.nbAch = track.qte
             track.pxAch = track.pxUn
-
-        if hasattr(track,'nbAch'):
-            track.qte = track.nbAch * track.parAch
-        track.pxUn = round(Nz(track.pxAch) / Nz(track.parAch),6)
+        track.qte = track.nbAch * track.parAch
+        if track.parAch != 0.0:
+            track.pxUn = round(track.pxAch / track.parAch,6)
+        else:
+            track.pxUn = round(track.pxAch)
     try: qte = float(track.qte)
     except: qte = 0.0
     try: pxUn = float(track.pxUn)
@@ -1172,6 +1173,6 @@ class DLG(xGTE.DLG_tableau):
 if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
-    dlg = DLG(sens='sorties')
+    dlg = DLG(sens='entrees')
     dlg.ShowModal()
     app.MainLoop()
