@@ -503,7 +503,7 @@ def CalculeInventaire(dlg, dParams):
 def MouvementsPosterieurs(dlg):
     db = dlg.db
     # limitation à la date d'analyse, mais art.qte est l'ensemble des mouvements
-    where = "WHERE (stMouvements.date > '%s') " % dlg.date
+    where = "WHERE (stMouvements.date > '%s') " % str(dlg.date)
 
     req = """
         SELECT  Count(stMouvements.qte)        
