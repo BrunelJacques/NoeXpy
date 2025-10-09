@@ -10,7 +10,7 @@ import copy
 
 import wx
 import os
-import datetime, time
+import datetime
 import srcNoestock.DLG_Mouvements      as dlgMvts
 import srcNoestock.DLG_Articles        as dlgArt
 import srcNoestock.UTILS_Stocks        as nust
@@ -208,60 +208,11 @@ def GetOlvColonnes(dlg):
             ]
     return lstCol
 
-def ValideLigne(dlg, track):
-    # validation de la ligne de mouvement
-    track.valide = True
-    track.messageRefus = "Saisie incomplète\n\n"
-    CalculeLigne(dlg, track)
-
-    # Repas non renseigné
-    if dlg.sens == 'sorties' and track.repas in (None, 0, ''):
-        track.messageRefus += "Le repas pour imputer la sortie n'est pas saisi\n"
-
-    # date hors plage
-    if track.date in (None, 0, ''):
-        track.messageRefus += "La date n'est pas saisie\n"
-    elif track.date < dlg.anteDate or track.date > dlg.endDate:
-        track.messageRefus += "La date est hors de la plage de date en cours\n"
-
-    # article manquant
-    if track.IDarticle in (None, 0, ''):
-        track.messageRefus += "L'article n'est pas saisi\n"
-
-    # qte null
-    try:
-        track.qte = float(track.qte)
-    except:
-        track.qte = None
-    if not track.qte or track.qte == 0.0:
-        track.messageRefus += "La quantité est à zéro, mouvement inutile à supprimer\n"
-
-    # pxUn null
-    try:
-        track.pxUn = float(track.pxUn)
-    except:
-        track.pxUn = None
-    if not track.pxUn or track.pxUn == 0.0:
-        track.messageRefus += "Le pxUn est à zéro, indispensable pour le prix de journée, fixez un prix!\n"
-
-    # modif bloquée selon nature
-    if track.origine in ('achat', 'inventaire'):
-        mess = None
-        if track.origine == 'inventaire':
-            mess = "La modification de l'inventaire est impossible ici\n"
-            track.messageRefus = "Modification inventaire non autorisée"
-        if track.origine == 'achat':
-            mess = "Modif des achats = Distorsion possible avec un montant comptable\n"
-            mess += "Vérifiez la nature de cette ligne et son origine\n"
-        if mess:
-            wx.MessageBox(mess,"Info",style=wx.ICON_INFORMATION)
-    # envoi de l'erreur
-    if track.messageRefus != "Saisie incomplète\n\n":
-        track.valide = False
-    else:
-        track.messageRefus = ""
-
 def RowFormatter(listItem, track):
+    if not track.qte:
+        track.qte = 0.0
+    if not track.cumQte:
+        track.cumQte = 0.0
     listItem.SetBackgroundColour(wx.Colour(255, 255, 255))
     listItem.SetTextColour(wx.Colour(0, 0, 0))
     if track.origine in ('inventaire', 'achat'):
@@ -343,8 +294,13 @@ def MAJ_calculs(dlg):
     dlg.pnlCalculs.GetPnlCtrl('erreur').SetValue(erreur)
 
 def CalculeLigne(dlg, track):
+    for attr in ['qte','pxUn','pxRation','nbRations']:
+        value = getattr(track, attr)
+        if value == None:
+            setattr(track, attr, Nz(value))
     # après chaque saisie d'une valeur on recalcule les champs dépendants
-    if not hasattr(track, 'dicArticle') or not track.dicArticle: return
+    if not hasattr(track, 'dicArticle') or not track.dicArticle:
+        return
     try:
         qte = float(track.qte)
     except:
@@ -371,6 +327,59 @@ def CalculeLigne(dlg, track):
         if len(codecol) > 0:
             track.donnees[ix] = eval("track.%s"%codecol)
         else: track.donnees[ix] = None
+
+def ValideLigne(dlg, track):
+    # validation de la ligne de mouvement
+    track.valide = True
+    track.messageRefus = "Saisie incomplète\n\n"
+    CalculeLigne(dlg, track)
+
+    # Repas non renseigné
+    if dlg.sens == 'sorties' and track.repas in (None, 0, ''):
+        track.messageRefus += "Le repas pour imputer la sortie n'est pas saisi\n"
+
+    # date hors plage
+    if track.date in (None, 0, ''):
+        track.messageRefus += "La date n'est pas saisie\n"
+    elif track.date < dlg.anteDate or track.date > dlg.endDate:
+        track.messageRefus += "La date est hors de la plage de date en cours\n"
+
+    # article manquant
+    if track.IDarticle in (None, 0, ''):
+        track.messageRefus += "L'article n'est pas saisi\n"
+
+    # qte null
+    try:
+        track.qte = float(track.qte)
+    except:
+        track.qte = None
+    if not track.qte or track.qte == 0.0:
+        track.messageRefus += "La quantité est à zéro, mouvement inutile à supprimer\n"
+
+    # pxUn null
+    try:
+        track.pxUn = float(track.pxUn)
+    except:
+        track.pxUn = None
+    if not track.pxUn or track.pxUn == 0.0:
+        track.messageRefus += "Le pxUn est à zéro, indispensable pour le prix de journée, fixez un prix!\n"
+
+    # modif bloquée selon nature
+    if track.origine in ('achat', 'inventaire'):
+        mess = None
+        if track.origine == 'inventaire':
+            mess = "La modification de l'inventaire est impossible ici\n"
+            track.messageRefus = "Modification inventaire non autorisée"
+        if track.origine == 'achat':
+            mess = "Modif des achats = Distorsion possible avec un montant comptable\n"
+            mess += "Vérifiez la nature de cette ligne et son origine\n"
+        if mess:
+            wx.MessageBox(mess,"Info",style=wx.ICON_INFORMATION)
+    # envoi de l'erreur
+    if track.messageRefus != "Saisie incomplète\n\n":
+        track.valide = False
+    else:
+        track.messageRefus = ""
 
 def ComposeDonnees(db,dlg,ldMouvements):
     # retourne la liste des données de l'OLv
@@ -906,12 +915,12 @@ class DLG(dlgMvts.DLG):
         # mise à jour par SQL
         if lstAjuster != []:
             values = []
-            ordi = track.ordi
-            if ordi[:5] != 'ajust':
-                ordi = 'ajust %s'%ordi
-            ordi = ordi[:16]
-            info = [ordi,datetime.date.today()]
             for track in lstAjuster:
+                ordi = track.ordi
+                if ordi[:5] != 'ajust':
+                    ordi = 'ajust %s' % ordi
+                ordi = ordi[:16]
+                info = [ordi, datetime.date.today()]
                 val = [track.IDmouvement,track.pxUn,] + info
                 values.append(val)
             champs = ['IDmouvement','prixUnit','ordi','dateSaisie']

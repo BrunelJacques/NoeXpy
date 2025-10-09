@@ -213,6 +213,42 @@ def GetParams(pnl):
         'ht_ttc': pnl.GetOneValue('ht_ttc', codeBox='param3'),
         'sensNum': pnl.sensNum}
 
+def ValideParams(pnl,dParams,mute=False):
+    # vérifie la saisie des paramètres
+    pnlFournisseur = pnl.GetPnlCtrl('fournisseur', codebox='param2')
+    pnlAnalytique = pnl.GetPnlCtrl('analytique', codebox='param2')
+    pnlDate = pnl.GetPnlCtrl('date', codebox='param1')
+    valide = True
+
+    # normalisation none ''
+    if dParams['fournisseur']  == None:
+        dParams['fournisseur'] = ''
+    if dParams['analytique'] == None:
+        dParams['analytique'] = ''
+
+    mess = None
+    if not dParams['date']  or dParams['date'] == "":
+        mess = "Veuillez saisir une date"
+    if not mess:
+        ddt = xformat.DateFrToDatetime(dParams['date'],mute=True)
+        if ddt == None:
+            mess = "La date saisie est incorrecte"
+    if mess:
+        if not mute:
+            wx.MessageBox(mess)
+        valide = False
+        pnlDate.SetFocus()
+
+    if dParams['lstOrigines'][0] in ('retour','camp'):
+        if (dParams['analytique'] == '00') and len(pnl.lanceur.codesAnalytiques)>1:
+            valide = False
+            if not mute:
+                wx.MessageBox("Veuillez saisir un camp pour affecter les coûts!")
+                default = pnl.lanceur.codesAnalytiques[-1]
+                pnl.lanceur.SetAnalytique(default)
+                pnlAnalytique.SetFocus()
+    return valide
+
 def GriseCtrlsParams(dlg, lstOrigines):
         # grise les ctrl inutiles
         def setEnable(namePnlCtrl,flag):
@@ -386,42 +422,6 @@ def GetEnSaisie(dlg,db=None):
         dParams['sensNum'] = dlg.sensNum
     return dParams
 
-def ValideParams(pnl,dParams,mute=False):
-    # vérifie la saisie des paramètres
-    pnlFournisseur = pnl.GetPnlCtrl('fournisseur', codebox='param2')
-    pnlAnalytique = pnl.GetPnlCtrl('analytique', codebox='param2')
-    pnlDate = pnl.GetPnlCtrl('date', codebox='param1')
-    valide = True
-
-    # normalisation none ''
-    if dParams['fournisseur']  == None:
-        dParams['fournisseur'] = ''
-    if dParams['analytique'] == None:
-        dParams['analytique'] = ''
-
-    mess = None
-    if not dParams['date']  or dParams['date'] == "":
-        mess = "Veuillez saisir une date"
-    if not mess:
-        ddt = xformat.DateFrToDatetime(dParams['date'],mute=True)
-        if ddt == None:
-            mess = "La date saisie est incorrecte"
-    if mess:
-        if not mute:
-            wx.MessageBox(mess)
-        valide = False
-        pnlDate.SetFocus()
-
-    if dParams['lstOrigines'][0] in ('retour','camp'):
-        if (dParams['analytique'] == '00') and len(pnl.lanceur.codesAnalytiques)>1:
-            valide = False
-            if not mute:
-                wx.MessageBox("Veuillez saisir un camp pour affecter les coûts!")
-                default = pnl.lanceur.codesAnalytiques[-1]
-                pnl.lanceur.SetAnalytique(default)
-                pnlAnalytique.SetFocus()
-    return valide
-
 def ConvTva(valeur,taux,modeOut='HT',modeIn='TTC'):
     # retourne la valeur transposée
     if modeIn == modeOut : return valeur
@@ -497,7 +497,8 @@ def CalculeLigne(dlg,track):
         value = getattr(track, attr)
         if not value:
             setattr(track, attr, Nz(value))
-    if not hasattr(track,'dicArticle') or not track.dicArticle:
+    # après chaque saisie d'une valeur on recalcule les champs dépendants
+    if not hasattr(track, 'dicArticle') or not track.dicArticle:
         return
     if dlg.typeAchat:
         if track.parAch == 0.0:
