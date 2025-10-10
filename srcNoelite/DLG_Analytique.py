@@ -16,6 +16,7 @@ import xpy.xUTILS_DB                   as xdb
 from xpy.ObjectListView.ObjectListView import ColumnDefn
 from xpy.outils                 import xformat
 
+MODULE = os.path.abspath(__file__).split("\\")[-1]
 #---------------------- Matrices de paramétres -------------------------------------
 
 DIC_BANDEAU = {'titre': "Gestion des codes analytiques NoeGest",
@@ -45,7 +46,7 @@ MATRICE_PARAMS = {
                     'help': "Le choix de cet axe appelle l'ensemble des lignes concernées",
                     'value':0, 'values': AXES,
                     'ctrlAction': 'OnAxe',
-                    'size':(260,15),
+                    'size':(260,30),
                     'ctrlMaxSize': (200, 20),
                     'txtSize': 130},
 ]}
@@ -290,6 +291,7 @@ class DLG(xGTE.DLG_tableau):
         kwds['dicPied'] = dicPied
         self.db = xdb.DB()
         kwds['db'] = self.db
+        kwds['name'] = MODULE
 
         super().__init__(None, **kwds)
 

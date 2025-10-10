@@ -972,7 +972,11 @@ class DLG_tableau(xusp.DLG_vide):
             if dicBandeau != None:
                 break
 
-        kwds['name'] = "%s.(%s)DLG_tableau"%(kwds.get('name',"-"),MODULE)
+        if not kwds.get('name',None):
+            kwds['name'] = f"({MODULE})"
+        else:
+            name = kwds.pop('name', 'DLG_vide')
+            kwds['name'] = f"({MODULE}) {name}"
 
         super().__init__(parent,**kwds)
 

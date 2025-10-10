@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------------------
-# Application :    Noelite, Affichage d'une balance comptable
+# Application :    Noelite, Affichage d'une balance comptable (inachevé)
 # Usage : Grille d'affichage des lignes d'une balance
 # Auteur:          Jacques BRUNEL
 # Licence:         Licence GNU GPL
@@ -67,7 +67,7 @@ MATRICE_PARAMS = {
     {'name': 'bilan', 'genre': 'Check', 'label': 'Avec comptes de bilan',
                     'help': "Pour avoir les comptes des classes 1 à 5, sinon c'est seulement 6 et 7",
                     'value':False,
-                    'size':(250,10),
+                    'size':(250,30),
                     'txtSize': 170,
      },
     {'name': 'exercice', 'genre': 'Combo', 'label': 'Exercice archivé',

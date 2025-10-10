@@ -249,7 +249,8 @@ def GetDlgOptions(dlg):
     return {
         'minSize': (700, 450),
         'size': (1250, 800),
-        'autoSizer': False
+        'autoSizer': False,
+        'name':'DLG_Inventaires'
         }
 
     #----------------------- Parties de l'écrans -----------------------------------------

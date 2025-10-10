@@ -1389,8 +1389,8 @@ class DLG_vide(wx.Dialog):
     def __init__(self,parent, *args, **kwds):
 
         listArbo=os.path.abspath(__file__).split("\\")
-        name =      kwds.pop('name',self.__class__.__name__)
-        title =     kwds.pop('title',"(%s.DLG_vide)%s"%(listArbo[-1],name))
+        name =      kwds.pop('name','DLG_vide')
+        title =     kwds.pop('title',f"({listArbo[-1]}.DLG_vide) {name}")
         style =     kwds.pop('style',wx.DEFAULT_FRAME_STYLE)
         pos =       kwds.pop('pos',(200,100))
         size =      kwds.pop('size',(600, 450))
