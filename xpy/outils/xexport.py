@@ -319,8 +319,8 @@ def ExportLgFixe(nomfic='',matrice={},valeurs=[],entete=False):
     f.close()
     return Confirmation(cheminFichier)
 
-def ExportExcel(listview=None, grid=None, titre="Liste", lstColonnes=None, listeValeurs=None, autoriseSelections=False):
-    # Export de la liste au format Excel
+def ExportExcel(listview=None, grid=None, titre="Liste", lstColonnes=None,
+                listeValeurs=None, autoriseSelections=False):
 
     # Vérifie si données bien présentes
     if (listview != None and len(listview.innerList) == 0) or (

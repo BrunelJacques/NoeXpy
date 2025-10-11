@@ -75,7 +75,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     noPiece = dicParams['p_export']['noPiece']
     typeCB = dicParams['typeCB']
     dateMax = dicParams['dateMax']
-    if typeCB:
+    if typeCB and 'champsCB' in FORMATS_IMPORT[nomBanque]:
         champsAttendusBrut = FORMATS_IMPORT[nomBanque]['champsCB']
     else:
         champsAttendusBrut = FORMATS_IMPORT[nomBanque]['champs']
@@ -92,7 +92,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     xformat.NormaliseNomChamps(champsIn)
 
     # Ce dic contiendra l'index à lire sur la ligne de donnéesIn % index sur Olv
-    dicChampsAttendus = {}
+    dicChampsAttendus = {'generic':{'sens':1,'ixIn':-1}}
     for ixAtt in range(len(champsAttendus)):
         champAtt = champsAttendus[ixAtt]
         champAttBrut = champsAttendusBrut[ixAtt]
@@ -174,6 +174,35 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
                 pass
         return ok
 
+    def calculMontant(ligne):
+        lstValeurs = []
+        lstSens = []
+        mtt = 0.0
+        # le champOut est recherché par correspondance floue inversée
+        for chOut in ['montant', 'debit', 'credit']:
+            for chAtt in champsAttendus:
+                if chAtt and chOut in chAtt:
+                    dicChampAtt = dicChampsAttendus[chAtt]
+                    lstValeurs.append(ligne[dicChampAtt['ixIn']])
+                    lstSens.append(dicChampAtt['sens'])
+                    break
+        # cumul des valeurs entrant dans montant
+        for ix in range(len(lstValeurs)):
+            valeur = lstValeurs[ix]
+            if isinstance(valeur, str) and valeur.lower().startswith('avoir'):
+                valeur = valeur.lower()
+                if '-' in valeur:
+                    valeur = valeur.replace('-', '')
+                    valeur = valeur.replace('avoir', '')
+                else:
+                    valeur = valeur.replace('avoir', '-')
+            valeur = xformat.NoLettre(valeur)
+            if not valeur:
+                valeur = 0.0
+            valeur = xformat.ToFloat(valeur)
+            mtt += valeur * lstSens[ix]
+        return mtt
+
     # déroulé du fichier entrée
     ko = None
     txtInfo = "Traitement %d lignes..."%len(donnees[0:])
@@ -189,12 +218,17 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
 
         if (not hasMontant(ligne)) and (not hasLibelle((ligne))):
             continue
+
         if ko: break
         ligneOut = [None,] * len(champsOut)
-        valeur = None
+        montant = 0.0
+        # chaque champ de ligne out vient chercher dans champs attendus de la ligne in
         for champOut in champsOut:
             if champOut in ['compte','appel','libcpt']:
                 continue
+            dicChampAtt = None
+            valeur = None
+            # Recherche de la correspondance entre champs in et out
             for champAtt in champsAttendus:
                 # le champOut est dans le nom d'un champ attendu : correspondance simple
                 if champAtt and (champOut in champAtt):
@@ -210,16 +244,20 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
                     valeur = valeur.date()
 
             elif champOut == 'noPiece':
+                dicChampAtt = dicChampsAttendus['generic'] # passera sans noPièce
+                if not dicChampAtt and 'carte' in dicChampsAttendus:
+                    dicChampAtt = dicChampsAttendus['carte']
                 valeur = noPiece # prend la valeur par défaut si présente
-                if 'carte' in champsAttendus: # sauf si présence d'un champ carte
-                    valeur = ligne[dicChampsAttendus['carte']['ixIn']]
+                if dicChampAtt: # sauf si présence d'un champ carte
+                    valeur = ligne[dicChampAtt['ixIn']]
 
             elif champOut == 'libelle':
                 valeur = ""
                 for champAtt in ['libelle','designation','commerce','ville']:
                     if champAtt in dicChampsAttendus :
-                        if dicChampsAttendus[champAtt]['ixIn']:
-                                valeur += str(ligne[dicChampsAttendus[champAtt]['ixIn']]) + " "
+                        dicChampAtt = dicChampsAttendus[champAtt]
+                        if 'ixIn' in dicChampAtt:
+                            valeur += str(ligne[dicChampAtt['ixIn']]) + " "
                 if dicParams['typeCB']:
                     # ajout du début de date dans le libellé
                     dicDate = dicChampsAttendus['date']
@@ -233,31 +271,23 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
                 valeur = Abrege(valeur)
 
             elif champOut == 'montant':
-                if isinstance(valeur,str) and valeur.lower().startswith('avoir'):
-                    valeur = valeur.lower()
-                    if '-' in valeur:
-                        valeur = valeur.replace('-','')
-                        valeur = valeur.replace('avoir', '')
-                    else:
-                        valeur = valeur.replace('avoir', '-')
-                valeur = xformat.NoLettre(valeur)
-                if not valeur:
-                    valeur = 0.0
-                for item in ('debit','credit','-debit','-credit'):
-                    if item in dicChampsAttendus:
-                        dicItem =  dicChampsAttendus[item]
-                        valItem = ligne[dicItem['ixIn']]
-                        try:
-                            valItem = xformat.ToFloat(valItem)
-                        except Exception as err:
-                            print(err)
-                        valeur += valItem * dicItem['sens']
-                    #valeur *= dicChampAtt['sens']
+                valeur = calculMontant(ligne)
+                montant = valeur
+                dicChampAtt = dicChampsAttendus['generic']
+
+            # Test de cas non prévus
+            if not dicChampAtt:
+                mess = f"Le champ requis '{champOut}', n'est pas dans la composition {champsAttendus}"
+                wx.MessageBox(mess,"Pb de choix d'inport")
+                ko = True
+                break
+
             # place la valeur dans la ligne out
             ligneOut[champsOut.index(champOut)] = valeur
-            valeur = None
-        if not ko:
-            if compta and sens == -1:
+
+        # Enrichissement de l'info et stockage
+        if not ko and montant :
+            if compta and (montant < 0.0):
                 enrichiLigne(ligneOut)
             lstOut.append(ligneOut)
 
@@ -725,9 +755,7 @@ class Dialog(xusp.DLG_vide):
         else:
             dicParams['p_export']['typepiece'] = ""
         exp = UTILS_Compta.Export(self,self.compta)
-        ret = exp.Exporte(dicParams,
-                          donnees,
-                          champsIn)
+        ret = exp.Exporte(dicParams, donnees, champsIn)
         if ret == wx.OK:
             # Raz des données
             self.ctrlOlv.lstDonnees = []

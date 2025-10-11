@@ -273,7 +273,7 @@ def GetIDcomptaDefaut():
 
 class Export(object):
     # Génération d'un fichier d'export
-    def __init__(self,parent,compta):
+    def __init__(self,parent,compta=None):
         self.parent = parent
         try:
             self.nomCompta = compta.nomCompta
@@ -664,7 +664,7 @@ if __name__ == u"__main__":
     import os
     os.chdir("..")
     app = wx.App(0)
-    cpt = Compta(None,compta='quadra')
+    cpt = Compta(None,nomCompta='quadra')
     #print(cpt.GetOneAuto('fournisseurs','sncf internet paris'),cpt.filtreTest)
     cpt.ChoisirItem('clients','brunel')
     app.MainLoop()
