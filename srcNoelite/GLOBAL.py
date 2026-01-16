@@ -14,13 +14,13 @@ def GetFormatsImport(ComposeFuncImp = None):
                 'fonction': ComposeFuncImp,
                 'table': 'fournisseurs'},
             "Crédit Mutuel importé d'internet": {
-                'champs': ['Date', None, 'Libelle', '-debit','credit'],
-                'champsCB': ['Date','Commerce','Ville', 'montant','Carte'],
+                'champs': ['date', None, 'libelle', '-debit','credit'],
+                'champsCB': ['date','Commerce','Ville', 'montant','carte'],
                 'fonction': ComposeFuncImp,
                 'table': 'fournisseurs'},
             "Crédit Mutuel relevé papier": {
                 'champs': ['date',None,'operation', 'debit','credit'],
-                'champsCB': ['date','commerce','ville', '-MontantEuro','carte'],
+                'champsCB': ['Date','Commerce','Ville', '-MontantEuro','Carte','DateDebit'],
                 'fonction': ComposeFuncImp,
                 'table': 'fournisseurs'}
             }

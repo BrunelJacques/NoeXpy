@@ -38,7 +38,8 @@ ABREGE = (  #ici réduction de mots par un abrégé, pour des libellés plus den
     ('PAIEMENT', 'Pmt'),
     ('FRAIS', 'Fr'),
     ('REMBOURSEMENT', 'Rbt'),
-    ('DEPARTEMENT', 'Dprt'))
+    ('DEPARTEMENT', 'Dprt'),
+    ('TOULON','Tln'))
 
 # Infos d'aide en pied d'écran
 DIC_INFOS = {'date':"Flèche droite pour le mois et l'année, Entrée pour valider.\nC'est la date de réception du règlement, qui sera la date comptable",
@@ -94,16 +95,23 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
     # Ce dic contiendra l'index à lire sur la ligne de donnéesIn % index sur Olv
     dicChampsAttendus = {'generic':{'sens':1,'ixIn':-1}}
     for ixAtt in range(len(champsAttendus)):
+        if not champsAttendus[ixAtt]:
+            continue
         champAtt = champsAttendus[ixAtt]
         champAttBrut = champsAttendusBrut[ixAtt]
         if not champAtt: continue
         dicChampsAttendus[champAtt] = {}
         radical = xformat.NoChiffres(champAtt)
-        if champAtt in champsIn:
-            ixIn = champsIn.index(champAtt)
-        else:
-            ixIn = None
-
+        ixIn = None
+        for champ in champsIn:
+            if radical in champ:
+                ixIn = champsIn.index(champ)
+                break
+        if ixIn == None:
+            mess = "Erreur de nom de colonne\n\n"
+            mess += f"Le champ '{radical}', n'a pas été trouvé dans '{str(champsIn)}'"
+            wx.MessageBox(mess,'Pb parametres',style=wx.ICON_ERROR)
+            break
         # ajout du sens, utile pour les seuls montants
         if champAttBrut.startswith("-"):
             sens = -1
@@ -146,24 +154,26 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
         # vérifie la présence d'un montant dans au moins un champ attendu en numérique
         lstIxChamps = []
         for champ in champsIn:
-            if champ in ('libelle','designation','commerce'):
+            if champ in ('libelle','operation','designation','commerce'):
                 lstIxChamps.append(champsIn.index(champ))
         ok = False
         for ix in lstIxChamps:
-            try:
-                if len(ligne[ix]) > 0:
-                    ok = True
-                    break
-            except:
-                pass
+            if ligne[ix] and ligne[ix]:
+                try:
+                    if len(ligne[ix]) > 0:
+                        ok = True
+                        break
+                except:
+                    pass
         return ok
 
     def hasMontant(ligne):
         # vérifie la présence d'un montant dans au moins un champ attendu en numérique
         lstIxChamps = []
-        for champ in champsIn:
-            if champ in ('montant','debit','credit','montanteuro'):
-                lstIxChamps.append(champsIn.index(champ))
+        for radical in ('debit', 'credit', 'montant'):
+            for champ in champsIn:
+                if radical in champ:
+                    lstIxChamps.append(champsIn.index(champ))
         ok = False
         for ix in lstIxChamps:
             try:
@@ -216,7 +226,8 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
             txtInfo = " %d lignes retenues sur %d lues >> %d" % (len(lstOut),nb,len(donnees[0:]))
             parent.pnlPied.SetItemsInfos(txtInfo, image)
 
-        if (not hasMontant(ligne)) and (not hasLibelle((ligne))):
+        # stop si pas de libelle d'écriture ou pas de montant
+        if (not hasMontant(ligne)) or (not hasLibelle(ligne)):
             continue
 
         if ko: break
@@ -239,13 +250,21 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
             # traitements spécifiques selon destination, m^me si correspondance simple
             if champOut == 'date' and valeur:
                 if dicParams['typeCB']:
-                    valeur = xformat.FinDeMois(dateMax)
+                    # force la date du débit et non celle de l'opération
+                    valeur = xformat.FinDeMois(dateMax) # si non renseigné, valeur défaut
+                    # recherche dans la colonne 'datedebit'
+                    dicDate = dicChampsAttendus['datedebit']
+                    dtedeb = ligne[dicDate['ixIn']]
+                    if dtedeb:
+                        if isinstance(dtedeb,(datetime.date,datetime.datetime)):
+                            valeur = dtedeb
+
                 if isinstance(valeur, datetime.datetime):
                     valeur = valeur.date()
 
             elif champOut == 'noPiece':
                 dicChampAtt = dicChampsAttendus['generic'] # passera sans noPièce
-                if not dicChampAtt and 'carte' in dicChampsAttendus:
+                if 'carte' in dicChampsAttendus:
                     dicChampAtt = dicChampsAttendus['carte']
                 valeur = noPiece # prend la valeur par défaut si présente
                 if dicChampAtt: # sauf si présence d'un champ carte
@@ -253,11 +272,13 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
 
             elif champOut == 'libelle':
                 valeur = ""
-                for champAtt in ['libelle','designation','commerce','ville']:
+                for champAtt in ['operation','libelle','designation','commerce','ville']:
                     if champAtt in dicChampsAttendus :
                         dicChampAtt = dicChampsAttendus[champAtt]
                         if 'ixIn' in dicChampAtt:
                             valeur += str(ligne[dicChampAtt['ixIn']]) + " "
+                # remplacement de mots pour clés et racourcissement
+                valeur = Abrege(valeur)
                 if dicParams['typeCB']:
                     # ajout du début de date dans le libellé
                     dicDate = dicChampsAttendus['date']
@@ -268,7 +289,7 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
                         else:
                             prefixe = dte.strip()+' '
                         valeur = prefixe + valeur
-                valeur = Abrege(valeur)
+
 
             elif champOut == 'montant':
                 valeur = calculMontant(ligne)
@@ -701,7 +722,9 @@ class Dialog(xusp.DLG_vide):
             self.ctrlOlv.lstDonnees =  fn(dicParams, entrees,
                                           self.ctrlOlv.lstCodesColonnes,
                                           self.compta, self.table, parent=self)            # affiche le retour des entrées dans ctelOlv.lstDonnees
+            self.ctrlOlv.lstDonnees.sort(key=lambda x: (x[0],x[4]))
             self.InitOlv()
+
         if event: event.Skip()
 
     def OnExporter(self,event):
@@ -728,7 +751,7 @@ class Dialog(xusp.DLG_vide):
         nonValides = 0
         # constitution de la liste des données à exporter
         lstTracks = [x for x in self.ctrlOlv.innerList if x.date!="" ]
-        for track in lstTracks:
+        for track in sorted(lstTracks,key=lambda x: (x.date,x.noPiece)):
             if not track.compte or len(track.compte)==0:
                 track.comte = '471'
                 nonValides +=1
@@ -755,6 +778,7 @@ class Dialog(xusp.DLG_vide):
         else:
             dicParams['p_export']['typepiece'] = ""
         exp = UTILS_Compta.Export(self,self.compta)
+
         ret = exp.Exporte(dicParams, donnees, champsIn)
         if ret == wx.OK:
             # Raz des données

@@ -71,6 +71,12 @@ def GetNomsCols(ws,nbcol=10):
     ridx = cell.row
     cidx = cell.column
     values = [ ws.cell(row=ridx,column=cidx + i).value for i in range(0, nbcol) ]
+    # strip la liste des None à la fin
+    i = len(values)
+    for i in range(len(values),0,-1):
+        if values[i-1]:
+            break
+    values = values[:i]
     return values
 
 def GetNbRows(ws):
