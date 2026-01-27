@@ -1,3 +1,6 @@
+version 1.1.2.57 (27/01/2026)
+    - Adaptation pour saisie KM
+
 version 1.1.2.56 (18/01/2026)
     - Import des écritures banque, possibles en plurimensuel
 

@@ -22,7 +22,8 @@ from xpy.outils                 import xformat,xbandeau,ximport,xexport
 MODULE = 'DLG_Km_saisie'
 TITRE = "Saisie des consommations de km"
 INTRO = "Importez un fichier ou saisissez les consommations de km, avant de l'exporter dans un autre format"
-
+COLONNES_IN = ["Code Véhicule  ","Date Fin       ","Utilisateur    ","Activité       ",
+                     "KM Début       ","KM Fin   "]
 # Infos d'aide en pied d'écran
 DIC_INFOS = {'date':"Flèche droite pour le mois et l'année, Entrée pour valider.\nC'est la date",
             'vehicule':    "<F4> Choix d'un véhicule, ou saisie directe de l'abrégé",
@@ -39,8 +40,7 @@ INFO_OLV = "<Suppr> <Inser> <Ctrl C> <Ctrl V>"
 # Fonctions de transposition entrée à gérer pour chaque item FORMAT_xxxx pour les spécificités
 def ComposeFuncImp(dlg,entete,donnees):
     # Fonction import pour composition
-    colonnesIn =    ["Code Véhicule       ","Date Fin     ","Membre        ","Activité ",
-                     "KM Début       ","KM Fin   "]
+    colonnesIn =  COLONNES_IN
     champsIn =      ['idvehicule','datekmfin','membre','activite','kmdeb','kmfin']
     lstOut = [] # sera composé selon champs out
     champsOut = dlg.ctrlOlv.lstCodesColonnes
@@ -140,14 +140,15 @@ MATRICE_PARAMS = {
                     'value':0,
                     'values':[],# cf PNL_params.__init__
                     'ctrlAction': 'OnDateOD',
-                    'txtSize': 100,
-                    'size':(210,30)},
+                    'txtSize': 60,
+                    'size':(270,30)
+                    },
     {'name': 'vehicule', 'genre': 'Choice', 'label': "Véhicule",
                     'help': "Pour filtrer les écritures d'un seul véhicule, saisir sa clé d'appel",
                     'value':0, 'values':['',],
                     'ctrlAction': 'OnVehicule',
                     'txtSize': 60,
-                    'size':(300,30)},
+                    'size':(270,30)},
     ],
 ("compta", "Paramètres export"): [
     {'name': 'formatexp', 'genre': 'Choice', 'label': 'Format export',
@@ -536,8 +537,8 @@ class Dialog(xusp.DLG_vide):
         # importation des donnéees du fichier entrée
         entrees = None
         if nomFichier[-4:].lower() == 'xlsx':
-            dicOptions = {'nomFichier': nomFichier, 'maxcol': 7}
-            entrees = ximport.GetFichierXlsx(**dicOptions)
+            dicOptions = {'nomFichier': nomFichier, 'maxcol': 7,'lstColonnes':COLONNES_IN}
+            entrees = ximport.GetFichierXlsx(dicOptions)
         elif nomFichier[-3:].lower() == 'xls':
             entrees = ximport.GetFichierXls(nomFichier,maxcol=7)
         else: wx.MessageBox("Il faut choisir un fichier .xls ou .xlsx",'NomFichier non reconnu')
@@ -550,6 +551,8 @@ class Dialog(xusp.DLG_vide):
                     entete = entrees[ix]
                     entrees = entrees[ix + 1:]
                     break
+        else:
+            return None,None
         if not entete:
             wx.MessageBox("Fichier non reconnu!\n\n"+
                           "Aucune ligne avec 5 cellules non nulles définissant une entête des colonnes!")

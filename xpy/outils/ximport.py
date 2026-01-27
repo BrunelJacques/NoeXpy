@@ -41,10 +41,15 @@ def GetOneColCellsProp(ws,cell,typ=datetime.datetime):
     return nbCells, minVal, maxVal
 
 def GetFirstCell(ws,text=None,nblig=10,nbcol=15):
-    if text: text = text.lower()
+    if text:
+        text = text.lower()
+        mots = text.split(' ')
+        text = mots[0]
+    if not text:
+        return
     cell = None
     # Search within the defined range
-    for row in ws.iter_rows(min_row=1,max_row=nblig,min_col=1,max_col=nbcol):
+    for row in ws.iter_rows(min_row=1,max_row=nblig,min_col=0,max_col=nbcol):
         for cell in row:
             if cell.value and (not text or text in str(cell.value).lower()):
                 break
@@ -66,8 +71,8 @@ def GetOneSheet(wk,sheetname):
     # récupére ws pour GetDonnées fichier.xlsx
     return wk[sheetname]
 
-def GetNomsCols(ws,nbcol=10):
-    cell = GetFirstCell(ws,'date')
+def GetNomsCols(ws,nbcol=10,firstCol = 'date'):
+    cell = GetFirstCell(ws,firstCol)
     ridx = cell.row
     cidx = cell.column
     values = [ ws.cell(row=ridx,column=cidx + i).value for i in range(0, nbcol) ]
@@ -128,7 +133,7 @@ def OpenFile(nomFichier, mute=False):
         file = None
     elif lstNom[-1] == 'xlsx':
         typeFile = 'xlsx'
-        file = load_workbook(filename=nomFichier)
+        file = load_workbook(filename=nomFichier, data_only=True)
     elif lstNom[-1] == 'xls':
         mess = "Ce fichier xls doit être transformé en xlsx"
         wx.MessageBox(mess,"IMPOSSIBLE")
@@ -185,11 +190,16 @@ def GetFichierXlsx(dicOptions):
     nomFichier = dicOptions.pop('nomFichier',None)
     maxcol = dicOptions.pop('maxcol',10)
     ixSheet = dicOptions.pop('ixSheet',0)
-
+    lstCol = dicOptions.pop('lstColonnes',None)
+    firstCol = 'date'
+    if lstCol:
+        firstCol = lstCol[0]
     # Ouverture du fichier
     try:
         (typeFichier, wk) = OpenFile(nomFichier)
         sheetNames = GetSheetNames(wk)
+        if not sheetNames:
+            raise f"Aucune feuille Excel reconnue dans {nomFichier}"
         sheetName = sheetNames[ixSheet]
         # activation de la feuille
         ws = GetOneSheet(wk,sheetName)
@@ -199,13 +209,13 @@ def GetFichierXlsx(dicOptions):
         wx.MessageBox(mess, "ECHEC OUVERTURE")
         return
 
-    lstCol = GetNomsCols(ws,maxcol)
+    lstCol = GetNomsCols(ws,maxcol,firstCol=firstCol)
     xformat.NormaliseNomChamps(lstCol)
 
-    cellDate = GetFirstCell(ws,'date')
-    if cellDate:
-        minrow = cellDate.row + 1  # start below the target cell
-        mincol = cellDate.column
+    cellFirst = GetFirstCell(ws,firstCol)
+    if cellFirst:
+        minrow = cellFirst.row + 1  # start below the target cell
+        mincol = cellFirst.column
         maxrow = ws.max_row
     else:
         mess = "Le fichier %s n'a pas cellule 'date'"% nomFichier
@@ -248,7 +258,7 @@ if __name__ == '__main__':
     #donnees = GetFichierXls("c:/temp/FichierTest.xls")
     dicOptions = {'nomFichier':r"C:\Users\jbrun\Desktop\bribes\CREDIT MUT RELEVE.xlsx",
                   'ixsheet':0}
-    donnees = GetFichierXlsx(**dicOptions)
+    donnees = GetFichierXlsx(dicOptions)
     print(donnees[0])
     app.MainLoop()
 
