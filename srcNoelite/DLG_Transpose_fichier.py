@@ -722,7 +722,10 @@ class Dialog(xusp.DLG_vide):
             self.ctrlOlv.lstDonnees =  fn(dicParams, entrees,
                                           self.ctrlOlv.lstCodesColonnes,
                                           self.compta, self.table, parent=self)            # affiche le retour des entrées dans ctelOlv.lstDonnees
-            self.ctrlOlv.lstDonnees.sort(key=lambda x: (x[0],x[4]))
+            try:
+                self.ctrlOlv.lstDonnees.sort(key=lambda x: (x[0],str(x[4])))
+            except Exception as err:
+                print('tri!!! ',err)
             self.InitOlv()
 
         if event: event.Skip()
@@ -751,7 +754,7 @@ class Dialog(xusp.DLG_vide):
         nonValides = 0
         # constitution de la liste des données à exporter
         lstTracks = [x for x in self.ctrlOlv.innerList if x.date!="" ]
-        for track in sorted(lstTracks,key=lambda x: (x.date,x.noPiece)):
+        for track in sorted(lstTracks,key=lambda x: (x.date,str(x.noPiece))):
             if not track.compte or len(track.compte)==0:
                 track.comte = '471'
                 nonValides +=1
