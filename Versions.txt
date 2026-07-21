@@ -1,3 +1,6 @@
+version 1.1.2.59 (21/07/2026)
+    - Meilleure gestion des échecs de connexion
+
 version 1.1.2.58 (15/04/2026)
     - Bug sur import écritures banque mal formatées
 

@@ -257,6 +257,7 @@ class DB():
             self.erreur = 'xDB: Accès BD non développé pour %s'%self.typeDB
             wx.MessageBox("%s\n\nEtape: %s"%(self.erreur,etape))
             return
+        mess = "ok"
         try:
             connexion = mysql.connector.connect(host=host, user=userdb,
                                                 passwd=passwd, port=int(port),
@@ -264,6 +265,7 @@ class DB():
             connexion.close()
             connexion = mysql.connector.connect(host=host, user=userdb,
                                                 passwd=passwd, port=int(port))
+
         except mysql.connector.Error as err:
             mess = "Echec connexion MYSQL\nEtape: %s\n" %(etape)
             if err.errno == errorcode.CR_CONN_HOST_ERROR:
@@ -271,6 +273,10 @@ class DB():
             else:
                 mess += "Error: {}".format(err)
 
+        except Exception as err:
+            mess = f"Echec connexion Mysql: {err} étape {etape}"
+
+        if mess != "ok":
             if not mute:
                 wx.MessageBox(mess,caption="xUTILS_DB.ConnexionFichierReseau ")
             print(mess)
