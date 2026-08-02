@@ -132,19 +132,22 @@ class DB():
             if 'typeDB' in self.cfgParams:
                 self.typeDB = self.cfgParams['typeDB'].lower()
             else : self.typeDB = 'Non renseigné'
-            if 'typeDB' in self.cfgParams.keys() and  self.cfgParams['typeDB'].lower() in ['mysql','sqlserver']:
-                self.isNetwork = True
-                # Ouverture de la base de données
-                self.ConnexionFichierReseau(self.cfgParams, mute=mute)
-            elif 'typeDB' in self.cfgParams.keys() and  self.cfgParams['typeDB'].lower() in ['access','sqlite']:
-                self.isNetwork = False
-                self.ConnexionFichierLocal(self.cfgParams)
-            else :
-                mess = "xDB: Le type de Base de Données '%s' n'est pas géré!" % self.typeDB
-                self.erreur = mess
-                if not mute:
-                    wx.MessageBox(mess)
-                return
+            try:
+                if ('typeDB' in self.cfgParams.keys()
+                        and  self.cfgParams['typeDB'].lower() in ['mysql','sqlserver']):
+                    self.isNetwork = True
+                    # Ouverture de la base de données
+                    self.ConnexionFichierReseau(self.cfgParams, mute=mute)
+                elif 'typeDB' in self.cfgParams.keys() and  self.cfgParams['typeDB'].lower() in ['access','sqlite']:
+                    self.isNetwork = False
+                    self.ConnexionFichierLocal(self.cfgParams)
+            except Exception as err:
+                    mess = "xDB: L'accès à la Base de Données '%s' est en erreur!" % self.typeDB
+                    mess += f"\n{err}"
+                    self.erreur = mess
+                    if not mute:
+                        wx.MessageBox(mess)
+                    return
 
             if self.connexion:
                 # Mémorisation de l'ouverture de la connexion et des requêtes
