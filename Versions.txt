@@ -1,3 +1,6 @@
+version 1.1.2.61 (02/08/2026)
+    - Bug DLG_Inventaire
+
 version 1.1.2.60 (02/08/2026)
     - Meilleure gestion des échecs de connexion en initialisation
 

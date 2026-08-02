@@ -277,7 +277,7 @@ def AnomalieLigne(track):
         anomalie = True
     if track.deltaValo and track.deltaValo > 10:
         anomalie = True
-    if track.qteStock < 0:
+    if track.qteStock and track.qteStock < 0:
         anomalie = True
     track.anomalie = anomalie
     
