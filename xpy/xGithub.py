@@ -47,10 +47,19 @@ def IsPullNeeded(repo_path, withPull=True, mute=False):
         messError += "origin.fetch est ok\n"
         # Get the commit IDs of the local and remote branches
         local_branch = repo.head.commit
-        remote_branch = origin.refs.master.commit
+        # Récupère le nom de la branche active (ex: 'wxPython43' ou 'master')
+        active_branch_name = repo.active_branch.name
+        #remote_branch = origin.refs.master.commit
+        # Récupère le commit de la branche distante correspondante (ex: origin/wxPython43)
+        remote_branch = origin.refs[active_branch_name].commit
+
+
         messError += "remote_branch est ok est ok\n"
         # Check if local branch is behind remote branch
-        needed = local_branch != remote_branch
+        #needed = local_branch != remote_branch
+        # Vrai uniquement si le serveur a des commits que la branche locale n'a pas
+        needed = repo.is_ancestor(local_branch,
+                                  remote_branch) and local_branch != remote_branch
         if needed and withPull == True:
             if not mute:
                 mess = "Une mise à jour des programmes NOESTOCK-NOELITE est nécessaire\n\n"

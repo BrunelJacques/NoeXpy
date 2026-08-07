@@ -45,6 +45,6 @@ if __name__ == "__main__":
         mess = "Tout semble correct\n\nAucune mise à jour nécessaire"
         wx.MessageBox(mess,"Test GitHub",style= wx.ICON_INFORMATION)
     else:
-        print("Mise à jour nécessaire: %s" % str(ret))
+        print("Mise_à_jour nécessaire: %s" % str(ret))
         dlg = xGithub.DLG("NoeXpy")
         dlg.ShowModal()
