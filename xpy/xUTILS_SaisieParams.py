@@ -540,7 +540,7 @@ class PNL_ctrl(wx.Panel):
             self.ctrl.name = ''
             self.ctrl.nameCtrl = '.'
             return
-        self.codename = self.GrandParent.code + '.' + ligne['name']
+        self.codename = self.Parent.code + '.' + ligne['name']
         self.ctrl.genreCtrl = ligne['genre'].lower()
         self.ctrl.nameCtrl = self.codename
         self.ctrl.name = ligne['name']
