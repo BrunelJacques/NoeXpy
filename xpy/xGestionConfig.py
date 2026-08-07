@@ -176,6 +176,7 @@ class DLG_choixConfig(wx.Dialog):
         titre = listArbo[-1:][0] + "/" + self.__class__.__name__
         wx.Dialog.__init__(self, parent, -1,title = titre, style=style,size = size)
         self.parent = parent
+        self.stb_cadre = wx.StaticBox(self, -1, label='identification')
 
         # Récup du code de la description des champs pour une configuration
         lstcode = GetLstCodesMatrice(MATRICE_CONFIGS)
@@ -213,7 +214,7 @@ class DLG_choixConfig(wx.Dialog):
                     valeurs[ligne['name']] = utilisateur
                     ident = code
 
-        self.ctrlID = xusp.CTRL_property(self, matrice=MATRICE_IDENT, enable=False)
+        self.ctrlID = xusp.CTRL_property(self.stb_cadre, matrice=MATRICE_IDENT, enable=False)
         if ident:
             ddDonnees[ident] = valeurs
             self.ctrlID.SetValues(ddDonnees=ddDonnees)
@@ -234,10 +235,10 @@ class DLG_choixConfig(wx.Dialog):
         if self.parent and 'CHOIX_CONFIGS' in self.parent.dictAppli:
             lstchoix = self.parent.dictAppli['CHOIX_CONFIGS']
             for codeBox,labelBox in lstchoix:
-                self.lstChoixConfigs.append(ChoixConfig(self, labelBox, codeBox, lignes, {}))
+                self.lstChoixConfigs.append(ChoixConfig(self.stb_cadre, labelBox, codeBox, lignes, {}))
         else:
             # le nom de la configuration c'est le premier champ décrit dans la matrice
-            self.lstChoixConfigs.append(ChoixConfig(self, labelBox, codeBox, lignes, {}))
+            self.lstChoixConfigs.append(ChoixConfig(self.stb_cadre, labelBox, codeBox, lignes, {}))
 
         # choix de la configuration prise dans paramFile
         cfgF = xshelve.ParamFile()
@@ -260,21 +261,23 @@ class DLG_choixConfig(wx.Dialog):
         else: self.lastConfig = ''
 
         # SEPARATEUR : simple texte
-        self.titre =wx.StaticText(self, -1, "Eléments de connexion")
+        self.titre =wx.StaticText(self.stb_cadre, -1, "Eléments de connexion")
         self.Sizer()
 
     def Sizer(self):
         # Déroulé de la composition
-        cadre_staticbox = wx.StaticBox(self, -1, label='identification')
-        topbox = wx.StaticBoxSizer(cadre_staticbox, wx.VERTICAL)
+        topbox = wx.StaticBoxSizer(self.stb_cadre, wx.VERTICAL)
+
         topbox.Add(self.ctrlID, 0,wx.ALL | wx.EXPAND, 5)
         topbox.Add((20,20), 1, wx.ALIGN_TOP, 0)
         topbox.Add(self.titre, 0, wx.LEFT, 60)
+
         for ctrlConfig in self.lstChoixConfigs:
             topbox.Add((20,20), 1, wx.ALIGN_TOP, 0)
             topbox.Add(ctrlConfig, 1, wx.ALIGN_TOP , 0)
         topbox.Add((20,20), 1, wx.ALIGN_TOP, 0)
         topbox.Add((40,40), 1, wx.EXPAND, 0)
+
         piedbox = wx.BoxSizer(wx.HORIZONTAL)
         piedbox.Add(self.btnTest, 0, 0, 0)
         piedbox.Add(self.btn, 0, wx.RIGHT, 11)

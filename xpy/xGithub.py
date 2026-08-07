@@ -151,16 +151,16 @@ class DLG(wx.Dialog):
         for x in self.lstApplis:
             if x not in choices:
                 choices.append(x)
-        self.cmbAppli = wx.ComboBox(self, value=self.initChoixAppli, choices=choices)
+        self.cmbAppli = wx.ComboBox(self.staticboxAppli, value=self.initChoixAppli, choices=choices)
         self.radPull = wx.RadioButton(self, label=self.lblPull, style=wx.RB_GROUP)
         self.radClone = wx.RadioButton(self, label=self.lblClone)
 
-        self.dirPicker = wx.DirPickerCtrl(self,
+        self.dirPicker = wx.DirPickerCtrl(self.staticboxDir,
                                           message="Choisir le répertoire d'installation:",
                                           path=self.initialPath,
                                           style=wx.DIRP_USE_TEXTCTRL,
                                           name="dirPicker")
-        self.checkForce = wx.CheckBox(self, label="Forcer l'opération sans contrôle")
+        self.checkForce = wx.CheckBox(self.staticboxDir, label="Forcer l'opération sans contrôle")
         self.btnOk = wx.Button(self, label="Action")
 
     def Proprietes(self):

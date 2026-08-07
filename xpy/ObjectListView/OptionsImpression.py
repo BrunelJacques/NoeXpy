@@ -585,26 +585,29 @@ class CTRL(wx.Panel):
 
         # Orientation
         self.box_orientation_staticbox = wx.StaticBox(self, -1, ORIENTATION_LABEL)
-        self.ctrl_radio_portrait = wx.RadioButton(self, -1, u"", style=wx.RB_GROUP)
-        self.ctrl_image_portrait = wx.StaticBitmap(self, -1, wx.Bitmap(ORIENTATION_VER_32X32_IMG, wx.BITMAP_TYPE_ANY))
-        self.ctrl_radio_paysage = wx.RadioButton(self, -1, u"")
-        self.ctrl_image_paysage = wx.StaticBitmap(self, -1, wx.Bitmap(ORIENTATION_HOR_32X32_IMG, wx.BITMAP_TYPE_ANY))
+        boxor = self.box_orientation_staticbox
+        self.ctrl_radio_portrait = wx.RadioButton(boxor, -1, u"", style=wx.RB_GROUP)
+        self.ctrl_image_portrait = wx.StaticBitmap(boxor, -1, wx.Bitmap(ORIENTATION_VER_32X32_IMG, wx.BITMAP_TYPE_ANY))
+        self.ctrl_radio_paysage = wx.RadioButton(boxor, -1, u"")
+        self.ctrl_image_paysage = wx.StaticBitmap(boxor, -1, wx.Bitmap(ORIENTATION_HOR_32X32_IMG, wx.BITMAP_TYPE_ANY))
 
         # Textes
         self.box_document_staticbox = wx.StaticBox(self, -1, "Document")
-        self.label_titre = wx.StaticText(self, -1, "Titre :")
-        self.ctrl_titre = wx.TextCtrl(self, -1, u"")
-        self.label_introduction = wx.StaticText(self, -1, "Introduction :")
-        self.ctrl_introduction = wx.TextCtrl(self, -1, u"")
-        self.label_conclusion = wx.StaticText(self, -1, "Conclusion :")
-        self.ctrl_conclusion = wx.TextCtrl(self, -1, u"")
+        boxdoc = self.box_document_staticbox
+        self.label_titre = wx.StaticText(boxdoc, -1, "Titre :")
+        self.ctrl_titre = wx.TextCtrl(boxdoc, -1, u"")
+        self.label_introduction = wx.StaticText(boxdoc, -1, "Introduction :")
+        self.ctrl_introduction = wx.TextCtrl(boxdoc, -1, u"")
+        self.label_conclusion = wx.StaticText(boxdoc, -1, "Conclusion :")
+        self.ctrl_conclusion = wx.TextCtrl(boxdoc, -1, u"")
 
         # Paramètres généraux
         self.box_options_staticbox = wx.StaticBox(self, -1, "Options d'impression")
-        self.ctrl_parametres = CTRL_Parametres(self)
+        boxopt =self.box_options_staticbox
+        self.ctrl_parametres = CTRL_Parametres(boxopt)
         self.ctrl_parametres.Importation()
         #self.bouton_reinitialisation = CTRL_Propertygrid.Bouton_reinitialisation(self, self.ctrl_parametres)
-        self.bouton_sauvegarde = Bouton_sauvegarde(self, self.ctrl_parametres)
+        self.bouton_sauvegarde = Bouton_sauvegarde(boxopt, self.ctrl_parametres)
         self.ctrl_parametres.SetMinSize((440, 120))
 
         self.__do_layout()

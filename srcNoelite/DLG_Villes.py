@@ -36,13 +36,13 @@ class Dialog(wx.Dialog):
 
         self.ctrl_barreRecherche = olv.CTRL_Outils(self, listview=self.ctrl_villes)
 
-        self.staticbox_saisie_staticbox = wx.StaticBox(self.panel_saisie, -1, u"Forcer une ville dans l'Adresse sans sauvegarde en modèle")
-        self.label_cp = wx.StaticText(self.panel_saisie, -1, "Code postal :")
-        self.ctrl_cp = wx.TextCtrl(self.panel_saisie, -1, "")
-        self.label_ville = wx.StaticText(self.panel_saisie, -1, "Ville :")
-        self.ctrl_ville = wx.TextCtrl(self.panel_saisie, -1, "")
-        self.label_pays = wx.StaticText(self.panel_saisie, -1, "Pays :")
-        self.ctrl_pays = wx.TextCtrl(self.panel_saisie, -1, "")
+        self.stb_saisie = wx.StaticBox(self.panel_saisie, -1, u"Forcer une ville dans l'Adresse sans sauvegarde en modèle")
+        self.label_cp = wx.StaticText(self.stb_saisie, -1, "Code postal :")
+        self.ctrl_cp = wx.TextCtrl(self.stb_saisie, -1, "")
+        self.label_ville = wx.StaticText(self.stb_saisie, -1, "Ville :")
+        self.ctrl_ville = wx.TextCtrl(self.stb_saisie, -1, "")
+        self.label_pays = wx.StaticText(self.stb_saisie, -1, "Pays :")
+        self.ctrl_pays = wx.TextCtrl(self.stb_saisie, -1, "")
 
         self.bouton_ajouter = wx.BitmapButton(self, -1, wx.Bitmap("xpy/Images/16x16/Ajouter.png", wx.BITMAP_TYPE_ANY))
         self.bouton_modifier = wx.BitmapButton(self, -1, wx.Bitmap("xpy/Images/16x16/Modifier.png", wx.BITMAP_TYPE_ANY))
@@ -81,7 +81,7 @@ class Dialog(wx.Dialog):
         grid_sizer_base.Add(self.ctrl_bandeau, 0, wx.EXPAND, 0)
         
         grid_sizer_saisie = wx.GridSizer(rows=1, cols=1, vgap=0, hgap=0)
-        staticbox_saisie = wx.StaticBoxSizer(self.staticbox_saisie_staticbox, wx.VERTICAL)
+        sz_saisie = wx.StaticBoxSizer(self.stb_saisie, wx.VERTICAL)
         
         grid_sizer_recherche = wx.FlexGridSizer(rows=2, cols=2, vgap=5, hgap=5)
         grid_sizer_recherche.Add(self.ctrl_villes, 0, wx.LEFT|wx.RIGHT|wx.TOP|wx.EXPAND, 0)
@@ -108,9 +108,9 @@ class Dialog(wx.Dialog):
         grid_sizer_saisie_2.Add(self.ctrl_pays, 0, wx.EXPAND, 0)
         grid_sizer_saisie_2.AddGrowableRow(0)
         grid_sizer_saisie_2.AddGrowableCol(3)
-        staticbox_saisie.Add(grid_sizer_saisie_2, 1, wx.ALL|wx.EXPAND, 5)
+        sz_saisie.Add(grid_sizer_saisie_2, 1, wx.ALL|wx.EXPAND, 5)
         
-        grid_sizer_saisie.Add(staticbox_saisie, 1, wx.LEFT|wx.RIGHT|wx.EXPAND, 10)
+        grid_sizer_saisie.Add(sz_saisie, 1, wx.LEFT|wx.RIGHT|wx.EXPAND, 10)
         
         self.panel_saisie.SetSizer(grid_sizer_saisie)
         grid_sizer_base.Add(self.panel_saisie, 1, wx.EXPAND, 0)

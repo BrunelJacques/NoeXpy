@@ -344,10 +344,14 @@ class Dialog(wx.Dialog):
 
         # composition de l'écran
         self.staticbox = wx.StaticBox(self, -1, "Authentification")
-        self.txtIntro = wx.StaticText(self, -1, "Vous serez identifié par votre seul mot de passe.\n"+
+        self.txtIntro = wx.StaticText(self.staticbox, -1, "Vous serez identifié par votre seul mot de passe.\n"+
                                       "Choisissez une base de donnée du réseau !")
-        self.txtConfigs = wx.StaticText(self, -1, "Base d'authentification:")
-        self.comboConfigs = xusp.PNL_ctrl(self,
+        self.txtConfigs = wx.StaticText(self.staticbox, -1, "Base d'authentification:")
+        if hasattr(self.parent,'widget') and self.parent.widget:
+            self.widget = self.parent.widget
+        else:
+            self.widget = self
+        self.comboConfigs = xusp.PNL_ctrl(self.widget,
                                           **{'genre': 'combo', 'name': "configs",
                                                    'values': lstIDconfigs,
                                                    'help': "Choisissez la base de donnée qui servira à vous authentifier",
@@ -355,10 +359,10 @@ class Dialog(wx.Dialog):
                                                     }
                                           )
         self.comboConfigs.SetValue(lastConfig)
-        self.txtMdp = wx.StaticText(self, -1, "Votre mot de passe:")
-        self.ctrlMdp = CTRL_mdp(self, listeUtilisateurs=self.listeUtilisateurs)
+        self.txtMdp = wx.StaticText(self.staticbox, -1, "Votre mot de passe:")
+        self.ctrlMdp = CTRL_mdp(self.staticbox, listeUtilisateurs=self.listeUtilisateurs)
 
-        self.bouton_annuler = CTRL_Bouton_image(self, id=wx.ID_CANCEL, texte="Annuler",
+        self.bouton_annuler = CTRL_Bouton_image(self.staticbox, id=wx.ID_CANCEL, texte="Annuler",
                                                 cheminImage="xpy/Images/32x32/Annuler.png")
 
         self.__set_properties()

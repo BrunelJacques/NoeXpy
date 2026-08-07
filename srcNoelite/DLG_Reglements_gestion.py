@@ -105,7 +105,6 @@ def GetOlvOptions():
 #----------------------- Parties de l'écrans -----------------------------------------
 
 class PNL_params(wx.Panel):
-    #panel de paramètres de l'application
     def __init__(self, parent, **kwds):
         self.parent = parent
         wx.Panel.__init__(self, parent, **kwds)
@@ -113,39 +112,82 @@ class PNL_params(wx.Panel):
         self.ldBanques = nur.GetBanquesNne(self.parent.db)
         lstBanques = [x['nom'] for x in self.ldBanques if x['code_nne'][:2]!='47']
         self.lstIDbanques = [x['IDcompte'] for x in self.ldBanques if x['code_nne'][:2]!='47']
-        self.lblBanque = wx.StaticText(self,-1, label="Banque Noethys:  ",size=(130,20),style=wx.ALIGN_RIGHT)
 
-        self.ctrlBanque = wx.Choice(self,size=(220,20),choices=lstBanques)
-        if len(lstBanques)>0:
-            # selection de la deuxième ligne (choix opportuniste pour matthania: banque principale)
+        # --- 1. Création des StaticBox ---
+        self.stbbqe = wx.StaticBox(self, label=" Destinataire ")
+        self.stbbor = wx.StaticBox(self, label=" Bordereau ")
+
+        # --- 2. Contrôles sous "Destinataire" (Parent = self.stbbqe) ---
+        self.lblBanque = wx.StaticText(self.stbbqe, -1, label="Banque Noethys:  ", size=(130, 20), style=wx.ALIGN_RIGHT)
+        self.ctrlBanque = wx.Choice(self.stbbqe, size=(220, 20), choices=lstBanques)
+        if len(lstBanques) > 0:
             self.ctrlBanque.Select(1)
-        self.ctrlBanque.Bind(wx.EVT_KILL_FOCUS,self.OnKillFocusBanque)
+        self.ctrlBanque.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocusBanque)
 
-        self.btnBanque = wx.Button(self, label="...",size=(40,22))
-        self.btnBanque.SetBitmap(wx.ArtProvider.GetBitmap(wx.ART_FIND,size=(16,16)))
+        self.btnBanque = wx.Button(self.stbbqe, label="...", size=(40, 22))
+        self.btnBanque.SetBitmap(wx.ArtProvider.GetBitmap(wx.ART_FIND, size=(16, 16)))
 
-        self.ctrlSsDepot = wx.CheckBox(self,-1," _Sans dépôt immédiat, (saisie d'encaissements futurs)")
+        self.ctrlSsDepot = wx.CheckBox(self.stbbqe, -1, " _Sans dépôt immédiat, (saisie d'encaissements futurs)")
 
+        # --- 3. Contrôles hors des StaticBox (Parent = self) ---
         self.btnDepot = wx.Button(self, label="Rappeler \nun dépôt antérieur")
-        self.btnDepot.SetBitmap(wx.ArtProvider.GetBitmap(wx.ART_FIND,size=(22,22)))
-        self.btnDepot.Bind(wx.EVT_BUTTON,self.parent.OnGetDepot)
+        self.btnDepot.SetBitmap(wx.ArtProvider.GetBitmap(wx.ART_FIND, size=(22, 22)))
+        self.btnDepot.Bind(wx.EVT_BUTTON, self.parent.OnGetDepot)
 
-        self.btnRaz = wx.Button(self, label="Réinit",size=(90,20))
-        self.btnRaz.SetBitmap(wx.ArtProvider.GetBitmap(wx.ART_ERROR,size=(15,15)))
-        self.btnRaz.Bind(wx.EVT_BUTTON,self.parent.OnRaz)
+        self.btnRaz = wx.Button(self, label="Réinit", size=(90, 20))
+        self.btnRaz.SetBitmap(wx.ArtProvider.GetBitmap(wx.ART_ERROR, size=(15, 15)))
+        self.btnRaz.Bind(wx.EVT_BUTTON, self.parent.OnRaz)
 
-        self.lblDate = wx.StaticText(self,-1, label="Date de saisie:  ",size=(85,20),style=wx.ALIGN_RIGHT)
-        self.ctrlDate = wx.TextCtrl(self,-1,size=(90,20),style=wx.ALIGN_LEFT|wx.TE_PROCESS_ENTER)
+        # --- 4. Contrôles sous "Bordereau" (Parent = self.stbbor) ---
+        self.lblDate = wx.StaticText(self.stbbor, -1, label="Date de saisie:  ", size=(85, 20), style=wx.ALIGN_RIGHT)
+        self.ctrlDate = wx.TextCtrl(self.stbbor, -1, size=(90, 20), style=wx.ALIGN_LEFT | wx.TE_PROCESS_ENTER)
         value = datetime.date.today()
         self.ctrlDate.SetValue(xformat.FmtDate(value))
-        self.ctrlDate.Bind(wx.EVT_KILL_FOCUS,self.OnDateDepot)
-        self.ctrlDate.Bind(wx.EVT_TEXT_ENTER,self.OnDateDepot)
-        self.lblRef = wx.StaticText(self,-1, label="No Bordereau:  ",size=(90,20),style=wx.ALIGN_RIGHT)
-        self.ctrlRef = wx.TextCtrl(self,-1,size=(70,20))
+        self.ctrlDate.Bind(wx.EVT_KILL_FOCUS, self.OnDateDepot)
+        self.ctrlDate.Bind(wx.EVT_TEXT_ENTER, self.OnDateDepot)
+
+        self.lblRef = wx.StaticText(self.stbbor, -1, label="No Bordereau:  ", size=(90, 20), style=wx.ALIGN_RIGHT)
+        self.ctrlRef = wx.TextCtrl(self.stbbor, -1, size=(70, 20))
 
         self.ToolTip()
         self.Sizer()
         self.ctrlBanque.SetFocus()
+
+    def Sizer(self):
+        boxBanque = wx.FlexGridSizer(rows=1, cols=3, vgap=0, hgap=0)
+        boxBanque.AddMany([
+            (self.lblBanque, 0, wx.TOP, 3),
+            (self.ctrlBanque, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5),
+            self.btnBanque
+        ])
+        boxBanque.AddGrowableCol(1)
+
+        boxBordereau = wx.FlexGridSizer(rows=2, cols=2, vgap=8, hgap=0)
+        boxBordereau.AddMany([
+            self.lblDate,
+            self.ctrlDate,
+            self.lblRef,
+            self.ctrlRef
+        ])
+
+        # Association des StaticBoxSizer avec leurs StaticBox respectifs
+        sz_banque = wx.StaticBoxSizer(self.stbbqe, wx.VERTICAL)
+        sz_banque.Add(boxBanque, 1, wx.EXPAND | wx.ALL, 3)
+        sz_banque.Add(self.ctrlSsDepot, 1, wx.ALL | wx.ALIGN_CENTRE, 3)
+
+        sz_bordereau = wx.StaticBoxSizer(self.stbbor, wx.VERTICAL)
+        sz_bordereau.Add(boxBordereau, 1, wx.ALL | wx.ALIGN_CENTRE, 3)
+
+        sizer_base = wx.FlexGridSizer(rows=1, cols=3, vgap=0, hgap=20)
+        sizer_base.Add(sz_banque, 1, wx.LEFT | wx.BOTTOM, 3)
+        sizer_base.Add(sz_bordereau, 1, wx.LEFT | wx.BOTTOM, 3)
+
+        sizer_btn = wx.FlexGridSizer(rows=2, cols=1, vgap=0, hgap=10)
+        sizer_btn.Add(self.btnDepot, 1, wx.LEFT | wx.BOTTOM | wx.EXPAND, 3)
+        sizer_btn.Add(self.btnRaz, 1, wx.LEFT | wx.BOTTOM, 3)
+
+        sizer_base.Add(sizer_btn, 0, wx.ALL | wx.ALIGN_CENTRE, 10)
+        self.SetSizer(sizer_base)
 
     def ToolTip(self):
         self.lblBanque.SetToolTip("Il s'agit de la banque réceptrice")
@@ -160,37 +202,6 @@ class PNL_params(wx.Panel):
         self.ctrlDate.SetToolTip("Cette date de saisie servira de date de dépôt s'il est généré par validation")
         self.lblRef.SetToolTip("Numérotation automatique en création, c'est l'identification du lot par cette référence")
         self.ctrlRef.Enable(False)
-
-    def Sizer(self):
-        #composition de l'écran selon les composants emboités progressivement
-        boxBanque = wx.FlexGridSizer(rows=1, cols=3, vgap=0, hgap=0)
-        boxBanque.AddMany([(self.lblBanque,0,wx.TOP,3),
-                                (self.ctrlBanque,1,wx.EXPAND|wx.LEFT|wx.RIGHT,5),
-                                self.btnBanque])
-        boxBanque.AddGrowableCol(1)
-
-        boxBordereau = wx.FlexGridSizer(rows=2, cols=2, vgap=8, hgap=0)
-        boxBordereau.AddMany([self.lblDate,
-                                   self.ctrlDate,
-                                  self.lblRef,
-                                  self.ctrlRef])
-
-        sz_banque = wx.StaticBoxSizer(wx.VERTICAL, self, " Destinataire ")
-        sz_banque.Add(boxBanque,1,wx.EXPAND|wx.ALL,3)
-        sz_banque.Add(self.ctrlSsDepot,1,wx.ALL|wx.ALIGN_CENTRE,3)
-
-        sz_bordereau = wx.StaticBoxSizer(wx.VERTICAL, self, " Bordereau ")
-        sz_bordereau.Add(boxBordereau,1,wx.ALL|wx.ALIGN_CENTRE,3)
-
-        sizer_base = wx.FlexGridSizer(rows=1, cols=3, vgap=0, hgap=20)
-        sizer_base.Add(sz_banque,1,wx.LEFT|wx.BOTTOM,3)
-        sizer_base.Add(sz_bordereau,1,wx.LEFT|wx.BOTTOM,3)
-        sizer_btn = wx.FlexGridSizer(rows=2,cols=1,vgap=0,hgap=10)
-        sizer_btn.Add(self.btnDepot,1,wx.LEFT|wx.BOTTOM|wx.EXPAND,3)
-        sizer_btn.Add(self.btnRaz,1,wx.LEFT|wx.BOTTOM,3)
-        sizer_base.Add(sizer_btn,0,wx.ALL|wx.ALIGN_CENTRE,10)
-        #sizer_base.AddGrowableCol(0)
-        self.SetSizer(sizer_base)
 
     def OnDateDepot(self,evt):
         value = evt.EventObject.GetValue()

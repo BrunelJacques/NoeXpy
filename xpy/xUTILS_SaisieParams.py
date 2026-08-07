@@ -14,15 +14,18 @@ import datetime
 import os
 import wx.propgrid as wxpg
 import xpy.xUTILS_DB as xdb
-from xpy.outils                import xformat,xboutons
+from xpy.outils import xformat, xboutons
 
-OPTIONS_TOPBOX = ('pos','size','style','name','matrice','donnees','lblTopBox','lblBox','boxesSizes')
+OPTIONS_TOPBOX = ('pos', 'size', 'style', 'name', 'matrice', 'donnees', 'lblTopBox',
+                  'lblBox', 'boxesSizes')
 
-OPTIONS_CTRL = ('name', 'label', 'ctrlAction', 'btnLabel', 'btnImage','btnAction', 'value', 'labels',
-                'values', 'enable', 'genre', 'help','ctrlSize','ctrlMinSize','ctrlMaxSize','txtSize',
-                'btnHelp','boxMaxSize','boxMinSize','boxSize','ctrl')
+OPTIONS_CTRL = ('name', 'label', 'ctrlAction', 'btnLabel', 'btnImage', 'btnAction',
+                'value', 'labels',
+                'values', 'enable', 'genre', 'help', 'ctrlSize', 'ctrlMinSize',
+                'ctrlMaxSize', 'txtSize',
+                'btnHelp', 'boxMaxSize', 'boxMinSize', 'boxSize', 'ctrl')
 # les Binds de ctrl se posent dans le pannel
-OPTIONS_PANEL = ('pos','style','name', 'size')
+OPTIONS_PANEL = ('pos', 'style', 'name', 'size')
 
 # pour une longeur de texte attribuée selon le len d'un label
 PT_CARACTERE = 6.3
@@ -31,8 +34,8 @@ if 'gtk3' in wx.PlatformInfo:
     PT_AJUSTE = 1.33  # pour linux qui a une taille police pardéfaut plus grande
 
 
-def DDstrdate2wxdate(date,iso=True):
-    if not isinstance(date, str) : date = str(date)
+def DDstrdate2wxdate(date, iso=True):
+    if not isinstance(date, str): date = str(date)
     if len(date) < 10: return None
     if iso:
         dmy = (int(date[8:10]), int(date[5:7]) - 1, int(date[:4]))
@@ -42,9 +45,10 @@ def DDstrdate2wxdate(date,iso=True):
     dateout.SetCountry(5)
     return dateout
 
-def DDwxdate2strdate(date,iso=True):
+
+def DDwxdate2strdate(date, iso=True):
     if not isinstance(date, wx.DateTime): return None
-    #if date.IsValid():
+
     if iso:
         return date.Format('%Y-%m-%d')
     else:
@@ -53,15 +57,15 @@ def DDwxdate2strdate(date,iso=True):
 def Transpose(matrice,dlColonnes,lddDonnees):
     # Transposition des lignes de la matrice pour présentation colonnes dans le format grille listCtrl
     def LtColonnes(dlColonnes, matrice):
-        #Ajoute le format aux colonnes
-        ltColonnes=[]
+        # Ajoute le format aux colonnes
+        ltColonnes = []
         for code in dlColonnes:
             for colonne in dlColonnes[code]:
                 cle = None
                 format = 'LEFT'
-                for (cat,libel) in matrice.keys():
-                    if cat == code : cle = (cat,libel)
-                if cle :
+                for (cat, libel) in matrice.keys():
+                    if cat == code: cle = (cat, libel)
+                if cle:
                     for ligne in matrice[cle]:
                         if 'name' in ligne:
                             if colonne in ligne['name']:
@@ -72,7 +76,7 @@ def Transpose(matrice,dlColonnes,lddDonnees):
                                 if not 'label' in ligne:
                                     wx.MessageBox("Pb de matrice : il faut un champ 'label' dans le dictionnaire ci dessous\n%s" % ligne)
                                 ltColonnes.append((namecol,ligne['label'],format))
-                        else : wx.MessageBox("Pb de matrice : il faut un champ 'name' dans le dictionnaire ci dessous\n%s"%ligne)
+                        else: wx.MessageBox("Pb de matrice : il faut un champ 'name' dans le dictionnaire ci dessous\n%s"%ligne)
         return ltColonnes
 
     def LlItems(ltColonnes,lddDonnees):
@@ -90,7 +94,7 @@ def Transpose(matrice,dlColonnes,lddDonnees):
         return llItems
 
     # si pas de liste de colonnes pour une catégorie c'est toutes les colonnes qui sont prises
-    if len(dlColonnes)==0:
+    if len(dlColonnes) == 0:
         for (codm, label) in matrice:
             if not codm in dlColonnes:
                 dlColonnes[codm] = []
@@ -103,10 +107,10 @@ def Transpose(matrice,dlColonnes,lddDonnees):
     return lddDonnees, ltColonnes, llItems
 
 def Normalise(genre, name, label, value):
-    #gestion des approximations de cohérence
+    # gestion des approximations de cohérence
     if genre: genre = genre.lower()
-    if not name : name = 'noname'
-    if not isinstance(name,str): name = str(name)
+    if not name: name = 'noname'
+    if not isinstance(name, str): name = str(name)
     if not label: label = name
     if genre in ('int','wxintproperty'):
         if not isinstance(value, int): value = 0
@@ -192,8 +196,8 @@ def ComposeMatrice(champDeb=None,champFin=None,lstChamps=[],lstTypes=[],lstHelp=
         }
         # Présence de la définition d'options ou dérogations au standart
         if code in options:
-            for key,item in options[code].items():
-                dicchamp[key]=item
+            for key, item in options[code].items():
+                dicchamp[key] = item
         ldmatrice.append(dicchamp)
 
     # composition des données
@@ -204,7 +208,8 @@ def ComposeMatrice(champDeb=None,champFin=None,lstChamps=[],lstTypes=[],lstHelp=
             dicdonnees[code] = record[ix]
     return ldmatrice, dicdonnees
 
-def DicFiltre(dic,options):
+
+def DicFiltre(dic, options):
     # ne retient qu'une liste de clés du dictionnaire
     dicout = {}
     for kw in options:
@@ -373,15 +378,15 @@ class PNL_property(wx.Panel):
         self.parent = parent
         kw = DicFiltre(kwds,OPTIONS_PANEL)
         wx.Panel.__init__(self, parent, *args, **kw)
+        self.stb_cadre = wx.StaticBox(self.parent, wx.ID_ANY, label=lblBox)
 
         #********************** CTRL PRINCIPAL ***************************************
-        self.ctrl = CTRL_property(self,matrice,donnees)
+        self.ctrl = CTRL_property(self.stb_cadre,matrice,donnees)
         #***********************************************************************
 
-        cadre_staticbox = wx.StaticBox(self,wx.ID_ANY,label=lblBox)
-        topbox = wx.StaticBoxSizer(cadre_staticbox)
+        topbox = wx.StaticBoxSizer(self.stb_cadre)
         topbox.Add(self.ctrl,1,wx.ALL|wx.EXPAND,4)
-        self.SetSizer(topbox)
+        self.parent.SetSizer(topbox)
 
     def GetValues(self):
         return self.ctrl.GetValues()
@@ -394,18 +399,20 @@ class PNL_ctrl(wx.Panel):
     # Panel contenant un contrôle ersatz d'une ligne de propertyGrid
     """ et en option (code) un bouton d'action permettant de contrôler les saisies
         GetValue retourne la valeur choisie dans le ctrl avec action possible par bouton à droite"""
-    def __init__(self, parent, *args, genre='string', name=None, label='', value= None, labels=[], values=[],
-                 help=None, btnLabel=None, btnImage=None, btnHelp=None,  ctrl=None, **kwds):
+    def __init__(self, parent, *args, genre='string', name=None, label='', value= None,
+                 labels=[], values=[],
+                 help=None, btnLabel=None, btnImage=None, btnHelp=None, ctrl=None,
+                 **kwds):
         self.parent = parent
         self.flagSkipEdit = False
 
         # gestion des size
-        self.txtSize = kwds.pop('txtSize',0) * PT_AJUSTE
+        self.txtSize = kwds.pop('txtSize', 0) * PT_AJUSTE
 
         if not label: label = ''
         lgTxtCtrl = int(max(self.txtSize,int(len(label)* PT_CARACTERE)) * PT_AJUSTE)
-        minSize =   kwds.pop('ctrlMinSize',(int(lgTxtCtrl * 1.5),30))
-        maxSize =   kwds.pop('ctrlMaxSize',(lgTxtCtrl * 3, minSize[1] * 2))
+        minSize = kwds.pop('ctrlMinSize',(int(lgTxtCtrl * 1.5),30))
+        maxSize = kwds.pop('ctrlMaxSize',(lgTxtCtrl * 3, minSize[1] * 2))
         minSize = tuple(int(i * PT_AJUSTE) for i in minSize)
         maxSize = tuple(int(i * PT_AJUSTE) for i in maxSize)
 
@@ -416,17 +423,20 @@ class PNL_ctrl(wx.Panel):
         if size:
             size = tuple(int(i * PT_AJUSTE) for i in size)
         else:
-            size =  maxSize
+            size = maxSize
         lg, ht = size
-        if lg < minSize[0]: minSize = (lg,size[1])
-        if lg > maxSize[0]: maxSize = (lg,size[1])
-        if ht < minSize[1]: minSize = (size[0],ht)
-        if lg > maxSize[1]: maxSize = (size[0],ht)
+        if lg < minSize[0]: minSize = (lg, size[1])
+        if lg > maxSize[0]: maxSize = (lg, size[1])
+        if ht < minSize[1]: minSize = (size[0], ht)
+        if lg > maxSize[1]: maxSize = (size[0], ht)
 
         kwds['size'] = size
 
         kw = DicFiltre(kwds,OPTIONS_PANEL )
         wx.Panel.__init__(self,parent,*args, **kw)
+
+        self.ctrlbox = wx.BoxSizer(wx.HORIZONTAL)
+
         if genre: genre = genre.lower()
         self.value = value
         self.name = name
@@ -438,33 +448,35 @@ class PNL_ctrl(wx.Panel):
         if btnLabel or btnImage :
             self.avecBouton = True
         else: self.avecBouton = False
+
         if label and len(label.strip())>0:
-            self.txt = wx.StaticText(self, wx.ID_ANY, label + " :",size=(lgTxtCtrl,25))
-        else:
-            self.txt = wx.StaticText(self, wx.ID_ANY, label,size=(lgTxtCtrl,25))
+            label += " :"
+        self.txt = wx.StaticText(self, wx.ID_ANY, label,size=(lgTxtCtrl,25))
+
         self.txt.SetMinSize((lgTxtCtrl, 25))
-        if maxSize :
+        if maxSize:
             self.SetMaxSize(maxSize)
         if minSize:
             self.SetMinSize(minSize)
 
         # seul le PropertyGrid gère le multichoices, pas le comboBox
         if genre == 'multichoice': genre = 'combo'
-        lgenre,lname,llabel,lvalue = Normalise(genre, name, label, value)
+        lgenre, lname, llabel, lvalue = Normalise(genre, name, label, value)
         if not labels: labels = []
         if not values: values = []
         if len(values) > 0 and len(labels) == 0:
             labels = values
         self.genre = lgenre
         self.values = values
-        #try:
+
         commande = 'debut'
         # construction des contrôles selon leur genre
         if lgenre in ['enum','combo','multichoice','choice']:
             if lgenre == 'choice':
                 style = wx.TE_PROCESS_ENTER | wx.CB_READONLY
-            else: style = wx.TE_PROCESS_ENTER
-            self.ctrl = wx.ComboBox(self, wx.ID_ANY,style = style)
+            else:
+                style = wx.TE_PROCESS_ENTER
+            self.ctrl = wx.ComboBox(self, wx.ID_ANY, style=style)
             if labels:
                 commande = 'Set in combo'
                 for label in labels:
@@ -500,25 +512,26 @@ class PNL_ctrl(wx.Panel):
 
         if lvalue:
             commande = 'Set Value'
-            if lgenre in ['int','float']:
+            if lgenre in ['int', 'float']:
                 lvalue = str(lvalue)
-            if lgenre in ['date','time','datetime']:
-                lvalue = DDwxdate2strdate(lvalue,iso=False)
+            if lgenre in ['date', 'time', 'datetime']:
+                lvalue = DDwxdate2strdate(lvalue, iso=False)
             self.ctrl.SetValue(lvalue)
-        if help and hasattr(self.ctrl,"SetToolTip"):
+        if help and hasattr(self.ctrl, "SetToolTip"):
             self.ctrl.SetToolTip(help)
             self.txt.SetToolTip(help)
         commande = "création Boutons"
         if not btnLabel: btnLabel = ''
-        if lgenre in ('dir','dirfile'):
+        if lgenre in ('dir', 'dirfile'):
             self.avecBouton = True
             if lgenre == 'dirfile':
                 onBtn = self.OnDirfile
             else:
                 onBtn = self.OnDir
-            self.btn = xboutons.Bouton(self,label=btnLabel, image=wx.ART_GO_DIR_UP,onBtn=onBtn)
+            self.btn = xboutons.Bouton(self, label=btnLabel, image=wx.ART_GO_DIR_UP,
+                                       onBtn=onBtn)
         elif self.avecBouton:
-            self.btn = xboutons.Bouton(self,label=btnLabel, image=btnImage,help=btnHelp)
+            self.btn = xboutons.Bouton(self, label=btnLabel, image=btnImage, help=btnHelp)
         self.PnlSizer()
 
     def Proprietes(self,ligne):
@@ -527,7 +540,7 @@ class PNL_ctrl(wx.Panel):
             self.ctrl.name = ''
             self.ctrl.nameCtrl = '.'
             return
-        self.codename = self.parent.code + '.' + ligne['name']
+        self.codename = self.GrandParent.code + '.' + ligne['name']
         self.ctrl.genreCtrl = ligne['genre'].lower()
         self.ctrl.nameCtrl = self.codename
         self.ctrl.name = ligne['name']
@@ -539,7 +552,7 @@ class PNL_ctrl(wx.Panel):
         self.ctrl.labelsCtrl = ligne['labels']
 
         self.ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnCtrlAction)
-        #self.ctrl.Bind(wx.EVT_KEY_DOWN, self.OnEnter)
+
         if ligne['enable'] == False:
             self.ctrl.Enable(False)
             self.txt.Enable(False)
@@ -578,7 +591,8 @@ class PNL_ctrl(wx.Panel):
         elif hasattr(event.EventObject.GrandParent, 'actionCtrl'):
             actionCtrl = event.EventObject.GrandParent.actionCtrl
         elif event.EventType != wx.EVT_TEXT_ENTER.evtType[0]:
-            print("!!!! actionCtrl de <%s - %s> non trouvée"%(event.EventObject.Parent,event.EventObject.ClassName))
+            print("!!!! actionCtrl de <%s - %s> non trouvée" % (event.EventObject.Parent,
+                                                                event.EventObject.ClassName))
             return
 
         if actionCtrl:
@@ -611,12 +625,13 @@ class PNL_ctrl(wx.Panel):
         elif hasattr(event.EventObject.GrandParent, 'actionBtn'):
             actionBtn = event.EventObject.GrandParent.actionBtn
         else:
-            print("!!!! actionBtn de <%s - %s> non trouvée"%(event.EventObject.Parent,event.EventObject.ClassName))
+            print("!!!! actionBtn de <%s - %s> non trouvée" % (event.EventObject.Parent,
+                                                               event.EventObject.ClassName))
             return
         # selon la nature texte ou pas
-        if isinstance(actionBtn,str):
-            if hasattr(self.lanceur,actionBtn):
-                action = "self.lanceur.%s(event)"%(actionBtn)
+        if isinstance(actionBtn, str):
+            if hasattr(self.lanceur, actionBtn):
+                action = "self.lanceur.%s(event)" % (actionBtn)
                 eval(action)
         elif actionBtn:
             actionBtn(event)
@@ -624,12 +639,12 @@ class PNL_ctrl(wx.Panel):
 
         if event.EventType == wx.EVT_TEXT_ENTER.evtType[0]:
             # avec ou sans actionCtrl c'était un évènement 'valider'
-            event.EventObject.Navigate() # move to next control
+            event.EventObject.Navigate()  # move to next control
 
     def PnlSizer(self):
         ctrlbox = wx.BoxSizer(wx.HORIZONTAL)
-        ctrlbox.Add(self.txt,0, wx.LEFT|wx.TOP|wx.ALIGN_CENTER, 5)
-        ctrlbox.Add(self.ctrl, 1, wx.ALL|wx.EXPAND , 4)
+        ctrlbox.Add(self.txt, 0, wx.LEFT | wx.TOP | wx.ALIGN_CENTER, 5)
+        ctrlbox.Add(self.ctrl, 1, wx.ALL | wx.EXPAND, 4)
         if self.avecBouton:
             ctrlbox.Add(self.btn, 0, wx.ALL, 4)
         self.SetSizer(ctrlbox)
@@ -637,17 +652,17 @@ class PNL_ctrl(wx.Panel):
     def GetValue(self):
         value = self.ctrl.GetValue()
         try:
-            if self.genre in ('int','float'):
+            if self.genre in ('int', 'float'):
                 if not value: value = 0
                 value = xformat.NoLettre(str(value))
                 if self.genre == 'float':
                     value = float(value)
                 if self.genre == 'int':
                     value = int(value)
-            elif self.genre in ('bool','check'):
-                if value in ('x','X','true',True): value = 1
+            elif self.genre in ('bool', 'check'):
+                if value in ('x', 'X', 'true', True): value = 1
                 value = int(value)
-            elif self.genre in ('datetime','date'):
+            elif self.genre in ('datetime', 'date'):
                 value = xformat.DateFrToSql(value)
             elif value == None:
                 value = ''
@@ -655,9 +670,9 @@ class PNL_ctrl(wx.Panel):
             pass
         return value
 
-    def SetValue(self,value):
+    def SetValue(self, value):
         test = value
-        if self.genre in ('int','float'):
+        if self.genre in ('int', 'float'):
             if not value: value = 0
             if isinstance(value,float):
                 value = xformat.FmtDecimal(value).strip()
@@ -687,7 +702,8 @@ class PNL_ctrl(wx.Panel):
                 value = bool(value)
             except: pass
         if str(test) != str(value) and value != 0:
-            raise Exception("SetValue échoué pour '%s' = %s(%s)"%(str(test),self.ctrl.name,str(value)))
+            raise Exception("SetValue échoué pour '%s' = %s(%s)"%(str(test),self.ctrl.name,
+                                                                  str(value)))
 
     def SetValues(self,values):
         # Pseudo pour choices.set
@@ -721,13 +737,13 @@ class PNL_ctrl(wx.Panel):
                 self.dirname = nomPath[:-len(lstNomFichier[-1])]
                 nomFichier = lstNomFichier[-1]
             else:
-                nomFichier =nomPath
+                nomFichier = nomPath
                 nomPath = ""
                 self.dirname = ''
         except Exception as err:
             self.dirname = ''
-            print("OnDirfile recherche nomDir: ",err)
-        dlg = wx.FileDialog(self, "Choisissez un fichier", self.dirname,nomFichier)
+            print("OnDirfile recherche nomDir: ", err)
+        dlg = wx.FileDialog(self, "Choisissez un fichier", self.dirname, nomFichier)
         if dlg.ShowModal() == wx.ID_OK:
             self.ctrl.SetValue(dlg.GetPath())
             # simulation d'une saisie du ctrl à la main sur le txtCtrl devnt dirFile
@@ -751,8 +767,18 @@ class PNL_listCtrl(wx.Panel):
         kw = DicFiltre(kwds,OPTIONS_PANEL)
         wx.Panel.__init__(self, parent, wx.ID_ANY, *args, **kw)
 
+        # Ajout éventuel d'un cadre autour de l'OLV
+        if self.lblList:
+            self.stb_cadre = wx.StaticBox(self, wx.ID_ANY, label=self.lblList)
+            self.topbox = wx.StaticBoxSizer(self.stb_cadre, wx.HORIZONTAL)
+            widget = self.stb_cadre
+        else:
+            self.stb_cadre = None
+            self.topbox = wx.BoxSizer(wx.HORIZONTAL)
+            widget = self
+
         #********************** Objet principal pouvant être substitué ************************
-        self.ctrl = wx.ListCtrl(self, wx.ID_ANY, style=self.styleLstCtrl)
+        self.ctrl = wx.ListCtrl(widget, wx.ID_ANY, style=self.styleLstCtrl)
 
         # Remplissage de la matrice
         ret = self.InitMatrice(ltColonnes)
@@ -767,13 +793,9 @@ class PNL_listCtrl(wx.Panel):
         lst +=self.GetLstBtnAction()
 
     def Sizer(self):
-        # Ajout éventuel d'un cadre autour de l'OLV
-        if self.lblList:
-            cadre_staticbox = wx.StaticBox(self, wx.ID_ANY, label=self.lblList)
-            topbox = wx.StaticBoxSizer(cadre_staticbox, wx.HORIZONTAL)
-        else:
-            topbox = wx.BoxSizer(wx.HORIZONTAL)
+        topbox = self.topbox
         topbox.Add(self.ctrl,1,wx.ALL|wx.EXPAND,4)
+
         droite_flex = wx.FlexGridSizer(16,1,0,0)
         for btn in self.lstBtnAction:
             droite_flex.Add(btn, 0, wx.ALL|wx.TOP, 4)
@@ -880,26 +902,34 @@ class BoxPanel(wx.Panel):
         kw = DicFiltre(kwds,OPTIONS_PANEL)
         if size: kw['size']=size
         wx.Panel.__init__(self,parent, *args, **kw)
+        self.Name = "xUTILS_SaisieParams.BoxPanel"
         maxSize = kwds.pop('boxMaxSize',None)
         minSize = kwds.pop('boxMinSize',None)
         if maxSize: self.SetMaxSize(maxSize)
         if minSize: self.SetMinSize(minSize)
         self.kwds = kwds
         self.parent = parent
-        if hasattr(parent,'lanceur'):
+        if hasattr(parent, 'lanceur'):
             self.lanceur = parent.lanceur
-        else: self.lanceur = parent
+        else:
+            self.lanceur = parent
+
         self.code = code
-        self.lstPanels=[]
+        self.lstPanels = []
         self.dictDonnees = dictDonnees
+
+        # CRUCIAL : On préserve la référence du widget parent selon qu'il y a un cadre ou non
         if lblBox:
             self.ssbox = wx.StaticBoxSizer(wx.VERTICAL, self, lblBox)
+            # Le parent visuel des enfants de ce sizer DOIT être la StaticBox :
+            self.box_parent = self.ssbox.GetStaticBox()
         else:
             self.ssbox = wx.BoxSizer(wx.VERTICAL)
+            self.box_parent = self
+
         self.InitMatrice(lignes)
 
-    def InitMatrice(self,lignes):
-
+    def InitMatrice(self, lignes):
         # calcul d'un default txtSize
         dfltTextSize = 0
         for ligne in lignes:
@@ -916,30 +946,33 @@ class BoxPanel(wx.Panel):
                 if nom in lstAttribs:
                     kwdLigne[nom] = valeur
                 else:
-                    possibles = "Liste des possibles: %s"%str(OPTIONS_CTRL)
-                    wx.MessageBox("BoxPanel: L'option '%s' de la ligne '%s' n'est pas reconnue!\n\n%s"%(nom,
-                                                                                        ligne['name'],possibles))
+                    possibles = "Liste des possibles: %s" % str(OPTIONS_CTRL)
+                    wx.MessageBox(
+                        "BoxPanel: L'option '%s' de la ligne '%s' n'est pas reconnue!\n\n%s" % (
+                            nom, ligne['name'], possibles))
             if (not 'txtSize' in ligne) and 'label' in ligne:
                 kwdLigne['txtSize'] = dfltTextSize
 
             if ('genre' in ligne):
-                panel = PNL_ctrl(self, **kwdLigne)
+                # MODIFICATION ICI : On utilise self.box_parent (la StaticBox) au lieu de self.widget
+                panel = PNL_ctrl(self.box_parent, **kwdLigne)
+
                 if ligne['genre'] and ligne['genre'].lower() in ['bool', 'check']:
                     self.UseCheckbox = 1
                 if panel:
                     for cle in ('name', 'label', 'ctrlAction', 'btnLabel', 'btnAction',
-                                'value', 'labels', 'values','enable'):
+                                'value', 'labels', 'values', 'enable'):
                         if not cle in ligne:
-                            ligne[cle]=None
-                    self.ssbox.Add(panel,1, wx.ALL|wx.EXPAND,0)
+                            ligne[cle] = None
+                    self.ssbox.Add(panel, 1, wx.ALL | wx.EXPAND, 0)
                     panel.Proprietes(ligne)
                     self.lstPanels.append(panel)
         self.SetSizer(self.ssbox)
 
-    def OnCtrlAction(self,event):
+    def OnCtrlAction(self, event):
         self.parent.OnCtrlAction(event)
 
-    def OnBtnAction(self,event):
+    def OnBtnAction(self, event):
         self.parent.OnBtnAction(event)
         event.Skip()
 
@@ -947,15 +980,15 @@ class BoxPanel(wx.Panel):
     def GetValues(self):
         self.dictDonnees = {}
         for panel in self.lstPanels:
-            if isinstance(panel.ctrl,(tuple,list)): continue
+            if isinstance(panel.ctrl, (tuple, list)): continue
             [code, champ] = panel.ctrl.nameCtrl.split('.')
             self.dictDonnees[champ] = panel.GetValue()
         return self.dictDonnees
 
     # Set pour tous les ctrl nommés dans le dictionnaire de données
-    def SetValues(self,dictDonnees):
+    def SetValues(self, dictDonnees):
         for panel in self.lstPanels:
-            if isinstance(panel.ctrl,tuple): continue
+            if isinstance(panel.ctrl, tuple): continue
             if panel.ctrl.nameCtrl in dictDonnees:
                 panel.SetValue(dictDonnees[panel.ctrl.nameCtrl])
             else:
@@ -965,10 +998,10 @@ class BoxPanel(wx.Panel):
         return
 
     # Get du ctrl nommé
-    def GetOneValue(self,name = ''):
+    def GetOneValue(self, name=''):
         lrad = name.split('.')
         if len(lrad) == 2:
-            [code,champ] = lrad
+            [code, champ] = lrad
             name = champ
         self.dictDonnees = self.GetValues()
         if name in self.dictDonnees:
@@ -977,68 +1010,64 @@ class BoxPanel(wx.Panel):
         return value
 
     # Set du ctrl nommé
-    def SetOneValue(self,name = '', value=None):
+    def SetOneValue(self, name='', value=None):
         ok = False
         for panel in self.lstPanels:
-            [code,champ] = panel.ctrl.nameCtrl.split('.')
+            [code, champ] = panel.ctrl.nameCtrl.split('.')
             if champ == name or panel.ctrl.nameCtrl == name:
                 panel.SetValue(value)
                 ok = True
                 break
-        if  not ok:
-            mess = "Impossible de trouver le ctrl '%s'\n\n"%name
-            mess += "de %s"%(self.Parent.Name)
-            ret = wx.MessageBox(mess,"Echec: SetOneValue",style=wx.OK|wx.ICON_WARNING)
+        if not ok:
+            mess = "Impossible de trouver le ctrl '%s'\n\n" % name
+            mess += "de %s" % (self.Parent.Name)
+            ret = wx.MessageBox(mess, "Echec: SetOneValue", style=wx.OK | wx.ICON_WARNING)
         return
 
     # SetChoices du ctrl nommé
-    def SetOneSet(self,name = '', values=None):
+    def SetOneSet(self, name='', values=None):
         if values:
             for panel in self.lstPanels:
                 [code, champ] = panel.ctrl.nameCtrl.split('.')
                 if champ == name or panel.ctrl.nameCtrl == name:
-                    if panel.ctrl.genreCtrl.lower() in ['enum', 'combo','multichoice',
-                                                        'anyctrl','choice']:
+                    if panel.ctrl.genreCtrl.lower() in ['enum', 'combo', 'multichoice',
+                                                        'anyctrl', 'choice']:
                         panel.Set(values)
         return
 
-    def GetPnlCtrl(self,name = ''):
+    def GetPnlCtrl(self, name=''):
         pnlctrl = None
         for panel in self.lstPanels:
-            [code,champ] = panel.ctrl.nameCtrl
+            [code, champ] = panel.ctrl.nameCtrl
             if champ == name or panel.ctrl.nameCtrl == name:
                 pnlctrl
         return pnlctrl
 
 class TopBoxPanel(wx.Panel):
-    #gestion de pluieurs BoxPanel juxtaposées horizontalement
-    def __init__(self, parent, *args, matrice={}, donnees={}, dlChamps=None,**kwds):
-        kw = DicFiltre(kwds,OPTIONS_PANEL)
-        wx.Panel.__init__(self,parent,*args, **kw)
+    # gestion de pluieurs BoxPanel juxtaposées horizontalement
+    def __init__(self, parent, *args, matrice={}, donnees={}, dlChamps=None, **kwds):
+        kw = DicFiltre(kwds, OPTIONS_PANEL)
+        wx.Panel.__init__(self, parent, *args, **kw)
 
-        lblTopBox = kwds.pop('lblTopBox',None)
-        lblBox = kwds.pop('lblBox',True)
-        boxesSizes = kwds.pop('boxesSizes',None)
+        lblTopBox = kwds.pop('lblTopBox', None)
+        lblBox = kwds.pop('lblBox', True)
+        boxesSizes = kwds.pop('boxesSizes', None)
         self.parent = parent
-        if hasattr(parent,'lanceur'):
+        if hasattr(parent, 'lanceur'):
             self.lanceur = parent.lanceur
-        else: self.lanceur = parent
+        else:
+            self.lanceur = parent
         self.matrice = xformat.CopyDic(matrice)
 
         # cas ou on limite les champs à éditer la matrice est réduite
         if dlChamps and len(dlChamps) > 0:
-            for (code,label) in matrice:
+            for (code, label) in matrice:
                 lChamps = []
-                if code in dlChamps : lChamps = dlChamps[code]
-                self.matrice[(code,label)] = [x for x in matrice[(code,label)] if  x['name'] in lChamps]
+                if code in dlChamps: lChamps = dlChamps[code]
+                self.matrice[(code, label)] = [x for x in matrice[(code, label)] if
+                                               x['name'] in lChamps]
         self.ddDonnees = donnees
 
-        # Cadres suplémentaire possible si un label est donné à TopBox
-        if lblTopBox:
-            cadre_staticbox = wx.StaticBox(self,wx.ID_ANY,label=lblTopBox)
-            self.topbox = wx.StaticBoxSizer(cadre_staticbox,wx.HORIZONTAL)
-        else:
-            self.topbox = wx.FlexGridSizer(rows=1, cols=len(self.matrice), vgap=0, hgap=0)
 
         kwdBox = {}
         for nom, valeur in kwds.items():
@@ -1046,12 +1075,24 @@ class TopBoxPanel(wx.Panel):
                 kwdBox[nom] = valeur
             else:
                 possibles = "Liste des possibles: %s" % str(OPTIONS_CTRL + OPTIONS_PANEL)
-                wx.MessageBox("TopBox: L'option '%s' pour la topbox n'est pas reconnue!\n\n%s" % (nom, possibles))
+                wx.MessageBox(
+                    "TopBox: L'option '%s' pour la topbox n'est pas reconnue!\n\n%s" % (
+                        nom, possibles))
 
         # Composition des box verticales dans le top box
         self.lstBoxes = []
         ixBox = 0
         width = 1
+
+        # Cadres suplémentaire possible si un label est donné à TopBox, création du sizer
+        if lblTopBox:
+            self.stb_cadre = wx.StaticBox(self, wx.ID_ANY, label=lblTopBox)
+            self.topbox = wx.StaticBoxSizer(self.stb_cadre, wx.HORIZONTAL)
+            widget = self.stb_cadre
+        else:
+            self.stb_cadre = None
+            self.topbox = wx.FlexGridSizer(rows=1, cols=len(self.matrice), vgap=0, hgap=0)
+            widget = self
 
         for code, label in self.matrice:
             # détermination des colonnes à étendre lors des agrandissements
@@ -1063,44 +1104,45 @@ class TopBoxPanel(wx.Panel):
                     if boxesSizes[ixBox] == None:
                         grow = True
 
-            if isinstance(code,str):
+            if isinstance(code, str):
                 if not code in self.ddDonnees:
-                     self.ddDonnees[code] = {}
+                    self.ddDonnees[code] = {}
                 titre = label
                 if not lblBox: titre = False
                 if boxesSizes and len(boxesSizes) > ixBox:
                     kwdBox['boxSize'] = boxesSizes[ixBox]
                     if boxesSizes[ixBox]:
                         width = boxesSizes[ixBox][0]
-                    else: width = 100
-                box = BoxPanel(self, wx.ID_ANY, lblBox= titre,
-                               code = code,
-                               lignes=self.matrice[(code,label)],
+                    else:
+                        width = 100
+                box = BoxPanel(widget, wx.ID_ANY, lblBox=titre,
+                               code=code,
+                               lignes=self.matrice[(code, label)],
                                dictDonnees=self.ddDonnees[code], **kwdBox)
                 self.lstBoxes.append(box)
-                self.topbox.Add(box, width,wx.ALL|wx.EXPAND,3)
+                self.topbox.Add(box, width, wx.ALL | wx.EXPAND, 3)
                 if grow and self.topbox.ClassName == 'wxFlexGridSizer':
-                    self.topbox.AddGrowableCol(ixBox,width)
-                ixBox +=1
+                    self.topbox.AddGrowableCol(ixBox, width)
+                ixBox += 1
         self.SetSizer(self.topbox)
 
-    def OnCtrlAction(self,event):
+    def OnCtrlAction(self, event):
         self.parent.OnCtrlAction(event)
 
-    def OnBtnAction(self,event):
+    def OnBtnAction(self, event):
         self.parent.OnBtnAction(event)
 
-    def GetLstValues(self,):
+    def GetLstValues(self, ):
         # récupère deux listes nomsCtrl et données de tous les controles
         lstChamps, lstDonnees = [], []
         ddDonnees = self.GetValues()
         for code, label in self.matrice.keys():
-            for dicCtrl in self.matrice[(code,label)]:
+            for dicCtrl in self.matrice[(code, label)]:
                 lstChamps.append(dicCtrl['name'])
                 lstDonnees.append(ddDonnees[code][dicCtrl['name']])
-        return lstChamps,lstDonnees
+        return lstChamps, lstDonnees
 
-    def GetValues(self,fmtDD=True):
+    def GetValues(self, fmtDD=True):
         # récupère les données de tous les controles sous forme de dictionnaire
         ddDonnees = {}
         dDonnees = {}
@@ -1108,36 +1150,39 @@ class TopBoxPanel(wx.Panel):
             dic = box.GetValues()
             ddDonnees[box.code] = xformat.CopyDic(dic)
             dDonnees.update(dic)
+
         if fmtDD: return ddDonnees
         else: return dDonnees
 
-    def GetOneValue(self,name=None,codeBox=None):
+    def GetOneValue(self, name=None, codeBox=None):
         valeur = None
         mess = None
-        if codeBox :
+        if codeBox:
             box = self.GetBox(codeBox)
             valeur = box.GetOneValue(name)
-            if valeur == 'ko': mess = "Le pnlCtrl '%s' n'est pas présent dans box '%s'" %(name,codeBox)
+            if valeur == 'ko': mess = "Le pnlCtrl '%s' n'est pas présent dans box '%s'" % (
+                name, codeBox)
         else:
             for box in self.lstBoxes:
                 ret = box.GetOneValue(name)
                 if ret != 'ko':
                     valeur = ret
-            if valeur == None: mess = "Le pnlCtrl '%s' n'est présent dans aucune box" %(name)
-        if mess: wx.MessageBox(mess,"xusp.TopBoxPanel.GetOneValue")
+            if valeur == None: mess = "Le pnlCtrl '%s' n'est présent dans aucune box" % (
+                name)
+        if mess: wx.MessageBox(mess, "xusp.TopBoxPanel.GetOneValue")
         return valeur
 
-    def SetLstValues(self,lstChamps,lstDonnees):
+    def SetLstValues(self, lstChamps, lstDonnees):
         # compose un dict pour SetValues
         ddDonnees = {}
         champs = [x.lower() for x in lstChamps]
         for code, label in self.matrice.keys():
-            ddDonnees[code]={}
-            for dicCtrl in self.matrice[(code,label)]:
+            ddDonnees[code] = {}
+            for dicCtrl in self.matrice[(code, label)]:
                 if dicCtrl['name'].lower() in champs:
                     valeur = lstDonnees[champs.index(dicCtrl['name'].lower())]
                     name = dicCtrl['name']
-                    ddDonnees[code][name]=valeur
+                    ddDonnees[code][name] = valeur
         self.SetValues(ddDonnees)
 
     def SetValues(self, donnees):
@@ -1154,50 +1199,50 @@ class TopBoxPanel(wx.Panel):
                 box.SetValues(donnees)
         return
 
-    def SetOneValue(self,name=None,valeur=None,codeBox=None):
+    def SetOneValue(self, name=None, valeur=None, codeBox=None):
         ok = False
-        if codeBox :
+        if codeBox:
             box = self.GetBox(codeBox)
             if box:
-                box.SetOneValue(name,valeur)
+                box.SetOneValue(name, valeur)
         else:
             for box in self.lstBoxes:
                 ret = box.GetOneValue(name)
                 if ret != 'ko':
-                    box.SetOneValue(name,valeur)
+                    box.SetOneValue(name, valeur)
                     ok = True
             if not ok:
-                mess = str("SetOneValue(%s,%s) impossible"%(str(name),str(valeur)))
+                mess = str("SetOneValue(%s,%s) impossible" % (str(name), str(valeur)))
                 raise Exception(mess)
         return
 
-    def SetOneSet(self,name = '', values=None,codeBox=None):
-        if codeBox :
+    def SetOneSet(self, name='', values=None, codeBox=None):
+        if codeBox:
             box = self.GetBox(codeBox)
-            box.SetOneSet(name,values)
+            box.SetOneSet(name, values)
         else:
             # balayage des boxes
             for box in self.lstBoxes:
                 # test la présence du ctrl dans la box
                 ret = box.GetOneValue(name)
                 if ret != 'ko':
-                    box.SetOneSet(name,values)
+                    box.SetOneSet(name, values)
         return
 
-    def GetBox(self,codeBox):
+    def GetBox(self, codeBox):
         # utile pour lui adresser les méthodes ex: box.SetOneValue()
         for box in self.lstBoxes:
             if box.code == codeBox:
                 return box
 
-    def GetPnlCtrl(self,name,codebox=None):
+    def GetPnlCtrl(self, name, codebox=None):
         panel = None
         lrad = name.split('.')
         if codebox:
             box = self.GetBox(codebox)
             name = lrad[-1]
         elif len(lrad) == 2:
-            [code,name] = lrad
+            [code, name] = lrad
             box = self.GetBox(code)
         else:
             for box in self.lstBoxes:
@@ -1510,9 +1555,8 @@ class xFrame(wx.Frame):
         print('Action prévue : ',event.EventObject.actionCtrl)
 
     def OnBtnAction(self,event):
-        wx.MessageBox('Vous avez cliqué sur le bouton',event.EventObject.Name)
-        print( event.EventObject.nameBtn, event.EventObject.labelBtn,)
-        print('vous avez donc souhaité : ',event.EventObject.actionBtn)
+        wx.MessageBox(f'Vous avez cliqué sur le bouton : {event.EventObject.Name}')
+        print(f'vous avez souhaité une action de {event.EventObject.Name}')
 
 class FramePanels(wx.Frame):
     def __init__(self, *args, **kwds):
@@ -1522,6 +1566,10 @@ class FramePanels(wx.Frame):
         titre = listArbo[-1:][0] + "/" + self.__class__.__name__
         wx.Frame.__init__(self,*args, title=titre, **kwds)
         self.Size = (600,400)
+        if hasattr(self.Parent,'widget') and self.parent.widget:
+            self.widget = self.parent.widget
+        else:
+            self.widget = self
         def ComposeDonnees():
             self.combo1 = PNL_ctrl(self,wx.ID_ANY,
                                 genre="combo",
@@ -1573,19 +1621,20 @@ if __name__ == '__main__':
     app = wx.App(0)
     os.chdir("..")
     dictDonnees = {"bd_reseau": {'serveur': 'serveur2',
-                                 'bdReseau':False,
-                                 'config': DDstrdate2wxdate('2020-02-28',iso=True),
+                                 'bdReseau': False,
+                                 'config': DDstrdate2wxdate('2020-02-28', iso=True),
                                  'localisation': "ailleurs",
                                  'choix': 12,
-                                 'multi':[12, 13],
-                                'nombre': 456.45,
+                                 'multi': [12, 13],
+                                 'nombre': 456.45,
                                  },
-                   "ident":      {'domaine': 'mon domaine',
-                                  'usateur': 'nouveau',},
-                  }
+                   "ident": {'domaine': 'mon domaine',
+                             'usateur': 'nouveau', },
+                   }
     dictMatrice = {
         ("ident", "Votre session"):
-            [   #ctrlSize c'est la taille fixe du contrôle complet au départ, inclu txtSize taille du libellé
+            [
+                # ctrlSize c'est la taille fixe du contrôle complet au départ, inclu txtSize taille du libellé
                 # max et minSize atteints feront porter le changement sur les autres colonnes
                 # le minZize pris en compte est le plus grand de toutes les lignes
 
@@ -1647,15 +1696,12 @@ if __name__ == '__main__':
     dictColonnesSimple = {}
 
     # Lancement des tests
-    """
     dlg_4 = DLG_listCtrl(None,dldMatrice=dictMatrice,
                                 dlColonnes=dictColonnes,
                                 lddDonnees=[dictDonnees])
     dlg_4.Init()
     app.SetTopWindow(dlg_4)
     dlg_4.Show()
- 
-    """
 
     dlg_3 = DLG_vide(None)
     pnl = PNL_property(dlg_3,dlg_3,matrice=dictMatrice,donnees=dictDonnees)

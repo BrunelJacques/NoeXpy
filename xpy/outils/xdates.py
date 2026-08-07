@@ -1189,8 +1189,8 @@ class CTRL_Periode(wx.Panel):
 
         self.stboxPeriode = wx.StaticBox(self, wx.ID_ANY, "Période")
         kwDate = {'OnDate':self.OnDate,'kwcal':self.kwcal,'kwdlg':self.kwdlg}
-        self.ctrlSaisieDu = CTRL_SaisieDate(self,name="date_du",label="du : ",**kwDate)
-        self.ctrlSaisieAu = CTRL_SaisieDate(self,name="date_au",label="au : ",**kwDate)
+        self.ctrlSaisieDu = CTRL_SaisieDate(self.stboxPeriode,name="date_du",label="du : ",**kwDate)
+        self.ctrlSaisieAu = CTRL_SaisieDate(self.stboxPeriode,name="date_au",label="au : ",**kwDate)
 
         # Sizert
         static_sizer_periode = wx.StaticBoxSizer(self.stboxPeriode,orientation)
@@ -1277,8 +1277,10 @@ class CTRL_AffichePeriode(wx.Panel):
 
         if withStaticBox:
             self.stboxPeriode = wx.StaticBox(self, wx.ID_ANY, "Période")
-        self.ctrlDu = CTRL_AfficheDate(self,name="date_du",label="du : ",**kwDate)
-        self.ctrlAu = CTRL_AfficheDate(self,name="date_au",label="au : ",**kwDate)
+        else:
+            self.stboxPeriode = self
+        self.ctrlDu = CTRL_AfficheDate(self.stboxPeriode,name="date_du",label="du : ",**kwDate)
+        self.ctrlAu = CTRL_AfficheDate(self.stboxPeriode,name="date_au",label="au : ",**kwDate)
 
         # Sizert
         if withStaticBox:
@@ -1315,19 +1317,16 @@ if __name__ == '__main__':
     os.chdir("..")
     app = wx.App(0)
 
-    """
     frame = DLG_calendrier(None)
     frame.Show()
     frame.Centre()
     frame_2 = TestFrame(title='PNL_calendrier', pos=(800,300))
     frame_2.pnlCalendrier = Calendrier(frame_2)
     frame_2.Show()
-    """
 
-    """
     frame_3 = TestFrame(title='CTRL_SaisieDate', pos=(100,300),size=(230,120))
     frame_3.ctrl = CTRL_Periode(frame_3)
-    frame_3.Show()"""
+    frame_3.Show()
 
     frame_1 = TestFrame(title='CTRL_SaisieDate', pos=(400,300),size=(250,120))
     frame_1.ctrl = CTRL_AffichePeriode(frame_1,label="Ma date:",withStaticBox=False)

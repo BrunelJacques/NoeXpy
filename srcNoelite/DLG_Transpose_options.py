@@ -249,16 +249,20 @@ class PNL_corps(wx.Panel):
 
     def __init_ecran(self):
         self.staticbox_gauche = wx.StaticBox(self, -1,"Contenu du fichier")
+        stbgauche = self.staticbox_gauche
         self.staticbox_droite = wx.StaticBox(self, -1,"Colonnes attendues")
+        stbdroite = self.staticbox_droite
         choices =  ['Première feuille Non trouvée', '-', '-','-','-',]
+
         label = " Choisir une feuille "
-        self.radioSheets = CTRL_RadioBox(self,label=label,choices=choices,size=(150,180))
-        self.labelChklstColonnesLues = wx.StaticText(self,-1,"Colonnes Présentes")
-        self.chklstColonnesLues = wx.CheckListBox(self, -1,choices=["-",])
-        self.chklstColonnesOlv = wx.CheckListBox(self, -1, choices=["-"])
-        self.txtInfoPeriode = wx.StaticText(self, -1, "Période trouvée")
-        self.periode = xdates.CTRL_AffichePeriode(self,withStaticBox=False)
-        self.txtValide = wx.StaticText(self,-1,"-------------")
+        self.radioSheets = CTRL_RadioBox(stbgauche,label=label,choices=choices,size=(150,180))
+
+        self.labelChklstColonnesLues = wx.StaticText(stbgauche,-1,"Colonnes Présentes")
+        self.chklstColonnesLues = wx.CheckListBox(stbgauche, -1,choices=["-",])
+        self.chklstColonnesOlv = wx.CheckListBox(stbdroite, -1, choices=["-"])
+        self.txtInfoPeriode = wx.StaticText(stbgauche, -1, "Période trouvée")
+        self.periode = xdates.CTRL_AffichePeriode(stbgauche,withStaticBox=False)
+        self.txtValide = wx.StaticText(stbdroite,-1,"-------------")
 
     def __set_properties(self):
         self.SetBackgroundColour(GRISVERT)
@@ -278,11 +282,11 @@ class PNL_corps(wx.Panel):
         grid_sizer_gauche = wx.FlexGridSizer(rows=2, cols=2, vgap=15, hgap=18)
         grid_sizer_gauche.Add(self.radioSheets,1,wx.LEFT | wx.TOP | wx.EXPAND, 14)
 
-        grid_sizer_col_presentes = wx.FlexGridSizer(rows=2, cols=1, vgap=15, hgap=3)
-        grid_sizer_col_presentes.Add(self.labelChklstColonnesLues, 1, wx.LEFT | wx.EXPAND, 0)
-        grid_sizer_col_presentes.Add(self.chklstColonnesLues, 1,
+        self.grid_sizer_col_presentes = wx.FlexGridSizer(rows=2, cols=1, vgap=15, hgap=3)
+        self.grid_sizer_col_presentes.Add(self.labelChklstColonnesLues, 1, wx.LEFT | wx.EXPAND, 0)
+        self.grid_sizer_col_presentes.Add(self.chklstColonnesLues, 1,
                                      wx.LEFT | wx.EXPAND, 0)
-        grid_sizer_gauche.Add(grid_sizer_col_presentes, 1, wx.LEFT | wx.TOP | wx.EXPAND, 14)
+        grid_sizer_gauche.Add(self.grid_sizer_col_presentes, 1, wx.LEFT | wx.TOP | wx.EXPAND, 14)
         grid_sizer_gauche.Add(self.txtInfoPeriode, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT, 0)
         grid_sizer_gauche.Add(self.periode, 0, wx.ALIGN_LEFT, 0)
 
@@ -298,7 +302,7 @@ class PNL_corps(wx.Panel):
         grid_sizer_base.Add(sttbox_gauche_sizer,1,wx.ALL | wx.EXPAND,5)
         grid_sizer_base.Add(grid_sizer_droite,1,wx.ALL | wx.EXPAND,5)
 
-        grid_sizer_col_presentes.AddGrowableRow(1)
+        self.grid_sizer_col_presentes.AddGrowableRow(1)
         grid_sizer_gauche.AddGrowableRow(0)
         grid_sizer_droite.AddGrowableRow(0)
         grid_sizer_base.AddGrowableCol(1)
