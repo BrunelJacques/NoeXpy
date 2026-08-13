@@ -518,6 +518,7 @@ class Dialog(xusp.DLG_vide):
     # ------------------- Composition de l'écran de gestion----------
     def __init__(self,*args):
         super().__init__(self,name='DLG_Transpose_fichier',size=(900,700))
+        self.lanceur = self
         self.dicOptions = GLOBAL.DIC_OPTIONS
         self.ctrlOlv = None
         self.txtInfo =  "Non connecté à une compta"

@@ -441,9 +441,9 @@ class PNL_ctrl(wx.Panel):
         self.value = value
         self.name = name
         self.SetOneSet = self.Set
-        if hasattr(parent,'lanceur'):
-            self.lanceur = parent.lanceur
-        else: self.lanceur = parent
+        if hasattr(parent.Parent,'lanceur'):
+            self.lanceur = parent.Parent.lanceur
+        else: self.lanceur = parent.Parent
 
         if btnLabel or btnImage :
             self.avecBouton = True
@@ -540,7 +540,7 @@ class PNL_ctrl(wx.Panel):
             self.ctrl.name = ''
             self.ctrl.nameCtrl = '.'
             return
-        self.codename = self.Parent.code + '.' + ligne['name']
+        self.codename = self.GrandParent.code + '.' + ligne['name']
         self.ctrl.genreCtrl = ligne['genre'].lower()
         self.ctrl.nameCtrl = self.codename
         self.ctrl.name = ligne['name']
@@ -1448,8 +1448,8 @@ class DLG_vide(wx.Dialog):
         self.Name = name
         self.marge = marge
         self.parent = parent
-        if parent:
-            self.lanceur = parent
+        if parent and hasattr(parent, 'lanceur'):
+            self.lanceur = parent.lanceur
         else:
             self.lanceur = self
         self.SetMinSize(minSize)

@@ -277,6 +277,8 @@ class CTRL_mdp(wx.TextCtrl):
 
     def Recherche(self):
         txtSearch = self.GetValue()
+        if len(txtSearch) < 9 :
+            return
         # Recherche de l'utilisateur et envoi dans ParamUser de shelve
         for dictUtilisateur in self.listeUtilisateurs :
             if txtSearch == dictUtilisateur["mdp"] :
@@ -295,10 +297,10 @@ class CTRL_mdp(wx.TextCtrl):
                 self.choix['userdomain'] = GetNomOrdi()
                 cfg.SetDict(self.choix, groupe='USER')
 
-                if hasattr(self.parent,'On_trouve'):
-                    self.parent.On_trouve(dictUtilisateur)
-                    self.SetValue("")
-                    break
+                self.GrandParent.On_trouve(dictUtilisateur)
+                self.SetValue("")
+                break
+
         self.Refresh()
 
 # --------------------------- DLG de saisie de mot de passe ----------------------------
@@ -376,20 +378,19 @@ class Dialog(wx.Dialog):
         self.comboConfigs.Bind(wx.EVT_COMBOBOX, self.On_comboConfig)
 
     def __do_layout(self):
-        grid_sizer_base = wx.FlexGridSizer(rows=4, cols=1, vgap=0, hgap=0)
+        grid_sizer_base = wx.FlexGridSizer(rows=2, cols=1, vgap=0, hgap=0)
 
-        grid_sizer_base.Add(self.txtIntro, 0, wx.ALL| wx.EXPAND, 10)
         # Staticbox
-        staticbox = wx.StaticBoxSizer(self.staticbox, wx.HORIZONTAL)
-        grid_sizer_contenu = wx.FlexGridSizer(rows=4, cols=1, vgap=2, hgap=2)
+        staticbox = wx.StaticBoxSizer(self.staticbox, wx.VERTICAL)
+        grid_sizer_contenu = wx.FlexGridSizer(rows=5, cols=1, vgap=2, hgap=2)
+        grid_sizer_contenu.Add(self.txtIntro, 0, wx.ALL | wx.EXPAND, 10)
         grid_sizer_contenu.Add(self.txtConfigs, 0, wx.TOP, 10)
         grid_sizer_contenu.Add(self.comboConfigs,  1, wx.LEFT|wx.ALIGN_LEFT|wx.EXPAND, 20)
         grid_sizer_contenu.Add(self.txtMdp,  0, wx.TOP, 20 )
         grid_sizer_contenu.Add(self.ctrlMdp, 1, wx.LEFT|wx.ALIGN_LEFT|wx.EXPAND, 30)
         grid_sizer_contenu.AddGrowableCol(0)
-        staticbox.Add(grid_sizer_contenu, 1, wx.ALL|wx.EXPAND, 10)
+        staticbox.Add(grid_sizer_contenu, 1, wx.ALL | wx.EXPAND, 10)
         grid_sizer_base.Add(staticbox, 1, wx.LEFT|wx.RIGHT|wx.EXPAND, 10)
-        
         # Boutons
         grid_sizer_boutons = wx.FlexGridSizer(rows=1, cols=3, vgap=10, hgap=10)
         grid_sizer_boutons.Add((20, 20), 0, 0, 0)
