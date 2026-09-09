@@ -160,6 +160,8 @@ class ChoixConfig(xusp.BoxPanel):
     def __init__(self,parent,lblBox, codebox, lignes, dictDonnees):
         # le codebox n'étant pas visible, on écrase le label devant le contrôle
         lignes[0]['label'] = codebox
+
+
         xusp.BoxPanel.__init__(self, parent, lblBox=lblBox, code=codebox, lignes=lignes,
                                dictDonnees=dictDonnees,)
         self.SetMinSize((350,50))
@@ -176,6 +178,7 @@ class DLG_choixConfig(wx.Dialog):
         titre = listArbo[-1:][0] + "/" + self.__class__.__name__
         wx.Dialog.__init__(self, parent, -1,title = titre, style=style,size = size)
         self.parent = parent
+        self.lanceur = self # réinit lanceur car peut être lancé en direct
         self.stb_cadre = wx.StaticBox(self, -1, label='identification')
 
         # Récup du code de la description des champs pour une configuration

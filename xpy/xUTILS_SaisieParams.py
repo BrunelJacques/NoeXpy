@@ -911,6 +911,8 @@ class BoxPanel(wx.Panel):
         self.parent = parent
         if hasattr(parent, 'lanceur'):
             self.lanceur = parent.lanceur
+        elif parent.Parent and hasattr(parent.Parent, 'lanceur'):
+            self.lanceur = parent.Parent.lanceur
         else:
             self.lanceur = parent
 

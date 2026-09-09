@@ -227,7 +227,7 @@ def SaisieMotPasse(parent):
     dlgMp.ShowModal()
     dictUser = dlgMp.GetDictUtilisateur()
     etat = False
-    if dictUser:
+    if parent and dictUser:
         parent.dictUser = dictUser
         etat = True
     try:
@@ -310,6 +310,9 @@ class Dialog(wx.Dialog):
     def __init__(self, parent, id=-1,title="xUTILS_Identification",confirm=True):
         wx.Dialog.__init__(self, parent, id, title, name="DLG_mdp",style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
         self.parent = parent
+        if parent and hasattr(self.parent,"lanceur"):
+            self.lanceur = self.parent.lanceur
+        else: self.lanceur = self
         self.confirm = confirm
         self.echec = False
         self.dictUtilisateur = None
