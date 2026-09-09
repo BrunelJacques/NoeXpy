@@ -1,5 +1,5 @@
 version 1.1.3.2 (09/09/2026)
-    - Usage python 14 et wxPython 4.3
+    - Usage new python 14 et wxPython 4.3
 
 version 1.1.3.1 (07/08/2026)
     - Bug DLG_Inventaire
