@@ -8,6 +8,6 @@ Noestock permet ma gestion du stock alimentaire et le calcul des prix de journé
 Noelite rassemble à la fois quelques outils techniques et une interace utilisateur:
 * simplifiée pour utilisateurs matthania peu avertis
 * pour la mise à jour de fiche client 
-* pour saisie des règlements. 
+* pour saisie des règlements.
 
 **pour l'installation cf ./services/doc**

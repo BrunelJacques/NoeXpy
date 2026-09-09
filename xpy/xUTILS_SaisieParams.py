@@ -403,7 +403,11 @@ class PNL_ctrl(wx.Panel):
                  labels=[], values=[],
                  help=None, btnLabel=None, btnImage=None, btnHelp=None, ctrl=None,
                  **kwds):
-        self.parent = parent
+
+        if parent and "StaticBox" in str(type(parent)):
+            self.parent = parent.Parent
+        else:
+            self.parent = parent
         self.flagSkipEdit = False
 
         # gestion des size
@@ -540,7 +544,7 @@ class PNL_ctrl(wx.Panel):
             self.ctrl.name = ''
             self.ctrl.nameCtrl = '.'
             return
-        self.codename = self.GrandParent.code + '.' + ligne['name']
+        self.codename = self.parent.code + '.' + ligne['name']
         self.ctrl.genreCtrl = ligne['genre'].lower()
         self.ctrl.nameCtrl = self.codename
         self.ctrl.name = ligne['name']
