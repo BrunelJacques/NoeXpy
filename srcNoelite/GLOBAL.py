@@ -15,7 +15,7 @@ def GetFormatsImport(ComposeFuncImp = None):
                 'table': 'fournisseurs'},
             "Crédit Mutuel importé d'internet": {
                 'champs': ['date', None, 'libelle', '-debit','credit'],
-                'champsCB': ['date','Commerce','Ville', 'montant','carte'],
+                'champsCB': ['Date','Commerce','Ville', '-MontantEuro','Carte','DateDebit'],
                 'fonction': ComposeFuncImp,
                 'table': 'fournisseurs'},
             "Crédit Mutuel relevé papier": {

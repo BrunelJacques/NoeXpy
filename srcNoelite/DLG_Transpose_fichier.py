@@ -253,7 +253,11 @@ def ComposeFuncImp(dicParams,donnees,champsOut,compta,table, parent=None):
                     # force la date du débit et non celle de l'opération
                     valeur = xformat.FinDeMois(dateMax) # si non renseigné, valeur défaut
                     # recherche dans la colonne 'datedebit'
-                    dicDate = dicChampsAttendus['datedebit']
+                    if not 'datedebit' in dicChampsAttendus.keys():
+                        mess = "Le champ 'datedebit' n'a pas été paramétré pour ce type de fichier"
+                        wx.MessageBox(mess,"Pb choix options")
+                    else:
+                        dicDate = dicChampsAttendus['datedebit']
                     dtedeb = ligne[dicDate['ixIn']]
                     if dtedeb:
                         if isinstance(dtedeb,(datetime.date,datetime.datetime)):
@@ -792,10 +796,10 @@ class Dialog(xusp.DLG_vide):
             return print(ret)
 
         # affichage résultat
-        solde = xformat.FmtMontant(totDebits - totCredits,lg=12)
-        wx.MessageBox("Fin de transfert\n\nDébits  du relevé: %s\nCrédits du relevé:%s"%(xformat.FmtMontant(totDebits,lg=12),
-                                                                     xformat.FmtMontant(totCredits,lg=12))+
-                      "\nMouvements période:   %s"%solde)
+        solde = xformat.FmtMontant(totDebits - totCredits,lg=15)
+        wx.MessageBox("Fin de transfert\n\nDébits  du relevé: %s\nCrédits du relevé:%s"%(
+            xformat.FmtMontant(totDebits,lg=15),
+            xformat.FmtMontant(totCredits,lg=15))+ "\nMouvements période:   %s"%solde)
 
 
         # sauvegarde des params

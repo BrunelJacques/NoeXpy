@@ -1,5 +1,8 @@
+version 1.1.3.3 (01/10/2026)
+    - Transpose fichier amélioré
+
 version 1.1.3.2 (09/09/2026)
-    - Adapté python14 & wxPython4.3
+    - Adapté python14 & wxPython43
 
 version 1.1.3.1 (07/08/2026)
     - Bug DLG_Inventaire
@@ -72,7 +75,7 @@ version 1.1.2.39 (14/09/2024)
     - bug mise à jour
 
 version 1.1.2.38 (13/05/2024)
-    - suppresseion des tests ping
+    - suppression des tests ping
 
 version 1.1.2.37 (10/05/2024)
     - Impressions ListCtrlPrinter
@@ -84,7 +87,7 @@ version 1.1.2.36 (26/04/2024)
 version 1.1.2.35 (20/04/2024)
     - Mouvement de stock: aide à la saisie fournisseur par début du nom
     - Message avant ajout d'un nouveau fournisseur
-    - Modifs xpy Copier couper coller possibles
+    - Modifs xpy copier, couper, coller, possibles
     - Km Véhicules: évolution
     - gestion de tables communes (analytique, coûts)
     - adaptations tailles de police linux
@@ -96,7 +99,7 @@ version 1.1.2.33 (31/01/2024)
     - adaptations pour Linux Ubuntu
 
 Version 1.1.2.32 (25/10/2023)
-- Recherche antérieurs tient compte de la date encours
+- Recherche' 'antérieurs' tient compte de la date encours
 
 Version 1.1.2.31 (24/10/2023)
 - Suivi des mouvements, intégration de l'évolution version 30
@@ -153,7 +156,7 @@ Version 1.1.2.17 (12/08/2022 16:30)
 - Réorganisation ObjectListView xGTE xGTR
 
 Version 1.1.2.16 (12/08/2022 11:45)
-- Modifs xpy pour noelite
+- Modifs xpy pour Noelite
 
 Version 1.1.2.15 (23/07/2022 9:33)
 - Ajout de compteurs dans le suivi mouvements
@@ -181,16 +184,16 @@ Version 1.1.2.8 (04/09/2021)
 - inventaires
 
 Version 1.1.2.6 (12/07/2021)
-- améliorations saisie
+- améliorations 'saisie'
 
 Version 1.1.2.5 (07/07/2021)
 - gestion inventaires
 
 Version 1.1.2.3 (23/06/2021)
-- Améliorations saisie stock
+- Améliorations 'saisie stock'
 
 Version 1.1.2.2 (09/06/2021)
-- Version mise en service sans les synchro
+- Version mise en service sans les synchros
 
 Version 1.1.2.1 (01/06/2021)
 - Version béta sans les inventaires, ni calcul de prix de journée
