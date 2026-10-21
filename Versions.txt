@@ -1,3 +1,6 @@
+version 1.1.3.4 (21/10/2026)
+    - Bug sur modif mouvement stock
+
 version 1.1.3.3 (01/10/2026)
     - Transpose fichier amélioré
 

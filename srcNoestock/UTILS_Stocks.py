@@ -737,7 +737,8 @@ def SqlDicArticles(db, olv, lstArticles):
     # composition du retour à partir du buffer
     ddArticles = {}
     for article in lstArticles:
-        ddArticles[article] = olv.buffArticles[article]
+        if article in olv.buffArticles.keys():
+            ddArticles[article] = olv.buffArticles[article]
     return ddArticles
 
 def SqlFournisseurs(db=None, **kwd):
