@@ -97,6 +97,7 @@ def GetOneIDarticle(db,value,**kwds):
     f4 = kwds.pop('f4',False)
     # recherche d'un article unique à partir d'une saisie d'id partielle
     IDarticle = None
+    saisie = value
     if  len(value)>0:
         while True:
             # tant qu'on récupère pas au moins un enregistrement on réduit value
@@ -110,7 +111,7 @@ def GetOneIDarticle(db,value,**kwds):
         elif len(recordset) == 1 and not f4:
             IDarticle = recordset[0][0]
 
-    if IDarticle:
+    if IDarticle and IDarticle.startswith(saisie):
         return IDarticle
     # article unique non trouvé, on lance la gestion des articles pour un choix filtré sur value
     cutend = len(DB_schema.DB_TABLES['stArticles'])-4
@@ -129,6 +130,8 @@ def GetOneIDarticle(db,value,**kwds):
         if selection:
             IDarticle = selection.IDarticle
     dlg.Destroy()
+    if not IDarticle:
+        return saisie
     return IDarticle
 
 # gestion des articles via tableau de recherche ---------------------------------------------------------

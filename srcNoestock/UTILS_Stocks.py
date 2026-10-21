@@ -739,6 +739,15 @@ def SqlDicArticles(db, olv, lstArticles):
     for article in lstArticles:
         if article in olv.buffArticles.keys():
             ddArticles[article] = olv.buffArticles[article]
+        else:
+            ddArticles[article] = {
+                "IDarticle": article,
+                "txTva": 5.5,
+                "prixMoyen":1,
+                "modifiable": False,
+                "qteStock": 0,
+                "rations":1,
+            }
     return ddArticles
 
 def SqlFournisseurs(db=None, **kwd):
