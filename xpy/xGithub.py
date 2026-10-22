@@ -88,9 +88,20 @@ def IsPullNeeded(repo_path, withPull=True, mute=False):
     except Exception as e:
         tb = traceback.format_exc()
         print(f"\n{messError}\n{tb}\nErreur Exception: {e}\n")
+        messError += f"{tb}\n{e}\n"
         if not mute:
-            messError += f"{tb}\n{e}\n"
-            wx.MessageBox(messError,"Git A vérifier",wx.ICON_ERROR)
+            wx.MessageBox(messError,"Git: à vérifier",wx.ICON_ERROR)
+    emplacement = os.getcwd()
+    if "dubious ownership" in messError:
+        try:
+            import subprocess
+            subprocess.run(["git", "config", "--global", "--add", "safe.directory",
+                        f"{emplacement}"])
+            messOK = "Une correction automatique a été tentée\n\nveuillez redémarrer"
+            wx.MessageBox(messOK, "Correction problème", wx.ICON_INFORMATION)
+        except subprocess.CalledProcessError as e:
+            pass
+
 
 def PullGithub(appli_path, stash_changes=False, reset_hard=False):
     mess = "Lancement Update\n"
