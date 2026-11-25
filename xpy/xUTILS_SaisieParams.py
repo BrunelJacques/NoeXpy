@@ -404,7 +404,7 @@ class PNL_ctrl(wx.Panel):
                  help=None, btnLabel=None, btnImage=None, btnHelp=None, ctrl=None,
                  **kwds):
 
-        if parent and "StaticBox" in str(type(parent)):
+        if parent and isinstance(parent,wx.StaticBox):
             self.parent = parent.Parent
         else:
             self.parent = parent

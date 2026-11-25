@@ -293,6 +293,8 @@ class ObjectListView(wx.ListCtrl):
                 kwds[key]=value
 
         wx.ListCtrl.__init__(self, *args, **kwds)
+        self.grandParent = self.GetGrandParent()
+        self.parent = self.GetParent()
         self.Name = 'ObjecListView'
         if self.sortable:
             self.EnableSorting()
@@ -335,7 +337,19 @@ class ObjectListView(wx.ListCtrl):
                 0,
                 ""))
 
-    # Setup OLV
+    # Setup
+
+    def GetGrandParent(self):
+        gd_parent = super().GetGrandParent()
+        if gd_parent and isinstance(gd_parent, wx.StaticBox):
+            return gd_parent.GetParent()
+        return gd_parent
+
+    def GetParent(self):
+        parent = super().GetParent()
+        if parent and isinstance(parent, wx.StaticBox):
+            return parent.GetParent()
+        return parent
 
     def SetColumns(self, columns,repopulate=True):
         """
